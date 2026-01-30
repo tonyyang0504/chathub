@@ -1,0 +1,699 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Analyzer - WhatsApp Bot Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.workflow-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 2rem;
+    position: relative;
+}
+
+.workflow-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, #f093fb, #f5576c);
+    z-index: 0;
+}
+
+.workflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    max-width: 180px;
+}
+
+.workflow-step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f093fb;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+}
+
+.workflow-step h5 { font-weight: 600; margin-bottom: 0.5rem; }
+.workflow-step p { font-size: 0.85rem; color: var(--text-muted); }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.stat-card .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+.stat-card .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+.stat-card.success .stat-icon { color: #28a745; }
+.stat-card.info .stat-icon { color: #17a2b8; }
+.stat-card.warning .stat-icon { color: #ffc107; }
+
+.instances-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.instance-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.instance-card:hover { border-color: #f093fb; transform: translateY(-2px); }
+
+/* Theme outline button */
+.btn-outline-theme {
+    color: #f093fb;
+    border-color: #f093fb;
+    background: transparent;
+}
+.btn-outline-theme:hover, .btn-outline-theme:focus {
+    background: #f093fb;
+    border-color: #f093fb;
+    color: white;
+}
+
+.simulation-section {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.simulation-section h3 { color: #333; }
+
+.contact-profile-demo {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.profile-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+
+.profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.profile-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+.profile-tag { background: #f0f0f0; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+.profile-tag.high { background: #d4edda; color: #155724; }
+.profile-tag.medium { background: #fff3cd; color: #856404; }
+
+.engagement-meter { height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-top: 0.5rem; }
+.engagement-fill { height: 100%; background: linear-gradient(90deg, #f093fb, #f5576c); border-radius: 4px; transition: width 0.5s ease; }
+
+.feature-list { list-style: none; padding: 0; }
+.feature-list li { padding: 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+.feature-list li i { color: #28a745; font-size: 1.2rem; }
+
+/* Theme button styling */
+.btn-theme {
+    background: #f093fb;
+    border: none;
+    color: white;
+}
+.btn-theme:hover, .btn-theme:focus {
+    background: #e080ea;
+    color: white;
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+/* Instance Filter Dropdown */
+.instance-dropdown {
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+}
+.instance-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+/* Instance Status Badge - matching agents page */
+.instance-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.instance-status.status-active {
+    background: rgba(25, 135, 84, 0.15);
+    color: var(--bs-success);
+}
+.instance-status.status-inactive {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--bs-secondary);
+}
+.instance-dropdown-btn::after {
+    margin-left: auto;
+}
+.instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
+    border-color: #f093fb;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.instance-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.instance-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.instance-dropdown-menu .dropdown-item:hover {
+    background: rgba(240, 147, 251, 0.1);
+    color: #f093fb;
+}
+.instance-dropdown-menu .dropdown-item.selected {
+    background: rgba(240, 147, 251, 0.15);
+    color: #f093fb;
+    font-weight: 500;
+}
+
+/* Simulation textarea styling */
+.simulation-textarea {
+    border-radius: 12px;
+    padding: 12px 16px;
+    resize: vertical;
+    overflow-y: auto;
+}
+.simulation-textarea:focus {
+    border-color: #f093fb;
+    box-shadow: none;
+    outline: none;
+}
+.simulation-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+.simulation-textarea::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0 12px 12px 0;
+    margin: 4px 0;
+}
+.simulation-textarea::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+}
+.simulation-textarea::-webkit-scrollbar-corner {
+    background: transparent;
+}
+.simulation-textarea::-webkit-resizer {
+    background: transparent;
+    border: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-person-badge me-3"></i>Contact Analyzer</h1>
+                <p>Build rich profiles of your contacts using AI. Automatically tag interests, predict intent, calculate engagement scores, and identify follow-up opportunities.</p>
+                <button class="btn btn-light btn-lg mt-3" onclick="createHubInstance()">
+                    <i class="bi bi-plus-lg me-2"></i>Create Hub Instance
+                </button>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-graph-up-arrow" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3 class="mb-3">Overall Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="bi bi-collection"></i></div>
+            <div class="stat-value" id="totalInstances">0</div>
+            <div class="stat-label">Hub Instances</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div class="stat-value" id="totalContacts">0</div>
+            <div class="stat-label">Contacts Analyzed</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="bi bi-tags"></i></div>
+            <div class="stat-value" id="totalTags">0</div>
+            <div class="stat-label">Tags Assigned</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-icon"><i class="bi bi-bell"></i></div>
+            <div class="stat-value" id="totalFollowups">0</div>
+            <div class="stat-label">Follow-ups Needed</div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-chat-text"></i></div>
+                <h5>1. Collect Messages</h5>
+                <p>System gathers conversation history for each contact</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-cpu"></i></div>
+                <h5>2. AI Analysis</h5>
+                <p>AI analyzes patterns, topics, sentiment, and behavior</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-tags"></i></div>
+                <h5>3. Auto-Tag</h5>
+                <p>Automatically assign relevant tags and categories</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-bullseye"></i></div>
+                <h5>4. Score & Predict</h5>
+                <p>Calculate engagement scores and predict intent</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hub Instances -->
+    <div class="instances-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-collection me-2"></i>Active Hub Instances <span class="text-muted fs-6 fw-normal" id="instanceCount"></span></h3>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="hubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="hubFilterOptions">
+                        <a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown">
+                        All Status
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item status-filter-item selected" href="#" data-value="">All Status</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="active">Active</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="inactive">Inactive</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadInstances()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="instancesContainer">
+            <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div class="simulation-section">
+        <div class="row">
+            <div class="col-lg-6">
+                <h3><i class="bi bi-play-circle me-2"></i>See Analysis In Action</h3>
+                <p class="text-muted">Enter sample messages to see how the AI builds a contact profile.</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Sample Conversation</label>
+                    <textarea class="form-control simulation-textarea" id="simulationMessages" rows="4" placeholder="Enter sample messages...">Hi, I'm interested in your premium plan. What are the pricing options?
+I've been using the basic version for a few months now.
+Can you tell me about enterprise features?</textarea>
+                </div>
+
+                <button class="btn btn-theme" onclick="runSimulation()">
+                    <i class="bi bi-play me-2"></i>Analyze Contact
+                </button>
+
+                <hr class="my-4">
+
+                <h5>Key Features</h5>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check-circle-fill"></i> AI-powered conversation analysis</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Automatic interest tagging</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Engagement score calculation</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Intent prediction (buyer, browser, support)</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Follow-up opportunity detection</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Contact Profile Preview</h5>
+                <div class="contact-profile-demo">
+                    <div class="profile-header">
+                        <div class="profile-avatar"><i class="bi bi-person"></i></div>
+                        <div>
+                            <strong>Sample Contact</strong>
+                            <div class="text-muted small">+60 12-345-6789</div>
+                        </div>
+                    </div>
+                    <div class="profile-tags" id="profileTags">
+                        <span class="profile-tag">Waiting for analysis...</span>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Engagement Score</span>
+                            <span class="small fw-bold" id="engagementScore">--</span>
+                        </div>
+                        <div class="engagement-meter">
+                            <div class="engagement-fill" id="engagementFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="row text-center small">
+                        <div class="col-4">
+                            <div class="fw-bold" id="profileIntent">--</div>
+                            <div class="text-muted">Predicted Intent</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold" id="profileSentiment">--</div>
+                            <div class="text-muted">Sentiment</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold" id="profileUrgency">--</div>
+                            <div class="text-muted">Urgency</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="tool-card">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="activityInstanceValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityInstanceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        All Instances
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="activityInstanceDropdown">
+                        <a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadActivity()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+        </div>
+        <div class="tool-card-body p-0">
+            <div class="activity-log" id="activityLog">
+                <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadInstances();
+    loadActivity();
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/tools/api/contact-analyzer/stats');
+        const stats = await response.json();
+        document.getElementById('totalInstances').textContent = stats.total_instances || 0;
+        document.getElementById('totalContacts').textContent = stats.total_contacts || 0;
+        document.getElementById('totalTags').textContent = stats.total_tags || 0;
+        document.getElementById('totalFollowups').textContent = stats.total_followups || 0;
+    } catch (error) { console.error('Error loading stats:', error); }
+}
+
+let allInstances = [];
+
+async function loadInstances() {
+    try {
+        const response = await fetch('/api/hubs?task_type=contact_analyzer');
+        allInstances = await response.json();
+        populateHubFilter();
+        setupFilterHandlers();
+        renderInstances();
+    } catch (error) {
+        console.error('Error loading instances:', error);
+        document.getElementById('instancesContainer').innerHTML = `<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle display-4"></i><p class="mt-2">Failed to load instances</p></div>`;
+    }
+}
+
+function populateHubFilter() {
+    const filterMenu = document.getElementById('hubFilterOptions');
+    let html = '<a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+    allInstances.forEach(hub => {
+        html += `<a class="dropdown-item hub-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+    });
+    filterMenu.innerHTML = html;
+}
+
+function setupFilterHandlers() {
+    document.querySelectorAll('.hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('hubFilterValue').value = this.dataset.value;
+            document.getElementById('hubFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+    document.querySelectorAll('.status-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('statusFilterValue').value = this.dataset.value;
+            document.getElementById('statusFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.status-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+}
+
+function renderInstances() {
+    const container = document.getElementById('instancesContainer');
+    const hubFilter = document.getElementById('hubFilterValue').value;
+    const statusFilter = document.getElementById('statusFilterValue').value;
+
+    let filtered = allInstances.filter(hub => {
+        if (hubFilter && hub.id != hubFilter) return false;
+        if (statusFilter === 'active' && !hub.is_active) return false;
+        if (statusFilter === 'inactive' && hub.is_active) return false;
+        return true;
+    });
+
+    document.getElementById('instanceCount').textContent = `(${filtered.length} of ${allInstances.length})`;
+
+    if (allInstances.length === 0) {
+        container.innerHTML = `<div class="text-center py-4"><i class="bi bi-inbox display-4 text-muted"></i><p class="text-muted mt-2">No contact analyzer hub instances yet</p><button class="btn btn-primary" onclick="createHubInstance()"><i class="bi bi-plus-lg me-2"></i>Create Your First Instance</button></div>`;
+        return;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-4"><i class="bi bi-filter display-4 text-muted"></i><p class="text-muted mt-2">No instances match the current filters</p></div>`;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(hub => {
+        html += `<div class="instance-card"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold">${hub.name}</span><span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">${hub.is_active ? 'Active' : 'Inactive'}</span></div><p class="text-muted small mb-2">${hub.description || 'No description'}</p><div class="d-flex gap-3 small text-muted mb-2"><span><i class="bi bi-people me-1"></i>${hub.contact_count} contacts</span><span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span></div><a href="/dashboard/hubs" class="btn btn-sm btn-theme" onclick="localStorage.setItem('openHubId', ${hub.id})"><i class="bi bi-gear me-1"></i>Configure</a></div>`;
+    });
+    container.innerHTML = html;
+    document.getElementById('totalInstances').textContent = allInstances.length;
+
+    // Populate activity filter dropdown
+    const activityFilterMenu = document.getElementById('activityInstanceDropdown')?.closest('.dropdown')?.querySelector('.instance-dropdown-menu');
+    if (activityFilterMenu) {
+        let menuHtml = '<a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>';
+        allInstances.forEach(hub => {
+            menuHtml += `<a class="dropdown-item instance-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+        activityFilterMenu.innerHTML = menuHtml;
+
+        document.querySelectorAll('.instance-filter-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('activityInstanceValue').value = this.dataset.value;
+                document.getElementById('activityInstanceDropdown').textContent = this.textContent;
+                document.querySelectorAll('.instance-filter-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                loadActivity();
+            });
+        });
+    }
+}
+
+async function loadActivity() {
+    try {
+        const filterInput = document.getElementById('activityInstanceValue');
+        const selectedHubId = filterInput ? filterInput.value : '';
+        let url = '/tools/api/executions?tool_type=contact_analyzer&limit=20';
+        if (selectedHubId) {
+            url += `&hub_id=${selectedHubId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        const container = document.getElementById('activityLog');
+
+        if (!data.executions || data.executions.length === 0) {
+            container.innerHTML = `<div class="empty-state py-3"><i class="bi bi-activity" style="font-size: 2rem;"></i><p class="mb-0">No recent activity</p></div>`;
+            return;
+        }
+
+        let html = '';
+        data.executions.forEach(exec => {
+            const time = new Date(exec.created_at).toLocaleString();
+            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
+            html += `<div class="activity-log-item"><div class="log-time">${time}</div><div class="log-content">${exec.operation}</div><div class="log-status"><span class="${statusClass}">${exec.status}</span></div></div>`;
+        });
+        container.innerHTML = html;
+    } catch (error) { console.error('Error loading activity:', error); }
+}
+
+function createHubInstance() {
+    localStorage.setItem('createHubTaskType', 'contact_analyzer');
+    window.location.href = '/dashboard/hubs';
+}
+
+async function runSimulation() {
+    const messages = document.getElementById('simulationMessages').value;
+
+    if (!messages.trim()) {
+        alert('Please enter some messages to analyze');
+        return;
+    }
+
+    // Show loading state
+    document.getElementById('profileTags').innerHTML = '<span class="profile-tag">Analyzing...</span>';
+    document.getElementById('engagementScore').textContent = '...';
+    document.getElementById('engagementFill').style.width = '0%';
+    document.getElementById('profileIntent').textContent = '...';
+    document.getElementById('profileSentiment').textContent = '...';
+    document.getElementById('profileUrgency').textContent = '...';
+
+    try {
+        const response = await fetch('/tools/api/simulate/contact-analyzer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: messages })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Analysis failed');
+        }
+
+        const analysis = result.analysis;
+
+        // Render tags
+        const tagClasses = { high: 'high', medium: 'medium', low: '' };
+        const tagsHtml = analysis.tags.map(tag => {
+            const cls = tag.toLowerCase().includes('interest') || tag.toLowerCase().includes('buyer') ? 'high' :
+                        tag.toLowerCase().includes('lead') ? 'medium' : '';
+            return `<span class="profile-tag ${cls}">${tag}</span>`;
+        }).join('');
+
+        document.getElementById('profileTags').innerHTML = tagsHtml;
+        document.getElementById('engagementScore').textContent = analysis.engagement_score + '%';
+        document.getElementById('engagementFill').style.width = analysis.engagement_score + '%';
+        document.getElementById('profileIntent').textContent = analysis.intent.charAt(0).toUpperCase() + analysis.intent.slice(1);
+        document.getElementById('profileSentiment').textContent = analysis.sentiment.charAt(0).toUpperCase() + analysis.sentiment.slice(1);
+        document.getElementById('profileUrgency').textContent = analysis.urgency.charAt(0).toUpperCase() + analysis.urgency.slice(1);
+
+    } catch (error) {
+        document.getElementById('profileTags').innerHTML = `<span class="profile-tag" style="background: #f8d7da; color: #721c24;">${error.message}</span>`;
+        document.getElementById('engagementScore').textContent = '--';
+        document.getElementById('profileIntent').textContent = '--';
+        document.getElementById('profileSentiment').textContent = '--';
+        document.getElementById('profileUrgency').textContent = '--';
+    }
+}
+</script>
+{% endblock %}

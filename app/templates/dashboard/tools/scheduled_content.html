@@ -1,0 +1,982 @@
+{% extends "base.html" %}
+
+{% block title %}Scheduled Content - WhatsApp Bot Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tool-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.tool-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 600px;
+}
+
+.workflow-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 2rem;
+    position: relative;
+}
+
+.workflow-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    z-index: 0;
+}
+
+.workflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    max-width: 180px;
+}
+
+.workflow-step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.workflow-step h5 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.workflow-step p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-card .stat-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.stat-card.success .stat-icon { color: #28a745; }
+.stat-card.warning .stat-icon { color: #ffc107; }
+.stat-card.danger .stat-icon { color: #dc3545; }
+.stat-card.info .stat-icon { color: #17a2b8; }
+
+.instances-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.instance-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.instance-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+/* Theme outline button */
+.btn-outline-theme {
+    color: #667eea;
+    border-color: #667eea;
+    background: transparent;
+}
+.btn-outline-theme:hover, .btn-outline-theme:focus {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.instance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.instance-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.instance-stats {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.simulation-section {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.simulation-section h3 {
+    color: #333;
+}
+
+.simulation-preview {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.phone-mockup {
+    max-width: 300px;
+    margin: 0 auto;
+    background: #f0f0f0;
+    border-radius: 30px;
+    padding: 20px 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.phone-screen {
+    background: white;
+    border-radius: 20px;
+    min-height: 400px;
+    padding: 1rem;
+}
+
+.message-bubble {
+    background: #dcf8c6;
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin: 10px 0;
+    max-width: 80%;
+    margin-left: auto;
+    font-size: 0.9rem;
+}
+
+.message-time {
+    font-size: 0.7rem;
+    color: #888;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+
+.feature-list li {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.feature-list li i {
+    color: #28a745;
+    font-size: 1.2rem;
+}
+
+/* Custom Dropdown Styling */
+.sim-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.sim-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sim-dropdown-btn::after {
+    margin-left: auto;
+}
+
+.sim-dropdown-btn:hover, .sim-dropdown-btn:focus {
+    border-color: #667eea;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+
+.sim-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+
+.sim-dropdown-menu .dropdown-item {
+    padding: 10px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+
+.sim-dropdown-menu .dropdown-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.sim-dropdown-menu .dropdown-item.selected {
+    background: rgba(102, 126, 234, 0.15);
+    color: #667eea;
+    font-weight: 500;
+}
+
+/* Theme button styling */
+.btn-theme {
+    background: #667eea;
+    border: none;
+    color: white;
+}
+.btn-theme:hover, .btn-theme:focus {
+    background: #5a6fd6;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Instance Filter Dropdown */
+.instance-dropdown {
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+}
+.instance-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+/* Instance Status Badge - matching agents page */
+.instance-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.instance-status.status-active {
+    background: rgba(25, 135, 84, 0.15);
+    color: var(--bs-success);
+}
+.instance-status.status-inactive {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--bs-secondary);
+}
+.instance-dropdown-btn::after {
+    margin-left: auto;
+}
+.instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
+    border-color: #667eea;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.instance-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.instance-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.instance-dropdown-menu .dropdown-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+.instance-dropdown-menu .dropdown-item.selected {
+    background: rgba(102, 126, 234, 0.15);
+    color: #667eea;
+    font-weight: 500;
+}
+
+/* Simulation textarea styling */
+.simulation-textarea {
+    border-radius: 12px;
+    padding: 12px 16px;
+    resize: vertical;
+    overflow-y: auto;
+}
+.simulation-textarea:focus {
+    border-color: #667eea;
+    box-shadow: none;
+    outline: none;
+}
+.simulation-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+.simulation-textarea::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0 12px 12px 0;
+    margin: 4px 0;
+}
+.simulation-textarea::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+}
+.simulation-textarea::-webkit-scrollbar-corner {
+    background: transparent;
+}
+.simulation-textarea::-webkit-resizer {
+    background: transparent;
+    border: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-calendar-event me-3"></i>Scheduled Content</h1>
+                <p>Automate your WhatsApp messaging with scheduled broadcasts, follow-ups, and promotional content.
+                   Set it once and let the system handle the delivery at the perfect time.</p>
+                <button class="btn btn-light btn-lg mt-3" onclick="createHubInstance()">
+                    <i class="bi bi-plus-lg me-2"></i>Create Hub Instance
+                </button>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-calendar-check" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3 class="mb-3">Overall Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="bi bi-collection"></i></div>
+            <div class="stat-value" id="totalInstances">0</div>
+            <div class="stat-label">Hub Instances</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-envelope"></i></div>
+            <div class="stat-value" id="totalScheduled">0</div>
+            <div class="stat-label">Total Scheduled</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="totalSent">0</div>
+            <div class="stat-label">Successfully Sent</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-icon"><i class="bi bi-clock"></i></div>
+            <div class="stat-value" id="totalPending">0</div>
+            <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-value" id="totalFailed">0</div>
+            <div class="stat-label">Failed</div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-pencil-square"></i></div>
+                <h5>1. Create Content</h5>
+                <p>Write your message and choose the content type (message, follow-up, promo)</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-people"></i></div>
+                <h5>2. Select Recipients</h5>
+                <p>Choose contacts, groups, or broadcast to all hub members</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-clock"></i></div>
+                <h5>3. Set Schedule</h5>
+                <p>Send immediately, at a specific time, or set up recurring delivery</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-robot"></i></div>
+                <h5>4. Auto-Deliver</h5>
+                <p>The system sends your content through the assigned bot at the scheduled time</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hub Instances -->
+    <div class="instances-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-collection me-2"></i>Active Hub Instances <span class="text-muted fs-6 fw-normal" id="instanceCount"></span></h3>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="hubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="hubFilterOptions">
+                        <a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown">
+                        All Status
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item status-filter-item selected" href="#" data-value="">All Status</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="active">Active</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="inactive">Inactive</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadInstances()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="instancesContainer">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div class="simulation-section">
+        <div class="row">
+            <div class="col-lg-6">
+                <h3><i class="bi bi-play-circle me-2"></i>Try It First</h3>
+                <p class="text-muted">See how scheduled content works before creating a hub instance.
+                   Enter a sample message and preview how it will appear.</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Sample Message</label>
+                    <textarea class="form-control simulation-textarea" id="simulationMessage" rows="3"
+                              placeholder="Type your message here...">Hello! This is a scheduled message from our team. Don't miss our special offer this week!</textarea>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Content Type</label>
+                        <input type="hidden" id="simulationTypeValue" value="message">
+                        <div class="dropdown sim-dropdown">
+                            <button class="btn sim-dropdown-btn dropdown-toggle" type="button" id="simulationTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                Message
+                            </button>
+                            <div class="dropdown-menu sim-dropdown-menu" aria-labelledby="simulationTypeDropdown">
+                                <a class="dropdown-item sim-type-item selected" href="#" data-value="message">Message</a>
+                                <a class="dropdown-item sim-type-item" href="#" data-value="followup">Follow-up</a>
+                                <a class="dropdown-item sim-type-item" href="#" data-value="promo">Promotional</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Schedule</label>
+                        <input type="hidden" id="simulationScheduleValue" value="immediate">
+                        <div class="dropdown sim-dropdown">
+                            <button class="btn sim-dropdown-btn dropdown-toggle" type="button" id="simulationScheduleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                Send Immediately
+                            </button>
+                            <div class="dropdown-menu sim-dropdown-menu" aria-labelledby="simulationScheduleDropdown">
+                                <a class="dropdown-item sim-schedule-item selected" href="#" data-value="immediate">Send Immediately</a>
+                                <a class="dropdown-item sim-schedule-item" href="#" data-value="exact">Exact Date & Time</a>
+                                <a class="dropdown-item sim-schedule-item" href="#" data-value="relative">Relative Time</a>
+                                <a class="dropdown-item sim-schedule-item" href="#" data-value="recurring">Recurring</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-theme" onclick="runSimulation()">
+                    <i class="bi bi-play me-2"></i>Preview Message
+                </button>
+
+                <hr class="my-4">
+
+                <h5>Key Features</h5>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check-circle-fill"></i> Schedule messages for specific dates and times</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Set up recurring broadcasts (daily, weekly, monthly)</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Target specific contacts or broadcast to all</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Track delivery status and success rates</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Use AI to generate content suggestions</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div class="simulation-preview">
+                    <h5 class="text-center mb-3">Message Preview</h5>
+                    <div class="phone-mockup">
+                        <div class="phone-screen">
+                            <div class="text-center text-muted py-3" style="font-size: 0.8rem;">
+                                WhatsApp Preview
+                            </div>
+                            <div id="simulationPreview">
+                                <div class="message-bubble">
+                                    <div id="previewContent">Hello! This is a scheduled message from our team. Don't miss our special offer this week!</div>
+                                    <div class="message-time" id="previewTime">Scheduled for: Now</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="tool-card">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="activityInstanceValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityInstanceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        All Instances
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="activityInstanceDropdown">
+                        <a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadActivity()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+        <div class="tool-card-body p-0">
+            <div class="activity-log" id="activityLog">
+                <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadInstances();
+    loadActivity();
+
+    // Update simulation preview on input change
+    document.getElementById('simulationMessage').addEventListener('input', updatePreview);
+
+    // Content Type dropdown handler
+    document.querySelectorAll('.sim-type-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.sim-dropdown');
+            const btn = dropdown.querySelector('.sim-dropdown-btn');
+            const hiddenInput = document.getElementById('simulationTypeValue');
+
+            btn.textContent = this.textContent;
+            hiddenInput.value = this.getAttribute('data-value');
+
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+
+            bootstrap.Dropdown.getInstance(btn)?.hide();
+            updatePreview();
+        });
+    });
+
+    // Schedule dropdown handler
+    document.querySelectorAll('.sim-schedule-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.sim-dropdown');
+            const btn = dropdown.querySelector('.sim-dropdown-btn');
+            const hiddenInput = document.getElementById('simulationScheduleValue');
+
+            btn.textContent = this.textContent;
+            hiddenInput.value = this.getAttribute('data-value');
+
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+
+            bootstrap.Dropdown.getInstance(btn)?.hide();
+            updatePreview();
+        });
+    });
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/tools/api/scheduled-content/stats');
+        const stats = await response.json();
+
+        document.getElementById('totalInstances').textContent = stats.total_instances || 0;
+        document.getElementById('totalScheduled').textContent = stats.total_scheduled || 0;
+        document.getElementById('totalSent').textContent = stats.total_sent || 0;
+        document.getElementById('totalPending').textContent = stats.total_pending || 0;
+        document.getElementById('totalFailed').textContent = stats.total_failed || 0;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+let allInstances = [];
+
+async function loadInstances() {
+    try {
+        const response = await fetch('/api/hubs?task_type=scheduled_content');
+        allInstances = await response.json();
+
+        // Populate hub filter dropdown
+        populateHubFilter();
+
+        // Setup filter handlers (only once)
+        setupFilterHandlers();
+
+        // Render with current filters
+        renderInstances();
+
+    } catch (error) {
+        console.error('Error loading instances:', error);
+        document.getElementById('instancesContainer').innerHTML = `
+            <div class="text-center py-4 text-danger">
+                <i class="bi bi-exclamation-triangle display-4"></i>
+                <p class="mt-2">Failed to load instances</p>
+            </div>
+        `;
+    }
+}
+
+function populateHubFilter() {
+    const filterMenu = document.getElementById('hubFilterOptions');
+    let html = '<a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+    allInstances.forEach(hub => {
+        html += `<a class="dropdown-item hub-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+    });
+    filterMenu.innerHTML = html;
+}
+
+function setupFilterHandlers() {
+    // Hub filter
+    document.querySelectorAll('.hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('hubFilterValue').value = this.dataset.value;
+            document.getElementById('hubFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+
+    // Status filter
+    document.querySelectorAll('.status-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('statusFilterValue').value = this.dataset.value;
+            document.getElementById('statusFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.status-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+}
+
+function renderInstances() {
+    const container = document.getElementById('instancesContainer');
+    const hubFilter = document.getElementById('hubFilterValue').value;
+    const statusFilter = document.getElementById('statusFilterValue').value;
+
+    // Filter instances
+    let filtered = allInstances.filter(hub => {
+        if (hubFilter && hub.id != hubFilter) return false;
+        if (statusFilter === 'active' && !hub.is_active) return false;
+        if (statusFilter === 'inactive' && hub.is_active) return false;
+        return true;
+    });
+
+    // Update count
+    document.getElementById('instanceCount').textContent = `(${filtered.length} of ${allInstances.length})`;
+
+    if (allInstances.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-inbox display-4 text-muted"></i>
+                <p class="text-muted mt-2">No scheduled content hub instances yet</p>
+                <button class="btn btn-primary" onclick="createHubInstance()">
+                    <i class="bi bi-plus-lg me-2"></i>Create Your First Instance
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-filter display-4 text-muted"></i>
+                <p class="text-muted mt-2">No instances match the current filters</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    for (const hub of filtered) {
+        html += `
+            <div class="instance-card">
+                <div class="instance-header">
+                    <span class="instance-name">${hub.name}</span>
+                    <span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">
+                        ${hub.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+                <p class="text-muted small mb-2">${hub.description || 'No description'}</p>
+                <div class="instance-stats">
+                    <span><i class="bi bi-robot me-1"></i>${hub.bot_count} bots</span>
+                    <span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span>
+                </div>
+                <div class="mt-2">
+                    <a href="/dashboard/hubs" class="btn btn-sm btn-theme"
+                       onclick="localStorage.setItem('openHubId', ${hub.id})">
+                        <i class="bi bi-gear me-1"></i>Configure
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+    document.getElementById('totalInstances').textContent = allInstances.length;
+
+    // Populate activity filter dropdown
+    const activityFilterMenu = document.getElementById('activityInstanceDropdown')?.closest('.dropdown')?.querySelector('.instance-dropdown-menu');
+    if (activityFilterMenu) {
+        activityFilterMenu.innerHTML = '<a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>';
+        allInstances.forEach(hub => {
+            activityFilterMenu.innerHTML += `<a class="dropdown-item instance-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+
+        // Attach event handlers for instance filter items
+        document.querySelectorAll('.instance-filter-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const value = this.dataset.value;
+                const text = this.textContent;
+                document.getElementById('activityInstanceValue').value = value;
+                document.getElementById('activityInstanceDropdown').textContent = text;
+                document.querySelectorAll('.instance-filter-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                loadActivity();
+            });
+        });
+    }
+}
+
+async function loadActivity() {
+    try {
+        const hiddenInput = document.getElementById('activityInstanceValue');
+        const selectedHubId = hiddenInput ? hiddenInput.value : '';
+        let url = '/tools/api/executions?tool_type=scheduled_content&limit=20';
+        if (selectedHubId) {
+            url += `&hub_id=${selectedHubId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const container = document.getElementById('activityLog');
+
+        if (!data.executions || data.executions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state py-3">
+                    <i class="bi bi-activity" style="font-size: 2rem;"></i>
+                    <p class="mb-0">No recent activity</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        data.executions.forEach(exec => {
+            const time = new Date(exec.created_at).toLocaleString();
+            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
+
+            html += `
+                <div class="activity-log-item">
+                    <div class="log-time">${time}</div>
+                    <div class="log-content">${exec.operation}</div>
+                    <div class="log-status">
+                        <span class="${statusClass}">${exec.status}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading activity:', error);
+    }
+}
+
+function createHubInstance() {
+    // Navigate to hubs page with pre-selected task type
+    localStorage.setItem('createHubTaskType', 'scheduled_content');
+    window.location.href = '/dashboard/hubs';
+}
+
+function updatePreview() {
+    const message = document.getElementById('simulationMessage').value;
+    const schedule = document.getElementById('simulationScheduleValue').value;
+
+    document.getElementById('previewContent').textContent = message || 'Your message will appear here...';
+
+    let scheduleText = 'Now';
+    if (schedule === 'exact') {
+        scheduleText = 'Specific date & time';
+    } else if (schedule === 'relative') {
+        scheduleText = 'After delay';
+    } else if (schedule === 'recurring') {
+        scheduleText = 'Recurring schedule';
+    }
+
+    document.getElementById('previewTime').textContent = `Scheduled for: ${scheduleText}`;
+}
+
+function runSimulation() {
+    // Animate the message bubble
+    const preview = document.getElementById('simulationPreview');
+    const bubble = preview.querySelector('.message-bubble');
+
+    bubble.style.transform = 'scale(0.95)';
+    bubble.style.opacity = '0.5';
+
+    setTimeout(() => {
+        bubble.style.transform = 'scale(1)';
+        bubble.style.opacity = '1';
+        bubble.style.background = '#25D366';
+        bubble.style.color = 'white';
+
+        setTimeout(() => {
+            bubble.style.background = '#dcf8c6';
+            bubble.style.color = 'inherit';
+        }, 1000);
+    }, 200);
+
+    // Show toast
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed bottom-0 end-0 p-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <i class="bi bi-check-circle text-success me-2"></i>
+                <strong class="me-auto">Simulation Complete</strong>
+                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+            <div class="toast-body">
+                This is how your message would be delivered. Create a hub instance to start scheduling real messages!
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+{% endblock %}

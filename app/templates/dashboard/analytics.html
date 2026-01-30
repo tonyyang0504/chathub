@@ -1,0 +1,695 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - WhatsApp Bot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    /* Softer icon colors to match light card backgrounds */
+    .stat-card .text-primary {
+        color: rgba(13, 110, 253, 0.7) !important;
+    }
+    .stat-card .text-purple {
+        color: rgba(111, 66, 193, 0.7) !important;
+    }
+    .stat-card .text-info {
+        color: rgba(13, 202, 240, 0.7) !important;
+    }
+    .stat-card .text-warning {
+        color: rgba(255, 193, 7, 0.7) !important;
+    }
+
+    /* Custom purple card styling */
+    .bg-purple {
+        background-color: rgba(111, 66, 193, 0.1) !important;
+    }
+    .border-purple {
+        border-color: rgba(111, 66, 193, 0.4) !important;
+    }
+
+    /* Custom Model Dropdown */
+    .model-dropdown {
+        position: relative;
+        width: 100%;
+        min-width: 150px;
+    }
+
+    .model-dropdown-btn {
+        width: 100%;
+        text-align: left;
+        border-radius: 20px;
+        padding: 10px 18px;
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .model-dropdown-btn:hover,
+    .model-dropdown-btn:focus,
+    .model-dropdown-btn:active,
+    .model-dropdown-btn.show,
+    .model-dropdown-btn:focus-visible,
+    .model-dropdown-btn:active:focus {
+        background: var(--bs-body-bg) !important;
+        border-color: #25D366 !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    .model-dropdown-btn::after {
+        margin-left: auto;
+    }
+
+    .model-dropdown-menu {
+        width: 100%;
+        max-height: 300px;
+        overflow: hidden;
+        border-radius: 12px;
+        padding: 0;
+        margin-top: 4px !important;
+    }
+
+    .model-dropdown-menu-inner {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .model-dropdown-menu .dropdown-item {
+        padding: 8px 16px 8px 24px;
+        font-size: 0.9rem;
+    }
+
+    .model-dropdown-menu .dropdown-item:hover {
+        background-color: var(--bs-primary);
+        color: white;
+        border-radius: 0;
+    }
+
+    .model-dropdown-menu .dropdown-item.selected {
+        font-weight: 500;
+    }
+
+    .model-dropdown-menu .dropdown-item.selected::before {
+        content: "✓ ";
+    }
+
+    /* Sortable table headers */
+    th[data-sort] {
+        user-select: none;
+        transition: background-color 0.15s;
+    }
+
+    th[data-sort]:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Analytics</h2>
+        <p class="text-muted">Monitor your bot performance and usage statistics</p>
+    </div>
+    <div class="col-auto">
+        <input type="hidden" id="botSelectorValue" value="">
+        <div class="dropdown model-dropdown">
+            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="botSelectorDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                All Bots
+            </button>
+            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="botSelectorDropdown">
+                <div class="model-dropdown-menu-inner" id="botSelectorOptions">
+                    <a class="dropdown-item bot-selector-item selected" href="#" data-value="">All Bots</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-primary bg-opacity-10 border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Messages</h6>
+                        <h2 class="mb-0" id="statTotalMessages">-</h2>
+                    </div>
+                    <i class="bi bi-envelope fs-1 text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-purple border-purple">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Active Conversations</h6>
+                        <h2 class="mb-0" id="statActiveConvs">-</h2>
+                    </div>
+                    <i class="bi bi-chat-dots fs-1 text-purple"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-info bg-opacity-10 border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Messages Today</h6>
+                        <h2 class="mb-0" id="statMessagesToday">-</h2>
+                    </div>
+                    <i class="bi bi-calendar-check fs-1 text-info"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-warning bg-opacity-10 border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Avg Response Time</h6>
+                        <h2 class="mb-0" id="statAvgResponse">-</h2>
+                    </div>
+                    <i class="bi bi-clock fs-1 text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Messages Chart -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Messages Over Time</h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary active" data-range="7">7 Days</button>
+                    <button class="btn btn-outline-secondary" data-range="30">30 Days</button>
+                    <button class="btn btn-outline-secondary" data-range="90">90 Days</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="messagesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Conversations -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top Conversations</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush" id="topConversations">
+                    <li class="list-group-item text-center py-3">
+                        <div class="spinner-border spinner-border-sm"></div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <!-- Message Types -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Message Types</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="messageTypesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hourly Activity -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Activity by Hour</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Stats Table -->
+<div class="row mt-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>Daily Statistics</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%; cursor: pointer;" data-sort="date" onclick="sortDailyTable('date')">
+                                    Date <i class="bi bi-arrow-down-up text-muted ms-1" id="sort-icon-date"></i>
+                                </th>
+                                <th class="text-center" style="width: 18%; cursor: pointer;" data-sort="messages_received" onclick="sortDailyTable('messages_received')">
+                                    Messages Received <i class="bi bi-arrow-down-up text-muted ms-1" id="sort-icon-messages_received"></i>
+                                </th>
+                                <th class="text-center" style="width: 18%; cursor: pointer;" data-sort="messages_sent" onclick="sortDailyTable('messages_sent')">
+                                    Messages Sent <i class="bi bi-arrow-down-up text-muted ms-1" id="sort-icon-messages_sent"></i>
+                                </th>
+                                <th class="text-center" style="width: 18%; cursor: pointer;" data-sort="active_chats" onclick="sortDailyTable('active_chats')">
+                                    Active Chats <i class="bi bi-arrow-down-up text-muted ms-1" id="sort-icon-active_chats"></i>
+                                </th>
+                                <th class="text-center" style="width: 21%; cursor: pointer;" data-sort="new_conversations" onclick="sortDailyTable('new_conversations')">
+                                    New Conversations <i class="bi bi-arrow-down-up text-muted ms-1" id="sort-icon-new_conversations"></i>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyStatsTable">
+                            <tr>
+                                <td colspan="5" class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let messagesChart, messageTypesChart, hourlyChart;
+    let selectedBotId = null;
+    let selectedRange = 7;
+    let dailyStatsData = [];
+    let currentSortColumn = 'date';
+    let currentSortDirection = 'desc'; // desc = newest/highest first
+
+    async function loadBots() {
+        try {
+            const res = await fetch('/api/bots');
+            const data = await res.json();
+
+            const container = document.getElementById('botSelectorOptions');
+            data.bots.forEach(bot => {
+                const item = document.createElement('a');
+                item.className = 'dropdown-item bot-selector-item';
+                item.href = '#';
+                item.setAttribute('data-value', bot.id);
+                item.textContent = bot.name;
+                container.appendChild(item);
+            });
+
+            // Setup click handlers for dropdown items
+            setupBotSelectorDropdown();
+        } catch (e) {
+            console.error('Error loading bots:', e);
+        }
+    }
+
+    async function loadAnalytics() {
+        // Load overview stats
+        try {
+            const res = await fetch('/api/analytics/overview');
+            const stats = await res.json();
+
+            document.getElementById('statTotalMessages').textContent = stats.total_messages || 0;
+            document.getElementById('statActiveConvs').textContent = stats.total_conversations || 0;
+            document.getElementById('statMessagesToday').textContent = stats.messages_today || 0;
+            document.getElementById('statAvgResponse').textContent = stats.avg_response_time || 'N/A';
+        } catch (e) {
+            console.error('Error loading overview:', e);
+        }
+
+        // Load daily stats for chart
+        await loadDailyStats();
+        await loadTopConversations();
+    }
+
+    async function loadDailyStats() {
+        try {
+            const url = selectedBotId
+                ? `/api/bots/${selectedBotId}/analytics/daily?days=${selectedRange}`
+                : `/api/analytics/daily?days=${selectedRange}`;
+            const res = await fetch(url);
+
+            if (!res.ok) {
+                console.error('Daily stats API error:', res.status);
+                // Show empty charts
+                updateMessagesChart([]);
+                updateDailyTable([]);
+                updateHourlyChart([]);
+                updateMessageTypesChart({ received: 0, sent: 0 });
+                return;
+            }
+
+            const data = await res.json();
+
+            updateMessagesChart(data.daily_stats || []);
+            updateDailyTable(data.daily_stats || []);
+            updateHourlyChart(data.hourly_stats || []);
+            updateMessageTypesChart(data.message_types || { received: 0, sent: 0 });
+        } catch (e) {
+            console.error('Error loading daily stats:', e);
+            // Show empty charts on error
+            updateMessagesChart([]);
+            updateDailyTable([]);
+            updateHourlyChart([]);
+            updateMessageTypesChart({ received: 0, sent: 0 });
+        }
+    }
+
+    async function loadTopConversations() {
+        try {
+            const list = document.getElementById('topConversations');
+
+            // Aggregate from all bots
+            const res = await fetch('/api/bots');
+            if (!res.ok) {
+                throw new Error('Failed to fetch bots');
+            }
+            const botsData = await res.json();
+
+            if (!botsData.bots || botsData.bots.length === 0) {
+                list.innerHTML = '<li class="list-group-item text-muted text-center">No bots yet</li>';
+                return;
+            }
+
+            let allConvs = [];
+            for (const bot of botsData.bots) {
+                try {
+                    const convRes = await fetch(`/api/conversations/bot/${bot.id}`);
+                    if (convRes.ok) {
+                        const convData = await convRes.json();
+                        const conversations = convData.conversations || [];
+                        allConvs.push(...conversations.map(c => ({...c, bot_name: bot.name})));
+                    }
+                } catch (convErr) {
+                    console.warn(`Error loading conversations for bot ${bot.id}:`, convErr);
+                }
+            }
+
+            const topConvs = allConvs
+                .sort((a, b) => (b.message_count || 0) - (a.message_count || 0))
+                .slice(0, 5);
+
+            if (topConvs.length === 0) {
+                list.innerHTML = '<li class="list-group-item text-muted text-center">No conversations yet</li>';
+                return;
+            }
+
+            list.innerHTML = topConvs.map((conv, i) => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-${i < 3 ? 'warning' : 'secondary'} me-2">#${i + 1}</span>
+                        ${conv.chat_name || conv.chat_id}
+                        <br>
+                        <small class="text-muted">${conv.bot_name}</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${conv.message_count || 0}</span>
+                </li>
+            `).join('');
+        } catch (e) {
+            console.error('Error loading top conversations:', e);
+            document.getElementById('topConversations').innerHTML =
+                '<li class="list-group-item text-muted text-center">Error loading conversations</li>';
+        }
+    }
+
+    function updateMessagesChart(data) {
+        const ctx = document.getElementById('messagesChart').getContext('2d');
+
+        if (messagesChart) messagesChart.destroy();
+
+        // Reverse data for chart (oldest to newest, left to right)
+        const chartData = [...data].reverse();
+        const labels = chartData.map(d => formatChartDate(d.date));
+        const received = chartData.map(d => d.messages_received || 0);
+        const sent = chartData.map(d => d.messages_sent || 0);
+
+        messagesChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Received',
+                        data: received,
+                        backgroundColor: 'rgba(37, 211, 102, 0.7)',
+                        borderWidth: 0
+                    },
+                    {
+                        label: 'Sent',
+                        data: sent,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderWidth: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 12,
+                            useBorderRadius: true,
+                            borderRadius: 2
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateMessageTypesChart(data) {
+        const ctx = document.getElementById('messageTypesChart').getContext('2d');
+
+        if (messageTypesChart) messageTypesChart.destroy();
+
+        messageTypesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Received', 'Sent'],
+                datasets: [{
+                    data: [data.received || 0, data.sent || 0],
+                    backgroundColor: [
+                        'rgba(37, 211, 102, 0.8)',
+                        'rgba(59, 130, 246, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 12,
+                            useBorderRadius: true,
+                            borderRadius: 2
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateHourlyChart(data) {
+        const ctx = document.getElementById('hourlyChart').getContext('2d');
+
+        if (hourlyChart) hourlyChart.destroy();
+
+        const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+        const values = data.length ? data : Array(24).fill(0);
+
+        hourlyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Messages',
+                    data: values,
+                    fill: true,
+                    backgroundColor: 'rgba(37, 211, 102, 0.2)',
+                    borderColor: 'rgba(37, 211, 102, 1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function updateDailyTable(data) {
+        // Store data for sorting
+        dailyStatsData = data;
+        renderDailyTable();
+    }
+
+    function renderDailyTable() {
+        const tbody = document.getElementById('dailyStatsTable');
+
+        if (dailyStatsData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+            return;
+        }
+
+        // Sort the data
+        const sortedData = [...dailyStatsData].sort((a, b) => {
+            let valA, valB;
+
+            if (currentSortColumn === 'date') {
+                valA = new Date(a.date);
+                valB = new Date(b.date);
+            } else {
+                valA = a[currentSortColumn] || 0;
+                valB = b[currentSortColumn] || 0;
+            }
+
+            if (currentSortDirection === 'asc') {
+                return valA > valB ? 1 : valA < valB ? -1 : 0;
+            } else {
+                return valA < valB ? 1 : valA > valB ? -1 : 0;
+            }
+        });
+
+        tbody.innerHTML = sortedData.map(day => `
+            <tr>
+                <td>${formatTableDate(day.date)}</td>
+                <td class="text-center">${day.messages_received || 0}</td>
+                <td class="text-center">${day.messages_sent || 0}</td>
+                <td class="text-center">${day.active_chats || 0}</td>
+                <td class="text-center">${day.new_conversations || 0}</td>
+            </tr>
+        `).join('');
+
+        // Update sort icons
+        updateSortIcons();
+    }
+
+    function sortDailyTable(column) {
+        if (currentSortColumn === column) {
+            // Toggle direction
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortColumn = column;
+            currentSortDirection = 'desc'; // Default to descending for new column
+        }
+        renderDailyTable();
+    }
+
+    function updateSortIcons() {
+        // Reset all icons
+        const columns = ['date', 'messages_received', 'messages_sent', 'active_chats', 'new_conversations'];
+        columns.forEach(col => {
+            const icon = document.getElementById(`sort-icon-${col}`);
+            if (icon) {
+                if (col === currentSortColumn) {
+                    icon.className = currentSortDirection === 'asc'
+                        ? 'bi bi-arrow-up ms-1'
+                        : 'bi bi-arrow-down ms-1';
+                    icon.classList.remove('text-muted');
+                } else {
+                    icon.className = 'bi bi-arrow-down-up text-muted ms-1';
+                }
+            }
+        });
+    }
+
+    function formatChartDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    function formatTableDate(dateStr) {
+        return new Date(dateStr).toLocaleDateString([], {
+            weekday: 'short', month: 'short', day: 'numeric'
+        });
+    }
+
+    function generateMockHourlyData() {
+        // Generate sample hourly distribution
+        return Array.from({length: 24}, () => Math.floor(Math.random() * 10));
+    }
+
+    // Setup bot selector dropdown
+    function setupBotSelectorDropdown() {
+        document.querySelectorAll('.bot-selector-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = this.closest('.model-dropdown');
+                const btn = dropdown.querySelector('.model-dropdown-btn');
+                const hiddenInput = document.getElementById('botSelectorValue');
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+
+                btn.textContent = text;
+                hiddenInput.value = value;
+
+                dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+
+                bootstrap.Dropdown.getInstance(btn)?.hide();
+
+                // Trigger data reload
+                selectedBotId = value || null;
+                loadAnalytics();
+            });
+        });
+    }
+
+    document.querySelectorAll('[data-range]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-range]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            selectedRange = parseInt(e.target.dataset.range);
+            loadDailyStats();
+        });
+    });
+
+    // Initialize
+    loadBots();
+    loadAnalytics();
+</script>
+{% endblock %}

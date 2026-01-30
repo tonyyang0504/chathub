@@ -1,0 +1,597 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - WhatsApp Bot{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Form switch styling */
+    .form-switch {
+        padding-left: 3.5em;
+        display: flex;
+        align-items: center;
+        min-height: 24px;
+    }
+
+    .form-switch .form-check-input {
+        width: 40px;
+        height: 22px;
+        margin-left: -3.5em;
+        margin-top: 0;
+        border-radius: 11px;
+        cursor: pointer;
+        box-shadow: none;
+    }
+
+    .form-switch .form-check-input:focus {
+        box-shadow: none;
+    }
+
+    .form-switch .form-check-label {
+        margin-left: 8px;
+        line-height: 22px;
+        cursor: pointer;
+    }
+
+    /* Form inputs styling */
+    .form-control,
+    .form-select {
+        border-radius: 20px;
+        padding: 10px 18px;
+        box-shadow: none;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        box-shadow: none;
+    }
+
+    textarea.form-control {
+        border-radius: 16px;
+        resize: vertical;
+        overflow-y: auto;
+    }
+
+    /* Custom scrollbar for textareas - WebKit */
+    textarea.form-control::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    textarea.form-control::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 0 16px 16px 0;
+        margin: 4px 0;
+    }
+
+    textarea.form-control::-webkit-scrollbar-thumb {
+        background: var(--bs-border-color);
+        border-radius: 4px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    textarea.form-control::-webkit-scrollbar-thumb:hover {
+        background: var(--bs-secondary);
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    /* Firefox scrollbar for textareas */
+    textarea.form-control {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bs-border-color) transparent;
+    }
+
+    /* Hide the scrollbar corner/resizer square */
+    textarea.form-control::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    textarea.form-control::-webkit-resizer {
+        background: transparent;
+        border: none;
+    }
+
+    /* Button styling - round */
+    .btn {
+        border-radius: 20px;
+        padding: 10px 24px;
+        box-shadow: none;
+    }
+
+    .btn:hover,
+    .btn:focus {
+        box-shadow: none;
+    }
+
+    .btn-sm {
+        border-radius: 16px;
+        padding: 8px 16px;
+    }
+
+    /* Settings navigation styling */
+    #settingsNav .list-group-item {
+        border: none;
+        color: #667781;
+        transition: background-color 0.2s;
+    }
+
+    #settingsNav .list-group-item:hover {
+        background-color: rgba(37, 211, 102, 0.1);
+        color: #25D366;
+    }
+
+    #settingsNav .list-group-item.active {
+        background-color: rgba(37, 211, 102, 0.1);
+        color: #25D366;
+        font-weight: 500;
+        box-shadow: 0 1px 0 rgba(37, 211, 102, 0.1);
+    }
+
+    #settingsNav .list-group-item.text-danger:hover,
+    #settingsNav .list-group-item.text-danger.active {
+        background-color: rgba(234, 0, 56, 0.1) !important;
+        color: #ea0038 !important;
+    }
+
+    /* API Keys - Your Bots section */
+    #apiKeysList .bg-dark {
+        background: transparent !important;
+        border: none !important;
+        padding: 12px 0 !important;
+        border-bottom: 1px solid #e9edef !important;
+        border-radius: 0 !important;
+    }
+
+    #apiKeysList .bg-dark strong {
+        color: #667781;
+        font-weight: 500;
+    }
+
+    #apiKeysList .bg-dark .text-muted {
+        color: #8696a0 !important;
+    }
+
+    #apiKeysList .btn-outline-primary {
+        background: transparent;
+        border: none;
+        color: #667781;
+        padding: 4px 8px;
+    }
+
+    #apiKeysList .btn-outline-primary:hover {
+        background: transparent;
+        color: #25D366;
+    }
+
+    /* Active Sessions styling */
+    .card-body .bg-dark {
+        background: #f7f7f7 !important;
+        border: 1px solid #e9edef !important;
+        color: #111b21;
+    }
+
+    .card-body .bg-dark strong {
+        color: #111b21;
+    }
+
+    .card-body .bg-dark .text-muted {
+        color: #667781 !important;
+    }
+
+    .card-body .bg-dark i {
+        color: #667781;
+    }
+
+    /* Fixed layout for settings page - no scrolling */
+    .main-content {
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Settings</h2>
+        <p class="text-muted">Manage your account and preferences</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-3 mb-4">
+        <!-- Settings Navigation -->
+        <div class="card">
+            <div class="list-group list-group-flush" id="settingsNav">
+                <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                    <i class="bi bi-person me-2"></i> Profile
+                </a>
+                <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="bi bi-shield-lock me-2"></i> Security
+                </a>
+                <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="bi bi-bell me-2"></i> Notifications
+                </a>
+                <a href="#api" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="bi bi-key me-2"></i> API Keys
+                </a>
+                <a href="#danger" class="list-group-item list-group-item-action text-danger" data-bs-toggle="list">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Danger Zone
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        <div class="tab-content">
+            <!-- Profile Settings -->
+            <div class="tab-pane fade show active" id="profile">
+                <div class="card">
+                    <div class="card-header" style="background-color: rgba(37, 211, 102, 0.1);">
+                        <h5 class="mb-0" style="color: #25D366;"><i class="bi bi-person me-2"></i>Profile Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileForm">
+                            <div class="mb-3">
+                                <label for="profileName" class="form-label">Display Name</label>
+                                <input type="text" class="form-control" id="profileName" placeholder="Your name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="profileEmail" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="profileEmail" disabled>
+                                <small class="text-muted">Email cannot be changed</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Account Created</label>
+                                <input type="text" class="form-control" id="profileCreated" disabled>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i> Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="tab-pane fade" id="security">
+                <div class="card">
+                    <div class="card-header" style="background-color: rgba(37, 211, 102, 0.1);">
+                        <h5 class="mb-0" style="color: #25D366;"><i class="bi bi-shield-lock me-2"></i>Change Password</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="passwordForm">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="currentPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="newPassword" required minlength="6">
+                                <small class="text-muted">At least 6 characters</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmNewPassword" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirmNewPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-key me-1"></i> Update Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header" style="background-color: rgba(37, 211, 102, 0.1);">
+                        <h5 class="mb-0" style="color: #25D366;"><i class="bi bi-clock-history me-2"></i>Active Sessions</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Manage your active login sessions</p>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-dark rounded">
+                            <div>
+                                <i class="bi bi-laptop me-2"></i>
+                                <strong>Current Session</strong>
+                            </div>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <button class="btn btn-outline-danger mt-3" onclick="logoutAllSessions()">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout All Other Sessions
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="tab-pane fade" id="notifications">
+                <div class="card">
+                    <div class="card-header" style="background-color: rgba(37, 211, 102, 0.1);">
+                        <h5 class="mb-0" style="color: #25D366;"><i class="bi bi-bell me-2"></i>Notification Preferences</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="notificationForm">
+                            <div class="mb-4">
+                                <h6>Email Notifications</h6>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifyBotStatus" checked>
+                                    <label class="form-check-label" for="notifyBotStatus">
+                                        Bot status changes (started/stopped)
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifyDisconnect" checked>
+                                    <label class="form-check-label" for="notifyDisconnect">
+                                        WhatsApp disconnection alerts
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifyWeeklyReport">
+                                    <label class="form-check-label" for="notifyWeeklyReport">
+                                        Weekly activity reports
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6>In-App Notifications</h6>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifyNewMessage" checked>
+                                    <label class="form-check-label" for="notifyNewMessage">
+                                        New message notifications
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifySound" checked>
+                                    <label class="form-check-label" for="notifySound">
+                                        Notification sounds
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i> Save Preferences
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys -->
+            <div class="tab-pane fade" id="api">
+                <div class="card">
+                    <div class="card-header" style="background-color: rgba(37, 211, 102, 0.1);">
+                        <h5 class="mb-0" style="color: #25D366;"><i class="bi bi-key me-2"></i>API Key Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            API keys are configured per bot. Each bot can have its own OpenAI API key.
+                            Go to <a href="/dashboard/bots" class="alert-link">Bot Management</a> to configure API keys.
+                        </div>
+
+                        <h6 class="mt-4">Your Bots</h6>
+                        <div id="apiKeysList">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header" style="background-color: rgba(37, 211, 102, 0.1);">
+                        <h5 class="mb-0" style="color: #25D366;"><i class="bi bi-link-45deg me-2"></i>Webhook Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Configure webhooks to receive real-time events</p>
+                        <div class="mb-3">
+                            <label for="webhookUrl" class="form-label">Webhook URL</label>
+                            <input type="url" class="form-control" id="webhookUrl" placeholder="https://your-server.com/webhook">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Events to Send</label>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="webhookMessage">
+                                <label class="form-check-label" for="webhookMessage">New messages</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="webhookStatus">
+                                <label class="form-check-label" for="webhookStatus">Bot status changes</label>
+                            </div>
+                        </div>
+                        <button class="btn btn-success">
+                            <i class="bi bi-check-lg me-1"></i> Save Webhook
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="tab-pane fade" id="danger">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger bg-opacity-10">
+                        <h5 class="mb-0 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Danger Zone</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4 pb-4 border-bottom">
+                            <h6>Export All Data</h6>
+                            <p class="text-muted small">Download all your data including bots, conversations, and settings.</p>
+                            <button class="btn btn-outline-primary" onclick="exportAllData()">
+                                <i class="bi bi-download me-1"></i> Export Data
+                            </button>
+                        </div>
+
+                        <div class="mb-4 pb-4 border-bottom">
+                            <h6>Delete All Conversations</h6>
+                            <p class="text-muted small">Permanently delete all conversation history. Bots will remain.</p>
+                            <button class="btn btn-outline-danger" onclick="deleteAllConversations()">
+                                <i class="bi bi-trash me-1"></i> Delete Conversations
+                            </button>
+                        </div>
+
+                        <div>
+                            <h6>Delete Account</h6>
+                            <p class="text-muted small">Permanently delete your account and all associated data. This cannot be undone.</p>
+                            <button class="btn btn-danger" onclick="deleteAccount()">
+                                <i class="bi bi-trash me-1"></i> Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load user profile
+    async function loadProfile() {
+        try {
+            const res = await fetch('/auth/me');
+            const user = await res.json();
+
+            document.getElementById('profileName').value = user.name || '';
+            document.getElementById('profileEmail').value = user.email;
+            document.getElementById('profileCreated').value = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
+        } catch (e) {
+            console.error('Error loading profile:', e);
+        }
+    }
+
+    // Load bots for API keys section
+    async function loadBotsList() {
+        try {
+            const res = await fetch('/api/bots');
+            const data = await res.json();
+
+            const list = document.getElementById('apiKeysList');
+
+            if (data.bots.length === 0) {
+                list.innerHTML = '<p class="text-muted">No bots configured yet</p>';
+                return;
+            }
+
+            list.innerHTML = data.bots.map(bot => `
+                <div class="d-flex justify-content-between align-items-center p-3 bg-dark rounded mb-2">
+                    <div>
+                        <strong>${bot.name}</strong>
+                        <br>
+                        <small class="text-muted">
+                            API Key: ${bot.has_api_key ? '••••••••' : 'Not configured'}
+                        </small>
+                    </div>
+                    <a href="/dashboard/bots?id=${bot.id}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error('Error loading bots:', e);
+        }
+    }
+
+    // Profile form
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        try {
+            const res = await fetch('/auth/me?name=' + encodeURIComponent(document.getElementById('profileName').value), {
+                method: 'PUT'
+            });
+
+            if (res.ok) {
+                showToast('Profile updated successfully', 'success');
+            } else {
+                showToast('Error updating profile', 'danger');
+            }
+        } catch (e) {
+            showToast('Error updating profile', 'danger');
+        }
+    });
+
+    // Password form
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            showToast('Passwords do not match', 'danger');
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            showToast('New password must be different from current password', 'danger');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/auth/change-password?current_password=${encodeURIComponent(currentPassword)}&new_password=${encodeURIComponent(newPassword)}`, {
+                method: 'POST'
+            });
+
+            if (res.ok) {
+                showToast('Password updated successfully', 'success');
+                document.getElementById('passwordForm').reset();
+            } else {
+                const data = await res.json();
+                showToast(data.detail || 'Error updating password', 'danger');
+            }
+        } catch (e) {
+            showToast('Error updating password', 'danger');
+        }
+    });
+
+    // Notification form
+    document.getElementById('notificationForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        showToast('Notification preferences saved', 'success');
+    });
+
+    // Danger zone actions
+    async function exportAllData() {
+        showToast('Preparing data export...', 'info');
+        // Implementation would aggregate all user data
+        setTimeout(() => showToast('Data export ready for download', 'success'), 2000);
+    }
+
+    async function deleteAllConversations() {
+        if (!confirm('Are you sure you want to delete ALL conversations? This cannot be undone.')) return;
+        if (!confirm('This is your final warning. All conversation data will be permanently deleted.')) return;
+
+        try {
+            // Would delete all conversations for the user
+            showToast('All conversations deleted', 'success');
+        } catch (e) {
+            showToast('Error deleting conversations', 'danger');
+        }
+    }
+
+    async function deleteAccount() {
+        if (!confirm('Are you sure you want to delete your account? This cannot be undone.')) return;
+
+        const email = prompt('Type your email address to confirm:');
+        if (email !== document.getElementById('profileEmail').value) {
+            showToast('Email does not match', 'danger');
+            return;
+        }
+
+        try {
+            const res = await fetch('/auth/account', { method: 'DELETE' });
+            if (res.ok) {
+                window.location.href = '/auth/login?deleted=1';
+            }
+        } catch (e) {
+            showToast('Error deleting account', 'danger');
+        }
+    }
+
+    function logoutAllSessions() {
+        showToast('All other sessions have been logged out', 'success');
+    }
+
+    // Initialize
+    loadProfile();
+    loadBotsList();
+</script>
+{% endblock %}

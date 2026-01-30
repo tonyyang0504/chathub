@@ -1,0 +1,51 @@
+# WhatsApp Bot Dependencies
+
+# OpenAI API client
+openai>=1.0.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Browser automation for WhatsApp Web
+playwright>=1.40.0
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Database
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1,<5.0.0
+python-multipart>=0.0.6
+email-validator>=2.0.0
+
+# Templates
+jinja2>=3.1.0
+
+# Encryption for API keys
+cryptography>=41.0.0
+
+# Document processing
+pypdf>=3.0.0
+PyPDF2>=3.0.0
+python-docx>=1.0.0
+openpyxl>=3.1.0
+xlrd>=2.0.0
+python-pptx>=0.6.0
+
+# Task scheduling
+apscheduler>=3.10.0
+
+# HTTP client (async)
+httpx>=0.25.0
+
+# Note: After installing, run:
+# playwright install chromium
+
+# To run the web dashboard:
+# uvicorn app.main:app --reload

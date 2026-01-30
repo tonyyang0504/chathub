@@ -1,0 +1,1901 @@
+{% extends "base.html" %}
+
+{% block title %}AI Agents - WhatsApp Bot Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+/* Hero Section */
+.tool-hero {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+.tool-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 600px;
+}
+
+/* Workflow Section */
+.workflow-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 2rem;
+    position: relative;
+}
+.workflow-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+    z-index: 0;
+}
+.workflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    max-width: 180px;
+}
+.workflow-step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+.workflow-step h5 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.workflow-step p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+.stat-card .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+.stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+.stat-card .stat-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+.stat-card.success .stat-icon { color: #28a745; }
+.stat-card.warning .stat-icon { color: #ffc107; }
+.stat-card.info .stat-icon { color: #ff6b6b; }
+
+/* Simulation Section */
+.simulation-section {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.simulation-section h3 {
+    color: #333;
+}
+
+/* Agent Response Demo (similar to contact-profile-demo) */
+.agent-response-demo {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.agent-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.agent-demo-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+/* Apply same color classes to demo avatar */
+.agent-demo-avatar.color-coral { background: #ff6b6b; }
+.agent-demo-avatar.color-blue { background: #667eea; }
+.agent-demo-avatar.color-teal { background: #11998e; }
+.agent-demo-avatar.color-orange { background: #fa709a; }
+.agent-demo-avatar.color-cyan { background: #4facfe; }
+.agent-demo-avatar.color-purple { background: #a18cd1; }
+.agent-demo-avatar.color-green { background: #56ab2f; }
+.agent-demo-avatar.color-indigo { background: #6366f1;
+    font-size: 1.5rem;
+}
+
+.response-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.response-tag {
+    background: #f0f0f0;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.response-tag.success { background: #d4edda; color: #155724; }
+.response-tag.info { background: #ffebee; color: #c62828; }
+.response-tag.warning { background: #fff3cd; color: #856404; }
+
+.response-content-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    min-height: 100px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+.response-content-box::-webkit-scrollbar {
+    width: 8px;
+}
+.response-content-box::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0 8px 8px 0;
+}
+.response-content-box::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+}
+.response-content-box::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+}
+
+/* Markdown content styling */
+.response-content-box p {
+    margin-bottom: 0.75rem;
+}
+.response-content-box p:last-child {
+    margin-bottom: 0;
+}
+.response-content-box ul, .response-content-box ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+.response-content-box li {
+    margin-bottom: 0.25rem;
+}
+.response-content-box code {
+    background: rgba(0, 0, 0, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+.response-content-box pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 0.75rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+.response-content-box pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+.response-content-box strong {
+    font-weight: 600;
+}
+.response-content-box h1, .response-content-box h2, .response-content-box h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.5rem;
+}
+.response-content-box blockquote {
+    border-left: 3px solid #ff6b6b;
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+    color: #666;
+}
+
+/* JSON response styling */
+.json-response {
+    font-size: 0.9rem;
+}
+.json-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.json-row:last-child {
+    border-bottom: none;
+}
+.json-label {
+    font-weight: 500;
+    color: #555;
+    font-size: 0.85rem;
+}
+.json-value {
+    color: #333;
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+.json-section {
+    margin: 0.75rem 0;
+}
+.json-section > .json-label {
+    font-weight: 600;
+    color: #ff6b6b;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.json-nested {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.json-item {
+    padding: 0.25rem 0;
+}
+
+.execution-meter {
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.execution-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+/* Theme Button */
+.btn-theme {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border: none;
+    color: white;
+}
+.btn-theme:hover, .btn-theme:focus {
+    background: linear-gradient(135deg, #ff5252 0%, #d94d1a 100%);
+    color: white;
+}
+
+/* Instance Filter Dropdown */
+.instance-dropdown {
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+}
+.instance-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+.instance-dropdown-btn::after {
+    margin-left: auto;
+}
+.instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
+    border-color: #ff6b6b;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.instance-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.instance-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.instance-dropdown-menu .dropdown-item:hover {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+}
+.instance-dropdown-menu .dropdown-item.selected {
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+    font-weight: 500;
+}
+
+/* Simulation Textarea */
+.simulation-textarea {
+    border-radius: 12px;
+    padding: 12px 16px;
+    resize: vertical;
+    overflow-y: auto;
+}
+.simulation-textarea:focus {
+    border-color: #ff6b6b;
+    box-shadow: none;
+    outline: none;
+}
+.simulation-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+.simulation-textarea::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0 12px 12px 0;
+    margin: 4px 0;
+}
+.simulation-textarea::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+}
+.simulation-textarea::-webkit-scrollbar-corner {
+    background: transparent;
+}
+.simulation-textarea::-webkit-resizer {
+    background: transparent;
+    border: none;
+}
+
+/* Agent Modal Form Inputs - Match dropdown styling */
+#agentModal .form-control {
+    border-radius: 20px;
+    padding: 10px 18px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    font-size: 0.875rem;
+}
+#agentModal .form-control:focus {
+    border-color: #ff6b6b;
+    box-shadow: none;
+    outline: none;
+}
+#agentModal .form-control::placeholder {
+    color: var(--bs-secondary);
+    opacity: 0.7;
+}
+
+/* Number inputs specific styling */
+#agentModal input[type="number"].form-control {
+    -moz-appearance: textfield;
+}
+#agentModal input[type="number"].form-control::-webkit-outer-spin-button,
+#agentModal input[type="number"].form-control::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Hub Form Switch - Consistent with other modals */
+.hub-form-switch {
+    padding-left: 3.5em;
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+}
+
+.hub-form-switch .form-check-input {
+    width: 40px;
+    height: 22px;
+    margin-left: -3.5em;
+    margin-top: 0;
+    border-radius: 11px;
+    cursor: pointer;
+}
+
+.hub-form-switch .form-check-input:checked {
+    background-color: var(--wa-teal);
+    border-color: var(--wa-teal);
+}
+
+.hub-form-switch .form-check-input:focus {
+    box-shadow: none;
+}
+
+.hub-form-switch .form-check-label {
+    margin-left: 8px;
+    line-height: 22px;
+    cursor: pointer;
+}
+
+/* Agent Cards */
+.agent-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.agent-card:hover {
+    border-color: #ff6b6b;
+}
+/* Agent card hover colors matching avatar colors */
+.agent-card.color-coral:hover { border-color: #ff6b6b; }
+.agent-card.color-blue:hover { border-color: #667eea; }
+.agent-card.color-teal:hover { border-color: #11998e; }
+.agent-card.color-orange:hover { border-color: #fa709a; }
+.agent-card.color-cyan:hover { border-color: #4facfe; }
+.agent-card.color-purple:hover { border-color: #a18cd1; }
+.agent-card.color-green:hover { border-color: #56ab2f; }
+.agent-card.color-indigo:hover { border-color: #6366f1; }
+.agent-card.running {
+    border-left: 4px solid var(--bs-success);
+}
+.agent-card.error {
+    border-left: 4px solid var(--bs-danger);
+}
+.agent-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+/* Random gradient colors for agent avatars */
+.agent-avatar.color-coral { background: #ff6b6b; }
+.agent-avatar.color-blue { background: #667eea; }
+.agent-avatar.color-teal { background: #11998e; }
+.agent-avatar.color-orange { background: #fa709a; }
+.agent-avatar.color-cyan { background: #4facfe; }
+.agent-avatar.color-purple { background: #a18cd1; }
+.agent-avatar.color-green { background: #56ab2f; }
+.agent-avatar.color-indigo { background: #6366f1; }
+.agent-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.agent-status.status-idle {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--bs-secondary);
+}
+.agent-status.status-running {
+    background: rgba(25, 135, 84, 0.15);
+    color: var(--bs-success);
+}
+.agent-status.status-error {
+    background: rgba(220, 53, 69, 0.15);
+    color: var(--bs-danger);
+}
+.agent-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+}
+.agent-stat {
+    text-align: center;
+}
+.agent-stat .value {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.agent-stat .label {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+}
+
+/* Template Cards */
+.template-card {
+    border: 2px dashed var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.template-card:hover {
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.05);
+}
+.template-card i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--bs-secondary);
+}
+.template-card:hover i {
+    color: #ff6b6b;
+}
+
+/* Execution/Activity Rows */
+.execution-row {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.execution-row:last-child {
+    border-bottom: none;
+}
+.execution-row:hover {
+    background: rgba(255, 107, 107, 0.05);
+}
+
+/* Pulse Animation */
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+.pulse-dot.running {
+    background: var(--bs-success);
+    animation: pulse 1.5s infinite;
+}
+.pulse-dot.idle { background: var(--bs-secondary); }
+.pulse-dot.error { background: var(--bs-danger); }
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+/* Feature List */
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+.feature-list li {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.feature-list li i {
+    color: #28a745;
+    font-size: 1.2rem;
+}
+
+/* Instances Section */
+.instances-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Activity Log */
+.activity-log {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.activity-log-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    transition: background 0.15s;
+}
+.activity-log-item:last-child {
+    border-bottom: none;
+}
+.activity-log-item:hover {
+    background: rgba(255, 107, 107, 0.05);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+.empty-state i {
+    color: var(--bs-secondary);
+    margin-bottom: 0.5rem;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-robot me-3"></i>AI Agents</h1>
+                <p>Create intelligent AI agents that automate conversations, classify messages, coordinate workflows,
+                   and analyze data. Deploy them across hubs or make them available globally.</p>
+                <button class="btn btn-light btn-lg mt-3" onclick="openAgentModal()">
+                    <i class="bi bi-plus-lg me-2"></i>Create Agent
+                </button>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-cpu" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3 class="mb-3">Overall Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="bi bi-robot"></i></div>
+            <div class="stat-value" id="statTotal">{{ stats.total }}</div>
+            <div class="stat-label">Total Agents</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="statActive">{{ stats.active }}</div>
+            <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-play-circle"></i></div>
+            <div class="stat-value" id="statRunning">{{ stats.running }}</div>
+            <div class="stat-label">Running Now</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-icon"><i class="bi bi-lightning"></i></div>
+            <div class="stat-value" id="statExecutions">0</div>
+            <div class="stat-label">Executions Today</div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-pencil-square"></i></div>
+                <h5>1. Define Agent</h5>
+                <p>Choose agent type, name it, and define its purpose and behavior</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-sliders"></i></div>
+                <h5>2. Configure Model</h5>
+                <p>Select AI model, write system prompt, set temperature and tokens</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-collection"></i></div>
+                <h5>3. Deploy to Hub</h5>
+                <p>Assign to specific hub or make globally available across all hubs</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-graph-up"></i></div>
+                <h5>4. Monitor & Optimize</h5>
+                <p>Track executions, analyze performance, and improve prompts</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div class="simulation-section">
+        <div class="row">
+            <div class="col-lg-6">
+                <h3><i class="bi bi-play-circle me-2"></i>Test an Agent</h3>
+                <p class="text-muted">Select an agent and enter a test message to see how it would respond.</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Select Agent</label>
+                    <input type="hidden" id="testAgentValue" value="">
+                    <div class="dropdown instance-dropdown" style="max-width: 100%;">
+                        <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="testAgentDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Select an agent...
+                        </button>
+                        <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="testAgentDropdown" id="testAgentOptions">
+                            <a class="dropdown-item" href="#" data-value="">Select an agent...</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Test Message</label>
+                    <textarea class="form-control simulation-textarea" id="testMessage" rows="4"
+                              placeholder="Type a message to test the agent's response...">Hello, I need help with my order status.</textarea>
+                </div>
+
+                <button class="btn btn-theme" onclick="testAgent()">
+                    <i class="bi bi-play me-2"></i>Test Agent
+                </button>
+
+                <hr class="my-4">
+
+                <h5>Key Features</h5>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check-circle-fill"></i> Multiple AI models (GPT-4, Claude, etc.)</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Custom system prompts for behavior control</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Temperature and token configuration</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Hub-specific or global deployment</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Real-time execution monitoring</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Agent Response Preview</h5>
+                <div class="agent-response-demo" id="agentResponseDemo">
+                    <div class="agent-header">
+                        <div class="agent-demo-avatar color-coral" id="previewAvatar"><i class="bi bi-robot"></i></div>
+                        <div>
+                            <strong id="previewAgentName">Select an Agent</strong>
+                            <div class="text-muted small" id="previewAgentType">Agent type will appear here</div>
+                        </div>
+                    </div>
+                    <div class="response-tags" id="responseTags">
+                        <span class="response-tag">Waiting for test...</span>
+                    </div>
+                    <div class="response-content-box" id="responseContent">
+                        <div class="text-center text-muted">
+                            <i class="bi bi-chat-dots" style="font-size: 1.5rem;"></i>
+                            <p class="mb-0 mt-2 small">Response will appear here</p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Execution Progress</span>
+                            <span class="small fw-bold" id="executionStatus">--</span>
+                        </div>
+                        <div class="execution-meter">
+                            <div class="execution-fill" id="executionFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="row text-center small">
+                        <div class="col-4">
+                            <div class="fw-bold" id="previewTokens">--</div>
+                            <div class="text-muted">Tokens Used</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold" id="previewTime">--</div>
+                            <div class="text-muted">Exec Time</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold" id="previewStatus">--</div>
+                            <div class="text-muted">Status</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Create Section -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-lightning me-2"></i>Quick Create</h3>
+        <p class="text-muted">Create an agent from a predefined template</p>
+        <div class="row g-3 mt-3">
+            <div class="col-6 col-md-3">
+                <div class="template-card" onclick="createFromTemplate('classifier')">
+                    <i class="bi bi-cpu"></i>
+                    <div class="fw-bold">Classifier</div>
+                    <div class="small text-muted">Route messages</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="template-card" onclick="createFromTemplate('responder')">
+                    <i class="bi bi-chat-dots"></i>
+                    <div class="fw-bold">Responder</div>
+                    <div class="small text-muted">Answer queries</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="template-card" onclick="createFromTemplate('coordinator')">
+                    <i class="bi bi-diagram-3"></i>
+                    <div class="fw-bold">Coordinator</div>
+                    <div class="small text-muted">Manage flow</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="template-card" onclick="createFromTemplate('analyzer')">
+                    <i class="bi bi-graph-up"></i>
+                    <div class="fw-bold">Analyzer</div>
+                    <div class="small text-muted">Process data</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agents List Section -->
+    <div class="instances-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-grid me-2"></i>Your Agents</h3>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="hubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="hubFilterOptions">
+                        <a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown">
+                        All Status
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item status-filter-item selected" href="#" data-value="">All Status</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="idle">Idle</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="running">Running</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="error">Error</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="refreshAgents()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="agentsContainer">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <span class="badge bg-secondary" id="agentCount">0 agents</span>
+        </div>
+    </div>
+
+    <!-- Templates Section -->
+    <div class="tool-card mb-4">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-file-earmark-code me-2"></i>Agent Templates</h5>
+        </div>
+        <div class="tool-card-body p-0" style="max-height: 250px; overflow-y: auto;" id="templatesContainer">
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="tool-card">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="activityAgentValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityAgentDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        All Agents
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="activityAgentDropdown" id="activityAgentOptions">
+                        <a class="dropdown-item activity-agent-item selected" href="#" data-value="">All Agents</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadExecutionHistory()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+        <div class="tool-card-body p-0">
+            <div class="activity-log" id="activityLog">
+                <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Agent Modal -->
+<div class="modal fade" id="agentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agentModalTitle">Create Agent</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="agentForm">
+                    <input type="hidden" id="agentId" value="">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="agentName" class="form-label">Agent Name</label>
+                            <input type="text" class="form-control" id="agentName" placeholder="e.g., Sales Assistant" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Agent Type</label>
+                            <div class="dropdown instance-dropdown" style="max-width: 100%;">
+                                <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="agentTypeDropdown" data-bs-toggle="dropdown">
+                                    Responder
+                                </button>
+                                <div class="dropdown-menu instance-dropdown-menu">
+                                    <a class="dropdown-item agent-type-item selected" href="#" data-value="responder">Responder - Answer queries</a>
+                                    <a class="dropdown-item agent-type-item" href="#" data-value="classifier">Classifier - Route messages</a>
+                                    <a class="dropdown-item agent-type-item" href="#" data-value="coordinator">Coordinator - Manage flow</a>
+                                    <a class="dropdown-item agent-type-item" href="#" data-value="analyzer">Analyzer - Process data</a>
+                                </div>
+                            </div>
+                            <input type="hidden" id="agentTypeValue" value="responder">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Hub (Optional)</label>
+                            <div class="dropdown instance-dropdown" style="max-width: 100%;">
+                                <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="agentHubDropdown" data-bs-toggle="dropdown">
+                                    Global (All Hubs)
+                                </button>
+                                <div class="dropdown-menu instance-dropdown-menu" id="agentHubOptions">
+                                    <a class="dropdown-item agent-hub-item selected" href="#" data-value="">Global (All Hubs)</a>
+                                </div>
+                            </div>
+                            <input type="hidden" id="agentHubValue" value="">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">AI Model</label>
+                            <div class="dropdown instance-dropdown" style="max-width: 100%;">
+                                <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="agentModelDropdown" data-bs-toggle="dropdown">
+                                    GPT-4
+                                </button>
+                                <div class="dropdown-menu instance-dropdown-menu">
+                                    <a class="dropdown-item agent-model-item selected" href="#" data-value="gpt-4">GPT-4</a>
+                                    <a class="dropdown-item agent-model-item" href="#" data-value="gpt-3.5-turbo">GPT-3.5 Turbo</a>
+                                    <a class="dropdown-item agent-model-item" href="#" data-value="claude-3-opus">Claude 3 Opus</a>
+                                    <a class="dropdown-item agent-model-item" href="#" data-value="claude-3-sonnet">Claude 3 Sonnet</a>
+                                </div>
+                            </div>
+                            <input type="hidden" id="agentModelValue" value="gpt-4">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="agentPrompt" class="form-label" id="agentPromptLabel">System Prompt</label>
+                        <div class="form-text mb-2 d-none" id="agentPromptHint" style="color: #667781;">
+                            This agent uses a built-in dynamic system prompt. You can add extra instructions below to customize its behavior.
+                        </div>
+                        <textarea class="form-control simulation-textarea" id="agentPrompt" rows="6" placeholder="Enter the system prompt that defines this agent's behavior..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="agentTemperature" class="form-label">Temperature</label>
+                            <input type="number" class="form-control" id="agentTemperature" value="0.7" min="0" max="2" step="0.1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="agentMaxTokens" class="form-label">Max Tokens</label>
+                            <input type="number" class="form-control" id="agentMaxTokens" value="1000" min="100" max="4096">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch hub-form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="agentGlobal">
+                                <label class="form-check-label" for="agentGlobal">Global Agent</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch hub-form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="agentActive" checked>
+                                <label class="form-check-label" for="agentActive">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-theme" onclick="saveAgent()">Save Agent</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Details Modal -->
+<div class="modal fade" id="agentDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agentDetailTitle">Agent Details</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="agentDetailContent">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" id="deleteAgentBtn" onclick="deleteAgent()">Delete</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-theme" id="editAgentBtn" onclick="editAgentFromDetail()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Markdown parser for AI responses -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// Configure marked for safe rendering
+marked.setOptions({
+    breaks: true,
+    gfm: true
+});
+
+// Format underscore text to readable format (e.g., "order_status" -> "Order Status")
+function formatUnderscoreText(text) {
+    if (!text || typeof text !== 'string') return text;
+    // Check if text contains underscores and looks like a code-style value
+    if (text.includes('_') && !text.includes(' ') && /^[a-z_]+$/i.test(text)) {
+        return text.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+    return text;
+}
+
+// Format JSON object as readable HTML
+function formatJsonAsHtml(obj, indent = 0) {
+    let html = '';
+
+    if (Array.isArray(obj)) {
+        obj.forEach((item, index) => {
+            if (typeof item === 'object' && item !== null) {
+                html += formatJsonAsHtml(item, indent);
+                if (index < obj.length - 1) html += '<hr style="margin: 0.5rem 0; border-color: #ddd;">';
+            } else {
+                html += `<div class="json-item">${escapeHtml(formatUnderscoreText(String(item)))}</div>`;
+            }
+        });
+    } else if (typeof obj === 'object' && obj !== null) {
+        for (const [key, value] of Object.entries(obj)) {
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            if (typeof value === 'object' && value !== null) {
+                html += `<div class="json-section">
+                    <div class="json-label">${escapeHtml(label)}</div>
+                    <div class="json-nested">${formatJsonAsHtml(value, indent + 1)}</div>
+                </div>`;
+            } else if (typeof value === 'boolean') {
+                const icon = value ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>';
+                html += `<div class="json-row">
+                    <span class="json-label">${escapeHtml(label)}</span>
+                    <span class="json-value">${icon} ${value ? 'Yes' : 'No'}</span>
+                </div>`;
+            } else {
+                const formattedValue = formatUnderscoreText(String(value));
+                html += `<div class="json-row">
+                    <span class="json-label">${escapeHtml(label)}</span>
+                    <span class="json-value">${escapeHtml(formattedValue)}</span>
+                </div>`;
+            }
+        }
+    } else {
+        html = `<div>${escapeHtml(String(obj))}</div>`;
+    }
+
+    return html;
+}
+
+// Escape HTML special characters
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Try to parse text as JSON
+function tryParseJson(text) {
+    if (!text) return null;
+    const trimmed = text.trim();
+    // Check if it looks like JSON
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+        try {
+            return JSON.parse(trimmed);
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
+}
+
+// Render response - handles both markdown and JSON
+function renderMarkdown(text) {
+    if (!text) return '';
+
+    // Try to parse as JSON first
+    const jsonObj = tryParseJson(text);
+    if (jsonObj) {
+        return `<div class="json-response">${formatJsonAsHtml(jsonObj)}</div>`;
+    }
+
+    // Otherwise render as markdown
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        // Fallback to plain text if parsing fails
+        return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    }
+}
+
+let agentModal, agentDetailModal;
+let allHubs = [];
+let agents = [];
+let templates = [];
+let selectedAgentId = null;
+
+// Predefined avatar color classes for random assignment
+const avatarColors = ['color-coral', 'color-blue', 'color-teal', 'color-orange', 'color-cyan', 'color-purple', 'color-green', 'color-indigo'];
+
+// Get consistent color for an agent based on its ID
+function getAgentColor(agentId) {
+    return avatarColors[agentId % avatarColors.length];
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    agentModal = new bootstrap.Modal(document.getElementById('agentModal'));
+    agentDetailModal = new bootstrap.Modal(document.getElementById('agentDetailModal'));
+
+    setupDropdownHandlers();
+    loadHubs();
+    loadAgents();
+    loadTemplates();
+    loadExecutionHistory();
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        loadAgents();
+        loadExecutionHistory();
+    }, 30000);
+});
+
+function setupDropdownHandlers() {
+    // Status filter dropdown
+    document.querySelectorAll('.status-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.status-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('statusFilterValue').value = this.dataset.value;
+            document.getElementById('statusFilterDropdown').textContent = this.textContent;
+            loadAgents();
+        });
+    });
+
+    // Agent type dropdown in modal
+    document.querySelectorAll('.agent-type-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.agent-type-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('agentTypeValue').value = this.dataset.value;
+            document.getElementById('agentTypeDropdown').textContent = this.textContent.split(' - ')[0];
+            updatePromptLabel(this.dataset.value);
+        });
+    });
+
+    // Agent model dropdown in modal
+    document.querySelectorAll('.agent-model-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.agent-model-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('agentModelValue').value = this.dataset.value;
+            document.getElementById('agentModelDropdown').textContent = this.textContent;
+        });
+    });
+}
+
+function setupHubFilterHandlers() {
+    document.querySelectorAll('.hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('hubFilterValue').value = this.dataset.value;
+            document.getElementById('hubFilterDropdown').textContent = this.textContent;
+            loadAgents();
+        });
+    });
+}
+
+function updatePromptLabel(agentType) {
+    const label = document.getElementById('agentPromptLabel');
+    const hint = document.getElementById('agentPromptHint');
+    const textarea = document.getElementById('agentPrompt');
+    const isDynamic = ['classifier', 'router'].includes(agentType);
+
+    label.textContent = isDynamic ? 'Additional Instructions' : 'System Prompt';
+    hint.classList.toggle('d-none', !isDynamic);
+    textarea.placeholder = isDynamic
+        ? 'Optional: Add extra instructions to customize the built-in behavior...'
+        : 'Enter the system prompt that defines this agent\'s behavior...';
+}
+
+function setupActivityAgentFilterHandlers() {
+    document.querySelectorAll('.activity-agent-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.activity-agent-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('activityAgentValue').value = this.dataset.value;
+            document.getElementById('activityAgentDropdown').textContent = this.textContent;
+            loadExecutionHistory();
+        });
+    });
+}
+
+function setupTestAgentDropdownHandlers() {
+    document.querySelectorAll('.test-agent-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.test-agent-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('testAgentValue').value = this.dataset.value;
+            document.getElementById('testAgentDropdown').textContent = this.textContent;
+
+            // Update preview header with selected agent info
+            const agentId = this.dataset.value;
+            const previewAvatar = document.getElementById('previewAvatar');
+
+            // Remove all existing color classes from preview avatar
+            avatarColors.forEach(c => previewAvatar.classList.remove(c));
+
+            if (agentId) {
+                const agent = agents.find(a => a.id === parseInt(agentId));
+                if (agent) {
+                    document.getElementById('previewAgentName').textContent = agent.name;
+                    document.getElementById('previewAgentType').textContent = agent.agent_type + ' • ' + (agent.model || 'GPT-4');
+                    document.getElementById('responseTags').innerHTML = `
+                        <span class="response-tag">${agent.agent_type}</span>
+                        <span class="response-tag">${agent.model || 'GPT-4'}</span>
+                    `;
+                    // Apply matching color from agent card
+                    previewAvatar.classList.add(getAgentColor(agent.id));
+                }
+            } else {
+                document.getElementById('previewAgentName').textContent = 'Select an Agent';
+                document.getElementById('previewAgentType').textContent = 'Agent type will appear here';
+                document.getElementById('responseTags').innerHTML = '<span class="response-tag">Waiting for test...</span>';
+                // Reset to default coral color
+                previewAvatar.classList.add('color-coral');
+            }
+        });
+    });
+}
+
+async function loadHubs() {
+    try {
+        const response = await fetch('/api/hubs');
+        allHubs = await response.json();
+
+        // Update hub filter dropdown
+        const filterContainer = document.getElementById('hubFilterOptions');
+        let filterHtml = '<a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+        allHubs.forEach(hub => {
+            filterHtml += `<a class="dropdown-item hub-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+        filterContainer.innerHTML = filterHtml;
+
+        // Update agent modal hub dropdown
+        const agentHubContainer = document.getElementById('agentHubOptions');
+        let hubHtml = '<a class="dropdown-item agent-hub-item selected" href="#" data-value="">Global (All Hubs)</a>';
+        allHubs.forEach(hub => {
+            hubHtml += `<a class="dropdown-item agent-hub-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+        agentHubContainer.innerHTML = hubHtml;
+
+        // Re-attach hub filter handlers
+        setupHubFilterHandlers();
+
+        // Re-attach agent hub dropdown handlers
+        document.querySelectorAll('.agent-hub-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.agent-hub-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('agentHubValue').value = this.dataset.value;
+                document.getElementById('agentHubDropdown').textContent = this.textContent;
+            });
+        });
+    } catch (error) {
+        console.error('Error loading hubs:', error);
+    }
+}
+
+async function loadAgents() {
+    const container = document.getElementById('agentsContainer');
+    const hubFilter = document.getElementById('hubFilterValue').value;
+    const statusFilter = document.getElementById('statusFilterValue').value;
+
+    try {
+        let url = '/agents/api/list';
+        const params = new URLSearchParams();
+        if (hubFilter) params.append('hub_id', hubFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetch(url);
+        const data = await response.json();
+        agents = data.agents;
+
+        renderAgents();
+        updateStats();
+        updateTestAgentDropdown();
+        updateActivityAgentDropdown();
+    } catch (error) {
+        console.error('Error loading agents:', error);
+        container.innerHTML = `<div class="text-center text-danger py-4">Error loading agents</div>`;
+    }
+}
+
+function updateTestAgentDropdown() {
+    const container = document.getElementById('testAgentOptions');
+    let html = '<a class="dropdown-item test-agent-item" href="#" data-value="">Select an agent...</a>';
+    agents.forEach(agent => {
+        html += `<a class="dropdown-item test-agent-item" href="#" data-value="${agent.id}">${agent.name} (${agent.agent_type})</a>`;
+    });
+    container.innerHTML = html;
+    setupTestAgentDropdownHandlers();
+}
+
+function updateActivityAgentDropdown() {
+    const container = document.getElementById('activityAgentOptions');
+    let html = '<a class="dropdown-item activity-agent-item selected" href="#" data-value="">All Agents</a>';
+    agents.forEach(agent => {
+        html += `<a class="dropdown-item activity-agent-item" href="#" data-value="${agent.id}">${agent.name}</a>`;
+    });
+    container.innerHTML = html;
+    setupActivityAgentFilterHandlers();
+}
+
+function renderAgents() {
+    const container = document.getElementById('agentsContainer');
+    document.getElementById('agentCount').textContent = `${agents.length} agents`;
+
+    if (agents.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state py-4">
+                <i class="bi bi-robot" style="font-size: 3rem;"></i>
+                <h5 class="mt-3">No Agents Found</h5>
+                <p class="text-muted">Create your first AI agent to get started</p>
+                <button class="btn btn-theme btn-sm" onclick="openAgentModal()">
+                    <i class="bi bi-plus-lg me-1"></i>Create Agent
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    agents.forEach(agent => {
+        const statusClass = `status-${agent.status || 'idle'}`;
+        const cardClass = agent.status === 'running' ? 'running' : agent.status === 'error' ? 'error' : '';
+        const colorClass = getAgentColor(agent.id);
+        const successRate = agent.total_executions > 0
+            ? Math.round((agent.successful_executions / agent.total_executions) * 100)
+            : 0;
+
+        html += `
+            <div class="agent-card ${cardClass} ${colorClass}" onclick="showAgentDetail(${agent.id})">
+                <div class="d-flex align-items-center">
+                    <div class="agent-avatar ${colorClass}">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <div class="ms-3 flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${agent.name}</h6>
+                                <div class="text-muted small">
+                                    ${agent.agent_type} ${agent.hub_name ? '- ' + agent.hub_name : '(Global)'}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="agent-status ${statusClass}">
+                                    <span class="pulse-dot ${agent.status || 'idle'}"></span>
+                                    ${agent.status || 'idle'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="agent-stats">
+                            <div class="agent-stat">
+                                <div class="value">${agent.total_executions || 0}</div>
+                                <div class="label">Executions</div>
+                            </div>
+                            <div class="agent-stat">
+                                <div class="value">${successRate}%</div>
+                                <div class="label">Success</div>
+                            </div>
+                            <div class="agent-stat">
+                                <div class="value">${agent.total_tokens_used || 0}</div>
+                                <div class="label">Tokens</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function updateStats() {
+    document.getElementById('statTotal').textContent = agents.length;
+    document.getElementById('statActive').textContent = agents.filter(a => a.is_active).length;
+    document.getElementById('statRunning').textContent = agents.filter(a => a.status === 'running').length;
+}
+
+async function loadTemplates() {
+    try {
+        const response = await fetch('/agents/api/templates/list');
+        const data = await response.json();
+        templates = data.templates;
+
+        const container = document.getElementById('templatesContainer');
+
+        if (templates.length === 0) {
+            container.innerHTML = `<div class="text-muted text-center py-3">No templates available</div>`;
+            return;
+        }
+
+        let html = '';
+        templates.forEach(template => {
+            html += `
+                <div class="execution-row" style="cursor: pointer;" onclick="createFromTemplate('${template.agent_type}', ${template.id})">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="fw-bold">${template.name}</div>
+                            <div class="text-muted small">${template.description || template.agent_type}</div>
+                        </div>
+                        <span class="badge bg-secondary">${template.agent_type}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading templates:', error);
+    }
+}
+
+async function loadExecutionHistory() {
+    try {
+        const agentFilter = document.getElementById('activityAgentValue').value;
+        let url = '/tools/api/executions?tool_type=agent_execution&limit=20';
+        if (agentFilter) {
+            url += `&related_entity_id=${agentFilter}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const container = document.getElementById('activityLog');
+
+        if (!data.executions || data.executions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state py-3">
+                    <i class="bi bi-activity" style="font-size: 2rem;"></i>
+                    <p class="mb-0">No recent activity</p>
+                </div>
+            `;
+            return;
+        }
+
+        document.getElementById('statExecutions').textContent = data.executions.length;
+
+        let html = '';
+        data.executions.forEach(exec => {
+            const time = new Date(exec.created_at).toLocaleString();
+            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
+            const agentName = agents.find(a => a.id === exec.related_entity_id)?.name || `Agent #${exec.related_entity_id || 'N/A'}`;
+
+            html += `
+                <div class="activity-log-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">${agentName}</div>
+                            <div class="text-muted small">${exec.operation}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="${statusClass}">${exec.status}</span>
+                            <div class="text-muted small">${exec.execution_time_ms || 0}ms • ${exec.tokens_used || 0} tokens</div>
+                        </div>
+                    </div>
+                    <div class="log-time small text-muted mt-1">${time}</div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading execution history:', error);
+    }
+}
+
+function refreshAgents() {
+    loadAgents();
+    loadExecutionHistory();
+}
+
+async function testAgent() {
+    const agentId = document.getElementById('testAgentValue').value;
+    const message = document.getElementById('testMessage').value;
+
+    // Reset preview to show validation errors if needed
+    if (!agentId) {
+        document.getElementById('responseTags').innerHTML = '<span class="response-tag warning">Please select an agent</span>';
+        document.getElementById('responseContent').innerHTML = `
+            <div class="text-center text-warning">
+                <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem;"></i>
+                <p class="mb-0 mt-2 small">Please select an agent first</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (!message.trim()) {
+        document.getElementById('responseTags').innerHTML = '<span class="response-tag warning">Please enter a message</span>';
+        document.getElementById('responseContent').innerHTML = `
+            <div class="text-center text-warning">
+                <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem;"></i>
+                <p class="mb-0 mt-2 small">Please enter a test message</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Get selected agent info
+    const agent = agents.find(a => a.id === parseInt(agentId));
+
+    // Update header with agent info
+    document.getElementById('previewAgentName').textContent = agent?.name || 'Unknown Agent';
+    document.getElementById('previewAgentType').textContent = agent?.agent_type || 'Agent';
+
+    // Show loading state
+    document.getElementById('responseTags').innerHTML = '<span class="response-tag info">Processing...</span>';
+    document.getElementById('responseContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <p class="mb-0 mt-2 small">Testing agent...</p>
+        </div>
+    `;
+    document.getElementById('executionStatus').textContent = 'Running...';
+    document.getElementById('executionFill').style.width = '50%';
+    document.getElementById('previewTokens').textContent = '...';
+    document.getElementById('previewTime').textContent = '...';
+    document.getElementById('previewStatus').textContent = '...';
+
+    try {
+        const response = await fetch('/agents/api/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                agent_id: parseInt(agentId),
+                message: message
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Test failed');
+        }
+
+        // Update tags
+        const tagsHtml = `
+            <span class="response-tag success">${agent?.agent_type || 'Agent'}</span>
+            <span class="response-tag info">${agent?.model || 'GPT-4'}</span>
+        `;
+        document.getElementById('responseTags').innerHTML = tagsHtml;
+
+        // Update response content with markdown rendering
+        document.getElementById('responseContent').innerHTML = renderMarkdown(result.response || 'No response');
+
+        // Update execution meter
+        document.getElementById('executionStatus').textContent = 'Completed';
+        document.getElementById('executionFill').style.width = '100%';
+
+        // Update stats
+        document.getElementById('previewTokens').textContent = result.tokens_used || 0;
+        document.getElementById('previewTime').textContent = (result.execution_time_ms || 0) + 'ms';
+        document.getElementById('previewStatus').innerHTML = '<span class="text-success">Success</span>';
+
+        // Refresh execution history
+        loadExecutionHistory();
+
+    } catch (error) {
+        document.getElementById('responseTags').innerHTML = '<span class="response-tag" style="background: #f8d7da; color: #721c24;">Error</span>';
+        document.getElementById('responseContent').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="bi bi-x-circle" style="font-size: 1.5rem;"></i>
+                <p class="mb-0 mt-2 small">${error.message}</p>
+            </div>
+        `;
+        document.getElementById('executionStatus').textContent = 'Failed';
+        document.getElementById('executionFill').style.width = '100%';
+        document.getElementById('executionFill').style.background = '#dc3545';
+        document.getElementById('previewTokens').textContent = '--';
+        document.getElementById('previewTime').textContent = '--';
+        document.getElementById('previewStatus').innerHTML = '<span class="text-danger">Failed</span>';
+    }
+}
+
+function openAgentModal() {
+    document.getElementById('agentForm').reset();
+    document.getElementById('agentId').value = '';
+    document.getElementById('agentModalTitle').textContent = 'Create Agent';
+    document.getElementById('agentTypeValue').value = 'responder';
+    document.getElementById('agentTypeDropdown').textContent = 'Responder';
+    updatePromptLabel('responder');
+    document.getElementById('agentModelValue').value = 'gpt-4';
+    document.getElementById('agentModelDropdown').textContent = 'GPT-4';
+    document.getElementById('agentHubValue').value = '';
+    document.getElementById('agentHubDropdown').textContent = 'Global (All Hubs)';
+    agentModal.show();
+}
+
+async function createFromTemplate(agentType, templateId = null) {
+    document.getElementById('agentForm').reset();
+    document.getElementById('agentId').value = '';
+    document.getElementById('agentModalTitle').textContent = 'Create Agent';
+    document.getElementById('agentTypeValue').value = agentType;
+    document.getElementById('agentTypeDropdown').textContent = agentType.charAt(0).toUpperCase() + agentType.slice(1);
+
+    if (templateId) {
+        try {
+            const response = await fetch(`/agents/api/templates/${templateId}`);
+            const template = await response.json();
+
+            document.getElementById('agentName').value = template.name + ' (Copy)';
+            document.getElementById('agentPrompt').value = template.system_prompt || '';
+        } catch (error) {
+            console.error('Error loading template:', error);
+        }
+    }
+
+    agentModal.show();
+}
+
+async function saveAgent() {
+    const name = document.getElementById('agentName').value;
+    if (!name) {
+        alert('Please enter an agent name');
+        return;
+    }
+
+    const agentId = document.getElementById('agentId').value;
+    const agentType = document.getElementById('agentTypeValue').value;
+    const promptValue = document.getElementById('agentPrompt').value;
+    const isDynamic = ['classifier', 'router'].includes(agentType);
+
+    const data = {
+        name: name,
+        agent_type: agentType,
+        hub_id: document.getElementById('agentHubValue').value || null,
+        system_prompt: isDynamic ? null : promptValue,
+        additional_instructions: isDynamic ? promptValue : null,
+        model: document.getElementById('agentModelValue').value,
+        temperature: parseFloat(document.getElementById('agentTemperature').value),
+        max_tokens: parseInt(document.getElementById('agentMaxTokens').value),
+        is_global: document.getElementById('agentGlobal').checked,
+        is_active: document.getElementById('agentActive').checked
+    };
+
+    try {
+        const url = agentId ? `/agents/api/${agentId}` : '/agents/api/create';
+        const method = agentId ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            agentModal.hide();
+            loadAgents();
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Error saving agent');
+        }
+    } catch (error) {
+        console.error('Error saving agent:', error);
+        alert('Error saving agent');
+    }
+}
+
+async function showAgentDetail(agentId) {
+    selectedAgentId = agentId;
+
+    try {
+        const response = await fetch(`/agents/api/${agentId}`);
+        const agent = await response.json();
+
+        document.getElementById('agentDetailTitle').textContent = agent.name;
+
+        const successRate = agent.total_executions > 0
+            ? Math.round((agent.successful_executions / agent.total_executions) * 100)
+            : 0;
+
+        document.getElementById('agentDetailContent').innerHTML = `
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6>Configuration</h6>
+                    <table class="table table-sm">
+                        <tr><td class="text-muted">Type</td><td>${agent.agent_type}</td></tr>
+                        <tr><td class="text-muted">Model</td><td>${agent.model}</td></tr>
+                        <tr><td class="text-muted">Hub</td><td>${agent.hub_name || 'Global'}</td></tr>
+                        <tr><td class="text-muted">Status</td><td><span class="agent-status status-${agent.status || 'idle'}">${agent.status || 'idle'}</span></td></tr>
+                        <tr><td class="text-muted">Active</td><td>${agent.is_active ? 'Yes' : 'No'}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Statistics</h6>
+                    <table class="table table-sm">
+                        <tr><td class="text-muted">Total Executions</td><td>${agent.total_executions || 0}</td></tr>
+                        <tr><td class="text-muted">Successful</td><td>${agent.successful_executions || 0}</td></tr>
+                        <tr><td class="text-muted">Success Rate</td><td>${successRate}%</td></tr>
+                        <tr><td class="text-muted">Tokens Used</td><td>${agent.total_tokens_used || 0}</td></tr>
+                        <tr><td class="text-muted">Last Run</td><td>${agent.last_run_at ? new Date(agent.last_run_at).toLocaleString() : 'Never'}</td></tr>
+                    </table>
+                </div>
+            </div>
+            ${['classifier', 'router'].includes(agent.agent_type) ? `
+            <div class="mb-3">
+                <h6>System Prompt</h6>
+                <div class="p-3 bg-light rounded small text-muted" style="max-height: 80px; overflow-y: auto; white-space: pre-wrap;">Built-in default — This agent uses a dynamic system prompt generated at runtime with your hub's topics and expertise categories.</div>
+            </div>
+            ${agent.additional_instructions ? `
+            <div class="mb-3">
+                <h6>Additional Instructions</h6>
+                <div class="p-3 bg-light rounded" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${agent.additional_instructions}</div>
+            </div>
+            ` : ''}
+            ` : `
+            ${agent.system_prompt ? `
+            <div class="mb-3">
+                <h6>System Prompt</h6>
+                <div class="p-3 bg-light rounded" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${agent.system_prompt}</div>
+            </div>
+            ` : ''}
+            `}
+            ${agent.last_error ? `
+            <div class="alert alert-danger">
+                <strong>Last Error:</strong> ${agent.last_error}
+            </div>
+            ` : ''}
+        `;
+
+        agentDetailModal.show();
+    } catch (error) {
+        console.error('Error loading agent:', error);
+        alert('Error loading agent details');
+    }
+}
+
+function editAgentFromDetail() {
+    if (!selectedAgentId) return;
+
+    const agent = agents.find(a => a.id === selectedAgentId);
+    if (!agent) return;
+
+    agentDetailModal.hide();
+
+    // Populate the edit form
+    document.getElementById('agentId').value = agent.id;
+    document.getElementById('agentModalTitle').textContent = 'Edit Agent';
+    document.getElementById('agentName').value = agent.name;
+    document.getElementById('agentTypeValue').value = agent.agent_type;
+    document.getElementById('agentTypeDropdown').textContent = agent.agent_type;
+
+    // Fetch full agent details for editing
+    fetch(`/agents/api/${agent.id}`)
+        .then(r => r.json())
+        .then(full => {
+            const isDynamic = ['classifier', 'router'].includes(full.agent_type);
+            document.getElementById('agentPrompt').value = isDynamic
+                ? (full.additional_instructions || '')
+                : (full.system_prompt || '');
+            updatePromptLabel(full.agent_type);
+            document.getElementById('agentModelValue').value = full.model || 'gpt-4';
+            document.getElementById('agentModelDropdown').textContent = full.model || 'GPT-4';
+            const config = full.config || {};
+            document.getElementById('agentTemperature').value = config.temperature || 0.7;
+            document.getElementById('agentMaxTokens').value = config.max_tokens || 1000;
+            document.getElementById('agentGlobal').checked = full.is_global || false;
+            document.getElementById('agentActive').checked = full.is_active !== false;
+            document.getElementById('agentHubValue').value = full.hub_id || '';
+            document.getElementById('agentHubDropdown').textContent = full.hub_name || 'Global (All Hubs)';
+
+            agentModal.show();
+        });
+}
+
+async function deleteAgent() {
+    if (!selectedAgentId) return;
+    if (!confirm('Are you sure you want to delete this agent?')) return;
+
+    try {
+        const response = await fetch(`/agents/api/${selectedAgentId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            agentDetailModal.hide();
+            loadAgents();
+        } else {
+            alert('Error deleting agent');
+        }
+    } catch (error) {
+        console.error('Error deleting agent:', error);
+        alert('Error deleting agent');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+"""
+Application Configuration
+"""
+
+import os
+from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class Settings:
+    """Application settings."""
+
+    # App Settings
+    APP_NAME: str = "WhatsApp Bot Dashboard"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+
+    # Server Settings
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", "8000"))
+
+    # Database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./data/app.db")
+
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
+
+    # Encryption key for API keys (should be 32 bytes for Fernet)
+    ENCRYPTION_KEY: Optional[str] = os.getenv("ENCRYPTION_KEY")
+
+    # Session
+    SESSION_PATH: str = os.getenv("SESSION_PATH", "data/sessions")
+
+    # Bot defaults
+    DEFAULT_MODEL: str = "gpt-4o-mini"
+    DEFAULT_MAX_HISTORY: int = 20
+    DEFAULT_RESPONSE_DELAY_MIN: int = 3
+    DEFAULT_RESPONSE_DELAY_MAX: int = 8
+
+    @classmethod
+    def get_encryption_key(cls) -> bytes:
+        """Get or generate encryption key."""
+        if cls.ENCRYPTION_KEY:
+            return cls.ENCRYPTION_KEY.encode()
+        # Generate a key from SECRET_KEY (not ideal for production)
+        from hashlib import sha256
+        return sha256(cls.SECRET_KEY.encode()).digest()
+
+
+settings = Settings()

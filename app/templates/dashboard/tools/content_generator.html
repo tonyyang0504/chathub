@@ -1,0 +1,881 @@
+{% extends "base.html" %}
+
+{% block title %}Content Generator - WhatsApp Bot Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.workflow-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 2rem;
+    position: relative;
+}
+
+.workflow-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, #fa709a, #fee140);
+    z-index: 0;
+}
+
+.workflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    max-width: 180px;
+}
+
+.workflow-step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #fa709a;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+}
+
+.workflow-step h5 { font-weight: 600; margin-bottom: 0.5rem; }
+.workflow-step p { font-size: 0.85rem; color: var(--text-muted); }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.stat-card .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+.stat-card .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+.stat-card.success .stat-icon { color: #28a745; }
+.stat-card.info .stat-icon { color: #17a2b8; }
+
+.instances-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.instance-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.instance-card:hover { border-color: #fa709a; transform: translateY(-2px); }
+
+/* Theme outline button */
+.btn-outline-theme {
+    color: #fa709a;
+    border-color: #fa709a;
+    background: transparent;
+}
+.btn-outline-theme:hover, .btn-outline-theme:focus {
+    background: #fa709a;
+    border-color: #fa709a;
+    color: white;
+}
+
+.simulation-section {
+    background: linear-gradient(135deg, #fff5f5 0%, #fff9e6 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.simulation-section h3 { color: #333; }
+
+.content-preview {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    min-height: 300px;
+}
+
+.generated-message {
+    background: #dcf8c6;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    max-width: 85%;
+    margin-left: auto;
+    line-height: 1.6;
+}
+
+/* Markdown content styling in generated message */
+.generated-message p {
+    margin-bottom: 0.5rem;
+}
+.generated-message p:last-child {
+    margin-bottom: 0;
+}
+.generated-message ul, .generated-message ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+.generated-message li {
+    margin-bottom: 0.25rem;
+}
+.generated-message code {
+    background: rgba(0, 0, 0, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+.generated-message pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 0.75rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+.generated-message pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+.generated-message strong {
+    font-weight: 600;
+}
+.generated-message h1, .generated-message h2, .generated-message h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0.5rem 0;
+}
+.generated-message blockquote {
+    border-left: 3px solid #fa709a;
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+    color: #666;
+    position: relative;
+}
+
+.generated-message::after {
+    content: '';
+    position: absolute;
+    right: -8px;
+    top: 10px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent transparent #dcf8c6;
+}
+
+.tone-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tone-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.tone-btn:hover { border-color: #fa709a; color: #fa709a; }
+.tone-btn.active { background: transparent; color: #fa709a; border-color: #fa709a; font-weight: 500; }
+
+.feature-list { list-style: none; padding: 0; }
+.feature-list li { padding: 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+.feature-list li i { color: #28a745; font-size: 1.2rem; }
+
+/* Theme button styling */
+.btn-theme {
+    background: #fa709a;
+    border: none;
+    color: white;
+}
+.btn-theme:hover, .btn-theme:focus {
+    background: #e8608a;
+    color: white;
+    box-shadow: 0 4px 12px rgba(250, 112, 154, 0.4);
+}
+.btn-outline-theme {
+    color: #fa709a;
+    border-color: #fa709a;
+    background: transparent;
+}
+.btn-outline-theme:hover, .btn-outline-theme:focus {
+    background: #fa709a;
+    border-color: #fa709a;
+    color: white;
+}
+
+/* Custom Dropdown Styling */
+.content-dropdown {
+    position: relative;
+    width: 100%;
+}
+.content-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.content-dropdown-btn::after {
+    margin-left: auto;
+}
+.content-dropdown-btn:hover, .content-dropdown-btn:focus {
+    border-color: #fa709a;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.content-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.content-dropdown-menu .dropdown-item {
+    padding: 10px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.content-dropdown-menu .dropdown-item:hover {
+    background: rgba(250, 112, 154, 0.1);
+    color: #fa709a;
+}
+.content-dropdown-menu .dropdown-item.selected {
+    background: rgba(250, 112, 154, 0.15);
+    color: #fa709a;
+    font-weight: 500;
+}
+
+.typing-indicator {
+    display: inline-flex;
+    gap: 4px;
+    padding: 12px 16px;
+    background: #f0f0f0;
+    border-radius: 10px;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #999;
+    border-radius: 50%;
+    animation: typing 1s infinite;
+}
+
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+/* Theme form controls */
+#contentTopic:focus {
+    border-color: #fa709a;
+    box-shadow: none;
+}
+
+/* Instance Filter Dropdown */
+.instance-dropdown {
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+}
+.instance-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+/* Instance Status Badge - matching agents page */
+.instance-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.instance-status.status-active {
+    background: rgba(25, 135, 84, 0.15);
+    color: var(--bs-success);
+}
+.instance-status.status-inactive {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--bs-secondary);
+}
+.instance-dropdown-btn::after {
+    margin-left: auto;
+}
+.instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
+    border-color: #fa709a;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.instance-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.instance-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.instance-dropdown-menu .dropdown-item:hover {
+    background: rgba(250, 112, 154, 0.1);
+    color: #fa709a;
+}
+.instance-dropdown-menu .dropdown-item.selected {
+    background: rgba(250, 112, 154, 0.15);
+    color: #fa709a;
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-magic me-3"></i>Content Generator</h1>
+                <p>Create engaging WhatsApp messages with AI. Generate professional responses, promotional content, follow-ups, and more with customizable tone and style.</p>
+                <button class="btn btn-light btn-lg mt-3" onclick="createHubInstance()">
+                    <i class="bi bi-plus-lg me-2"></i>Create Hub Instance
+                </button>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-stars" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3 class="mb-3">Overall Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="bi bi-collection"></i></div>
+            <div class="stat-value" id="totalInstances">0</div>
+            <div class="stat-label">Hub Instances</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-chat-quote"></i></div>
+            <div class="stat-value" id="totalGenerated">0</div>
+            <div class="stat-label">Content Generated</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="totalUsed">0</div>
+            <div class="stat-label">Content Used</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-lightning"></i></div>
+            <div class="stat-value" id="totalTokens">0</div>
+            <div class="stat-label">Tokens Used</div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-pencil"></i></div>
+                <h5>1. Define Topic</h5>
+                <p>Specify what you want to write about and key points</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-sliders"></i></div>
+                <h5>2. Set Tone</h5>
+                <p>Choose the tone and style for your message</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-cpu"></i></div>
+                <h5>3. AI Generates</h5>
+                <p>AI creates engaging content based on your inputs</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-send"></i></div>
+                <h5>4. Use Content</h5>
+                <p>Copy, edit, or schedule the generated message</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hub Instances -->
+    <div class="instances-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-collection me-2"></i>Active Hub Instances <span class="text-muted fs-6 fw-normal" id="instanceCount"></span></h3>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="hubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="hubFilterOptions">
+                        <a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown">
+                        All Status
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item status-filter-item selected" href="#" data-value="">All Status</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="active">Active</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="inactive">Inactive</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadInstances()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="instancesContainer">
+            <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div class="simulation-section">
+        <div class="row">
+            <div class="col-lg-6">
+                <h3><i class="bi bi-play-circle me-2"></i>Try Content Generation</h3>
+                <p class="text-muted">Test the AI content generator before creating a hub instance.</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Content Type</label>
+                    <input type="hidden" id="contentTypeValue" value="message">
+                    <div class="dropdown content-dropdown">
+                        <button class="btn content-dropdown-btn dropdown-toggle" type="button" id="contentTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            General Message
+                        </button>
+                        <div class="dropdown-menu content-dropdown-menu" aria-labelledby="contentTypeDropdown">
+                            <a class="dropdown-item content-type-item selected" href="#" data-value="message">General Message</a>
+                            <a class="dropdown-item content-type-item" href="#" data-value="promo">Promotional</a>
+                            <a class="dropdown-item content-type-item" href="#" data-value="followup">Follow-up</a>
+                            <a class="dropdown-item content-type-item" href="#" data-value="greeting">Greeting</a>
+                            <a class="dropdown-item content-type-item" href="#" data-value="reminder">Reminder</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Topic / Subject</label>
+                    <input type="text" class="form-control" id="contentTopic" placeholder="e.g., New product launch, Weekly update" value="Special weekend discount offer">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tone</label>
+                    <div class="tone-selector">
+                        <button class="tone-btn active" data-tone="professional">Professional</button>
+                        <button class="tone-btn" data-tone="friendly">Friendly</button>
+                        <button class="tone-btn" data-tone="casual">Casual</button>
+                        <button class="tone-btn" data-tone="urgent">Urgent</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-theme" onclick="runSimulation()">
+                    <i class="bi bi-magic me-2"></i>Generate Content
+                </button>
+
+                <hr class="my-4">
+
+                <h5>Key Features</h5>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check-circle-fill"></i> Multiple content types (messages, promos, follow-ups)</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Customizable tone and style</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Supports emojis and formatting</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Generate variations for A/B testing</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Save templates for reuse</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Generated Content Preview</h5>
+                <div class="content-preview" id="contentPreview">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-chat-quote" style="font-size: 3rem;"></i>
+                        <p class="mt-2">Your generated content will appear here</p>
+                    </div>
+                </div>
+                <div class="mt-3 text-center" id="contentActions" style="display: none;">
+                    <button class="btn btn-outline-theme btn-sm" onclick="copyContent()">
+                        <i class="bi bi-clipboard me-1"></i>Copy
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="regenerate()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Regenerate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="tool-card">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="activityInstanceValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityInstanceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        All Instances
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="activityInstanceDropdown">
+                        <a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadActivity()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+        </div>
+        <div class="tool-card-body p-0">
+            <div class="activity-log" id="activityLog">
+                <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Markdown parser for AI responses -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// Configure marked for safe rendering
+marked.setOptions({
+    breaks: true,
+    gfm: true
+});
+
+// Render markdown text
+function renderMarkdown(text) {
+    if (!text) return '';
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        // Fallback to plain text if parsing fails
+        return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    }
+}
+
+let selectedTone = 'professional';
+let generatedContent = '';
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadInstances();
+    loadActivity();
+
+    // Tone selector
+    document.querySelectorAll('.tone-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedTone = this.dataset.tone;
+        });
+    });
+
+    // Content type dropdown handler
+    document.querySelectorAll('.content-type-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const value = this.dataset.value;
+            const text = this.textContent;
+            document.getElementById('contentTypeValue').value = value;
+            document.getElementById('contentTypeDropdown').textContent = text;
+            document.querySelectorAll('.content-type-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/tools/api/content-generator/stats');
+        const stats = await response.json();
+        document.getElementById('totalInstances').textContent = stats.total_instances || 0;
+        document.getElementById('totalGenerated').textContent = stats.total_generated || 0;
+        document.getElementById('totalUsed').textContent = stats.total_used || 0;
+        document.getElementById('totalTokens').textContent = stats.total_tokens || 0;
+    } catch (error) { console.error('Error loading stats:', error); }
+}
+
+let allInstances = [];
+
+async function loadInstances() {
+    try {
+        const response = await fetch('/api/hubs?task_type=content_generator');
+        allInstances = await response.json();
+        populateHubFilter();
+        setupFilterHandlers();
+        renderInstances();
+    } catch (error) {
+        console.error('Error loading instances:', error);
+        document.getElementById('instancesContainer').innerHTML = `<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle display-4"></i><p class="mt-2">Failed to load instances</p></div>`;
+    }
+}
+
+function populateHubFilter() {
+    const filterMenu = document.getElementById('hubFilterOptions');
+    let html = '<a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+    allInstances.forEach(hub => {
+        html += `<a class="dropdown-item hub-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+    });
+    filterMenu.innerHTML = html;
+}
+
+function setupFilterHandlers() {
+    document.querySelectorAll('.hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('hubFilterValue').value = this.dataset.value;
+            document.getElementById('hubFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+    document.querySelectorAll('.status-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('statusFilterValue').value = this.dataset.value;
+            document.getElementById('statusFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.status-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+}
+
+function renderInstances() {
+    const container = document.getElementById('instancesContainer');
+    const hubFilter = document.getElementById('hubFilterValue').value;
+    const statusFilter = document.getElementById('statusFilterValue').value;
+
+    let filtered = allInstances.filter(hub => {
+        if (hubFilter && hub.id != hubFilter) return false;
+        if (statusFilter === 'active' && !hub.is_active) return false;
+        if (statusFilter === 'inactive' && hub.is_active) return false;
+        return true;
+    });
+
+    document.getElementById('instanceCount').textContent = `(${filtered.length} of ${allInstances.length})`;
+
+    if (allInstances.length === 0) {
+        container.innerHTML = `<div class="text-center py-4"><i class="bi bi-inbox display-4 text-muted"></i><p class="text-muted mt-2">No content generator hub instances yet</p><button class="btn btn-primary" onclick="createHubInstance()"><i class="bi bi-plus-lg me-2"></i>Create Your First Instance</button></div>`;
+        return;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-4"><i class="bi bi-filter display-4 text-muted"></i><p class="text-muted mt-2">No instances match the current filters</p></div>`;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(hub => {
+        html += `<div class="instance-card"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold">${hub.name}</span><span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">${hub.is_active ? 'Active' : 'Inactive'}</span></div><p class="text-muted small mb-2">${hub.description || 'No description'}</p><div class="d-flex gap-3 small text-muted mb-2"><span><i class="bi bi-robot me-1"></i>${hub.bot_count} bots</span><span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span></div><a href="/dashboard/hubs" class="btn btn-sm btn-theme" onclick="localStorage.setItem('openHubId', ${hub.id})"><i class="bi bi-gear me-1"></i>Configure</a></div>`;
+    });
+    container.innerHTML = html;
+    document.getElementById('totalInstances').textContent = allInstances.length;
+
+    // Populate activity filter dropdown
+    const activityFilterMenu = document.getElementById('activityInstanceDropdown')?.closest('.dropdown')?.querySelector('.instance-dropdown-menu');
+    if (activityFilterMenu) {
+        let menuHtml = '<a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>';
+        allInstances.forEach(hub => {
+            menuHtml += `<a class="dropdown-item instance-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+        activityFilterMenu.innerHTML = menuHtml;
+
+        document.querySelectorAll('.instance-filter-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('activityInstanceValue').value = this.dataset.value;
+                document.getElementById('activityInstanceDropdown').textContent = this.textContent;
+                document.querySelectorAll('.instance-filter-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                loadActivity();
+            });
+        });
+    }
+}
+
+async function loadActivity() {
+    try {
+        const filterInput = document.getElementById('activityInstanceValue');
+        const selectedHubId = filterInput ? filterInput.value : '';
+        let url = '/tools/api/executions?tool_type=content_generator&limit=20';
+        if (selectedHubId) {
+            url += `&hub_id=${selectedHubId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        const container = document.getElementById('activityLog');
+
+        if (!data.executions || data.executions.length === 0) {
+            container.innerHTML = `<div class="empty-state py-3"><i class="bi bi-activity" style="font-size: 2rem;"></i><p class="mb-0">No recent activity</p></div>`;
+            return;
+        }
+
+        let html = '';
+        data.executions.forEach(exec => {
+            const time = new Date(exec.created_at).toLocaleString();
+            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
+            html += `<div class="activity-log-item"><div class="log-time">${time}</div><div class="log-content">${exec.operation}</div><div class="log-status"><span class="${statusClass}">${exec.status}</span></div></div>`;
+        });
+        container.innerHTML = html;
+    } catch (error) { console.error('Error loading activity:', error); }
+}
+
+function createHubInstance() {
+    localStorage.setItem('createHubTaskType', 'content_generator');
+    window.location.href = '/dashboard/hubs';
+}
+
+async function runSimulation() {
+    const contentType = document.getElementById('contentTypeValue').value;
+    const topic = document.getElementById('contentTopic').value;
+    const preview = document.getElementById('contentPreview');
+
+    if (!topic) {
+        alert('Please enter a topic');
+        return;
+    }
+
+    // Show typing indicator
+    preview.innerHTML = `
+        <div class="text-center py-5">
+            <div class="typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
+            <p class="text-muted mt-3">AI is generating content...</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/tools/api/simulate/content-generator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content_type: contentType,
+                topic: topic,
+                tone: selectedTone
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Generation failed');
+        }
+
+        generatedContent = result.content;
+
+        preview.innerHTML = `
+            <div style="padding: 20px 10px;">
+                <div class="generated-message">
+                    ${renderMarkdown(generatedContent)}
+                </div>
+                <div class="text-muted small mt-2 text-end">
+                    <i class="bi bi-lightning me-1"></i>${result.tokens_used} tokens used
+                </div>
+            </div>
+        `;
+
+        document.getElementById('contentActions').style.display = 'block';
+    } catch (error) {
+        preview.innerHTML = `
+            <div class="text-center py-5 text-danger">
+                <i class="bi bi-exclamation-circle" style="font-size: 3rem;"></i>
+                <p class="mt-2">${error.message}</p>
+                <small class="text-muted">Make sure you have a hub with an OpenAI API key configured.</small>
+            </div>
+        `;
+    }
+}
+
+function copyContent() {
+    navigator.clipboard.writeText(generatedContent).then(() => {
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
+        setTimeout(() => btn.innerHTML = originalText, 2000);
+    });
+}
+
+function regenerate() {
+    runSimulation();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,818 @@
+"""
+Database Models and Connection
+"""
+
+import os
+from datetime import datetime
+from typing import Optional, List
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Float, UniqueConstraint
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship, Session
+from sqlalchemy.pool import NullPool, QueuePool
+from contextlib import contextmanager
+
+from app.config import settings
+
+# Ensure data directory exists for SQLite
+db_path = settings.DATABASE_URL.replace("sqlite:///", "").replace("sqlite:", "")
+if db_path and os.path.dirname(db_path):
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+# Create engine with proper pool configuration
+# For SQLite: use NullPool to avoid connection pool exhaustion during long operations
+# For other databases: use QueuePool with larger size
+if "sqlite" in settings.DATABASE_URL:
+    engine = create_engine(
+        settings.DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=NullPool  # No pooling - each connection is fresh
+    )
+else:
+    engine = create_engine(
+        settings.DATABASE_URL,
+        poolclass=QueuePool,
+        pool_size=20,
+        max_overflow=30,
+        pool_timeout=60,
+        pool_pre_ping=True
+    )
+
+# Session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base class for models
+Base = declarative_base()
+
+
+# ============== Models ==============
+
+class User(Base):
+    """User account model."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    name = Column(String(255))
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    bot_profiles = relationship("BotProfile", back_populates="user", cascade="all, delete-orphan")
+
+
+class BotProfile(Base):
+    """Bot profile/configuration model."""
+    __tablename__ = "bot_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+
+    # OpenAI Settings (API key encrypted)
+    openai_api_key_encrypted = Column(Text, nullable=False)
+    openai_model = Column(String(50), default="gpt-4o-mini")
+    system_prompt = Column(Text, default="You are a helpful assistant. Do not use markdown formatting like asterisks (*), underscores (_), or other special characters for emphasis. Write plain text only.")
+    temperature = Column(Float, default=0.7)  # AI creativity (0.0-2.0)
+    max_tokens = Column(Integer, default=1000)  # Max response length
+    # Advanced AI Settings
+    top_p = Column(Float, default=1.0)  # Nucleus sampling (0.0-1.0)
+    frequency_penalty = Column(Float, default=0.0)  # Reduce repetition (-2.0 to 2.0)
+    presence_penalty = Column(Float, default=0.0)  # Encourage new topics (-2.0 to 2.0)
+
+    # Bot Settings
+    max_history = Column(Integer, default=20)
+    response_delay_min = Column(Integer, default=3)
+    response_delay_max = Column(Integer, default=8)
+    group_chat_enabled = Column(Boolean, default=True)
+    respond_to_all_in_group = Column(Boolean, default=False)
+    headless = Column(Boolean, default=False)  # Run browser in headless mode
+
+    # Proxy Settings
+    proxy_enabled = Column(Boolean, default=False)  # Enable proxy for this bot
+    proxy_url = Column(String(500))  # Proxy URL (e.g., http://proxy.example.com:8080)
+    proxy_username = Column(String(255))  # Proxy username (optional, encrypted)
+    proxy_password = Column(String(255))  # Proxy password (optional, encrypted)
+
+    # Browser Timezone Setting (IANA timezone ID for Playwright)
+    # Default 'UTC' means WhatsApp shows UTC timestamps - simplest, no conversion needed
+    # Can be set to match proxy location (e.g., 'America/New_York', 'Europe/London', 'Asia/Dubai')
+    browser_timezone = Column(String(100), default='UTC')
+
+    # Status
+    is_active = Column(Boolean, default=False)
+    is_running = Column(Boolean, default=False)
+    whatsapp_connected = Column(Boolean, default=False)
+    last_active = Column(DateTime)
+
+    # WhatsApp Account Info (populated when connected)
+    whatsapp_phone = Column(String(50))  # Phone number
+    whatsapp_name = Column(String(255))  # Display name
+    whatsapp_push_name = Column(String(255))  # Push name
+    whatsapp_profile_pic = Column(Text)  # Profile picture URL
+    whatsapp_about = Column(Text)  # About/status text
+    whatsapp_account_type = Column(String(50), default="personal")  # 'personal' or 'business'
+
+    # Timezone offset detected from WhatsApp (hours from UTC, e.g., -5 for UTC-5)
+    # This is auto-detected by comparing WhatsApp timestamps with actual UTC time
+    whatsapp_timezone_offset = Column(Integer, nullable=True)  # None means not yet detected
+
+    # Session data (encrypted)
+    session_data = Column(Text)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="bot_profiles")
+    conversations = relationship("Conversation", back_populates="bot_profile", cascade="all, delete-orphan")
+    scheduled_messages = relationship("ScheduledMessage", back_populates="bot_profile", cascade="all, delete-orphan")
+
+
+class Conversation(Base):
+    """Conversation/chat model."""
+    __tablename__ = "conversations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=False)
+    chat_id = Column(String(255), nullable=False, index=True)  # Unique identifier (name or data-id)
+    chat_name = Column(String(255))  # Display name shown in sidebar (contact name or phone)
+    display_name = Column(String(255))  # WhatsApp saved contact name (if available)
+    phone = Column(String(50))  # Phone number extracted from message data-ids
+    is_group = Column(Boolean, default=False)
+    profile_pic = Column(Text)  # Contact/group profile picture URL or base64
+    message_count = Column(Integer, default=0)
+    last_message_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Sync status - track if full history has been fetched
+    history_synced = Column(Boolean, default=False)  # True if full history fetched
+    last_synced_at = Column(DateTime)  # When messages were last synced
+
+    # Human takeover - when human replies, AI bot pauses
+    human_takeover = Column(Boolean, default=False)  # True if human has taken over
+    human_takeover_at = Column(DateTime)  # When human takeover started
+
+    # Relationships
+    bot_profile = relationship("BotProfile", back_populates="conversations")
+    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+
+
+class Message(Base):
+    """Message model."""
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False)
+    role = Column(String(20), nullable=False)  # 'user', 'assistant', 'system'
+    content = Column(Text, nullable=False)
+    sender_name = Column(String(255))
+    sender_id = Column(String(255))
+    sender_profile_pic = Column(Text)  # Sender's profile picture for group messages
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # File attachment fields
+    file_url = Column(Text)  # URL or path to the uploaded file
+    file_name = Column(String(500))  # Original filename
+    file_type = Column(String(100))  # MIME type (image/png, application/pdf, etc.)
+    file_size = Column(Integer)  # File size in bytes
+    file_pages = Column(Integer)  # Number of pages (for PDFs)
+    media_analysis = Column(Text)  # AI-generated analysis of media (images, documents, videos)
+
+    # Relationships
+    conversation = relationship("Conversation", back_populates="messages")
+
+
+class ScheduledMessage(Base):
+    """Scheduled message model."""
+    __tablename__ = "scheduled_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=False)
+    chat_id = Column(String(255), nullable=False)
+    chat_name = Column(String(255))
+    message = Column(Text, nullable=False)
+    scheduled_time = Column(DateTime, nullable=False)
+    repeat_type = Column(String(20))  # 'once', 'daily', 'weekly'
+    is_sent = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    bot_profile = relationship("BotProfile", back_populates="scheduled_messages")
+
+
+class ActivityLog(Base):
+    """Activity log for analytics."""
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=False)
+    action = Column(String(50), nullable=False)  # 'message_sent', 'message_received', 'bot_started', etc.
+    details = Column(Text)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+# ============== Hub Models ==============
+
+class Hub(Base):
+    """Hub - Coordination center for multi-bot AI orchestration."""
+    __tablename__ = "hubs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    task_type = Column(String(50), nullable=False, default="group_management")  # group_management, scheduled_content, contact_analyzer, message_routing, content_generator
+    openai_api_key_encrypted = Column(Text)  # Default API key for hub agents
+    openai_model = Column(String(50), default="gpt-4o-mini")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Multi-bot response settings
+    max_responding_bots = Column(Integer, default=1)  # Default max bots (0 = unlimited, use all available bots)
+    response_delay_min = Column(Integer, default=1)  # Minimum delay between bot responses (seconds)
+    response_delay_max = Column(Integer, default=3)  # Maximum delay between bot responses (seconds, randomized)
+    multi_response_rules = Column(Text)  # JSON: per-category rules [{"category": "greeting", "max_bots": 1, "delay_min": 1, "delay_max": 3}, ...]
+
+    # Bot-to-bot conversation settings
+    bot_conversation_limit = Column(Integer, default=0)  # Max bot-to-bot conversations (0 = none/disabled, -1 = unlimited)
+    bot_conversation_interval = Column(String(20), default="hour")  # Interval: minute, hour, day
+
+    # Selected groups for this hub
+    selected_groups = Column(Text)  # JSON: [{"chat_id": "123@g.us", "name": "Group 1"}, ...]
+
+    # Legacy fields - kept for backward compatibility
+    multi_response_categories = Column(Text)  # Deprecated: use multi_response_rules instead
+    response_delay_min_ms = Column(Integer, default=1000)  # Deprecated: use response_delay_min instead
+    response_delay_max_ms = Column(Integer, default=3000)  # Deprecated: use response_delay_max instead
+    response_delay_ms = Column(Integer, default=2000)  # Deprecated: use min/max instead
+
+    # Relationships
+    user = relationship("User", backref="hubs")
+    bot_memberships = relationship("HubBotMembership", back_populates="hub", cascade="all, delete-orphan")
+    agents = relationship("AIAgent", back_populates="hub", cascade="all, delete-orphan")
+    contacts = relationship("Contact", back_populates="hub", cascade="all, delete-orphan")
+    scheduled_contents = relationship("ScheduledContent", back_populates="hub", cascade="all, delete-orphan")
+    message_topics = relationship("HubMessageTopic", back_populates="hub", cascade="all, delete-orphan")
+
+
+class HubBotMembership(Base):
+    """Hub-Bot membership - Assigns bots to hubs with roles."""
+    __tablename__ = "hub_bot_memberships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String(50), default="member")  # 'primary', 'specialist', 'backup', 'member'
+    expertise = Column(Text)  # JSON: ["sales", "support", "billing"]
+    priority = Column(Integer, default=0)
+    can_initiate = Column(Boolean, default=True)  # Can start conversations
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Working hours settings
+    working_hours_start = Column(String(5))  # DEPRECATED - use working_periods instead
+    working_hours_end = Column(String(5))  # DEPRECATED - use working_periods instead
+    working_periods = Column(Text)  # JSON: [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "18:00"}]
+    working_days = Column(Text)  # JSON: ["mon", "tue", "wed", "thu", "fri"] (null = all days)
+
+    # Relationships
+    hub = relationship("Hub", back_populates="bot_memberships")
+    bot_profile = relationship("BotProfile", backref="hub_memberships")
+
+
+class HubMessageTopic(Base):
+    """Hub Message Topic - Centralized list of message categories/topics for a hub."""
+    __tablename__ = "hub_message_topics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)  # e.g., "sales", "billing", "support"
+    description = Column(Text)  # Optional description of the topic
+    is_system = Column(Boolean, default=False)  # True for predefined topics, False for user-created
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    hub = relationship("Hub", back_populates="message_topics")
+
+    # Unique constraint: each topic name should be unique within a hub
+    __table_args__ = (
+        UniqueConstraint('hub_id', 'name', name='uq_hub_topic_name'),
+    )
+
+
+class AgentTemplate(Base):
+    """Agent Template - Predefined agent configurations for quick creation."""
+    __tablename__ = "agent_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    agent_type = Column(String(50), nullable=False)  # 'classifier', 'router', 'generator', 'scheduler', 'analyzer', 'followup'
+    description = Column(Text)
+    system_prompt = Column(Text)
+    default_config = Column(Text)  # JSON: default configuration
+    is_system = Column(Boolean, default=False)  # System-provided vs user-created
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL for system templates
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="agent_templates")
+
+
+class AIAgent(Base):
+    """AI Agent - Coordinating agents for hubs."""
+    __tablename__ = "ai_agents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(255), nullable=False)
+    agent_type = Column(String(50), nullable=False)  # 'classifier', 'router', 'generator', 'scheduler', 'analyzer', 'followup'
+    description = Column(Text)
+    openai_api_key_encrypted = Column(Text)  # Override hub default if set
+    openai_model = Column(String(50), default="gpt-4o-mini")
+    system_prompt = Column(Text)  # Custom system prompt (for generator, analyzer, followup agents)
+    additional_instructions = Column(Text)  # Extra instructions appended to default prompt (for classifier, router)
+    config = Column(Text)  # JSON: agent-specific settings
+    is_active = Column(Boolean, default=True)
+    last_run_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # New fields for global agent management and monitoring
+    is_global = Column(Boolean, default=False)  # Can be viewed across hubs
+    template_id = Column(Integer, ForeignKey("agent_templates.id"), nullable=True)
+    status = Column(String(20), default="idle")  # 'idle', 'running', 'error'
+    last_error = Column(Text)
+    total_executions = Column(Integer, default=0)
+    successful_executions = Column(Integer, default=0)
+    total_tokens_used = Column(Integer, default=0)
+
+    # Relationships
+    hub = relationship("Hub", back_populates="agents")
+    executions = relationship("AgentExecution", back_populates="agent", cascade="all, delete-orphan")
+    template = relationship("AgentTemplate", backref="agents")
+
+
+class Contact(Base):
+    """Contact - Unified contact profiles across hub bots."""
+    __tablename__ = "contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
+    phone = Column(String(50), nullable=False, index=True)
+    display_name = Column(String(255))
+    profile_pic = Column(Text)
+    description = Column(Text)  # AI-generated profile summary
+    predicted_intent = Column(Text)  # AI prediction of what they want
+    engagement_score = Column(Float, default=0.0)
+    last_interaction_at = Column(DateTime)
+    first_seen_at = Column(DateTime, default=datetime.utcnow)
+    extra_data = Column(Text)  # JSON: additional data
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    hub = relationship("Hub", back_populates="contacts")
+    tags = relationship("ContactTag", back_populates="contact", cascade="all, delete-orphan")
+
+
+class ContactTag(Base):
+    """Contact tags - Labels/tags for contacts."""
+    __tablename__ = "contact_tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contact_id = Column(Integer, ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False)
+    tag = Column(String(100), nullable=False, index=True)
+    value = Column(Text)  # Optional value (e.g., "interest_level": "high")
+    confidence = Column(Float, default=1.0)
+    source = Column(String(50), default="manual")  # 'manual', 'ai_analyzer', 'rule'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    contact = relationship("Contact", back_populates="tags")
+
+
+class ScheduledContent(Base):
+    """Scheduled content - Generated content queue for proactive outreach."""
+    __tablename__ = "scheduled_contents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=True)  # NULL = unassigned
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)  # NULL = broadcast
+    content = Column(Text, nullable=False)
+    content_type = Column(String(50), default="message")  # 'message', 'followup', 'promo'
+    topic = Column(String(255))
+    scheduled_for = Column(DateTime)
+    sent_at = Column(DateTime)
+    status = Column(String(50), default="pending")  # 'pending', 'assigned', 'sent', 'failed', 'cancelled'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Recipient type: 'broadcast' (all contacts), 'all_groups', 'contacts' (selected), 'groups' (selected)
+    recipient_type = Column(String(20), default="broadcast")
+    # WhatsApp group ID (e.g., "123456789@g.us") - for single group (legacy)
+    group_id = Column(String(100), nullable=True)
+    # Group display name for UI (legacy)
+    group_name = Column(String(255), nullable=True)
+    # JSON array of contact IDs for multi-select: [1, 2, 3]
+    contact_ids = Column(Text, nullable=True)
+    # JSON array of group objects for multi-select: [{"id": "123@g.us", "name": "Group 1"}, ...]
+    group_ids = Column(Text, nullable=True)
+
+    # Relationships
+    hub = relationship("Hub", back_populates="scheduled_contents")
+    bot_profile = relationship("BotProfile", backref="scheduled_contents")
+    contact = relationship("Contact", backref="scheduled_contents")
+
+
+class AgentExecution(Base):
+    """Agent execution log - Audit trail for AI agent runs."""
+    __tablename__ = "agent_executions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(Integer, ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False)
+    trigger_type = Column(String(50))  # 'message', 'schedule', 'manual'
+    input_data = Column(Text)  # JSON: what was analyzed
+    output_data = Column(Text)  # JSON: result/decision
+    tokens_used = Column(Integer)
+    execution_time_ms = Column(Integer)
+    status = Column(String(50), default="success")  # 'success', 'error'
+    error_message = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    agent = relationship("AIAgent", back_populates="executions")
+
+
+class MessageRouting(Base):
+    """Message routing - Tracks routing decisions for messages."""
+    __tablename__ = "message_routings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id"), nullable=False)
+    message_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
+    classification = Column(Text)  # JSON: classifier result
+    assigned_bots = Column(Text)  # JSON: [bot_id, bot_id]
+    routing_reason = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    hub = relationship("Hub", backref="message_routings")
+    message = relationship("Message", backref="routings")
+    contact = relationship("Contact", backref="message_routings")
+
+
+class ToolExecution(Base):
+    """Tool Execution - Universal monitoring table for all tool operations."""
+    __tablename__ = "tool_executions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=True)
+    tool_type = Column(String(50), nullable=False)  # 'group_management', 'content_generator', 'contact_analyzer', 'scheduled_content', 'message_routing'
+    operation = Column(String(100), nullable=False)  # Specific operation performed
+    input_data = Column(Text)  # JSON: input parameters
+    output_data = Column(Text)  # JSON: results
+    status = Column(String(20), default="success")  # 'pending', 'running', 'success', 'error'
+    error_message = Column(Text)
+    execution_time_ms = Column(Integer)
+    tokens_used = Column(Integer)  # For AI operations
+    triggered_by = Column(String(50))  # 'user', 'scheduled', 'api', 'agent'
+    related_entity_type = Column(String(50))  # 'contact', 'content', 'bot', 'agent'
+    related_entity_id = Column(Integer)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    hub = relationship("Hub", backref="tool_executions")
+    user = relationship("User", backref="tool_executions")
+
+
+# ============== Database Functions ==============
+
+def create_tables():
+    """Create all database tables."""
+    Base.metadata.create_all(bind=engine)
+
+
+def get_db():
+    """Get database session (dependency injection)."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@contextmanager
+def get_db_session():
+    """Context manager for database session."""
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+# Create tables on import
+create_tables()
+
+
+# ============== Database Migrations ==============
+
+def run_migrations():
+    """Run database migrations to add new columns to existing tables."""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+
+        # Create tool_executions table if not exists
+        if 'tool_executions' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE tool_executions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        hub_id INTEGER REFERENCES hubs(id) ON DELETE CASCADE,
+                        tool_type VARCHAR(50) NOT NULL,
+                        operation VARCHAR(100) NOT NULL,
+                        input_data TEXT,
+                        output_data TEXT,
+                        status VARCHAR(20) DEFAULT 'success',
+                        error_message TEXT,
+                        execution_time_ms INTEGER,
+                        tokens_used INTEGER,
+                        triggered_by VARCHAR(50),
+                        related_entity_type VARCHAR(50),
+                        related_entity_id INTEGER,
+                        user_id INTEGER REFERENCES users(id),
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+                conn.execute(text('CREATE INDEX ix_tool_executions_created_at ON tool_executions(created_at)'))
+                conn.execute(text('CREATE INDEX ix_tool_executions_tool_type ON tool_executions(tool_type)'))
+                conn.execute(text('CREATE INDEX ix_tool_executions_hub_id ON tool_executions(hub_id)'))
+                conn.commit()
+                print("Created tool_executions table")
+            except Exception as e:
+                print(f"Could not create tool_executions table: {e}")
+
+        # Check if messages table exists
+        if 'messages' in existing_tables:
+            # Get existing columns
+            existing_columns = [col['name'] for col in inspector.get_columns('messages')]
+
+            # Add file_url column if not exists
+            if 'file_url' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE messages ADD COLUMN file_url TEXT'))
+                    conn.commit()
+                    print("Added file_url column to messages table")
+                except Exception as e:
+                    print(f"Could not add file_url column: {e}")
+
+            # Add file_name column if not exists
+            if 'file_name' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE messages ADD COLUMN file_name VARCHAR(500)'))
+                    conn.commit()
+                    print("Added file_name column to messages table")
+                except Exception as e:
+                    print(f"Could not add file_name column: {e}")
+
+            # Add file_type column if not exists
+            if 'file_type' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE messages ADD COLUMN file_type VARCHAR(100)'))
+                    conn.commit()
+                    print("Added file_type column to messages table")
+                except Exception as e:
+                    print(f"Could not add file_type column: {e}")
+
+            # Add file_size column if not exists
+            if 'file_size' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE messages ADD COLUMN file_size INTEGER'))
+                    conn.commit()
+                    print("Added file_size column to messages table")
+                except Exception as e:
+                    print(f"Could not add file_size column: {e}")
+
+            # Add file_pages column if not exists
+            if 'file_pages' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE messages ADD COLUMN file_pages INTEGER'))
+                    conn.commit()
+                    print("Added file_pages column to messages table")
+                except Exception as e:
+                    print(f"Could not add file_pages column: {e}")
+
+        # Check if bot_profiles table exists
+        if 'bot_profiles' in existing_tables:
+            # Get existing columns
+            existing_columns = [col['name'] for col in inspector.get_columns('bot_profiles')]
+
+            # Add whatsapp_timezone_offset column if not exists
+            if 'whatsapp_timezone_offset' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN whatsapp_timezone_offset INTEGER'))
+                    conn.commit()
+                    print("Added whatsapp_timezone_offset column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add whatsapp_timezone_offset column: {e}")
+
+            # Add browser_timezone column if not exists
+            if 'browser_timezone' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE bot_profiles ADD COLUMN browser_timezone VARCHAR(100) DEFAULT 'UTC'"))
+                    conn.commit()
+                    print("Added browser_timezone column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add browser_timezone column: {e}")
+
+            # Add top_p column if not exists
+            if 'top_p' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN top_p FLOAT DEFAULT 1.0'))
+                    conn.commit()
+                    print("Added top_p column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add top_p column: {e}")
+
+            # Add frequency_penalty column if not exists
+            if 'frequency_penalty' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN frequency_penalty FLOAT DEFAULT 0.0'))
+                    conn.commit()
+                    print("Added frequency_penalty column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add frequency_penalty column: {e}")
+
+            # Add presence_penalty column if not exists
+            if 'presence_penalty' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN presence_penalty FLOAT DEFAULT 0.0'))
+                    conn.commit()
+                    print("Added presence_penalty column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add presence_penalty column: {e}")
+
+        # Check if scheduled_contents table exists
+        if 'scheduled_contents' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('scheduled_contents')]
+
+            # Add recipient_type column if not exists
+            if 'recipient_type' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE scheduled_contents ADD COLUMN recipient_type VARCHAR(20) DEFAULT 'contact'"))
+                    conn.commit()
+                    print("Added recipient_type column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add recipient_type column: {e}")
+
+            # Add group_id column if not exists
+            if 'group_id' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE scheduled_contents ADD COLUMN group_id VARCHAR(100)'))
+                    conn.commit()
+                    print("Added group_id column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add group_id column: {e}")
+
+            # Add group_name column if not exists
+            if 'group_name' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE scheduled_contents ADD COLUMN group_name VARCHAR(255)'))
+                    conn.commit()
+                    print("Added group_name column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add group_name column: {e}")
+
+            # Add contact_ids column if not exists (JSON array for multi-select)
+            if 'contact_ids' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE scheduled_contents ADD COLUMN contact_ids TEXT'))
+                    conn.commit()
+                    print("Added contact_ids column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add contact_ids column: {e}")
+
+            # Add group_ids column if not exists (JSON array for multi-select)
+            if 'group_ids' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE scheduled_contents ADD COLUMN group_ids TEXT'))
+                    conn.commit()
+                    print("Added group_ids column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add group_ids column: {e}")
+
+        # Check if ai_agents table exists and add new columns
+        if 'ai_agents' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('ai_agents')]
+
+            # Add is_global column if not exists
+            if 'is_global' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN is_global BOOLEAN DEFAULT 0'))
+                    conn.commit()
+                    print("Added is_global column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add is_global column: {e}")
+
+            # Add template_id column if not exists
+            if 'template_id' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN template_id INTEGER'))
+                    conn.commit()
+                    print("Added template_id column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add template_id column: {e}")
+
+            # Add status column if not exists
+            if 'status' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE ai_agents ADD COLUMN status VARCHAR(20) DEFAULT 'idle'"))
+                    conn.commit()
+                    print("Added status column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add status column: {e}")
+
+            # Add last_error column if not exists
+            if 'last_error' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN last_error TEXT'))
+                    conn.commit()
+                    print("Added last_error column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add last_error column: {e}")
+
+            # Add total_executions column if not exists
+            if 'total_executions' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN total_executions INTEGER DEFAULT 0'))
+                    conn.commit()
+                    print("Added total_executions column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add total_executions column: {e}")
+
+            # Add successful_executions column if not exists
+            if 'successful_executions' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN successful_executions INTEGER DEFAULT 0'))
+                    conn.commit()
+                    print("Added successful_executions column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add successful_executions column: {e}")
+
+            # Add total_tokens_used column if not exists
+            if 'total_tokens_used' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN total_tokens_used INTEGER DEFAULT 0'))
+                    conn.commit()
+                    print("Added total_tokens_used column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add total_tokens_used column: {e}")
+
+            # Add additional_instructions column if not exists
+            if 'additional_instructions' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE ai_agents ADD COLUMN additional_instructions TEXT'))
+                    conn.commit()
+                    print("Added additional_instructions column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add additional_instructions column: {e}")
+
+        # Check if hubs table exists and add new columns
+        if 'hubs' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('hubs')]
+
+            # Add task_type column if not exists
+            if 'task_type' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE hubs ADD COLUMN task_type VARCHAR(50) DEFAULT 'group_management'"))
+                    conn.commit()
+                    print("Added task_type column to hubs table")
+                except Exception as e:
+                    print(f"Could not add task_type column: {e}")
+
+            # Add selected_groups column if not exists
+            if 'selected_groups' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE hubs ADD COLUMN selected_groups TEXT"))
+                    conn.commit()
+                    print("Added selected_groups column to hubs table")
+                except Exception as e:
+                    print(f"Could not add selected_groups column: {e}")
+
+
+# Run migrations on import
+run_migrations()

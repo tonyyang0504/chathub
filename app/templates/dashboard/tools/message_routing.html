@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+
+{% block title %}Message Routing - WhatsApp Bot Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.workflow-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 2rem;
+    position: relative;
+}
+
+.workflow-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    z-index: 0;
+}
+
+.workflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    max-width: 180px;
+}
+
+.workflow-step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #4facfe;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.workflow-step h5 { font-weight: 600; margin-bottom: 0.5rem; }
+.workflow-step p { font-size: 0.85rem; color: var(--text-muted); }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.stat-card .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+.stat-card .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+.stat-card.success .stat-icon { color: #28a745; }
+.stat-card.info .stat-icon { color: #17a2b8; }
+
+.instances-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.instance-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.instance-card:hover { border-color: #4facfe; transform: translateY(-2px); }
+
+/* Theme outline button */
+.btn-outline-theme {
+    color: #4facfe;
+    border-color: #4facfe;
+    background: transparent;
+}
+.btn-outline-theme:hover, .btn-outline-theme:focus {
+    background: #4facfe;
+    border-color: #4facfe;
+    color: white;
+}
+
+.simulation-section {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.simulation-section h3 { color: #333; }
+
+.flow-demo {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.flow-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    margin: 0.5rem;
+}
+
+.flow-node.input { background: rgba(13, 110, 253, 0.15); }
+.flow-node.classifier { background: rgba(111, 66, 193, 0.15); }
+.flow-node.router { background: rgba(255, 193, 7, 0.15); }
+.flow-node.output { background: rgba(25, 135, 84, 0.15); }
+.flow-node.active { animation: pulse 1s infinite; }
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.flow-arrow { color: var(--text-muted); margin: 0 0.5rem; }
+
+.feature-list { list-style: none; padding: 0; }
+.feature-list li { padding: 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+.feature-list li i { color: #28a745; font-size: 1.2rem; }
+
+/* Theme button styling */
+.btn-theme {
+    background: #4facfe;
+    border: none;
+    color: white;
+}
+.btn-theme:hover, .btn-theme:focus {
+    background: #3d9be8;
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
+/* Instance Filter Dropdown */
+.instance-dropdown {
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+}
+.instance-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+/* Instance Status Badge - matching agents page */
+.instance-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.instance-status.status-active {
+    background: rgba(25, 135, 84, 0.15);
+    color: var(--bs-success);
+}
+.instance-status.status-inactive {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--bs-secondary);
+}
+.instance-dropdown-btn::after {
+    margin-left: auto;
+}
+.instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
+    border-color: #4facfe;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.instance-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.instance-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.instance-dropdown-menu .dropdown-item:hover {
+    background: rgba(79, 172, 254, 0.1);
+    color: #4facfe;
+}
+.instance-dropdown-menu .dropdown-item.selected {
+    background: rgba(79, 172, 254, 0.15);
+    color: #4facfe;
+    font-weight: 500;
+}
+
+/* Simulation textarea styling */
+.simulation-textarea {
+    border-radius: 12px;
+    padding: 12px 16px;
+    resize: vertical;
+    overflow-y: auto;
+}
+.simulation-textarea:focus {
+    border-color: #4facfe;
+    box-shadow: none;
+    outline: none;
+}
+.simulation-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+.simulation-textarea::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0 12px 12px 0;
+    margin: 4px 0;
+}
+.simulation-textarea::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.simulation-textarea {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-border-color) transparent;
+}
+.simulation-textarea::-webkit-scrollbar-corner {
+    background: transparent;
+}
+.simulation-textarea::-webkit-resizer {
+    background: transparent;
+    border: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-signpost-split me-3"></i>Message Routing</h1>
+                <p>Intelligently route incoming messages to the right bot or agent. AI classifies message intent and applies custom rules to ensure every conversation reaches the best handler.</p>
+                <button class="btn btn-light btn-lg mt-3" onclick="createHubInstance()">
+                    <i class="bi bi-plus-lg me-2"></i>Create Hub Instance
+                </button>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-shuffle" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3 class="mb-3">Overall Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="bi bi-collection"></i></div>
+            <div class="stat-value" id="totalInstances">0</div>
+            <div class="stat-label">Hub Instances</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="stat-value" id="totalRouted">0</div>
+            <div class="stat-label">Messages Routed</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="successRate">0%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-list-check"></i></div>
+            <div class="stat-value" id="totalRules">0</div>
+            <div class="stat-label">Active Rules</div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-envelope"></i></div>
+                <h5>1. Message Arrives</h5>
+                <p>Incoming WhatsApp message is captured by the system</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-cpu"></i></div>
+                <h5>2. AI Classification</h5>
+                <p>AI analyzes intent, topic, sentiment, and urgency</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-signpost-split"></i></div>
+                <h5>3. Apply Rules</h5>
+                <p>Custom routing rules determine the best handler</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-robot"></i></div>
+                <h5>4. Route to Bot</h5>
+                <p>Message is delivered to the selected bot or agent</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hub Instances -->
+    <div class="instances-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-collection me-2"></i>Active Hub Instances <span class="text-muted fs-6 fw-normal" id="instanceCount"></span></h3>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="hubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="hubFilterOptions">
+                        <a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="statusFilterDropdown" data-bs-toggle="dropdown">
+                        All Status
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item status-filter-item selected" href="#" data-value="">All Status</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="active">Active</a>
+                        <a class="dropdown-item status-filter-item" href="#" data-value="inactive">Inactive</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadInstances()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="instancesContainer">
+            <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div class="simulation-section">
+        <div class="row">
+            <div class="col-lg-6">
+                <h3><i class="bi bi-play-circle me-2"></i>Test Message Routing</h3>
+                <p class="text-muted">Enter a sample message to see how it would be classified and routed.</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Test Message</label>
+                    <textarea class="form-control simulation-textarea" id="simulationMessage" rows="3" placeholder="Type a message to test routing...">I need help with a refund for my recent order #12345</textarea>
+                </div>
+
+                <button class="btn btn-theme" onclick="runSimulation()">
+                    <i class="bi bi-play me-2"></i>Test Routing
+                </button>
+
+                <hr class="my-4">
+
+                <h5>Key Features</h5>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check-circle-fill"></i> AI-powered message classification</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Custom routing rules with priorities</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Keyword and intent-based routing</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Time-based routing rules</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Fallback handling for unmatched messages</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Routing Flow Demo</h5>
+                <div class="flow-demo text-center">
+                    <div class="mb-3">
+                        <div class="flow-node input" id="flowInput">
+                            <i class="bi bi-envelope"></i> Incoming Message
+                        </div>
+                    </div>
+                    <div class="flow-arrow"><i class="bi bi-arrow-down"></i></div>
+                    <div class="mb-3">
+                        <div class="flow-node classifier" id="flowClassifier">
+                            <i class="bi bi-cpu"></i> AI Classifier
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-secondary" id="classificationResult">--</span>
+                    </div>
+                    <div class="flow-arrow"><i class="bi bi-arrow-down"></i></div>
+                    <div class="mb-3">
+                        <div class="flow-node router" id="flowRouter">
+                            <i class="bi bi-signpost-split"></i> Router
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-secondary" id="routingRule">--</span>
+                    </div>
+                    <div class="flow-arrow"><i class="bi bi-arrow-down"></i></div>
+                    <div class="mb-3">
+                        <div class="flow-node output" id="flowOutput">
+                            <i class="bi bi-robot"></i> <span id="targetBot">Target Bot</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="tool-card">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="activityInstanceValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityInstanceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        All Instances
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="activityInstanceDropdown">
+                        <a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadActivity()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+        </div>
+        <div class="tool-card-body p-0">
+            <div class="activity-log" id="activityLog">
+                <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadInstances();
+    loadActivity();
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/tools/api/message-routing/stats');
+        const stats = await response.json();
+        document.getElementById('totalInstances').textContent = stats.total_instances || 0;
+        document.getElementById('totalRouted').textContent = stats.total_routed || 0;
+        document.getElementById('successRate').textContent = (stats.success_rate || 0) + '%';
+        document.getElementById('totalRules').textContent = stats.total_rules || 0;
+    } catch (error) { console.error('Error loading stats:', error); }
+}
+
+let allInstances = [];
+
+async function loadInstances() {
+    try {
+        const response = await fetch('/api/hubs?task_type=message_routing');
+        allInstances = await response.json();
+        populateHubFilter();
+        setupFilterHandlers();
+        renderInstances();
+    } catch (error) {
+        console.error('Error loading instances:', error);
+        document.getElementById('instancesContainer').innerHTML = `<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle display-4"></i><p class="mt-2">Failed to load instances</p></div>`;
+    }
+}
+
+function populateHubFilter() {
+    const filterMenu = document.getElementById('hubFilterOptions');
+    let html = '<a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+    allInstances.forEach(hub => {
+        html += `<a class="dropdown-item hub-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+    });
+    filterMenu.innerHTML = html;
+}
+
+function setupFilterHandlers() {
+    document.querySelectorAll('.hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('hubFilterValue').value = this.dataset.value;
+            document.getElementById('hubFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+    document.querySelectorAll('.status-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('statusFilterValue').value = this.dataset.value;
+            document.getElementById('statusFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.status-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+}
+
+function renderInstances() {
+    const container = document.getElementById('instancesContainer');
+    const hubFilter = document.getElementById('hubFilterValue').value;
+    const statusFilter = document.getElementById('statusFilterValue').value;
+
+    let filtered = allInstances.filter(hub => {
+        if (hubFilter && hub.id != hubFilter) return false;
+        if (statusFilter === 'active' && !hub.is_active) return false;
+        if (statusFilter === 'inactive' && hub.is_active) return false;
+        return true;
+    });
+
+    document.getElementById('instanceCount').textContent = `(${filtered.length} of ${allInstances.length})`;
+
+    if (allInstances.length === 0) {
+        container.innerHTML = `<div class="text-center py-4"><i class="bi bi-inbox display-4 text-muted"></i><p class="text-muted mt-2">No message routing hub instances yet</p><button class="btn btn-primary" onclick="createHubInstance()"><i class="bi bi-plus-lg me-2"></i>Create Your First Instance</button></div>`;
+        return;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-4"><i class="bi bi-filter display-4 text-muted"></i><p class="text-muted mt-2">No instances match the current filters</p></div>`;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(hub => {
+        html += `<div class="instance-card"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold">${hub.name}</span><span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">${hub.is_active ? 'Active' : 'Inactive'}</span></div><p class="text-muted small mb-2">${hub.description || 'No description'}</p><div class="d-flex gap-3 small text-muted mb-2"><span><i class="bi bi-robot me-1"></i>${hub.bot_count} bots</span><span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span></div><a href="/dashboard/hubs" class="btn btn-sm btn-theme" onclick="localStorage.setItem('openHubId', ${hub.id})"><i class="bi bi-gear me-1"></i>Configure</a></div>`;
+    });
+    container.innerHTML = html;
+    document.getElementById('totalInstances').textContent = allInstances.length;
+
+    // Populate activity filter dropdown
+    const activityFilterMenu = document.getElementById('activityInstanceDropdown')?.closest('.dropdown')?.querySelector('.instance-dropdown-menu');
+    if (activityFilterMenu) {
+        activityFilterMenu.innerHTML = '<a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>';
+        allInstances.forEach(hub => {
+            activityFilterMenu.innerHTML += `<a class="dropdown-item instance-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+
+        document.querySelectorAll('.instance-filter-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('activityInstanceValue').value = this.dataset.value;
+                document.getElementById('activityInstanceDropdown').textContent = this.textContent;
+                document.querySelectorAll('.instance-filter-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                loadActivity();
+            });
+        });
+    }
+}
+
+async function loadActivity() {
+    try {
+        const hiddenInput = document.getElementById('activityInstanceValue');
+        const selectedHubId = hiddenInput ? hiddenInput.value : '';
+        let url = '/tools/api/executions?tool_type=message_routing&limit=20';
+        if (selectedHubId) {
+            url += `&hub_id=${selectedHubId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        const container = document.getElementById('activityLog');
+
+        if (!data.executions || data.executions.length === 0) {
+            container.innerHTML = `<div class="empty-state py-3"><i class="bi bi-activity" style="font-size: 2rem;"></i><p class="mb-0">No recent activity</p></div>`;
+            return;
+        }
+
+        let html = '';
+        data.executions.forEach(exec => {
+            const time = new Date(exec.created_at).toLocaleString();
+            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
+            html += `<div class="activity-log-item"><div class="log-time">${time}</div><div class="log-content">${exec.operation}</div><div class="log-status"><span class="${statusClass}">${exec.status}</span></div></div>`;
+        });
+        container.innerHTML = html;
+    } catch (error) { console.error('Error loading activity:', error); }
+}
+
+function createHubInstance() {
+    localStorage.setItem('createHubTaskType', 'message_routing');
+    window.location.href = '/dashboard/hubs';
+}
+
+async function runSimulation() {
+    const message = document.getElementById('simulationMessage').value;
+    const nodes = ['flowInput', 'flowClassifier', 'flowRouter', 'flowOutput'];
+    const availableBots = ['Sales Bot', 'Support Bot', 'General Bot'];
+
+    if (!message.trim()) {
+        alert('Please enter a message to route');
+        return;
+    }
+
+    // Reset all nodes
+    nodes.forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById('classificationResult').textContent = '--';
+    document.getElementById('routingRule').textContent = '--';
+    document.getElementById('targetBot').textContent = 'Target Bot';
+
+    // Start animation - step 0: Input
+    document.getElementById('flowInput').classList.add('active');
+
+    try {
+        const response = await fetch('/tools/api/simulate/message-routing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                bots: availableBots
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Routing failed');
+        }
+
+        const routing = result.routing;
+
+        // Animate through steps with delays
+        setTimeout(() => {
+            document.getElementById('flowInput').classList.remove('active');
+            document.getElementById('flowClassifier').classList.add('active');
+            document.getElementById('classificationResult').textContent = routing.category.toUpperCase();
+            document.getElementById('classificationResult').className = 'badge bg-info';
+        }, 600);
+
+        setTimeout(() => {
+            document.getElementById('flowClassifier').classList.remove('active');
+            document.getElementById('flowRouter').classList.add('active');
+            const urgencyColors = { low: 'bg-secondary', medium: 'bg-warning text-dark', high: 'bg-danger', critical: 'bg-danger' };
+            document.getElementById('routingRule').textContent = `${routing.urgency.toUpperCase()} Priority`;
+            document.getElementById('routingRule').className = `badge ${urgencyColors[routing.urgency] || 'bg-warning text-dark'}`;
+        }, 1200);
+
+        setTimeout(() => {
+            document.getElementById('flowRouter').classList.remove('active');
+            document.getElementById('flowOutput').classList.add('active');
+            document.getElementById('targetBot').textContent = routing.assigned_bot;
+            document.getElementById('targetBot').title = routing.reason;
+        }, 1800);
+
+    } catch (error) {
+        document.getElementById('classificationResult').textContent = 'Error';
+        document.getElementById('classificationResult').className = 'badge bg-danger';
+        document.getElementById('routingRule').textContent = error.message;
+        nodes.forEach(id => document.getElementById(id).classList.remove('active'));
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1272 @@
+/* WhatsApp Bot Dashboard - Airbnb Typography + WhatsApp Colors */
+
+:root {
+    /* WhatsApp Theme Colors */
+    --wa-green: #25D366;
+    --wa-dark-green: #25D366;
+    --wa-light-green: #dcf8c6;
+    --wa-teal: #25D366;
+    --wa-bg: #efeae2;
+    --wa-panel-bg: #f0f2f5;
+    --wa-chat-bg: #efeae2;
+    --wa-incoming: #ffffff;
+    --wa-outgoing: #d9fdd3;
+
+    /* Text Colors */
+    --text-primary: #111b21;
+    --text-secondary: #667781;
+    --text-muted: #8696a0;
+
+    /* UI Colors */
+    --border-color: #e9edef;
+    --hover-bg: #f5f6f6;
+    --card-bg: #ffffff;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+    /* Airbnb-style Font Stack */
+    --font-family: 'Circular', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+/* Global Styles - Airbnb Typography */
+* {
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: var(--wa-panel-bg);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden; /* Prevent body scroll */
+}
+
+/* Navbar - WhatsApp Green Header - Fixed at top */
+.navbar {
+    background-color: #25D366 !important;
+    background: #25D366 !important;
+    padding: 8px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    color: white !important;
+    font-size: 18px;
+}
+
+.navbar-brand i {
+    color: white;
+}
+
+.navbar-toggler {
+    border-color: rgba(255,255,255,0.3);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.7) !important;
+    font-size: 14px;
+    padding: 8px 14px !important;
+    border-radius: 8px;
+    margin: 0 2px;
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: white !important;
+    background: transparent;
+}
+
+.nav-link.active {
+    color: white !important;
+    background: transparent !important;
+    font-weight: 600;
+}
+
+/* Main Content Area - Scrollable below fixed navbar */
+.main-content {
+    padding: 24px;
+    margin-top: 56px; /* Space for fixed navbar */
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Page Headers */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+}
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Cards - Clean White with Rounded Corners */
+.card {
+    background-color: var(--card-bg);
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.card-footer {
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    padding: 12px 20px;
+}
+
+/* Stat Cards */
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .card-body {
+    padding: 24px;
+}
+
+.stat-card h2 {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.stat-card .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+.stat-card i {
+    opacity: 0.9;
+}
+
+/* Tables */
+.table {
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 16px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Buttons - WhatsApp Green - Pill Shaped */
+.btn {
+    border-radius: 20px;
+    font-weight: 500;
+    padding: 10px 20px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-sm {
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.btn-lg {
+    border-radius: 24px;
+    padding: 12px 28px;
+    font-size: 16px;
+}
+
+.btn-success, .btn-primary {
+    background-color: #25D366 !important;
+    border-color: #25D366 !important;
+    color: white !important;
+}
+
+.btn-success:hover, .btn-primary:hover,
+.btn-success:focus, .btn-primary:focus,
+.btn-success:active, .btn-primary:active {
+    background-color: #1ebe5d !important;
+    border-color: #1ebe5d !important;
+    color: white !important;
+}
+
+.btn-outline-success, .btn-outline-primary {
+    color: #25D366 !important;
+    border-color: #25D366 !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-success:hover, .btn-outline-primary:hover,
+.btn-outline-success:focus, .btn-outline-primary:focus,
+.btn-outline-success:active, .btn-outline-primary:active {
+    background-color: #1ebe5d !important;
+    border-color: #1ebe5d !important;
+    color: white !important;
+}
+
+.btn-secondary {
+    background-color: var(--wa-panel-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-danger {
+    background-color: #ea0038;
+    border-color: #ea0038;
+}
+
+.btn-danger:hover {
+    background-color: #c9002f;
+    border-color: #c9002f;
+}
+
+.btn-outline-danger {
+    color: #ea0038;
+    border-color: #ea0038;
+}
+
+.btn-outline-danger:hover {
+    background-color: #ea0038;
+    border-color: #ea0038;
+    color: white;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+}
+
+.badge.bg-success,
+.bg-success {
+    background-color: #25D366 !important;
+    background: #25D366 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #8696a0 !important;
+}
+
+.badge.bg-warning {
+    background-color: #fbbf24 !important;
+    color: #92400e !important;
+}
+
+.badge.bg-danger {
+    background-color: #ea0038 !important;
+}
+
+/* Override Bootstrap text colors */
+.text-success {
+    color: #25D366 !important;
+}
+
+.text-primary {
+    color: #25D366 !important;
+}
+
+/* Override Bootstrap border colors */
+.border-success {
+    border-color: #25D366 !important;
+}
+
+.border-primary {
+    border-color: #25D366 !important;
+}
+
+/* Form Controls - Rounded */
+.form-control, .form-select {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 20px;
+    padding: 10px 18px;
+    font-size: 14px;
+    box-shadow: none;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: white;
+    border-color: var(--wa-teal);
+    box-shadow: none;
+    color: var(--text-primary);
+}
+
+textarea.form-control {
+    border-radius: 16px;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.form-text {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.input-group-text {
+    background-color: var(--wa-panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Modals */
+.modal-content {
+    background-color: white;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+}
+
+.modal-title {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+/* Scrollable modal body */
+.modal-dialog-scrollable .modal-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 12px 20px;
+}
+
+.btn-close {
+    opacity: 0.5;
+}
+
+.btn-close:hover {
+    opacity: 0.8;
+}
+
+/* Reddit-style Modal Close Button */
+.modal-close-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    padding: 0;
+}
+.modal-close-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+}
+.modal-close-btn:active {
+    transform: scale(0.95);
+}
+.modal-close-btn::before,
+.modal-close-btn::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background-color: #636363;
+    border-radius: 1px;
+    transition: background-color 0.2s ease;
+}
+.modal-close-btn::before {
+    transform: rotate(45deg);
+}
+.modal-close-btn::after {
+    transform: rotate(-45deg);
+}
+.modal-close-btn:hover::before,
+.modal-close-btn:hover::after {
+    background-color: #1a1a1a;
+}
+
+/* Dark mode adjustments for modal close button */
+[data-bs-theme="dark"] .modal-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+}
+[data-bs-theme="dark"] .modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+[data-bs-theme="dark"] .modal-close-btn::before,
+[data-bs-theme="dark"] .modal-close-btn::after {
+    background-color: #a0a0a0;
+}
+[data-bs-theme="dark"] .modal-close-btn:hover::before,
+[data-bs-theme="dark"] .modal-close-btn:hover::after {
+    background-color: #ffffff;
+}
+
+/* List Groups */
+.list-group-item {
+    background-color: white;
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    padding: 14px 18px;
+}
+
+.list-group-item:first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.list-group-item:last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.list-group-item-action:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+/* Alerts */
+.alert {
+    border-radius: 10px;
+    border: none;
+    padding: 14px 18px;
+}
+
+.alert-success {
+    background-color: rgba(37, 211, 102, 0.15);
+    color: var(--wa-dark-green);
+}
+
+.alert-danger {
+    background-color: rgba(234, 0, 56, 0.1);
+    color: #ea0038;
+}
+
+.alert-warning {
+    background-color: rgba(251, 191, 36, 0.15);
+    color: #92400e;
+}
+
+.alert-info {
+    background-color: rgba(18, 140, 126, 0.1);
+    color: var(--wa-teal);
+}
+
+/* Toasts */
+.toast {
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.toast-header {
+    background-color: white;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.toast-body {
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 10px 12px;
+}
+
+/* Toast close button - small, positioned at top right */
+.toast-close-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 0.5em;
+    height: 0.5em;
+    padding: 0.25em;
+    opacity: 0.6;
+    background-size: 0.5em;
+    border-radius: 50%;
+    transition: background-color 0.15s, opacity 0.15s;
+}
+
+.toast-close-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Legacy toast close button styles */
+.toast .btn-close:not(.toast-close-btn) {
+    width: 0.6em;
+    height: 0.6em;
+    padding: 0.4em;
+    opacity: 0.7;
+}
+
+.toast .btn-close:not(.toast-close-btn):hover {
+    opacity: 1;
+}
+
+/* QR Code Container */
+.qr-code-container {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    display: inline-block;
+    box-shadow: var(--shadow);
+}
+
+.qr-code-container img {
+    max-width: 250px;
+    height: auto;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.3);
+}
+
+/* Loading Spinner */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.spinner-border {
+    color: var(--wa-teal);
+}
+
+/* Status Indicator */
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.status-indicator.running {
+    background-color: var(--wa-green);
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.stopped {
+    background-color: var(--text-muted);
+}
+
+.status-indicator.connecting {
+    background-color: #fbbf24;
+    animation: pulse 0.8s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    padding: 6px;
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
+.dropdown-item:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.dropdown-item i {
+    color: var(--text-secondary);
+}
+
+.dropdown-divider {
+    border-color: var(--border-color);
+    margin: 6px 0;
+}
+
+/* Tab Content */
+.nav-tabs {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-secondary) !important;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 12px 16px;
+    margin: 0;
+    background: transparent !important;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--text-primary) !important;
+    border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--wa-teal) !important;
+    border-bottom-color: var(--wa-teal);
+    background: transparent !important;
+}
+
+.tab-content > .tab-pane {
+    display: none;
+}
+
+.tab-content > .active {
+    display: block;
+}
+
+/* Form Switch */
+.form-check-input {
+    width: 44px;
+    height: 24px;
+    border: 2px solid var(--border-color);
+    background-color: white;
+}
+
+.form-check-input:checked {
+    background-color: var(--wa-teal);
+    border-color: var(--wa-teal);
+}
+
+.form-check-input:focus {
+    box-shadow: none;
+    border-color: var(--wa-teal);
+}
+
+/* Code Blocks */
+code {
+    background-color: var(--wa-panel-bg);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--wa-dark-green);
+    font-size: 13px;
+}
+
+pre {
+    background-color: var(--wa-panel-bg);
+    padding: 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: var(--wa-green);
+    margin-bottom: 16px;
+    opacity: 0.7;
+}
+
+.empty-state h3 {
+    color: var(--text-primary);
+    font-weight: 400;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    font-size: 14px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Connection Status Banner */
+.connection-banner {
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.connection-banner.connected {
+    background-color: rgba(37, 211, 102, 0.15);
+    color: var(--wa-dark-green);
+}
+
+.connection-banner.disconnected {
+    background-color: rgba(234, 0, 56, 0.1);
+    color: #ea0038;
+}
+
+.connection-banner.connecting {
+    background-color: rgba(251, 191, 36, 0.15);
+    color: #92400e;
+}
+
+/* Bot Card Styles */
+.bot-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.bot-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--wa-teal), var(--wa-green));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.bot-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Pagination */
+.pagination {
+    gap: 4px;
+}
+
+.page-link {
+    border: none;
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 8px 14px;
+}
+
+.page-link:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.page-item.active .page-link {
+    background-color: var(--wa-teal);
+    color: white;
+}
+
+/* Progress Bar */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--border-color);
+}
+
+.progress-bar {
+    background-color: var(--wa-teal);
+    border-radius: 4px;
+}
+
+/* Avatar Styles */
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #dfe5e7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 18px;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+
+.avatar-lg {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 16px;
+    }
+
+    .stat-card .card-body {
+        padding: 16px;
+    }
+
+    .card-body {
+        padding: 16px;
+    }
+
+    .navbar {
+        padding: 8px 12px;
+    }
+}
+
+/* Panel Styles (for consistency with conversations page) */
+.panel {
+    background: var(--wa-panel-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.panel-header {
+    background: #25D366 !important;
+    color: white;
+    padding: 12px 16px;
+    font-weight: 500;
+}
+
+.panel-body {
+    padding: 0;
+}
+
+/* Search Input - Pill Style */
+.search-input {
+    border-radius: 21px;
+    border: none;
+    background: white;
+    padding: 9px 18px 9px 40px;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.search-input:focus {
+    box-shadow: none;
+    background: white;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* ============== File/Image Message Styles (WhatsApp Web Style) ============== */
+
+/* Image messages - WhatsApp style */
+.message-media {
+    position: relative;
+    max-width: 330px;
+    min-width: 200px;
+    font-size: 0; /* Remove inline element spacing */
+    line-height: 0; /* Remove line-height spacing */
+}
+
+.message-media .image-preview {
+    display: block;
+    cursor: pointer;
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 0;
+    line-height: 0;
+}
+
+.message-media .image-preview img {
+    width: 100%;
+    max-height: 330px;
+    min-height: 100px;
+    object-fit: cover;
+    display: block;
+    background: #f0f0f0;
+    vertical-align: bottom; /* Remove any baseline gap */
+    border: none;
+    outline: none;
+}
+
+.message-media .image-preview:hover img {
+    filter: brightness(0.95);
+}
+
+/* Image overlay for time when no caption - subtle gradient for timestamp readability */
+.message-media:not(.has-caption) .image-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.25));
+    border-radius: 0 0 6px 6px;
+    pointer-events: none;
+}
+
+.message-media .video-preview {
+    width: 100%;
+    max-height: 330px;
+    border-radius: 6px;
+    background: #000;
+    display: block;
+}
+
+.message-media .media-caption {
+    padding: 6px 6px 0 6px;
+    font-size: 14.2px;
+    line-height: 19px;
+    color: var(--text-primary);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+/* Document messages - WhatsApp Web exact style */
+.message-document {
+    min-width: 240px;
+    max-width: 330px;
+}
+
+.message-document .document-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 11px 10px 9px;
+    background: #f5f6f6;
+    border-radius: 7.5px;
+    text-decoration: none;
+    color: inherit;
+    min-height: 62px;
+}
+
+.message-document .document-link:hover {
+    filter: brightness(0.98);
+}
+
+/* Document icon container - WhatsApp Web style (extension only, no icon) */
+.message-document .document-thumb {
+    width: 34px;
+    height: 42px;
+    border-radius: 5px;
+    background: #8696a0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* Corner fold effect */
+.message-document .document-thumb::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-style: solid;
+    border-width: 0 10px 10px 0;
+    border-color: transparent rgba(255,255,255,0.35) transparent transparent;
+    border-top-right-radius: 3px;
+}
+
+/* Hide the icon - WhatsApp Web only shows extension text */
+.message-document .document-thumb i {
+    display: none;
+}
+
+/* Extension text - centered in thumbnail */
+.message-document .document-thumb .doc-ext {
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    text-align: center;
+    line-height: 1;
+}
+
+/* File type specific colors - WhatsApp Web colors */
+.message-document .document-thumb.pdf {
+    background: #dc3545;
+}
+
+.message-document .document-thumb.doc,
+.message-document .document-thumb.docx {
+    background: #0d6efd;
+}
+
+.message-document .document-thumb.xls,
+.message-document .document-thumb.xlsx {
+    background: #198754;
+}
+
+.message-document .document-thumb.ppt,
+.message-document .document-thumb.pptx {
+    background: #fd7e14;
+}
+
+.message-document .document-thumb.txt {
+    background: #8696a0;
+}
+
+.message-document .document-thumb.zip,
+.message-document .document-thumb.rar,
+.message-document .document-thumb.7z {
+    background: #6c757d;
+}
+
+.message-document .document-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.message-document .document-name {
+    font-size: 14.2px;
+    font-weight: 400;
+    color: #111b21;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.35;
+    margin-bottom: 2px;
+}
+
+.message-document .document-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #667781;
+    line-height: 1.2;
+}
+
+.message-document .document-meta span {
+    display: inline;
+}
+
+/* Download button - WhatsApp style */
+.message-document .document-download {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.message-document .document-link:hover .document-download {
+    opacity: 1;
+}
+
+.message-document .document-download i {
+    font-size: 18px;
+    color: #8696a0;
+}
+
+.message-document .document-caption {
+    padding: 4px 4px 0 4px;
+    font-size: 14.2px;
+    line-height: 19px;
+    color: #111b21;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+/* Outgoing document message - green tinted background */
+.message-row.outgoing .message-document .document-link {
+    background: #c5e8ba;
+}
+
+.message-row.outgoing .message-document .document-link:hover {
+    filter: brightness(0.97);
+}
+
+/* Message bubble adjustments for media */
+.message-row .message-bubble:has(.message-media),
+.message-row .message-bubble:has(.message-document) {
+    padding: 3px;
+}
+
+/* Sender name styling for media messages in groups */
+.message-row .message-bubble:has(.message-media) .message-sender,
+.message-row .message-bubble:has(.message-document) .message-sender {
+    display: block;
+    padding: 3px 6px 2px 6px;
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 19px;
+}
+
+.message-row .message-bubble:has(.message-media) .message-text,
+.message-row .message-bubble:has(.message-document) .message-text {
+    padding: 0;
+    white-space: normal; /* Override pre-wrap to prevent whitespace rendering */
+    line-height: 0; /* Reset line-height to prevent extra space */
+}
+
+/* Restore proper line-height for captions and footer */
+.message-media .media-caption,
+.message-document .document-caption {
+    line-height: 19px;
+}
+
+.message-row .message-bubble:has(.message-media) .message-footer,
+.message-row .message-bubble:has(.message-document) .message-footer {
+    line-height: 19px;
+    display: inline-flex;
+    align-items: center;
+    float: right;
+    margin: 0;
+    padding: 4px 2px 2px 4px;
+}
+
+/* For images/videos with caption - footer flows after caption */
+.message-media.has-caption + .message-footer {
+    margin-top: -2px;
+}
+
+/* For images/videos without caption - position time over image */
+.message-media:not(.has-caption) + .message-footer {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    padding: 2px 6px !important;
+    margin: 0;
+}
+
+.message-media:not(.has-caption) + .message-footer .message-time {
+    color: white !important;
+}
+
+.message-media:not(.has-caption) + .message-footer .message-status i {
+    color: white !important;
+}
+
+/* Document footer - inline after document box */
+.message-document + .message-footer {
+    margin-top: 2px;
+}
+
+/* Document without download URL (placeholder) */
+.message-document .document-link.no-download {
+    cursor: default;
+    opacity: 0.85;
+}
+
+.message-document .document-link.no-download:hover {
+    filter: none;
+}
+
+.message-document .document-unavailable {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+
+.message-document .document-unavailable i {
+    font-size: 18px;
+    color: #8696a0;
+}

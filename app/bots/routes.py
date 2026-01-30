@@ -1,0 +1,762 @@
+"""
+Bot Management Routes
+"""
+
+import asyncio
+import logging
+import os
+import shutil
+from pathlib import Path
+from typing import List, Optional
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+logger = logging.getLogger(__name__)
+
+# Get base directory for session storage (consistent with whatsapp_bot.py)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # python_bot directory
+SESSIONS_DIR = BASE_DIR / "data" / "sessions"
+
+from app.config import settings
+from app.database import get_db, User, BotProfile, Conversation, Message
+from app.auth.utils import get_current_user, encrypt_string, decrypt_string
+from app.bots.schemas import (
+    BotProfileCreate,
+    BotProfileUpdate,
+    BotProfileResponse,
+    BotStatusResponse,
+    BotListResponse
+)
+from app.bots.manager import bot_manager
+
+router = APIRouter(tags=["Bots"])
+
+
+# ============== Helper Functions ==============
+
+def get_bot_profile(
+    bot_id: int,
+    user: User,
+    db: Session
+) -> BotProfile:
+    """Get bot profile and verify ownership."""
+    bot = db.query(BotProfile).filter(
+        BotProfile.id == bot_id,
+        BotProfile.user_id == user.id
+    ).first()
+
+    if not bot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bot profile not found"
+        )
+
+    return bot
+
+
+def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
+    """Convert BotProfile to response schema with counts."""
+    # Get conversation count
+    conv_count = db.query(func.count(Conversation.id)).filter(
+        Conversation.bot_profile_id == bot.id
+    ).scalar() or 0
+
+    # Get message count
+    msg_count = db.query(func.count(Message.id)).join(Conversation).filter(
+        Conversation.bot_profile_id == bot.id
+    ).scalar() or 0
+
+    return BotProfileResponse(
+        id=bot.id,
+        name=bot.name,
+        openai_model=bot.openai_model,
+        system_prompt=bot.system_prompt or "",
+        temperature=bot.temperature if bot.temperature is not None else 0.7,
+        max_tokens=bot.max_tokens if bot.max_tokens is not None else 1000,
+        top_p=bot.top_p if bot.top_p is not None else 1.0,
+        frequency_penalty=bot.frequency_penalty if bot.frequency_penalty is not None else 0.0,
+        presence_penalty=bot.presence_penalty if bot.presence_penalty is not None else 0.0,
+        max_history=bot.max_history,
+        response_delay_min=bot.response_delay_min,
+        response_delay_max=bot.response_delay_max,
+        group_chat_enabled=bot.group_chat_enabled,
+        respond_to_all_in_group=bot.respond_to_all_in_group,
+        headless=bot.headless if bot.headless is not None else False,
+        # Proxy Settings
+        proxy_enabled=bot.proxy_enabled if bot.proxy_enabled is not None else False,
+        proxy_url=bot.proxy_url,
+        is_active=bot.is_active,
+        is_running=bot.is_running,
+        whatsapp_connected=bot.whatsapp_connected,
+        last_active=bot.last_active,
+        created_at=bot.created_at,
+        updated_at=bot.updated_at,
+        conversation_count=conv_count,
+        message_count=msg_count,
+        # WhatsApp Account Info
+        whatsapp_phone=bot.whatsapp_phone,
+        whatsapp_name=bot.whatsapp_name,
+        whatsapp_push_name=bot.whatsapp_push_name,
+        whatsapp_profile_pic=bot.whatsapp_profile_pic,
+        whatsapp_about=bot.whatsapp_about,
+        whatsapp_account_type=bot.whatsapp_account_type or "personal"
+    )
+
+
+# ============== CRUD Routes ==============
+
+@router.get("", response_model=BotListResponse)
+async def list_bots(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all bot profiles for current user."""
+    bots = db.query(BotProfile).filter(
+        BotProfile.user_id == current_user.id
+    ).order_by(BotProfile.created_at.desc()).all()
+
+    return BotListResponse(
+        bots=[bot_to_response(bot, db) for bot in bots],
+        total=len(bots)
+    )
+
+
+@router.post("/check-and-recover")
+async def check_and_recover_bots(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check all user's bots and recover any that should be running but aren't."""
+    # Get all bots for this user that are marked as running
+    bots = db.query(BotProfile).filter(
+        BotProfile.user_id == current_user.id,
+        BotProfile.is_running == True
+    ).all()
+
+    recovered = []
+    already_running = []
+    failed = []
+
+    for bot in bots:
+        try:
+            # Check if bot needs recovery
+            if bot_manager.needs_recovery(bot.id, bot.is_running):
+                logger.info(f"Bot {bot.id} ({bot.name}) needs recovery")
+
+                # Build config for recovery
+                api_key = decrypt_string(bot.openai_api_key_encrypted) if bot.openai_api_key_encrypted else None
+
+                if not api_key:
+                    logger.warning(f"Bot {bot.id}: No API key, marking as stopped")
+                    bot.is_running = False
+                    db.commit()
+                    failed.append({"id": bot.id, "name": bot.name, "reason": "No API key"})
+                    continue
+
+                config = {
+                    "bot_profile_id": bot.id,
+                    "openai_api_key": api_key,
+                    "openai_model": bot.openai_model or "gpt-4o-mini",
+                    "system_prompt": bot.system_prompt,
+                    "temperature": bot.temperature if bot.temperature is not None else 0.7,
+                    "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
+                    "top_p": bot.top_p if bot.top_p is not None else 1.0,
+                    "frequency_penalty": bot.frequency_penalty if bot.frequency_penalty is not None else 0.0,
+                    "presence_penalty": bot.presence_penalty if bot.presence_penalty is not None else 0.0,
+                    "max_history": bot.max_history or 20,
+                    "response_delay_min": bot.response_delay_min or 3,
+                    "response_delay_max": bot.response_delay_max or 8,
+                    "group_chat_enabled": bot.group_chat_enabled if bot.group_chat_enabled is not None else True,
+                    "headless": bot.headless if bot.headless is not None else False,
+                    "browser_timezone": bot.browser_timezone or 'UTC',
+                }
+
+                # Add proxy settings if enabled
+                if bot.proxy_enabled and bot.proxy_url:
+                    config["proxy_enabled"] = True
+                    config["proxy_url"] = bot.proxy_url
+                    if bot.proxy_username:
+                        config["proxy_username"] = decrypt_string(bot.proxy_username)
+                    if bot.proxy_password:
+                        config["proxy_password"] = decrypt_string(bot.proxy_password)
+
+                # Recover the bot
+                await bot_manager.recover_bot(bot.id, config)
+                recovered.append({"id": bot.id, "name": bot.name})
+
+            else:
+                # Bot is already running fine
+                already_running.append({"id": bot.id, "name": bot.name})
+
+        except Exception as e:
+            logger.error(f"Error recovering bot {bot.id}: {e}")
+            failed.append({"id": bot.id, "name": bot.name, "reason": str(e)})
+
+    return {
+        "recovered": recovered,
+        "already_running": already_running,
+        "failed": failed,
+        "message": f"Recovered {len(recovered)} bot(s), {len(already_running)} already running, {len(failed)} failed"
+    }
+
+
+@router.get("/{bot_id}/health")
+async def get_bot_health(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get health status of a specific bot."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    health = bot_manager.get_health_status(bot_id)
+    health["db_is_running"] = bot.is_running
+    health["db_whatsapp_connected"] = bot.whatsapp_connected
+
+    return health
+
+
+@router.post("", response_model=BotProfileResponse)
+async def create_bot(
+    bot_data: BotProfileCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new bot profile."""
+    # Encrypt API key
+    encrypted_key = encrypt_string(bot_data.openai_api_key)
+
+    # Encrypt proxy credentials if provided
+    encrypted_proxy_username = encrypt_string(bot_data.proxy_username) if bot_data.proxy_username else None
+    encrypted_proxy_password = encrypt_string(bot_data.proxy_password) if bot_data.proxy_password else None
+
+    bot = BotProfile(
+        user_id=current_user.id,
+        name=bot_data.name,
+        openai_api_key_encrypted=encrypted_key,
+        openai_model=bot_data.openai_model,
+        system_prompt=bot_data.system_prompt,
+        temperature=bot_data.temperature,
+        max_tokens=bot_data.max_tokens,
+        top_p=bot_data.top_p,
+        frequency_penalty=bot_data.frequency_penalty,
+        presence_penalty=bot_data.presence_penalty,
+        max_history=bot_data.max_history,
+        response_delay_min=bot_data.response_delay_min,
+        response_delay_max=bot_data.response_delay_max,
+        group_chat_enabled=bot_data.group_chat_enabled,
+        respond_to_all_in_group=bot_data.respond_to_all_in_group,
+        headless=bot_data.headless,
+        # Proxy settings
+        proxy_enabled=bot_data.proxy_enabled,
+        proxy_url=bot_data.proxy_url,
+        proxy_username=encrypted_proxy_username,
+        proxy_password=encrypted_proxy_password,
+        is_active=True
+    )
+
+    db.add(bot)
+    db.commit()
+    db.refresh(bot)
+
+    return bot_to_response(bot, db)
+
+
+@router.get("/{bot_id}", response_model=BotProfileResponse)
+async def get_bot(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific bot profile."""
+    bot = get_bot_profile(bot_id, current_user, db)
+    return bot_to_response(bot, db)
+
+
+@router.put("/{bot_id}", response_model=BotProfileResponse)
+async def update_bot(
+    bot_id: int,
+    bot_data: BotProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update a bot profile."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    # Update fields if provided
+    if bot_data.name is not None:
+        bot.name = bot_data.name
+    if bot_data.openai_api_key is not None:
+        bot.openai_api_key_encrypted = encrypt_string(bot_data.openai_api_key)
+    if bot_data.openai_model is not None:
+        bot.openai_model = bot_data.openai_model
+    if bot_data.system_prompt is not None:
+        bot.system_prompt = bot_data.system_prompt
+    if bot_data.temperature is not None:
+        bot.temperature = bot_data.temperature
+    if bot_data.max_tokens is not None:
+        bot.max_tokens = bot_data.max_tokens
+    if bot_data.top_p is not None:
+        bot.top_p = bot_data.top_p
+    if bot_data.frequency_penalty is not None:
+        bot.frequency_penalty = bot_data.frequency_penalty
+    if bot_data.presence_penalty is not None:
+        bot.presence_penalty = bot_data.presence_penalty
+    if bot_data.max_history is not None:
+        bot.max_history = bot_data.max_history
+    if bot_data.response_delay_min is not None:
+        bot.response_delay_min = bot_data.response_delay_min
+    if bot_data.response_delay_max is not None:
+        bot.response_delay_max = bot_data.response_delay_max
+    if bot_data.group_chat_enabled is not None:
+        bot.group_chat_enabled = bot_data.group_chat_enabled
+    if bot_data.respond_to_all_in_group is not None:
+        bot.respond_to_all_in_group = bot_data.respond_to_all_in_group
+    if bot_data.headless is not None:
+        bot.headless = bot_data.headless
+    # Proxy settings
+    if bot_data.proxy_enabled is not None:
+        bot.proxy_enabled = bot_data.proxy_enabled
+    if bot_data.proxy_url is not None:
+        bot.proxy_url = bot_data.proxy_url
+    if bot_data.proxy_username is not None:
+        bot.proxy_username = encrypt_string(bot_data.proxy_username) if bot_data.proxy_username else None
+    if bot_data.proxy_password is not None:
+        bot.proxy_password = encrypt_string(bot_data.proxy_password) if bot_data.proxy_password else None
+
+    db.commit()
+    db.refresh(bot)
+
+    return bot_to_response(bot, db)
+
+
+@router.delete("/{bot_id}")
+async def delete_bot(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a bot profile."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    # Stop bot if running
+    if bot.is_running:
+        await bot_manager.stop_bot(bot_id)
+
+    db.delete(bot)
+    db.commit()
+
+    return {"message": "Bot deleted successfully"}
+
+
+# ============== Bot Control Routes ==============
+
+@router.post("/{bot_id}/start")
+async def start_bot(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start a bot instance."""
+    logger.info(f"HTTP POST /api/bots/{bot_id}/start received")
+    try:
+        bot = get_bot_profile(bot_id, current_user, db)
+        logger.info(f"Bot {bot_id} found, is_running={bot.is_running}")
+
+        if bot.is_running:
+            logger.warning(f"Bot {bot_id} is already running")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bot is already running"
+            )
+
+        # Check if this bot's WhatsApp account is already used by another running bot
+        if bot.whatsapp_phone:
+            existing_bot = db.query(BotProfile).filter(
+                BotProfile.whatsapp_phone == bot.whatsapp_phone,
+                BotProfile.id != bot_id,
+                BotProfile.is_running == True
+            ).first()
+
+            if existing_bot:
+                logger.warning(f"WhatsApp phone {bot.whatsapp_phone} is already used by bot {existing_bot.id}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"This WhatsApp account is already in use by another bot: {existing_bot.name}"
+                )
+        else:
+            # Bot has never connected to WhatsApp - ensure fresh session
+            # Clear any existing session data to prevent inheriting another bot's session
+            session_path = str(SESSIONS_DIR / f"bot_{bot_id}")
+            if os.path.exists(session_path):
+                try:
+                    shutil.rmtree(session_path)
+                    logger.info(f"Cleared session directory for new bot {bot_id} to ensure fresh QR code")
+                except Exception as e:
+                    logger.warning(f"Failed to clear session directory for bot {bot_id}: {e}")
+
+        # Prepare config
+        config = {
+            "openai_api_key_encrypted": bot.openai_api_key_encrypted,
+            "openai_model": bot.openai_model,
+            "system_prompt": bot.system_prompt,
+            "temperature": bot.temperature if bot.temperature is not None else 0.7,
+            "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
+            "top_p": bot.top_p if bot.top_p is not None else 1.0,
+            "frequency_penalty": bot.frequency_penalty if bot.frequency_penalty is not None else 0.0,
+            "presence_penalty": bot.presence_penalty if bot.presence_penalty is not None else 0.0,
+            "max_history": bot.max_history,
+            "response_delay_min": bot.response_delay_min,
+            "response_delay_max": bot.response_delay_max,
+            "group_chat_enabled": bot.group_chat_enabled,
+            "respond_to_all_in_group": bot.respond_to_all_in_group,
+            "headless": bot.headless if bot.headless is not None else False,
+            "browser_timezone": bot.browser_timezone or 'UTC',
+            # Proxy settings
+            "proxy_enabled": bot.proxy_enabled if bot.proxy_enabled is not None else False,
+            "proxy_url": bot.proxy_url,
+            "proxy_username": bot.proxy_username,  # Encrypted
+            "proxy_password": bot.proxy_password   # Encrypted
+        }
+
+        # Check if bot has existing session (doesn't need QR scan)
+        session_path = SESSIONS_DIR / f"bot_{bot_id}"
+        has_session = session_path.exists() and any(session_path.iterdir()) if session_path.exists() else False
+        needs_qr_scan = not has_session or not bot.whatsapp_phone
+        logger.info(f"Bot {bot_id}: has_session={has_session}, whatsapp_phone={bot.whatsapp_phone}, needs_qr_scan={needs_qr_scan}")
+
+        # Start bot
+        logger.info(f"Starting bot {bot_id}...")
+        instance = await bot_manager.start_bot(bot_id, config)
+
+        # Clear any cached QR code from previous sessions to show fresh placeholder
+        instance.qr_code = None
+        logger.info(f"Cleared cached QR code for bot {bot_id}")
+
+        # Update database
+        bot.is_running = True
+        db.commit()
+        logger.info(f"Bot {bot_id} started successfully, returning HTTP 200")
+
+        return {
+            "message": "Bot started",
+            "status": bot_manager.get_status(bot_id),
+            "needs_qr_scan": needs_qr_scan
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting bot {bot_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start bot: {str(e)}"
+        )
+
+
+@router.post("/{bot_id}/stop")
+async def stop_bot(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Stop a bot instance."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    if not bot.is_running:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bot is not running"
+        )
+
+    # Stop bot
+    await bot_manager.stop_bot(bot_id)
+
+    # Update database
+    bot.is_running = False
+    bot.whatsapp_connected = False
+    db.commit()
+
+    return {"message": "Bot stopped"}
+
+
+@router.post("/{bot_id}/disconnect")
+async def disconnect_whatsapp(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Disconnect WhatsApp from a bot and clear the session.
+    This allows the bot to show a fresh QR code on next start.
+    """
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    # Stop bot if running
+    if bot.is_running:
+        await bot_manager.stop_bot(bot_id)
+        bot.is_running = False
+        # Wait for browser to fully close and release file locks
+        import asyncio
+        await asyncio.sleep(2)
+
+    # Clear WhatsApp account info
+    bot.whatsapp_connected = False
+    bot.whatsapp_phone = None
+    bot.whatsapp_name = None
+    bot.whatsapp_push_name = None
+    bot.whatsapp_profile_pic = None
+    bot.whatsapp_about = None
+    bot.whatsapp_account_type = None
+
+    # Clear conversations and messages for this bot
+    conversations = db.query(Conversation).filter(Conversation.bot_profile_id == bot_id).all()
+    message_count = 0
+    for conv in conversations:
+        msg_deleted = db.query(Message).filter(Message.conversation_id == conv.id).delete()
+        message_count += msg_deleted
+    conv_deleted = db.query(Conversation).filter(Conversation.bot_profile_id == bot_id).delete()
+    logger.info(f"Cleared {conv_deleted} conversations and {message_count} messages for bot {bot_id}")
+
+    # Clear session directory to force new QR code (with retry)
+    session_path = str(SESSIONS_DIR / f"bot_{bot_id}")
+    session_cleared = False
+    if os.path.exists(session_path):
+        # Try multiple times with delays (browser may take time to release locks)
+        import asyncio
+        for attempt in range(3):
+            try:
+                shutil.rmtree(session_path)
+                logger.info(f"Cleared session directory for bot {bot_id}: {session_path}")
+                session_cleared = True
+                break
+            except Exception as e:
+                logger.warning(f"Attempt {attempt+1}/3: Failed to clear session for bot {bot_id}: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(1)  # Wait before retry
+
+        if not session_cleared:
+            # Session couldn't be cleared, but continue anyway - it will be cleared on next start
+            logger.warning(f"Could not clear session for bot {bot_id}, will be cleared on next start")
+
+    db.commit()
+
+    return {"message": "WhatsApp disconnected. The bot will show a QR code on next start."}
+
+
+@router.get("/{bot_id}/status", response_model=BotStatusResponse)
+async def get_bot_status(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get bot status."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    return BotStatusResponse(
+        id=bot.id,
+        name=bot.name,
+        is_running=bot.is_running,
+        whatsapp_connected=bot.whatsapp_connected,
+        last_active=bot.last_active
+    )
+
+
+@router.get("/{bot_id}/analytics/daily")
+async def get_bot_daily_analytics(
+    bot_id: int,
+    days: int = 7,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get daily analytics for a specific bot."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    # Daily stats - latest date first
+    daily_stats = []
+    for i in range(days):
+        date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=i)
+        next_date = date + timedelta(days=1)
+
+        sent = db.query(func.count(Message.id)).join(Conversation).filter(
+            Conversation.bot_profile_id == bot_id,
+            Message.role == "assistant",
+            Message.timestamp >= date,
+            Message.timestamp < next_date
+        ).scalar() or 0
+
+        received = db.query(func.count(Message.id)).join(Conversation).filter(
+            Conversation.bot_profile_id == bot_id,
+            Message.role == "user",
+            Message.timestamp >= date,
+            Message.timestamp < next_date
+        ).scalar() or 0
+
+        # Active chats
+        active_chats = db.query(func.count(func.distinct(Conversation.id))).join(Message).filter(
+            Conversation.bot_profile_id == bot_id,
+            Message.timestamp >= date,
+            Message.timestamp < next_date
+        ).scalar() or 0
+
+        # New conversations
+        new_convs = db.query(func.count(Conversation.id)).filter(
+            Conversation.bot_profile_id == bot_id,
+            Conversation.created_at >= date,
+            Conversation.created_at < next_date
+        ).scalar() or 0
+
+        daily_stats.append({
+            "date": date.strftime("%Y-%m-%d"),
+            "messages_sent": sent,
+            "messages_received": received,
+            "active_chats": active_chats,
+            "new_conversations": new_convs
+        })
+
+    # Hourly stats (for today)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    hourly_stats = []
+    for hour in range(24):
+        hour_start = today + timedelta(hours=hour)
+        hour_end = hour_start + timedelta(hours=1)
+
+        count = db.query(func.count(Message.id)).join(Conversation).filter(
+            Conversation.bot_profile_id == bot_id,
+            Message.timestamp >= hour_start,
+            Message.timestamp < hour_end
+        ).scalar() or 0
+        hourly_stats.append(count)
+
+    # Message types
+    total_received = db.query(func.count(Message.id)).join(Conversation).filter(
+        Conversation.bot_profile_id == bot_id,
+        Message.role == "user"
+    ).scalar() or 0
+
+    total_sent = db.query(func.count(Message.id)).join(Conversation).filter(
+        Conversation.bot_profile_id == bot_id,
+        Message.role == "assistant"
+    ).scalar() or 0
+
+    return {
+        "daily_stats": daily_stats,
+        "hourly_stats": hourly_stats,
+        "message_types": {"received": total_received, "sent": total_sent}
+    }
+
+
+# ============== WebSocket for QR Code ==============
+
+@router.websocket("/{bot_id}/qr")
+async def websocket_qr(
+    websocket: WebSocket,
+    bot_id: int
+):
+    """WebSocket endpoint for QR code streaming."""
+    logger.info(f"WebSocket connection attempt for bot {bot_id}")
+
+    try:
+        await websocket.accept()
+        logger.info(f"WebSocket accepted for bot {bot_id}")
+    except Exception as e:
+        logger.error(f"WebSocket accept failed for bot {bot_id}: {e}")
+        return
+
+    instance = None
+    on_qr = None
+    on_status = None
+
+    try:
+        # Wait a moment for bot instance to be created
+        logger.info(f"Waiting for bot instance {bot_id}...")
+        for i in range(10):
+            instance = bot_manager.get_instance(bot_id)
+            if instance:
+                logger.info(f"Found bot instance {bot_id} after {i+1} attempts")
+                break
+            await asyncio.sleep(0.5)
+
+        if not instance:
+            logger.error(f"Bot instance {bot_id} not found after 10 attempts")
+            await websocket.send_json({"error": "Bot not found or not started. Please try starting the bot again."})
+            return
+
+        # Add callback for QR updates
+        async def on_qr(qr_code: str):
+            try:
+                logger.info(f"on_qr callback triggered for bot {bot_id}, sending to WebSocket")
+                await websocket.send_json({"qr_code": qr_code})
+                logger.info(f"QR code sent via WebSocket for bot {bot_id}")
+            except Exception as e:
+                logger.error(f"QR send error for bot {bot_id}: {e}")
+
+        async def on_status(status: dict):
+            try:
+                logger.info(f"on_status callback triggered for bot {bot_id}: {status.get('message', status)}")
+                await websocket.send_json({"status": status})
+            except Exception as e:
+                logger.error(f"Status send error for bot {bot_id}: {e}")
+
+        instance.add_qr_callback(on_qr)
+        instance.add_status_callback(on_status)
+        logger.info(f"WebSocket callbacks registered for bot {bot_id}. QR callbacks: {len(instance.qr_callbacks)}, Status callbacks: {len(instance.status_callbacks)}")
+
+        # Send initial status
+        await websocket.send_json({
+            "status": {
+                "is_running": instance.is_running,
+                "whatsapp_connected": instance.whatsapp_connected,
+                "message": "Connecting to bot..."
+            }
+        })
+        logger.info(f"Initial status sent for bot {bot_id}")
+
+        # Send last status if available
+        if instance.last_status:
+            logger.info(f"Sending last status for bot {bot_id}: {instance.last_status}")
+            await websocket.send_json({"status": instance.last_status})
+
+        # Send current QR if available (this catches QR codes detected before WebSocket connected)
+        if instance.qr_code:
+            logger.info(f"Sending existing QR code to WebSocket for bot {bot_id}, length: {len(instance.qr_code)}")
+            await websocket.send_json({"qr_code": instance.qr_code})
+
+        # Keep connection alive
+        logger.info(f"WebSocket entering message loop for bot {bot_id}")
+        while True:
+            try:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+            except WebSocketDisconnect:
+                logger.info(f"WebSocket disconnected for bot {bot_id}")
+                break
+
+    except Exception as e:
+        logger.error(f"WebSocket error for bot {bot_id}: {e}", exc_info=True)
+        try:
+            await websocket.send_json({"error": str(e)})
+        except:
+            pass
+    finally:
+        logger.info(f"WebSocket cleanup for bot {bot_id}")
+        if instance:
+            if on_qr:
+                try:
+                    instance.remove_qr_callback(on_qr)
+                    logger.info(f"Removed QR callback for bot {bot_id}")
+                except:
+                    pass
+            if on_status:
+                try:
+                    instance.remove_status_callback(on_status)
+                    logger.info(f"Removed status callback for bot {bot_id}")
+                except:
+                    pass
+        try:
+            await websocket.close()
+        except:
+            pass

@@ -1,0 +1,1440 @@
+{% extends "base.html" %}
+
+{% block title %}Bot Management - WhatsApp Bot{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Bot card action buttons - pill shaped */
+    .card-footer .btn-group .btn {
+        border-radius: 20px;
+        padding: 8px 18px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .card-footer .btn-group {
+        gap: 8px;
+    }
+
+    .card-footer .btn-group .btn:first-child {
+        border-radius: 20px;
+    }
+
+    .card-footer .btn-group .btn:last-child {
+        border-radius: 20px;
+    }
+
+    /* Modal form inputs - pill shaped */
+    .modal .form-control,
+    .modal .form-select {
+        border-radius: 20px;
+        padding: 10px 18px;
+        box-shadow: none;
+    }
+
+    .modal .form-control:focus,
+    .modal .form-select:focus {
+        box-shadow: none;
+    }
+
+    .modal textarea.form-control {
+        border-radius: 16px;
+        resize: vertical;
+        overflow-y: auto;
+    }
+
+    /* Custom scrollbar for textareas - WebKit */
+    .modal textarea.form-control::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .modal textarea.form-control::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 0 16px 16px 0;
+        margin: 4px 0;
+    }
+
+    .modal textarea.form-control::-webkit-scrollbar-thumb {
+        background: var(--bs-border-color);
+        border-radius: 4px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    .modal textarea.form-control::-webkit-scrollbar-thumb:hover {
+        background: var(--bs-secondary);
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    /* Firefox scrollbar for textareas */
+    .modal textarea.form-control {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bs-border-color) transparent;
+    }
+
+    /* Hide the scrollbar corner/resizer square */
+    .modal textarea.form-control::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    .modal textarea.form-control::-webkit-resizer {
+        background: transparent;
+        border: none;
+    }
+
+    /* Modal buttons - round, no shadow */
+    .modal-footer .btn {
+        border-radius: 20px;
+        padding: 10px 24px;
+        box-shadow: none;
+    }
+
+    .modal-footer .btn:hover,
+    .modal-footer .btn:focus {
+        box-shadow: none;
+    }
+
+    /* Form switch styling */
+    .form-switch {
+        padding-left: 3.5em;
+        display: flex;
+        align-items: center;
+        min-height: 24px;
+    }
+
+    .form-switch .form-check-input {
+        width: 40px;
+        height: 22px;
+        margin-left: -3.5em;
+        margin-top: 0;
+        border-radius: 11px;
+        cursor: pointer;
+        box-shadow: none;
+    }
+
+    .form-switch .form-check-input:focus {
+        box-shadow: none;
+    }
+
+    .form-switch .form-check-label {
+        margin-left: 8px;
+        line-height: 22px;
+        cursor: pointer;
+    }
+
+    /* Custom Model Dropdown */
+    .model-dropdown {
+        position: relative;
+        width: 100%;
+    }
+
+    .model-dropdown-btn {
+        width: 100%;
+        text-align: left;
+        border-radius: 20px;
+        padding: 10px 18px;
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .model-dropdown-btn:hover,
+    .model-dropdown-btn:focus,
+    .model-dropdown-btn:active,
+    .model-dropdown-btn.show,
+    .model-dropdown-btn:focus-visible,
+    .model-dropdown-btn:active:focus {
+        background: var(--bs-body-bg) !important;
+        border-color: var(--wa-teal) !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    .model-dropdown-btn::after {
+        margin-left: auto;
+    }
+
+    .model-dropdown-menu {
+        width: 100%;
+        max-height: 300px;
+        overflow: hidden;
+        border-radius: 12px;
+        padding: 0;
+        margin-top: 4px !important;
+    }
+
+    .model-dropdown-menu-inner {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .model-dropdown-menu .dropdown-header {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--bs-secondary);
+        padding: 8px 16px 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .model-dropdown-menu .dropdown-item {
+        padding: 8px 16px 8px 24px;
+        font-size: 0.9rem;
+    }
+
+    .model-dropdown-menu .dropdown-item:hover {
+        background-color: var(--bs-primary);
+        color: white;
+        border-radius: 0;
+    }
+
+    .model-dropdown-menu .dropdown-item.selected {
+        font-weight: 500;
+    }
+
+    .model-dropdown-menu .dropdown-item.selected::before {
+        content: "✓ ";
+    }
+
+    /* Custom scrollbar for model dropdown inner */
+    .model-dropdown-menu-inner::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .model-dropdown-menu-inner::-webkit-scrollbar-track {
+        background: var(--bs-body-bg);
+    }
+
+    .model-dropdown-menu-inner::-webkit-scrollbar-thumb {
+        background: var(--bs-border-color);
+        border-radius: 4px;
+    }
+
+    .model-dropdown-menu-inner::-webkit-scrollbar-thumb:hover {
+        background: var(--bs-secondary);
+    }
+
+    /* Firefox scrollbar */
+    .model-dropdown-menu-inner {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bs-border-color) var(--bs-body-bg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Bot Management</h2>
+        <p class="text-muted">Create and manage your WhatsApp bots</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createBotModal">
+            <i class="bi bi-plus-lg me-2"></i>Create New Bot
+        </button>
+    </div>
+</div>
+
+<!-- Bots Grid -->
+<div class="row g-4" id="botsGrid">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border" role="status"></div>
+        <p class="mt-2">Loading bots...</p>
+    </div>
+</div>
+
+<!-- Create Bot Modal -->
+<div class="modal fade" id="createBotModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Bot</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createBotForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Bot Name *</label>
+                            <input type="text" class="form-control" name="name" required placeholder="e.g., Customer Support Bot">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">OpenAI Model</label>
+                            <input type="hidden" name="openai_model" id="createModelValue" value="gpt-4o-mini">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="createModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    GPT-4o Mini (Default)
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="createModelDropdown">
+                                    <div class="model-dropdown-menu-inner">
+                                        <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-nano">GPT-5.2 Nano</a>
+                                        <h6 class="dropdown-header">GPT-5.1 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
+                                        <h6 class="dropdown-header">GPT-5 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
+                                        <h6 class="dropdown-header">GPT-4.1 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-nano">GPT-4.1 Nano</a>
+                                        <h6 class="dropdown-header">GPT-4 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4o">GPT-4o</a>
+                                        <a class="dropdown-item selected" href="#" data-value="gpt-4o-mini">GPT-4o Mini (Default)</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4-turbo">GPT-4 Turbo</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">OpenAI API Key *</label>
+                            <input type="password" class="form-control" name="openai_api_key" required placeholder="sk-...">
+                            <small class="text-muted">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">System Prompt (AI Role)</label>
+                            <textarea class="form-control" name="system_prompt" rows="4" placeholder="You are a helpful assistant...">You are a helpful assistant. Do not use markdown formatting like asterisks (*), underscores (_), or other special characters for emphasis. Write plain text only.</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Temperature</label>
+                            <input type="number" class="form-control" name="temperature" min="0" max="2" step="0.1" value="0.7">
+                            <small class="text-muted">AI creativity (0 = focused, 2 = creative)</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Max Tokens</label>
+                            <input type="number" class="form-control" name="max_tokens" min="100" max="4096" value="1000">
+                            <small class="text-muted">Maximum response length</small>
+                        </div>
+                        <!-- Advanced AI Settings (Collapsible) -->
+                        <div class="col-12 mt-2">
+                            <a class="text-decoration-none" data-bs-toggle="collapse" href="#createAdvancedAISettings" role="button" aria-expanded="false" aria-controls="createAdvancedAISettings">
+                                <i class="bi bi-chevron-down me-1"></i>Advanced AI Settings
+                            </a>
+                        </div>
+                        <div class="collapse col-12" id="createAdvancedAISettings">
+                            <div class="row g-3 mt-1">
+                                <div class="col-md-4">
+                                    <label class="form-label">Top P</label>
+                                    <input type="number" class="form-control" name="top_p" min="0" max="1" step="0.05" value="1.0">
+                                    <small class="text-muted">Nucleus sampling (0-1)</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Frequency Penalty</label>
+                                    <input type="number" class="form-control" name="frequency_penalty" min="-2" max="2" step="0.1" value="0.0">
+                                    <small class="text-muted">Reduce repetition (-2 to 2)</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Presence Penalty</label>
+                                    <input type="number" class="form-control" name="presence_penalty" min="-2" max="2" step="0.1" value="0.0">
+                                    <small class="text-muted">New topics (-2 to 2)</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max History</label>
+                            <input type="number" class="form-control" name="max_history" value="20" min="1" max="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Min Delay (sec)</label>
+                            <input type="number" class="form-control" name="response_delay_min" value="3" min="0" max="60">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max Delay (sec)</label>
+                            <input type="number" class="form-control" name="response_delay_max" value="8" min="1" max="120">
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="group_chat_enabled" id="groupChatEnabled" checked>
+                                <label class="form-check-label" for="groupChatEnabled">Enable Group Chats</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="headless" id="headlessMode">
+                                <label class="form-check-label" for="headlessMode">Headless Mode</label>
+                            </div>
+                            <small class="text-muted ms-2">(No browser window)</small>
+                        </div>
+                        <!-- Proxy Settings -->
+                        <div class="col-12 mt-3">
+                            <hr>
+                            <h6 class="text-muted"><i class="bi bi-shield-lock me-1"></i>Proxy Settings (Optional)</h6>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="proxy_enabled" id="proxyEnabled">
+                                <label class="form-check-label" for="proxyEnabled">Enable Proxy</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proxy URL</label>
+                            <input type="text" class="form-control" name="proxy_url" id="proxyUrl" placeholder="http://proxy.example.com:8080">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proxy Username</label>
+                            <input type="text" class="form-control" name="proxy_username" placeholder="Optional">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proxy Password</label>
+                            <input type="password" class="form-control" name="proxy_password" placeholder="Optional">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-plus-lg me-2"></i>Create Bot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Scan QR Code</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Scan this QR code with your WhatsApp mobile app</p>
+                <div id="qrCodeContainer" class="my-4">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2">Waiting for QR code...</p>
+                </div>
+                <div id="qrStatus" class="alert alert-info d-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Bot Modal -->
+<div class="modal fade" id="editBotModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Bot</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editBotForm">
+                <input type="hidden" name="bot_id" id="editBotId">
+                <div class="modal-body">
+                    <!-- Same fields as create, populated via JS -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Bot Name *</label>
+                            <input type="text" class="form-control" name="name" id="editName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">OpenAI Model</label>
+                            <input type="hidden" name="openai_model" id="editModelValue" value="gpt-4o-mini">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="editModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    GPT-4o Mini (Default)
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="editModelDropdown">
+                                    <div class="model-dropdown-menu-inner">
+                                        <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-nano">GPT-5.2 Nano</a>
+                                        <h6 class="dropdown-header">GPT-5.1 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
+                                        <h6 class="dropdown-header">GPT-5 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
+                                        <h6 class="dropdown-header">GPT-4.1 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-nano">GPT-4.1 Nano</a>
+                                        <h6 class="dropdown-header">GPT-4 Series</h6>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4o">GPT-4o</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4o-mini">GPT-4o Mini (Default)</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-4-turbo">GPT-4 Turbo</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">OpenAI API Key</label>
+                            <input type="password" class="form-control" name="openai_api_key" id="editApiKey" placeholder="Leave empty to keep current">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">System Prompt</label>
+                            <textarea class="form-control" name="system_prompt" id="editPrompt" rows="4"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Temperature</label>
+                            <input type="number" class="form-control" name="temperature" id="editTemperature" min="0" max="2" step="0.1" value="0.7">
+                            <small class="text-muted">AI creativity (0 = focused, 2 = creative)</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Max Tokens</label>
+                            <input type="number" class="form-control" name="max_tokens" id="editMaxTokens" min="100" max="4096" value="1000">
+                            <small class="text-muted">Maximum response length</small>
+                        </div>
+                        <!-- Advanced AI Settings (Collapsible) -->
+                        <div class="col-12 mt-2">
+                            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editAdvancedAISettings" role="button" aria-expanded="false" aria-controls="editAdvancedAISettings">
+                                <i class="bi bi-chevron-down me-1"></i>Advanced AI Settings
+                            </a>
+                        </div>
+                        <div class="collapse col-12" id="editAdvancedAISettings">
+                            <div class="row g-3 mt-1">
+                                <div class="col-md-4">
+                                    <label class="form-label">Top P</label>
+                                    <input type="number" class="form-control" name="top_p" id="editTopP" min="0" max="1" step="0.05" value="1.0">
+                                    <small class="text-muted">Nucleus sampling (0-1)</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Frequency Penalty</label>
+                                    <input type="number" class="form-control" name="frequency_penalty" id="editFrequencyPenalty" min="-2" max="2" step="0.1" value="0.0">
+                                    <small class="text-muted">Reduce repetition (-2 to 2)</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Presence Penalty</label>
+                                    <input type="number" class="form-control" name="presence_penalty" id="editPresencePenalty" min="-2" max="2" step="0.1" value="0.0">
+                                    <small class="text-muted">New topics (-2 to 2)</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max History</label>
+                            <input type="number" class="form-control" name="max_history" id="editMaxHistory" min="1" max="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Min Delay (sec)</label>
+                            <input type="number" class="form-control" name="response_delay_min" id="editDelayMin" min="0" max="60">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max Delay (sec)</label>
+                            <input type="number" class="form-control" name="response_delay_max" id="editDelayMax" min="1" max="120">
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="group_chat_enabled" id="editGroupChat" checked>
+                                <label class="form-check-label" for="editGroupChat">Enable Group Chats</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="headless" id="editHeadless">
+                                <label class="form-check-label" for="editHeadless">Headless Mode</label>
+                            </div>
+                            <small class="text-muted ms-2">(No browser window)</small>
+                        </div>
+                        <!-- Proxy Settings -->
+                        <div class="col-12 mt-3">
+                            <hr>
+                            <h6 class="text-muted"><i class="bi bi-shield-lock me-1"></i>Proxy Settings (Optional)</h6>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="proxy_enabled" id="editProxyEnabled">
+                                <label class="form-check-label" for="editProxyEnabled">Enable Proxy</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proxy URL</label>
+                            <input type="text" class="form-control" name="proxy_url" id="editProxyUrl" placeholder="http://proxy.example.com:8080">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proxy Username</label>
+                            <input type="text" class="form-control" name="proxy_username" id="editProxyUsername" placeholder="Leave empty to keep current">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proxy Password</label>
+                            <input type="password" class="form-control" name="proxy_password" id="editProxyPassword" placeholder="Leave empty to keep current">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger me-auto" onclick="deleteBot()">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentBotId = null;
+    let qrWebSocket = null;
+
+    async function loadBots() {
+        try {
+            const res = await fetch('/api/bots');
+            const data = await res.json();
+            const grid = document.getElementById('botsGrid');
+
+            if (data.bots.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center py-5">
+                                <i class="bi bi-robot fs-1 text-muted"></i>
+                                <h4 class="mt-3">No bots yet</h4>
+                                <p class="text-muted">Create your first bot to get started</p>
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createBotModal">
+                                    <i class="bi bi-plus-lg me-2"></i>Create Bot
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                grid.innerHTML = data.bots.map(bot => `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    ${bot.whatsapp_profile_pic ? `
+                                        <img src="${bot.whatsapp_profile_pic}"
+                                             class="rounded-circle me-2"
+                                             style="width: 40px; height: 40px; object-fit: cover;"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="rounded-circle bg-secondary d-none justify-content-center align-items-center me-2"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="bi bi-robot text-white"></i>
+                                        </div>
+                                    ` : `
+                                        <div class="rounded-circle bg-success d-flex justify-content-center align-items-center me-2"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="bi bi-robot text-white"></i>
+                                        </div>
+                                    `}
+                                    <div>
+                                        <h6 class="mb-0">${bot.name}</h6>
+                                    </div>
+                                </div>
+                                <div>
+                                    ${bot.whatsapp_account_type === 'business'
+                                        ? '<span class="badge bg-info me-1"><i class="bi bi-building me-1"></i>Business</span>'
+                                        : ''
+                                    }
+                                    ${bot.is_running
+                                        ? '<span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>Running</span>'
+                                        : '<span class="badge bg-secondary"><i class="bi bi-circle me-1"></i>Stopped</span>'
+                                    }
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                ${bot.whatsapp_phone || bot.whatsapp_about || bot.whatsapp_push_name ? `
+                                    <div class="mb-3 p-2 rounded" style="background-color: #dcf8c6;">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <p class="mb-0 small fw-bold" style="color: #25D366;">
+                                                <i class="bi bi-whatsapp me-1"></i>WhatsApp Account
+                                            </p>
+                                            <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px;" onclick="event.stopPropagation(); disconnectWhatsAppFromCard(${bot.id})" title="Disconnect WhatsApp">
+                                                Disconnect
+                                            </button>
+                                        </div>
+                                        ${bot.whatsapp_push_name ? `
+                                            <p class="mb-1 small text-dark">
+                                                <i class="bi bi-person me-1"></i> ${bot.whatsapp_push_name}
+                                            </p>
+                                        ` : ''}
+                                        ${bot.whatsapp_phone ? `
+                                            <p class="mb-1 small text-dark">
+                                                <i class="bi bi-telephone me-1"></i> +${bot.whatsapp_phone}
+                                            </p>
+                                        ` : ''}
+                                        ${bot.whatsapp_about ? `
+                                            <p class="mb-0 small text-muted fst-italic">
+                                                "${bot.whatsapp_about}"
+                                            </p>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                                <p class="text-muted small mb-2">
+                                    <i class="bi bi-cpu me-1"></i> ${bot.openai_model}
+                                </p>
+                                <p class="text-muted small mb-2">
+                                    <i class="bi bi-chat-dots me-1"></i> ${bot.conversation_count} conversations
+                                </p>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-envelope me-1"></i> ${bot.message_count} messages
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <div class="btn-group w-100">
+                                    ${bot.is_running ? `
+                                        <button class="btn btn-outline-danger" onclick="stopBot(${bot.id})">
+                                            <i class="bi bi-stop-fill"></i> Stop
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-outline-success" onclick="startBot(${bot.id})">
+                                            <i class="bi bi-play-fill"></i> Start
+                                        </button>
+                                    `}
+                                    <button class="btn btn-outline-primary" onclick="editBot(${bot.id})">
+                                        <i class="bi bi-gear"></i> Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            console.error('Error loading bots:', e);
+            showToast('Error loading bots', 'danger');
+        }
+    }
+
+    document.getElementById('createBotForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const data = {
+            name: form.name.value,
+            openai_api_key: form.openai_api_key.value,
+            openai_model: form.openai_model.value,
+            system_prompt: form.system_prompt.value,
+            temperature: parseFloat(form.temperature.value),
+            max_tokens: parseInt(form.max_tokens.value),
+            top_p: parseFloat(form.top_p.value),
+            frequency_penalty: parseFloat(form.frequency_penalty.value),
+            presence_penalty: parseFloat(form.presence_penalty.value),
+            max_history: parseInt(form.max_history.value),
+            response_delay_min: parseInt(form.response_delay_min.value),
+            response_delay_max: parseInt(form.response_delay_max.value),
+            group_chat_enabled: form.group_chat_enabled.checked,
+            headless: form.headless.checked,
+            // Proxy settings
+            proxy_enabled: form.proxy_enabled.checked,
+            proxy_url: form.proxy_url.value || null,
+            proxy_username: form.proxy_username.value || null,
+            proxy_password: form.proxy_password.value || null
+        };
+
+        try {
+            const res = await fetch('/api/bots', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('createBotModal')).hide();
+                form.reset();
+                // Reset model dropdown to default
+                setModelDropdownValue('createModelDropdown', 'gpt-4o-mini');
+                loadBots();
+                showToast('Bot created successfully', 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error creating bot', 'danger');
+            }
+        } catch (e) {
+            showToast('Error creating bot', 'danger');
+        }
+    });
+
+    async function startBot(botId) {
+        console.log('=== startBot called for bot:', botId, '===');
+
+        // Reset any stale QR state from previous sessions
+        resetQRState();
+
+        // Small delay after reset to ensure modal is fully closed
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        try {
+            currentBotId = botId;
+
+            // Start the bot first
+            console.log('Sending POST to /api/bots/' + botId + '/start');
+            const res = await fetch(`/api/bots/${botId}/start`, { method: 'POST' });
+            console.log('Response status:', res.status, 'ok:', res.ok);
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log('Bot started successfully, needs_qr_scan:', data.needs_qr_scan);
+
+                if (data.needs_qr_scan) {
+                    // Fresh bot - needs QR code scan
+                    showToast('Bot starting - QR code scan required...', 'info');
+
+                    // Show modal with QR placeholder
+                    console.log('About to call showQRModal...');
+                    showQRModal(botId);
+                    console.log('showQRModal called');
+
+                    // Connect WebSocket to listen for QR code
+                    console.log('About to call connectQRWebSocket...');
+                    connectQRWebSocket(botId);
+                    console.log('connectQRWebSocket called');
+
+                    // Don't refresh bot list while QR modal is open - it will refresh when connected
+                } else {
+                    // Existing session - just show toast, no modal needed
+                    showToast('Reconnecting to WhatsApp...', 'info');
+
+                    // No modal shown - just connect WebSocket for status updates
+                    connectQRWebSocket(botId);
+
+                    // Refresh bot list after a delay for reconnecting bots
+                    setTimeout(() => loadBots(), 3000);
+                }
+            } else {
+                const err = await res.json();
+                console.error('Start bot error response:', err);
+                showToast(err.detail || 'Error starting bot', 'danger');
+            }
+        } catch (e) {
+            console.error('startBot exception:', e);
+            showToast('Error starting bot', 'danger');
+        }
+    }
+
+    async function stopBot(botId) {
+        if (!confirm('Are you sure you want to stop this bot?')) return;
+
+        try {
+            const res = await fetch(`/api/bots/${botId}/stop`, { method: 'POST' });
+            if (res.ok) {
+                showToast('Bot stopped', 'success');
+                loadBots();
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error stopping bot', 'danger');
+            }
+        } catch (e) {
+            showToast('Error stopping bot', 'danger');
+        }
+    }
+
+    // Track if modal close handler is registered
+    let qrModalCloseHandlerRegistered = false;
+    let qrModalShown = false;
+
+    // Minimum QR code data length to filter out loading placeholders
+    var MIN_QR_DATA_LENGTH = 1000; // Real QR codes are typically much larger than this
+
+    // Reset all QR-related state (called before starting a bot)
+    function resetQRState() {
+        console.log('Resetting QR state');
+
+        // Close any existing WebSocket
+        if (qrWebSocket) {
+            qrWebSocket.close();
+            qrWebSocket = null;
+        }
+
+        // Reset state variables
+        qrModalShown = false;
+        qrWaitStartTime = 0;
+
+        // Reset status element (clear any previous success/error messages)
+        var statusEl = document.getElementById('qrStatus');
+        if (statusEl) {
+            statusEl.textContent = '';
+            statusEl.className = 'alert alert-info d-none'; // Reset to default hidden state
+        }
+
+        // Reset container to default
+        var container = document.getElementById('qrCodeContainer');
+        if (container) {
+            container.innerHTML = '<div class="spinner-border" role="status"></div><p class="mt-2">Waiting for QR code...</p>';
+        }
+
+        // Close any open modal and clean up backdrop
+        var modalElement = document.getElementById('qrModal');
+        if (modalElement) {
+            var modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+                // Don't dispose - it can cause issues with re-showing the modal
+            }
+            // Remove any leftover backdrop after a short delay
+            setTimeout(function() {
+                var backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(function(backdrop) {
+                    backdrop.remove();
+                });
+                // Remove modal-open class from body
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+        }
+    }
+
+    // Connect WebSocket and only show modal if QR code is received
+    function connectQRWebSocket(botId) {
+        console.log('Connecting QR WebSocket for bot:', botId);
+
+        // Close any existing WebSocket first
+        if (qrWebSocket) {
+            console.log('Closing existing WebSocket');
+            qrWebSocket.close();
+            qrWebSocket = null;
+        }
+
+        qrModalShown = false;
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = wsProtocol + '//' + window.location.host + '/api/bots/' + botId + '/qr';
+        console.log('Connecting to WebSocket:', wsUrl);
+
+        try {
+            qrWebSocket = new WebSocket(wsUrl);
+
+            qrWebSocket.onopen = function() {
+                console.log('QR WebSocket connected, waiting for QR code or status...');
+            };
+
+            qrWebSocket.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                console.log('QR WebSocket message:', data);
+
+                // Update QR code in modal when received
+                if (data.qr_code) {
+                    console.log('QR code received, data length:', data.qr_code.length);
+
+                    // Only accept QR codes with sufficient data (to skip loading placeholders)
+                    if (data.qr_code.length < MIN_QR_DATA_LENGTH) {
+                        console.log('Ignoring small QR code data, likely a placeholder...');
+                        return; // Ignore small data (likely loading canvas)
+                    }
+
+                    console.log('Accepting QR code, updating modal');
+                    // Replace loading placeholder with actual QR code + black WhatsApp logo (same as WhatsApp Web)
+                    var container = document.getElementById('qrCodeContainer');
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="qr-code-wrapper" style="position: relative; display: inline-block; background: white; padding: 16px; border-radius: 8px;">
+                                <img src="${data.qr_code}" alt="QR Code" style="width: 264px; height: 264px; display: block;">
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 50%; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#111b21">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    qrModalShown = true;
+                }
+
+                if (data.status) {
+                    var statusEl = document.getElementById('qrStatus');
+                    var modalElement = document.getElementById('qrModal');
+                    var modal = modalElement ? bootstrap.Modal.getInstance(modalElement) : null;
+                    var isModalOpen = modal && modalElement.classList.contains('show');
+
+                    // If connected successfully, show success and close modal
+                    if (data.status.connected || data.status.whatsapp_connected) {
+                        if (isModalOpen) {
+                            // Show success in modal
+                            if (statusEl) {
+                                statusEl.textContent = 'WhatsApp connected successfully!';
+                                statusEl.classList.remove('d-none', 'alert-info', 'alert-danger');
+                                statusEl.classList.add('alert-success');
+                            }
+                            var container = document.getElementById('qrCodeContainer');
+                            if (container) {
+                                container.innerHTML = '<i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>';
+                            }
+                            // Close modal after success (don't close WebSocket yet - wait for account_info)
+                            setTimeout(function() {
+                                if (modal) modal.hide();
+                            }, 1500);
+                        } else {
+                            // Modal not open, just show toast
+                            showToast('Bot connected successfully!', 'success');
+                        }
+                        // Don't close WebSocket yet - wait for "running" status with account_info
+                        // But set a fallback timeout in case we don't receive it
+                        setTimeout(function() {
+                            if (qrWebSocket) {
+                                console.log('Fallback: refreshing bots after connection (running status not received)');
+                                loadBots();
+                                qrWebSocket.close();
+                                qrWebSocket = null;
+                            }
+                        }, 10000);  // 10 second fallback
+                    }
+
+                    // When bot starts running, refresh to show WhatsApp account info and close WebSocket
+                    if (data.status.status === 'running') {
+                        console.log('Bot running, account info:', data.status.account_info);
+                        loadBots();  // Refresh to show WhatsApp account info
+                        // Close WebSocket now
+                        if (qrWebSocket) {
+                            qrWebSocket.close();
+                            qrWebSocket = null;
+                        }
+                    }
+
+                    // Don't show loading status messages (Launching browser, Loading WhatsApp, Waiting for QR)
+                    // The cycling QR placeholder already indicates loading state
+                }
+
+                if (data.error) {
+                    console.error('QR WebSocket error:', data.error);
+                    if (qrModalShown) {
+                        var statusEl = document.getElementById('qrStatus');
+                        var container = document.getElementById('qrCodeContainer');
+                        if (statusEl) {
+                            statusEl.textContent = 'Error: ' + data.error;
+                            statusEl.classList.remove('d-none', 'alert-info', 'alert-success');
+                            statusEl.classList.add('alert-danger');
+                        }
+                        if (container) {
+                            container.innerHTML = '<i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>';
+                        }
+                    } else {
+                        showToast('Error: ' + data.error, 'danger');
+                    }
+                }
+            };
+
+            qrWebSocket.onerror = function(error) {
+                console.error('QR WebSocket error:', error);
+            };
+
+            qrWebSocket.onclose = function(event) {
+                console.log('QR WebSocket closed:', event.code);
+            };
+
+        } catch (e) {
+            console.error('Failed to create QR WebSocket:', e);
+        }
+    }
+
+    // Show the QR modal (called only when QR code is actually needed)
+    function showQRModal(botId) {
+        console.log('showQRModal called for bot:', botId);
+
+        // Ensure modal exists
+        ensureQRModalExists();
+
+        var modalElement = document.getElementById('qrModal');
+        var container = document.getElementById('qrCodeContainer');
+        var status = document.getElementById('qrStatus');
+
+        console.log('Modal lookup results:', {
+            modalElement: !!modalElement,
+            container: !!container,
+            status: !!status,
+            modalInDOM: document.body.contains(modalElement)
+        });
+
+        if (!modalElement || !container || !status) {
+            console.error('QR Modal elements not found after dynamic creation');
+            console.error('Attempting to recreate modal...');
+            // Force recreation by removing any partial modal
+            var existing = document.getElementById('qrModal');
+            if (existing) existing.remove();
+            ensureQRModalExists();
+            // Try again
+            modalElement = document.getElementById('qrModal');
+            container = document.getElementById('qrCodeContainer');
+            status = document.getElementById('qrStatus');
+            if (!modalElement || !container || !status) {
+                console.error('Failed to create modal even after retry');
+                alert('Error: Could not create QR modal. Please refresh the page.');
+                return;
+            }
+        }
+
+        // Reset status element (remove any previous success/error messages)
+        status.textContent = '';
+        status.classList.remove('alert-success', 'alert-danger', 'alert-info');
+        status.classList.add('d-none');
+
+        // Show cycling QR placeholder while waiting for real QR code
+        container.innerHTML = `
+            <div class="qr-loading-placeholder">
+                <svg width="264" height="264" viewBox="0 0 264 264" class="qr-placeholder-svg">
+                    <defs>
+                        <pattern id="qrPattern" patternUnits="userSpaceOnUse" width="24" height="24">
+                            <rect width="12" height="12" fill="#e0e0e0"/>
+                            <rect x="12" y="12" width="12" height="12" fill="#e0e0e0"/>
+                        </pattern>
+                    </defs>
+                    <rect width="264" height="264" fill="url(#qrPattern)" class="qr-pattern-bg"/>
+                    <!-- Corner squares like real QR -->
+                    <rect x="12" y="12" width="60" height="60" fill="#ccc" rx="4"/>
+                    <rect x="192" y="12" width="60" height="60" fill="#ccc" rx="4"/>
+                    <rect x="12" y="192" width="60" height="60" fill="#ccc" rx="4"/>
+                </svg>
+                <div class="qr-loading-overlay">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+            <p class="mt-2 text-muted">Generating QR code...</p>
+        `;
+
+        // Add CSS for the loading animation if not already added
+        if (!document.getElementById('qrLoadingStyles')) {
+            var style = document.createElement('style');
+            style.id = 'qrLoadingStyles';
+            style.textContent = '.qr-loading-placeholder { position: relative; display: inline-block; background: white; padding: 12px; border-radius: 8px; } .qr-placeholder-svg { animation: qrPulse 1.5s ease-in-out infinite; } .qr-loading-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.9); border-radius: 50%; padding: 15px; } @keyframes qrPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }';
+            document.head.appendChild(style);
+        }
+
+        // Register close handler - but DON'T close WebSocket here
+        // We need to keep it open to receive the "running" status with account info
+        // WebSocket will be closed by "running" status handler or 10s fallback timeout
+        if (!qrModalCloseHandlerRegistered) {
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                console.log('Modal closed - WebSocket kept open for status updates');
+                qrModalShown = false;
+            });
+            qrModalCloseHandlerRegistered = true;
+        }
+
+        // Show modal
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
+
+    // Show reconnecting modal (for bots with existing session - no QR needed)
+    function showReconnectingModal(botId) {
+        console.log('showReconnectingModal called for bot:', botId);
+
+        // Ensure modal exists
+        ensureQRModalExists();
+
+        var modalElement = document.getElementById('qrModal');
+        var container = document.getElementById('qrCodeContainer');
+        var status = document.getElementById('qrStatus');
+
+        if (!modalElement || !container || !status) {
+            console.error('Modal elements not found');
+            return;
+        }
+
+        // Update modal title for reconnecting
+        var modalTitle = modalElement.querySelector('.modal-title');
+        if (modalTitle) {
+            modalTitle.textContent = 'Reconnecting...';
+        }
+
+        // Update instruction text
+        var instructionText = modalElement.querySelector('.modal-body > p');
+        if (instructionText) {
+            instructionText.textContent = 'Restoring your WhatsApp session...';
+        }
+
+        // Reset status element
+        status.textContent = '';
+        status.classList.remove('alert-success', 'alert-danger', 'alert-info');
+        status.classList.add('d-none');
+
+        // Show reconnecting UI (spinner with message)
+        container.innerHTML = `
+            <div class="reconnecting-placeholder">
+                <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Reconnecting...</span>
+                </div>
+                <p class="mt-3 text-muted">Using saved session to reconnect...</p>
+                <p class="small text-muted">No QR scan needed</p>
+            </div>
+        `;
+
+        // Mark modal as shown
+        qrModalShown = true;
+
+        // Register close handler if not already - but DON'T close WebSocket here
+        // We need to keep it open to receive the "running" status with account info
+        if (!qrModalCloseHandlerRegistered) {
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                console.log('Modal closed - WebSocket kept open for status updates');
+                qrModalShown = false;
+                // Reset modal title when closed
+                var title = modalElement.querySelector('.modal-title');
+                if (title) title.textContent = 'Scan QR Code';
+                var instr = modalElement.querySelector('.modal-body > p');
+                if (instr) instr.textContent = 'Scan this QR code with your WhatsApp mobile app';
+            });
+            qrModalCloseHandlerRegistered = true;
+        }
+
+        // Show modal
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
+
+    // Create QR modal dynamically if it doesn't exist
+    function ensureQRModalExists() {
+        if (document.getElementById('qrModal')) {
+            return; // Already exists
+        }
+
+        // Create modal structure using DOM methods
+        var modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'qrModal';
+        modal.setAttribute('tabindex', '-1');
+
+        var dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+
+        var content = document.createElement('div');
+        content.className = 'modal-content';
+
+        var header = document.createElement('div');
+        header.className = 'modal-header';
+        header.innerHTML = '<h5 class="modal-title">Scan QR Code</h5><button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>';
+
+        var body = document.createElement('div');
+        body.className = 'modal-body text-center';
+
+        var p = document.createElement('p');
+        p.textContent = 'Scan this QR code with your WhatsApp mobile app';
+
+        var container = document.createElement('div');
+        container.id = 'qrCodeContainer';
+        container.className = 'my-4';
+        container.innerHTML = '<div class="spinner-border" role="status"></div><p class="mt-2">Waiting for QR code...</p>';
+
+        var status = document.createElement('div');
+        status.id = 'qrStatus';
+        status.className = 'alert alert-info d-none';
+
+        body.appendChild(p);
+        body.appendChild(container);
+        body.appendChild(status);
+
+        content.appendChild(header);
+        content.appendChild(body);
+
+        dialog.appendChild(content);
+        modal.appendChild(dialog);
+
+        document.body.appendChild(modal);
+    }
+
+    async function editBot(botId) {
+        try {
+            const res = await fetch(`/api/bots/${botId}`);
+            const bot = await res.json();
+
+            document.getElementById('editBotId').value = bot.id;
+            document.getElementById('editName').value = bot.name;
+            setModelDropdownValue('editModelDropdown', bot.openai_model);
+            document.getElementById('editPrompt').value = bot.system_prompt;
+            document.getElementById('editTemperature').value = bot.temperature ?? 0.7;
+            document.getElementById('editMaxTokens').value = bot.max_tokens ?? 1000;
+            document.getElementById('editTopP').value = bot.top_p ?? 1.0;
+            document.getElementById('editFrequencyPenalty').value = bot.frequency_penalty ?? 0.0;
+            document.getElementById('editPresencePenalty').value = bot.presence_penalty ?? 0.0;
+            document.getElementById('editMaxHistory').value = bot.max_history;
+            document.getElementById('editDelayMin').value = bot.response_delay_min;
+            document.getElementById('editDelayMax').value = bot.response_delay_max;
+            document.getElementById('editGroupChat').checked = bot.group_chat_enabled;
+            document.getElementById('editHeadless').checked = bot.headless;
+            // Proxy settings
+            document.getElementById('editProxyEnabled').checked = bot.proxy_enabled || false;
+            document.getElementById('editProxyUrl').value = bot.proxy_url || '';
+            document.getElementById('editProxyUsername').value = '';  // Don't show encrypted values
+            document.getElementById('editProxyPassword').value = '';  // Don't show encrypted values
+
+            currentBotId = botId;
+            new bootstrap.Modal(document.getElementById('editBotModal')).show();
+        } catch (e) {
+            showToast('Error loading bot', 'danger');
+        }
+    }
+
+    document.getElementById('editBotForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const botId = form.bot_id.value;
+
+        const data = {
+            name: form.name.value,
+            openai_model: form.openai_model.value,
+            system_prompt: form.system_prompt.value,
+            temperature: parseFloat(form.temperature.value),
+            max_tokens: parseInt(form.max_tokens.value),
+            top_p: parseFloat(form.top_p.value),
+            frequency_penalty: parseFloat(form.frequency_penalty.value),
+            presence_penalty: parseFloat(form.presence_penalty.value),
+            max_history: parseInt(form.max_history.value),
+            response_delay_min: parseInt(form.response_delay_min.value),
+            response_delay_max: parseInt(form.response_delay_max.value),
+            group_chat_enabled: form.group_chat_enabled.checked,
+            headless: form.headless.checked,
+            // Proxy settings
+            proxy_enabled: form.proxy_enabled.checked,
+            proxy_url: form.proxy_url.value || null
+        };
+
+        if (form.openai_api_key.value) {
+            data.openai_api_key = form.openai_api_key.value;
+        }
+
+        // Only include proxy credentials if provided (to avoid overwriting)
+        if (form.proxy_username.value) {
+            data.proxy_username = form.proxy_username.value;
+        }
+        if (form.proxy_password.value) {
+            data.proxy_password = form.proxy_password.value;
+        }
+
+        try {
+            const res = await fetch(`/api/bots/${botId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('editBotModal')).hide();
+                loadBots();
+                showToast('Bot updated successfully', 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error updating bot', 'danger');
+            }
+        } catch (e) {
+            showToast('Error updating bot', 'danger');
+        }
+    });
+
+    async function deleteBot() {
+        if (!confirm('Are you sure you want to delete this bot? This cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`/api/bots/${currentBotId}`, { method: 'DELETE' });
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('editBotModal')).hide();
+                loadBots();
+                showToast('Bot deleted', 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error deleting bot', 'danger');
+            }
+        } catch (e) {
+            showToast('Error deleting bot', 'danger');
+        }
+    }
+
+    async function disconnectWhatsAppFromCard(botId) {
+        if (!confirm('Disconnect WhatsApp from this bot?\n\nThis will clear all conversations and messages.\nThe bot will show a new QR code on next start.')) return;
+
+        try {
+            const res = await fetch(`/api/bots/${botId}/disconnect`, { method: 'POST' });
+            if (res.ok) {
+                loadBots();
+                showToast('WhatsApp disconnected. Start the bot to scan a new QR code.', 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error disconnecting WhatsApp', 'danger');
+            }
+        } catch (e) {
+            showToast('Error disconnecting WhatsApp', 'danger');
+        }
+    }
+
+    // Check and recover bots that should be running
+    async function checkAndRecoverBots() {
+        try {
+            console.log('Checking for bots that need recovery...');
+            const res = await fetch('/api/bots/check-and-recover', { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                console.log('Recovery check result:', data);
+
+                if (data.recovered && data.recovered.length > 0) {
+                    showToast(`Recovered ${data.recovered.length} bot(s)`, 'success');
+                }
+                if (data.failed && data.failed.length > 0) {
+                    console.warn('Some bots failed to recover:', data.failed);
+                }
+            }
+        } catch (e) {
+            console.error('Error checking bot recovery:', e);
+        }
+    }
+
+    // Setup custom model dropdowns
+    function setupModelDropdowns() {
+        document.querySelectorAll('.model-dropdown-menu .dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = this.closest('.model-dropdown');
+                const btn = dropdown.querySelector('.model-dropdown-btn');
+                const hiddenInput = dropdown.previousElementSibling;
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+
+                // Update button text and hidden input value
+                btn.textContent = text;
+                hiddenInput.value = value;
+
+                // Update selected state
+                dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // Close dropdown
+                bootstrap.Dropdown.getInstance(btn)?.hide();
+            });
+        });
+
+        // Scroll to top when dropdown opens
+        document.querySelectorAll('.model-dropdown-btn').forEach(btn => {
+            btn.addEventListener('shown.bs.dropdown', function() {
+                const menu = this.nextElementSibling;
+                const inner = menu.querySelector('.model-dropdown-menu-inner');
+                if (inner) inner.scrollTop = 0;
+            });
+        });
+    }
+
+    // Set model dropdown value programmatically
+    function setModelDropdownValue(dropdownId, value) {
+        const btn = document.getElementById(dropdownId);
+        const dropdown = btn.closest('.model-dropdown');
+        const hiddenInput = dropdown.previousElementSibling;
+        const item = dropdown.querySelector(`.dropdown-item[data-value="${value}"]`);
+
+        if (item) {
+            btn.textContent = item.textContent;
+            hiddenInput.value = value;
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+        }
+    }
+
+    // Initialize page
+    async function initializePage() {
+        // Ensure QR modal exists (create dynamically if needed)
+        ensureQRModalExists();
+        // Setup custom model dropdowns
+        setupModelDropdowns();
+        await checkAndRecoverBots();
+        await loadBots();
+    }
+
+    // Ensure DOM is fully loaded before interacting with elements
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePage);
+    } else {
+        initializePage();
+    }
+</script>
+{% endblock %}
