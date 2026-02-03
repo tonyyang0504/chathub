@@ -6,6 +6,7 @@ Authentication Routes
 - Current user info
 """
 
+import logging
 import time
 from datetime import datetime, timedelta
 from typing import Optional
@@ -24,6 +25,8 @@ from app.auth.utils import (
     get_current_user,
     get_current_user_optional
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Authentication"])
 templates = Jinja2Templates(directory="app/templates")
@@ -96,16 +99,18 @@ async def register(
     # Check if email already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
+        logger.warning(f"Registration attempt with existing email: {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
 
-    # Validate password
-    if len(user_data.password) < 6:
+    # Validate password strength
+    if len(user_data.password) < 12:
+        logger.warning(f"Registration attempt with weak password: {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 6 characters"
+            detail="Password must be at least 12 characters"
         )
 
     # Create user
@@ -118,6 +123,7 @@ async def register(
     db.commit()
     db.refresh(user)
 
+    logger.info(f"New user registered: {user.email} (id={user.id})")
     return user
 
 
@@ -131,6 +137,7 @@ async def login(
     # Find user
     user = db.query(User).filter(User.email == user_data.email).first()
     if not user:
+        logger.warning(f"Login attempt with unknown email: {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -138,6 +145,7 @@ async def login(
 
     # Verify password
     if not verify_password(user_data.password, user.password_hash):
+        logger.warning(f"Login attempt with invalid password for: {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -145,6 +153,7 @@ async def login(
 
     # Check if active
     if not user.is_active:
+        logger.warning(f"Login attempt for disabled account: {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is disabled"
@@ -165,6 +174,7 @@ async def login(
         samesite="lax"
     )
 
+    logger.info(f"User logged in: {user.email} (id={user.id})")
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -176,6 +186,7 @@ async def login(
 async def logout(response: Response):
     """Logout and clear token cookie."""
     response.delete_cookie(key="access_token")
+    logger.info("User logged out")
     return {"message": "Logged out successfully"}
 
 
@@ -209,16 +220,17 @@ async def change_password(
     """Change user password."""
     # Verify current password
     if not verify_password(current_password, current_user.password_hash):
+        logger.warning(f"Password change attempt with wrong current password: {current_user.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
         )
 
-    # Validate new password
-    if len(new_password) < 6:
+    # Validate new password strength
+    if len(new_password) < 12:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password must be at least 6 characters"
+            detail="New password must be at least 12 characters"
         )
 
     # Ensure new password is different from current
@@ -232,4 +244,5 @@ async def change_password(
     current_user.password_hash = get_password_hash(new_password)
     db.commit()
 
+    logger.info(f"Password changed for user: {current_user.email} (id={current_user.id})")
     return {"message": "Password changed successfully"}

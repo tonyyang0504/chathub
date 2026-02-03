@@ -142,12 +142,20 @@ class BotManager:
         return instance
 
     def remove_instance(self, bot_profile_id: int):
-        """Remove a bot instance."""
+        """Remove a bot instance and clean up associated resources."""
         if bot_profile_id in self.instances:
             instance = self.instances[bot_profile_id]
             if instance.task and not instance.task.done():
                 instance.task.cancel()
             del self.instances[bot_profile_id]
+
+            # Clean up message/file queues to prevent memory leaks
+            try:
+                from app.bots.whatsapp_bot import cleanup_bot_queues
+                cleanup_bot_queues(bot_profile_id)
+                logger.debug(f"Cleaned up queues for bot {bot_profile_id}")
+            except Exception as e:
+                logger.warning(f"Failed to cleanup queues for bot {bot_profile_id}: {e}")
 
     async def start_bot(self, bot_profile_id: int, config: dict) -> BotInstance:
         """Start a bot instance."""

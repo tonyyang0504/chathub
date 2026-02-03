@@ -41,6 +41,16 @@ class Settings:
     DEFAULT_RESPONSE_DELAY_MIN: int = 3
     DEFAULT_RESPONSE_DELAY_MAX: int = 8
 
+    # CORS Settings (comma-separated origins, or "*" for all)
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
+
+    # Logging Settings
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_MAX_SIZE_MB: int = int(os.getenv("LOG_MAX_SIZE_MB", "10"))  # Max log file size in MB
+    LOG_BACKUP_COUNT: int = int(os.getenv("LOG_BACKUP_COUNT", "30"))  # Number of backup files
+    LOG_MAX_AGE_DAYS: int = int(os.getenv("LOG_MAX_AGE_DAYS", "30"))  # Delete logs older than this
+    LOG_JSON_FORMAT: bool = os.getenv("LOG_JSON_FORMAT", "false").lower() == "true"
+
     @classmethod
     def get_encryption_key(cls) -> bytes:
         """Get or generate encryption key."""

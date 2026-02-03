@@ -68,6 +68,19 @@ def _get_outgoing_file_queue(bot_profile_id: int) -> queue.Queue:
         return _outgoing_file_queues[bot_profile_id]
 
 
+def cleanup_bot_queues(bot_profile_id: int) -> None:
+    """
+    Clean up queues for a bot when it's stopped.
+    Call this from BotManager.remove_instance() to prevent memory leaks.
+    """
+    with _outgoing_queues_lock:
+        if bot_profile_id in _outgoing_message_queues:
+            del _outgoing_message_queues[bot_profile_id]
+    with _outgoing_file_queues_lock:
+        if bot_profile_id in _outgoing_file_queues:
+            del _outgoing_file_queues[bot_profile_id]
+
+
 def _is_valid_whatsapp_id(chat_id: str) -> bool:
     """
     Validate if a chat_id is a valid WhatsApp identifier.

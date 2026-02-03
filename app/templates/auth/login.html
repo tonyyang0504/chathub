@@ -174,7 +174,16 @@
                 if (response.ok) {
                     window.location.href = '/dashboard';
                 } else {
-                    errorAlert.textContent = data.detail || 'Login failed';
+                    // Handle both string and array error formats from FastAPI
+                    let errorMsg = 'Login failed';
+                    if (data.detail) {
+                        if (typeof data.detail === 'string') {
+                            errorMsg = data.detail;
+                        } else if (Array.isArray(data.detail)) {
+                            errorMsg = data.detail.map(e => e.msg).join(', ');
+                        }
+                    }
+                    errorAlert.textContent = errorMsg;
                     errorAlert.classList.remove('d-none');
                 }
             } catch (error) {

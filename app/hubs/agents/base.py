@@ -5,27 +5,34 @@ Abstract base class for all AI agents in the hub system.
 """
 
 import json
+import logging
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from openai import OpenAI
-
 from app.database import AIAgent, AgentExecution, get_db_session
 from app.auth.utils import decrypt_string
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):
     """Base class for all AI agents."""
 
-    def __init__(self, agent: AIAgent, hub_api_key: Optional[str] = None):
+    def __init__(
+        self,
+        agent: AIAgent,
+        hub_api_key: Optional[str] = None,
+        hub_ai_provider: Optional[str] = None
+    ):
         """
         Initialize the agent.
 
         Args:
             agent: The AIAgent database model
             hub_api_key: Encrypted API key from the hub (fallback)
+            hub_ai_provider: AI provider from hub (fallback)
         """
         self.agent = agent
         self.agent_id = agent.id
@@ -42,8 +49,25 @@ class BaseAgent(ABC):
         if not api_key:
             raise ValueError(f"No API key available for agent {self.name}")
 
-        self.client = OpenAI(api_key=api_key)
+        # Determine AI provider (agent-specific or hub default or 'openai')
+        ai_provider = agent.ai_provider or hub_ai_provider or "openai"
         self.model = agent.openai_model or "gpt-4o-mini"
+
+        # Create AI provider instance
+        try:
+            from app.ai import get_ai_provider
+            self.provider = get_ai_provider(
+                provider_name=ai_provider,
+                api_key=api_key,
+                model=self.model
+            )
+            logger.debug(f"Agent {self.name} initialized with {ai_provider} provider")
+        except Exception as e:
+            logger.warning(f"Failed to create {ai_provider} provider for agent {self.name}: {e}. Falling back to OpenAI.")
+            # Fallback to OpenAI if provider fails
+            from openai import OpenAI
+            self._fallback_client = OpenAI(api_key=api_key)
+            self.provider = None
 
         # Load config
         self.config = {}
@@ -116,7 +140,7 @@ class BaseAgent(ABC):
 
         return output_data
 
-    def _call_openai(
+    def _call_ai(
         self,
         messages: list,
         temperature: float = 0.7,
@@ -124,7 +148,7 @@ class BaseAgent(ABC):
         response_format: Optional[Dict] = None
     ) -> tuple[str, int]:
         """
-        Call OpenAI API.
+        Call AI provider (multi-provider support).
 
         Args:
             messages: List of message dicts
@@ -135,22 +159,46 @@ class BaseAgent(ABC):
         Returns:
             Tuple of (response content, tokens used)
         """
-        kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
+        json_mode = response_format and response_format.get("type") == "json_object"
 
-        if response_format:
-            kwargs["response_format"] = response_format
+        if self.provider:
+            # Use the AI provider abstraction
+            response = self.provider.chat_completion(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                json_mode=json_mode
+            )
+            return response.content, response.usage.get("total_tokens", 0)
+        else:
+            # Fallback to direct OpenAI client
+            kwargs = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens
+            }
 
-        response = self.client.chat.completions.create(**kwargs)
+            if response_format:
+                kwargs["response_format"] = response_format
 
-        content = response.choices[0].message.content
-        tokens = response.usage.total_tokens if response.usage else 0
+            response = self._fallback_client.chat.completions.create(**kwargs)
 
-        return content, tokens
+            content = response.choices[0].message.content
+            tokens = response.usage.total_tokens if response.usage else 0
+
+            return content, tokens
+
+    # Alias for backward compatibility
+    def _call_openai(
+        self,
+        messages: list,
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        response_format: Optional[Dict] = None
+    ) -> tuple[str, int]:
+        """Alias for _call_ai for backward compatibility."""
+        return self._call_ai(messages, temperature, max_tokens, response_format)
 
     def _log_execution(
         self,

@@ -22,7 +22,7 @@ SESSIONS_DIR = BASE_DIR / "data" / "sessions"
 
 from app.config import settings
 from app.database import get_db, User, BotProfile, Conversation, Message
-from app.auth.utils import get_current_user, encrypt_string, decrypt_string
+from app.auth.utils import get_current_user, encrypt_string, decrypt_string, get_websocket_user
 from app.bots.schemas import (
     BotProfileCreate,
     BotProfileUpdate,
@@ -658,18 +658,36 @@ async def websocket_qr(
     """WebSocket endpoint for QR code streaming."""
     logger.info(f"WebSocket connection attempt for bot {bot_id}")
 
+    # Authenticate the WebSocket connection before accepting
+    db = next(get_db())
     try:
+        # We need to accept first to read cookies, but we'll close immediately if auth fails
         await websocket.accept()
         logger.info(f"WebSocket accepted for bot {bot_id}")
-    except Exception as e:
-        logger.error(f"WebSocket accept failed for bot {bot_id}: {e}")
-        return
 
-    instance = None
-    on_qr = None
-    on_status = None
+        user = await get_websocket_user(websocket, db)
+        if not user:
+            logger.warning(f"WebSocket QR: Authentication failed for bot {bot_id}")
+            await websocket.send_json({"error": "Authentication required"})
+            await websocket.close(code=4001, reason="Authentication required")
+            return
 
-    try:
+        # Verify bot ownership
+        bot = db.query(BotProfile).filter(
+            BotProfile.id == bot_id,
+            BotProfile.user_id == user.id
+        ).first()
+
+        if not bot:
+            logger.warning(f"WebSocket QR: Bot {bot_id} not found for user {user.id}")
+            await websocket.send_json({"error": "Bot not found"})
+            await websocket.close(code=4004, reason="Bot not found")
+            return
+
+        instance = None
+        on_qr = None
+        on_status = None
+
         # Wait a moment for bot instance to be created
         logger.info(f"Waiting for bot instance {bot_id}...")
         for i in range(10):
@@ -684,79 +702,82 @@ async def websocket_qr(
             await websocket.send_json({"error": "Bot not found or not started. Please try starting the bot again."})
             return
 
-        # Add callback for QR updates
-        async def on_qr(qr_code: str):
-            try:
-                logger.info(f"on_qr callback triggered for bot {bot_id}, sending to WebSocket")
-                await websocket.send_json({"qr_code": qr_code})
-                logger.info(f"QR code sent via WebSocket for bot {bot_id}")
-            except Exception as e:
-                logger.error(f"QR send error for bot {bot_id}: {e}")
-
-        async def on_status(status: dict):
-            try:
-                logger.info(f"on_status callback triggered for bot {bot_id}: {status.get('message', status)}")
-                await websocket.send_json({"status": status})
-            except Exception as e:
-                logger.error(f"Status send error for bot {bot_id}: {e}")
-
-        instance.add_qr_callback(on_qr)
-        instance.add_status_callback(on_status)
-        logger.info(f"WebSocket callbacks registered for bot {bot_id}. QR callbacks: {len(instance.qr_callbacks)}, Status callbacks: {len(instance.status_callbacks)}")
-
-        # Send initial status
-        await websocket.send_json({
-            "status": {
-                "is_running": instance.is_running,
-                "whatsapp_connected": instance.whatsapp_connected,
-                "message": "Connecting to bot..."
-            }
-        })
-        logger.info(f"Initial status sent for bot {bot_id}")
-
-        # Send last status if available
-        if instance.last_status:
-            logger.info(f"Sending last status for bot {bot_id}: {instance.last_status}")
-            await websocket.send_json({"status": instance.last_status})
-
-        # Send current QR if available (this catches QR codes detected before WebSocket connected)
-        if instance.qr_code:
-            logger.info(f"Sending existing QR code to WebSocket for bot {bot_id}, length: {len(instance.qr_code)}")
-            await websocket.send_json({"qr_code": instance.qr_code})
-
-        # Keep connection alive
-        logger.info(f"WebSocket entering message loop for bot {bot_id}")
-        while True:
-            try:
-                data = await websocket.receive_text()
-                if data == "ping":
-                    await websocket.send_text("pong")
-            except WebSocketDisconnect:
-                logger.info(f"WebSocket disconnected for bot {bot_id}")
-                break
-
-    except Exception as e:
-        logger.error(f"WebSocket error for bot {bot_id}: {e}", exc_info=True)
         try:
-            await websocket.send_json({"error": str(e)})
-        except:
-            pass
+            # Add callback for QR updates
+            async def on_qr(qr_code: str):
+                try:
+                    logger.info(f"on_qr callback triggered for bot {bot_id}, sending to WebSocket")
+                    await websocket.send_json({"qr_code": qr_code})
+                    logger.info(f"QR code sent via WebSocket for bot {bot_id}")
+                except Exception as e:
+                    logger.error(f"QR send error for bot {bot_id}: {e}")
+
+            async def on_status(status: dict):
+                try:
+                    logger.info(f"on_status callback triggered for bot {bot_id}: {status.get('message', status)}")
+                    await websocket.send_json({"status": status})
+                except Exception as e:
+                    logger.error(f"Status send error for bot {bot_id}: {e}")
+
+            instance.add_qr_callback(on_qr)
+            instance.add_status_callback(on_status)
+            logger.info(f"WebSocket callbacks registered for bot {bot_id}. QR callbacks: {len(instance.qr_callbacks)}, Status callbacks: {len(instance.status_callbacks)}")
+
+            # Send initial status
+            await websocket.send_json({
+                "status": {
+                    "is_running": instance.is_running,
+                    "whatsapp_connected": instance.whatsapp_connected,
+                    "message": "Connecting to bot..."
+                }
+            })
+            logger.info(f"Initial status sent for bot {bot_id}")
+
+            # Send last status if available
+            if instance.last_status:
+                logger.info(f"Sending last status for bot {bot_id}: {instance.last_status}")
+                await websocket.send_json({"status": instance.last_status})
+
+            # Send current QR if available (this catches QR codes detected before WebSocket connected)
+            if instance.qr_code:
+                logger.info(f"Sending existing QR code to WebSocket for bot {bot_id}, length: {len(instance.qr_code)}")
+                await websocket.send_json({"qr_code": instance.qr_code})
+
+            # Keep connection alive
+            logger.info(f"WebSocket entering message loop for bot {bot_id}")
+            while True:
+                try:
+                    data = await websocket.receive_text()
+                    if data == "ping":
+                        await websocket.send_text("pong")
+                except WebSocketDisconnect:
+                    logger.info(f"WebSocket disconnected for bot {bot_id}")
+                    break
+
+        except Exception as e:
+            logger.error(f"WebSocket error for bot {bot_id}: {e}", exc_info=True)
+            try:
+                await websocket.send_json({"error": str(e)})
+            except:
+                pass
+        finally:
+            logger.info(f"WebSocket cleanup for bot {bot_id}")
+            if instance:
+                if on_qr:
+                    try:
+                        instance.remove_qr_callback(on_qr)
+                        logger.info(f"Removed QR callback for bot {bot_id}")
+                    except:
+                        pass
+                if on_status:
+                    try:
+                        instance.remove_status_callback(on_status)
+                        logger.info(f"Removed status callback for bot {bot_id}")
+                    except:
+                        pass
+            try:
+                await websocket.close()
+            except:
+                pass
     finally:
-        logger.info(f"WebSocket cleanup for bot {bot_id}")
-        if instance:
-            if on_qr:
-                try:
-                    instance.remove_qr_callback(on_qr)
-                    logger.info(f"Removed QR callback for bot {bot_id}")
-                except:
-                    pass
-            if on_status:
-                try:
-                    instance.remove_status_callback(on_status)
-                    logger.info(f"Removed status callback for bot {bot_id}")
-                except:
-                    pass
-        try:
-            await websocket.close()
-        except:
-            pass
+        db.close()

@@ -3,11 +3,14 @@ Hub Coordinator - Orchestrates AI agents for multi-bot coordination
 """
 
 import json
+import logging
 import random
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import func
 
 from app.database import (
@@ -57,8 +60,8 @@ class HubCoordinator:
         if hub.multi_response_rules:
             try:
                 self.multi_response_rules = json.loads(hub.multi_response_rules)
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"Hub {hub.id}: Failed to parse multi_response_rules: {e}")
 
         # Bot-to-bot conversation settings
         self.bot_conversation_limit = hub.bot_conversation_limit if hub.bot_conversation_limit is not None else 0  # 0 = disabled (safe default)
@@ -74,8 +77,8 @@ class HubCoordinator:
                 for group in self.selected_groups:
                     if isinstance(group, dict) and group.get('chat_id'):
                         self.selected_group_ids.add(group['chat_id'])
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"Hub {hub.id}: Failed to parse selected_groups: {e}")
 
         # Load working hours for each bot
         self.bot_working_hours = {}
@@ -85,14 +88,14 @@ class HubCoordinator:
                 if membership.working_days:
                     try:
                         working_days = json.loads(membership.working_days)
-                    except:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.warning(f"Hub {hub.id}: Failed to parse working_days for bot {membership.bot_profile_id}: {e}")
                 working_periods = None
                 if membership.working_periods:
                     try:
                         working_periods = json.loads(membership.working_periods)
-                    except:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.warning(f"Hub {hub.id}: Failed to parse working_periods for bot {membership.bot_profile_id}: {e}")
                 self.bot_working_hours[membership.bot_profile_id] = {
                     'start': membership.working_hours_start,  # DEPRECATED
                     'end': membership.working_hours_end,  # DEPRECATED
@@ -700,8 +703,8 @@ class HubCoordinator:
                     expertise_list = json.loads(m.expertise) if isinstance(m.expertise, str) else m.expertise
                     if any(e.lower() in [exp.lower() for exp in expertise_list] for e in suggested_expertise):
                         matching_bots.append(bid)
-                except:
-                    pass
+                except (json.JSONDecodeError, TypeError) as e:
+                    logger.warning(f"Hub {self.hub_id}: Failed to parse expertise for bot {bid}: {e}")
         return matching_bots
 
     def _simple_routing(
@@ -882,6 +885,43 @@ class HubCoordinator:
 
         return contact
 
+    def _get_ai_provider(self, agent: AIAgent):
+        """Get AI provider for an agent, with fallback to hub settings."""
+        try:
+            from app.ai import get_ai_provider
+
+            # Get API key (agent-specific or hub default)
+            api_key = None
+            if agent.openai_api_key_encrypted:
+                api_key = decrypt_string(agent.openai_api_key_encrypted)
+            elif self.hub.openai_api_key_encrypted:
+                api_key = decrypt_string(self.hub.openai_api_key_encrypted)
+
+            if not api_key:
+                return None
+
+            # Determine provider (agent > hub > default)
+            provider_name = agent.ai_provider or self.hub.ai_provider or "openai"
+            model = agent.openai_model or self.hub.openai_model or "gpt-4o-mini"
+
+            return get_ai_provider(
+                provider_name=provider_name,
+                api_key=api_key,
+                model=model
+            )
+        except Exception as e:
+            print(f"Failed to create AI provider: {e}")
+            # Fallback to OpenAI
+            from openai import OpenAI
+            api_key = None
+            if agent.openai_api_key_encrypted:
+                api_key = decrypt_string(agent.openai_api_key_encrypted)
+            elif self.hub.openai_api_key_encrypted:
+                api_key = decrypt_string(self.hub.openai_api_key_encrypted)
+            if api_key:
+                return OpenAI(api_key=api_key)
+            return None
+
     def _run_classifier(
         self,
         message_content: str,
@@ -894,20 +934,11 @@ class HubCoordinator:
             return None
 
         try:
-            from openai import OpenAI
-
-            # Get API key
-            api_key = None
-            if agent.openai_api_key_encrypted:
-                api_key = decrypt_string(agent.openai_api_key_encrypted)
-            elif self.hub.openai_api_key_encrypted:
-                api_key = decrypt_string(self.hub.openai_api_key_encrypted)
-
-            if not api_key:
+            # Get AI provider (supports multiple providers)
+            provider = self._get_ai_provider(agent)
+            if not provider:
                 print(f"Hub {self.hub_id}: No API key for classifier")
                 return None
-
-            client = OpenAI(api_key=api_key)
 
             # Build context
             contact_info = "Unknown sender"
@@ -940,8 +971,8 @@ class HubCoordinator:
                     try:
                         expertise_list = json.loads(membership.expertise)
                         all_expertise.update(e.lower() for e in expertise_list)
-                    except:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.debug(f"Hub {self.hub_id}: Failed to parse expertise in classifier: {e}")
 
             # Combine topics and expertise
             available_categories = list(set(topic_names) | all_expertise)
@@ -964,18 +995,34 @@ Return ONLY valid JSON, no other text."""
             if agent.additional_instructions:
                 system_prompt += f"\n\nAdditional Instructions:\n{agent.additional_instructions}"
 
-            response = client.chat.completions.create(
-                model=agent.openai_model or "gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Contact: {contact_info}\nIs Group Chat: {is_group}\n\nMessage: {message_content}"}
-                ],
-                temperature=0.3,
-                max_tokens=500,
-                response_format={"type": "json_object"}
-            )
+            # Use provider (supports OpenAI and other providers)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Contact: {contact_info}\nIs Group Chat: {is_group}\n\nMessage: {message_content}"}
+            ]
 
-            result = json.loads(response.choices[0].message.content)
+            # Check if provider is our abstraction or direct OpenAI client
+            if hasattr(provider, 'chat_completion'):
+                # Using AI provider abstraction
+                response = provider.chat_completion(
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=500,
+                    json_mode=True
+                )
+                result = json.loads(response.content)
+                tokens_used = response.usage.get("total_tokens", 0)
+            else:
+                # Direct OpenAI client (fallback)
+                response = provider.chat.completions.create(
+                    model=agent.openai_model or "gpt-4o-mini",
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=500,
+                    response_format={"type": "json_object"}
+                )
+                result = json.loads(response.choices[0].message.content)
+                tokens_used = response.usage.total_tokens if response.usage else 0
 
             # Log execution
             self._log_agent_execution(
@@ -983,7 +1030,7 @@ Return ONLY valid JSON, no other text."""
                 "message",
                 {"message": message_content[:200], "contact": contact.phone if contact else "unknown"},
                 result,
-                response.usage.total_tokens if response.usage else 0
+                tokens_used
             )
 
             # Update agent last run
@@ -1017,19 +1064,10 @@ Return ONLY valid JSON, no other text."""
             return {"should_respond": True, "reason": "No router agent"}
 
         try:
-            from openai import OpenAI
-
-            # Get API key
-            api_key = None
-            if agent.openai_api_key_encrypted:
-                api_key = decrypt_string(agent.openai_api_key_encrypted)
-            elif self.hub.openai_api_key_encrypted:
-                api_key = decrypt_string(self.hub.openai_api_key_encrypted)
-
-            if not api_key:
+            # Get AI provider (supports multiple providers)
+            provider = self._get_ai_provider(agent)
+            if not provider:
                 return {"should_respond": True, "reason": "No API key for router"}
-
-            client = OpenAI(api_key=api_key)
 
             # Get response counts for least-busy routing
             response_counts = self._get_bot_response_counts(hours=1)
@@ -1041,8 +1079,8 @@ Return ONLY valid JSON, no other text."""
                 if membership.expertise:
                     try:
                         expertise = json.loads(membership.expertise) if isinstance(membership.expertise, str) else membership.expertise
-                    except:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.debug(f"Hub {self.hub_id}: Failed to parse expertise for bot {bot_id} in router: {e}")
 
                 bots_info.append({
                     "bot_id": bot_id,
@@ -1066,8 +1104,8 @@ Return ONLY valid JSON, no other text."""
                     try:
                         expertise_list = json.loads(membership.expertise)
                         all_expertise.update(e.lower() for e in expertise_list)
-                    except:
-                        pass
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.debug(f"Hub {self.hub_id}: Failed to parse expertise in router: {e}")
 
             # Combine topics and expertise
             available_categories = list(set(topic_names) | all_expertise)
@@ -1142,18 +1180,34 @@ Which bot(s) should respond? Consider:
 
 Which bot(s) should respond?"""
 
-            response = client.chat.completions.create(
-                model=agent.openai_model or "gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.3,
-                max_tokens=500,
-                response_format={"type": "json_object"}
-            )
+            # Use provider (supports OpenAI and other providers)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
 
-            result = json.loads(response.choices[0].message.content)
+            # Check if provider is our abstraction or direct OpenAI client
+            if hasattr(provider, 'chat_completion'):
+                # Using AI provider abstraction
+                response = provider.chat_completion(
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=500,
+                    json_mode=True
+                )
+                result = json.loads(response.content)
+                tokens_used = response.usage.get("total_tokens", 0)
+            else:
+                # Direct OpenAI client (fallback)
+                response = provider.chat.completions.create(
+                    model=agent.openai_model or "gpt-4o-mini",
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=500,
+                    response_format={"type": "json_object"}
+                )
+                result = json.loads(response.choices[0].message.content)
+                tokens_used = response.usage.total_tokens if response.usage else 0
 
             # Log execution
             self._log_agent_execution(
@@ -1161,7 +1215,7 @@ Which bot(s) should respond?"""
                 "message",
                 {"classification": classification, "requesting_bot": requesting_bot_id, "max_bots": max_bots_for_category},
                 result,
-                response.usage.total_tokens if response.usage else 0
+                tokens_used
             )
 
             # Update agent last run

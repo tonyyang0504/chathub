@@ -3,13 +3,15 @@ Authentication Utilities
 - Password hashing
 - JWT token management
 - Current user dependency
+- WebSocket authentication
 """
 
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, WebSocket
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from cryptography.fernet import Fernet
@@ -17,6 +19,8 @@ import base64
 
 from app.config import settings
 from app.database import get_db, User
+
+logger = logging.getLogger(__name__)
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -138,3 +142,92 @@ def decrypt_string(ciphertext: str) -> str:
     """Decrypt a string."""
     f = get_fernet()
     return f.decrypt(ciphertext.encode()).decode()
+
+
+# ============== WebSocket Authentication ==============
+
+async def get_websocket_user(
+    websocket: WebSocket,
+    db: Session
+) -> Optional[User]:
+    """
+    Authenticate a WebSocket connection using query param or cookie token.
+
+    Attempts to get token from:
+    1. Query parameter 'token'
+    2. Cookie 'access_token'
+
+    Args:
+        websocket: The WebSocket connection
+        db: Database session
+
+    Returns:
+        User if authenticated, None otherwise
+    """
+    token = None
+
+    # Try to get token from query parameter
+    token = websocket.query_params.get("token")
+
+    # Try to get token from cookies if not in query params
+    if not token:
+        token = websocket.cookies.get("access_token")
+
+    if not token:
+        logger.debug("WebSocket auth: No token found in query params or cookies")
+        return None
+
+    # Decode and validate token
+    payload = decode_token(token)
+    if payload is None:
+        logger.warning("WebSocket auth: Invalid token")
+        return None
+
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
+        logger.warning("WebSocket auth: No user ID in token payload")
+        return None
+
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
+        logger.warning("WebSocket auth: Invalid user ID format in token")
+        return None
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        logger.warning(f"WebSocket auth: User {user_id} not found")
+        return None
+
+    if not user.is_active:
+        logger.warning(f"WebSocket auth: User {user_id} is inactive")
+        return None
+
+    logger.debug(f"WebSocket auth: Successfully authenticated user {user_id}")
+    return user
+
+
+async def require_websocket_auth(
+    websocket: WebSocket,
+    db: Session
+) -> User:
+    """
+    Require authentication for a WebSocket connection.
+    Closes the connection with code 4001 if not authenticated.
+
+    Args:
+        websocket: The WebSocket connection
+        db: Database session
+
+    Returns:
+        User if authenticated
+
+    Raises:
+        WebSocketException if not authenticated (connection will be closed)
+    """
+    user = await get_websocket_user(websocket, db)
+    if user is None:
+        logger.warning("WebSocket: Authentication required but not provided")
+        await websocket.close(code=4001, reason="Authentication required")
+        raise Exception("WebSocket authentication failed")
+    return user

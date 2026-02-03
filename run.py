@@ -94,21 +94,12 @@ def main():
     from dotenv import load_dotenv
     load_dotenv()
 
-    # Configure logging - output to both console and file
+    # Configure enhanced logging system
+    from app.logging_config import setup_logging
     import logging
 
-    # Create logs directory
-    os.makedirs("logs", exist_ok=True)
-
-    # Setup logging to file and console
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler("logs/bot.log", encoding='utf-8'),
-            logging.StreamHandler()
-        ]
-    )
+    # Setup enhanced logging with category-based files and rotation
+    setup_logging()
 
     logging.info("=== Server Starting ===")
 

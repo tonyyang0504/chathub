@@ -21,7 +21,8 @@ from pydantic import BaseModel, field_serializer
 from openai import OpenAI
 
 from app.database import get_db, User, BotProfile, Conversation, Message
-from app.auth.utils import get_current_user, decrypt_string
+from app.auth.utils import get_current_user, decrypt_string, get_websocket_user
+from app.auth.ownership import verify_conversation_ownership, verify_bot_ownership
 from app.bots.whatsapp_bot import _analyze_image_with_ai, _analyze_document_with_ai
 
 logger = logging.getLogger(__name__)
@@ -510,36 +511,76 @@ async def export_conversation(
 @router.websocket("/{conversation_id}/ws")
 async def websocket_conversation(websocket: WebSocket, conversation_id: int):
     """WebSocket endpoint for real-time conversation updates."""
-    await conversation_ws_manager.connect(websocket, conversation_id=conversation_id)
+    # Authenticate the WebSocket connection
+    db = next(get_db())
     try:
-        while True:
-            # Keep connection alive, handle pings
-            data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
-    except WebSocketDisconnect:
-        conversation_ws_manager.disconnect(websocket, conversation_id=conversation_id)
-        logger.info(f"WebSocket disconnected for conversation {conversation_id}")
-    except Exception as e:
-        logger.error(f"WebSocket error for conversation {conversation_id}: {e}")
-        conversation_ws_manager.disconnect(websocket, conversation_id=conversation_id)
+        user = await get_websocket_user(websocket, db)
+        if not user:
+            await websocket.close(code=4001, reason="Authentication required")
+            return
+
+        # Verify conversation ownership
+        conversation = db.query(Conversation).join(BotProfile).filter(
+            Conversation.id == conversation_id,
+            BotProfile.user_id == user.id
+        ).first()
+
+        if not conversation:
+            await websocket.close(code=4004, reason="Conversation not found")
+            return
+
+        await conversation_ws_manager.connect(websocket, conversation_id=conversation_id)
+        try:
+            while True:
+                # Keep connection alive, handle pings
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+        except WebSocketDisconnect:
+            conversation_ws_manager.disconnect(websocket, conversation_id=conversation_id)
+            logger.info(f"WebSocket disconnected for conversation {conversation_id}")
+        except Exception as e:
+            logger.error(f"WebSocket error for conversation {conversation_id}: {e}")
+            conversation_ws_manager.disconnect(websocket, conversation_id=conversation_id)
+    finally:
+        db.close()
 
 
 @router.websocket("/bot/{bot_id}/ws")
 async def websocket_bot_chats(websocket: WebSocket, bot_id: int):
     """WebSocket endpoint for real-time chat list updates."""
-    await conversation_ws_manager.connect(websocket, bot_id=bot_id)
+    # Authenticate the WebSocket connection
+    db = next(get_db())
     try:
-        while True:
-            data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
-    except WebSocketDisconnect:
-        conversation_ws_manager.disconnect(websocket, bot_id=bot_id)
-        logger.info(f"WebSocket disconnected for bot {bot_id} chat list")
-    except Exception as e:
-        logger.error(f"WebSocket error for bot {bot_id}: {e}")
-        conversation_ws_manager.disconnect(websocket, bot_id=bot_id)
+        user = await get_websocket_user(websocket, db)
+        if not user:
+            await websocket.close(code=4001, reason="Authentication required")
+            return
+
+        # Verify bot ownership
+        bot = db.query(BotProfile).filter(
+            BotProfile.id == bot_id,
+            BotProfile.user_id == user.id
+        ).first()
+
+        if not bot:
+            await websocket.close(code=4004, reason="Bot not found")
+            return
+
+        await conversation_ws_manager.connect(websocket, bot_id=bot_id)
+        try:
+            while True:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+        except WebSocketDisconnect:
+            conversation_ws_manager.disconnect(websocket, bot_id=bot_id)
+            logger.info(f"WebSocket disconnected for bot {bot_id} chat list")
+        except Exception as e:
+            logger.error(f"WebSocket error for bot {bot_id}: {e}")
+            conversation_ws_manager.disconnect(websocket, bot_id=bot_id)
+    finally:
+        db.close()
 
 
 # ============== Manual Message Sending ==============
@@ -548,14 +589,14 @@ async def websocket_bot_chats(websocket: WebSocket, bot_id: int):
 async def send_manual_message(
     conversation_id: int,
     request: SendMessageRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Send a manual message via WhatsApp and mark as human takeover."""
     from app.bots.whatsapp_bot import send_whatsapp_message
 
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    # Verify conversation ownership
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
 
     bot_profile = db.query(BotProfile).filter(BotProfile.id == conversation.bot_profile_id).first()
     if not bot_profile:
@@ -627,12 +668,12 @@ async def send_manual_message(
 @router.post("/{conversation_id}/resume-ai")
 async def resume_ai_bot(
     conversation_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Resume AI bot for this conversation (disable human takeover)."""
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    # Verify conversation ownership
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
 
     conversation.human_takeover = False
     conversation.human_takeover_at = None
@@ -646,6 +687,7 @@ async def send_file_message(
     conversation_id: int,
     file: UploadFile = File(...),
     caption: str = Form(default=""),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Send a file/image via WhatsApp."""
@@ -661,10 +703,8 @@ async def send_file_message(
         logger.error("No file or filename provided")
         raise HTTPException(status_code=400, detail="No file provided")
 
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conversation:
-        logger.error(f"Conversation {conversation_id} not found")
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    # Verify conversation ownership
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
 
     bot_profile = db.query(BotProfile).filter(BotProfile.id == conversation.bot_profile_id).first()
     if not bot_profile:
@@ -919,6 +959,7 @@ class ForwardFileRequest(BaseModel):
 async def forward_file_message(
     conversation_id: int,
     request: ForwardFileRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Forward a file/image to another conversation."""
@@ -928,9 +969,8 @@ async def forward_file_message(
     logger.info(f"File name: {request.file_name}")
     logger.info(f"File type: {request.file_type}")
 
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    # Verify conversation ownership
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
 
     bot_profile = db.query(BotProfile).filter(BotProfile.id == conversation.bot_profile_id).first()
     if not bot_profile:

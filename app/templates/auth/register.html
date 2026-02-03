@@ -145,9 +145,9 @@
                             <label for="password" class="form-label">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="Create a password" required minlength="6">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Create a password" required minlength="12">
                             </div>
-                            <small class="text-muted">At least 6 characters</small>
+                            <small class="text-muted">At least 12 characters</small>
                         </div>
                         <div class="mb-4">
                             <label for="confirmPassword" class="form-label">Confirm Password</label>
@@ -212,7 +212,17 @@
                         window.location.href = '/auth/login';
                     }, 2000);
                 } else {
-                    errorAlert.textContent = data.detail || 'Registration failed';
+                    // Handle both string and array error formats from FastAPI
+                    let errorMsg = 'Registration failed';
+                    if (data.detail) {
+                        if (typeof data.detail === 'string') {
+                            errorMsg = data.detail;
+                        } else if (Array.isArray(data.detail)) {
+                            // Validation errors come as array of {loc, msg, type}
+                            errorMsg = data.detail.map(e => e.msg).join(', ');
+                        }
+                    }
+                    errorAlert.textContent = errorMsg;
                     errorAlert.classList.remove('d-none');
                 }
             } catch (error) {

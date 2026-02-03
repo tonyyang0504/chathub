@@ -71,7 +71,10 @@ class BotProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
 
-    # OpenAI Settings (API key encrypted)
+    # AI Provider Settings
+    ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
+
+    # OpenAI Settings (API key encrypted - used for any provider)
     openai_api_key_encrypted = Column(Text, nullable=False)
     openai_model = Column(String(50), default="gpt-4o-mini")
     system_prompt = Column(Text, default="You are a helpful assistant. Do not use markdown formatting like asterisks (*), underscores (_), or other special characters for emphasis. Write plain text only.")
@@ -227,7 +230,10 @@ class Hub(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     task_type = Column(String(50), nullable=False, default="group_management")  # group_management, scheduled_content, contact_analyzer, message_routing, content_generator
-    openai_api_key_encrypted = Column(Text)  # Default API key for hub agents
+
+    # AI Provider Settings
+    ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
+    openai_api_key_encrypted = Column(Text)  # Default API key for hub agents (used for any provider)
     openai_model = Column(String(50), default="gpt-4o-mini")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -333,7 +339,10 @@ class AIAgent(Base):
     name = Column(String(255), nullable=False)
     agent_type = Column(String(50), nullable=False)  # 'classifier', 'router', 'generator', 'scheduler', 'analyzer', 'followup'
     description = Column(Text)
-    openai_api_key_encrypted = Column(Text)  # Override hub default if set
+
+    # AI Provider Settings
+    ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
+    openai_api_key_encrypted = Column(Text)  # Override hub default if set (used for any provider)
     openai_model = Column(String(50), default="gpt-4o-mini")
     system_prompt = Column(Text)  # Custom system prompt (for generator, analyzer, followup agents)
     additional_instructions = Column(Text)  # Extra instructions appended to default prompt (for classifier, router)
@@ -791,6 +800,15 @@ def run_migrations():
                 except Exception as e:
                     print(f"Could not add additional_instructions column: {e}")
 
+            # Add ai_provider column if not exists
+            if 'ai_provider' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE ai_agents ADD COLUMN ai_provider VARCHAR(50) DEFAULT 'openai'"))
+                    conn.commit()
+                    print("Added ai_provider column to ai_agents table")
+                except Exception as e:
+                    print(f"Could not add ai_provider column: {e}")
+
         # Check if hubs table exists and add new columns
         if 'hubs' in existing_tables:
             existing_columns = [col['name'] for col in inspector.get_columns('hubs')]
@@ -812,6 +830,27 @@ def run_migrations():
                     print("Added selected_groups column to hubs table")
                 except Exception as e:
                     print(f"Could not add selected_groups column: {e}")
+
+            # Add ai_provider column if not exists
+            if 'ai_provider' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE hubs ADD COLUMN ai_provider VARCHAR(50) DEFAULT 'openai'"))
+                    conn.commit()
+                    print("Added ai_provider column to hubs table")
+                except Exception as e:
+                    print(f"Could not add ai_provider column: {e}")
+
+        # Add ai_provider to bot_profiles if needed
+        if 'bot_profiles' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('bot_profiles')]
+
+            if 'ai_provider' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE bot_profiles ADD COLUMN ai_provider VARCHAR(50) DEFAULT 'openai'"))
+                    conn.commit()
+                    print("Added ai_provider column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add ai_provider column to bot_profiles: {e}")
 
 
 # Run migrations on import

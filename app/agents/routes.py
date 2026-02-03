@@ -13,6 +13,7 @@ import json
 
 from app.database import get_db, AIAgent, AgentTemplate, Hub, ToolExecution
 from app.auth.utils import get_current_user_optional, decrypt_string
+from app.auth.ownership import get_user_hub_ids, verify_hub_ownership
 from app.tools.monitoring import ToolMonitor
 from pydantic import BaseModel
 
@@ -82,16 +83,38 @@ async def list_agents(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs for ownership filtering
+    user_hub_ids = get_user_hub_ids(user, db)
+
     query = db.query(AIAgent)
 
-    # Filter by hub or global
+    # Filter by hub or global - but only show user's hubs
     if hub_id:
+        # Verify user owns this hub
+        if hub_id not in user_hub_ids:
+            raise HTTPException(status_code=404, detail="Hub not found")
         if include_global:
             query = query.filter(
                 or_(AIAgent.hub_id == hub_id, AIAgent.is_global == True)
             )
         else:
             query = query.filter(AIAgent.hub_id == hub_id)
+    else:
+        # Only show agents from user's hubs
+        if user_hub_ids:
+            if include_global:
+                query = query.filter(
+                    or_(AIAgent.hub_id.in_(user_hub_ids), AIAgent.is_global == True)
+                )
+            else:
+                query = query.filter(AIAgent.hub_id.in_(user_hub_ids))
+        else:
+            # User has no hubs, only show global agents
+            if include_global:
+                query = query.filter(AIAgent.is_global == True)
+            else:
+                # Return empty list
+                return {"agents": []}
 
     # Filter by status
     if status:
@@ -134,8 +157,15 @@ async def get_agent(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
     agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
     if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Verify user owns the hub this agent belongs to (or it's global)
+    if not agent.is_global and agent.hub_id not in user_hub_ids:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Parse config JSON if exists
@@ -179,6 +209,10 @@ async def create_agent(
     user = await get_current_user_optional(request, None, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Verify user owns the hub if hub_id is provided
+    if agent_data.hub_id:
+        verify_hub_ownership(agent_data.hub_id, user, db)
 
     # If template_id provided, load defaults from template
     template_config = {}
@@ -248,8 +282,15 @@ async def update_agent(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
     agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
     if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Verify user owns the hub this agent belongs to
+    if agent.hub_id not in user_hub_ids:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Update fields if provided
@@ -311,8 +352,15 @@ async def delete_agent(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
     agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
     if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Verify user owns the hub this agent belongs to
+    if agent.hub_id not in user_hub_ids:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     hub_id = agent.hub_id
@@ -348,8 +396,15 @@ async def toggle_agent(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
     agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
     if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Verify user owns the hub this agent belongs to
+    if agent.hub_id not in user_hub_ids:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     agent.is_active = not agent.is_active
@@ -372,8 +427,15 @@ async def test_agent(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
     agent = db.query(AIAgent).filter(AIAgent.id == test_data.agent_id).first()
     if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Verify user owns the hub this agent belongs to (or it's global)
+    if not agent.is_global and agent.hub_id not in user_hub_ids:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     start_time = time.time()
@@ -482,8 +544,15 @@ async def get_agent_history(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
     agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
     if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Verify user owns the hub this agent belongs to (or it's global)
+    if not agent.is_global and agent.hub_id not in user_hub_ids:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     executions = db.query(ToolExecution).filter(

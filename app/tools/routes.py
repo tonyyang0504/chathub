@@ -10,6 +10,7 @@ from typing import Optional
 
 from app.database import get_db, ToolExecution, Hub, ScheduledContent, HubBotMembership, Contact, ContactTag, AIAgent
 from app.auth.utils import get_current_user_optional
+from app.auth.ownership import get_user_hub_ids
 from sqlalchemy import func
 from .monitoring import ToolMonitor
 
@@ -36,13 +37,37 @@ async def get_tool_executions(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    executions = ToolMonitor.get_recent_executions(
-        db=db,
-        tool_type=tool_type,
-        hub_id=hub_id,
-        limit=limit,
-        offset=offset
-    )
+    # Get user's hub IDs for filtering
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    # If hub_id is specified, verify ownership
+    if hub_id:
+        if hub_id not in user_hub_ids:
+            raise HTTPException(status_code=404, detail="Hub not found")
+        executions = ToolMonitor.get_recent_executions(
+            db=db,
+            tool_type=tool_type,
+            hub_id=hub_id,
+            limit=limit,
+            offset=offset
+        )
+    else:
+        # Filter to only user's hubs
+        query = db.query(ToolExecution)
+
+        if tool_type:
+            query = query.filter(ToolExecution.tool_type == tool_type)
+
+        # Only show executions from user's hubs (or user's own executions)
+        if user_hub_ids:
+            query = query.filter(
+                (ToolExecution.hub_id.in_(user_hub_ids)) |
+                (ToolExecution.user_id == user.id)
+            )
+        else:
+            query = query.filter(ToolExecution.user_id == user.id)
+
+        executions = query.order_by(ToolExecution.created_at.desc()).offset(offset).limit(limit).all()
 
     return {
         "executions": [
@@ -78,9 +103,17 @@ async def get_execution_detail(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Get user's hub IDs for ownership check
+    user_hub_ids = get_user_hub_ids(user, db)
+
     execution = db.query(ToolExecution).filter(ToolExecution.id == execution_id).first()
     if not execution:
         raise HTTPException(status_code=404, detail="Execution not found")
+
+    # Verify user can access this execution (owns the hub or is the user)
+    if execution.hub_id and execution.hub_id not in user_hub_ids:
+        if execution.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Execution not found")
 
     return {
         "id": execution.id,
@@ -113,11 +146,54 @@ async def get_tool_stats(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    stats = ToolMonitor.get_execution_stats(
-        db=db,
-        tool_type=tool_type,
-        hub_id=hub_id
-    )
+    # Get user's hub IDs for ownership check
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    # If hub_id is specified, verify ownership
+    if hub_id:
+        if hub_id not in user_hub_ids:
+            raise HTTPException(status_code=404, detail="Hub not found")
+        stats = ToolMonitor.get_execution_stats(
+            db=db,
+            tool_type=tool_type,
+            hub_id=hub_id
+        )
+    else:
+        # Get aggregated stats for all user's hubs
+        # We need to call this for each hub and aggregate, or pass user filter
+        # For now, aggregate across all user's hubs
+        from sqlalchemy import func, case
+
+        query = db.query(
+            func.count(ToolExecution.id).label('total'),
+            func.sum(case((ToolExecution.status == 'success', 1), else_=0)).label('success_count'),
+            func.sum(case((ToolExecution.status == 'error', 1), else_=0)).label('error_count'),
+            func.avg(ToolExecution.execution_time_ms).label('avg_time_ms'),
+            func.sum(ToolExecution.tokens_used).label('total_tokens')
+        )
+
+        if tool_type:
+            query = query.filter(ToolExecution.tool_type == tool_type)
+
+        # Filter to user's hubs
+        if user_hub_ids:
+            query = query.filter(
+                (ToolExecution.hub_id.in_(user_hub_ids)) |
+                (ToolExecution.user_id == user.id)
+            )
+        else:
+            query = query.filter(ToolExecution.user_id == user.id)
+
+        result = query.first()
+
+        stats = {
+            'total': result.total or 0,
+            'success_count': result.success_count or 0,
+            'error_count': result.error_count or 0,
+            'avg_time_ms': round(result.avg_time_ms or 0, 2),
+            'total_tokens': result.total_tokens or 0,
+            'success_rate': round((result.success_count or 0) / max(result.total or 1, 1) * 100, 2)
+        }
 
     return stats
 
