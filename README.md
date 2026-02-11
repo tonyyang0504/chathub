@@ -19,7 +19,7 @@ A multi-tenant platform for managing AI-powered WhatsApp bots with real-time mon
 
 - **Backend**: FastAPI, SQLAlchemy, Uvicorn
 - **Browser Automation**: Playwright (Chromium)
-- **AI**: OpenAI API (GPT-4, GPT-4o-mini)
+- **AI**: OpenAI, Anthropic Claude, Google Gemini, DeepSeek, Qwen
 - **Database**: SQLite (dev) / PostgreSQL (prod)
 - **Frontend**: Jinja2 templates, Bootstrap, JavaScript
 
@@ -27,7 +27,7 @@ A multi-tenant platform for managing AI-powered WhatsApp bots with real-time mon
 
 - Python 3.10+
 - Node.js (for Playwright browsers)
-- OpenAI API key
+- AI provider API key (OpenAI, Anthropic, Google, DeepSeek, or Qwen)
 - Linux server with Xvfb (for headless deployment)
 
 ## Installation
@@ -180,7 +180,7 @@ Navigate to `/auth/register` and create your account.
 
 - Go to **Bots** page
 - Click **Add Bot**
-- Enter bot name and OpenAI API key
+- Enter bot name and select AI provider with API key
 - Configure system prompt and response parameters
 
 ### 3. Start the bot
@@ -253,7 +253,7 @@ chatbot/
 - Verify DISPLAY environment variable is set
 
 ### Bot not responding
-- Check OpenAI API key is valid
+- Check AI provider API key is valid
 - Verify WhatsApp session is active
 - Review conversation logs in dashboard
 
