@@ -4,14 +4,24 @@ Pydantic Schemas for Bot Module
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen"]
 
 
 class BotProfileCreate(BaseModel):
     """Schema for creating a bot profile."""
     name: str = Field(..., min_length=1, max_length=255)
+    ai_provider: str = "openai"
     openai_api_key: str = Field(..., min_length=10)
     openai_model: str = "gpt-4o-mini"
+
+    @field_validator('ai_provider')
+    @classmethod
+    def validate_ai_provider(cls, v):
+        if v not in VALID_AI_PROVIDERS:
+            raise ValueError(f"ai_provider must be one of {VALID_AI_PROVIDERS}")
+        return v
     system_prompt: str = "You are a helpful assistant. Do not use markdown formatting like asterisks (*), underscores (_), or other special characters for emphasis. Write plain text only."
     temperature: float = Field(default=0.7, ge=0, le=2)
     max_tokens: int = Field(default=1000, ge=100, le=4096)
@@ -35,8 +45,16 @@ class BotProfileCreate(BaseModel):
 class BotProfileUpdate(BaseModel):
     """Schema for updating a bot profile."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    ai_provider: Optional[str] = None
     openai_api_key: Optional[str] = Field(None, min_length=10)
     openai_model: Optional[str] = None
+
+    @field_validator('ai_provider')
+    @classmethod
+    def validate_ai_provider(cls, v):
+        if v is not None and v not in VALID_AI_PROVIDERS:
+            raise ValueError(f"ai_provider must be one of {VALID_AI_PROVIDERS}")
+        return v
     system_prompt: Optional[str] = None
     temperature: Optional[float] = Field(None, ge=0, le=2)
     max_tokens: Optional[int] = Field(None, ge=100, le=4096)
@@ -61,6 +79,7 @@ class BotProfileResponse(BaseModel):
     """Schema for bot profile response."""
     id: int
     name: str
+    ai_provider: str = "openai"
     openai_model: str
     system_prompt: str
     temperature: float = 0.7

@@ -4,10 +4,27 @@ Base AI Provider
 Abstract base class for all AI providers, defining the common interface.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Union
 from enum import Enum
+
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+logger = logging.getLogger(__name__)
+
+
+def create_retry_decorator(max_attempts: int = 3):
+    """Create retry decorator with exponential backoff for AI API calls."""
+    return retry(
+        stop=stop_after_attempt(max_attempts),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+        before_sleep=lambda retry_state: logger.warning(
+            f"AI API call failed, retrying ({retry_state.attempt_number}/{max_attempts})..."
+        )
+    )
 
 
 class MessageRole(str, Enum):

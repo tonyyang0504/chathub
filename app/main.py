@@ -1,5 +1,6 @@
 """
-WhatsApp Bot Dashboard - FastAPI Application Entry Point
+ChatHub - FastAPI Application Entry Point
+Multi-tenant AI Bot Platform for WhatsApp, Telegram, Messenger, Line, WeChat and more
 """
 import os
 import sys
@@ -21,6 +22,8 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .database import engine, Base, get_db
+from .middleware.rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from .auth.routes import router as auth_router
 from .auth.utils import get_current_user_optional, get_current_user
 from .bots.routes import router as bots_router
@@ -31,13 +34,17 @@ from .hubs.routes import router as hubs_router
 from .hubs.scheduler import content_scheduler
 from .tools import tools_router
 from .agents import agents_router
+from .metrics import metrics_endpoint
+
+# Base directory for consistent path resolution across all OS
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Lifespan context manager for startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting WhatsApp Bot Dashboard...")
+    print("Starting ChatHub...")
 
     # Store the main event loop for cross-thread WebSocket calls
     from app.conversations.routes import conversation_ws_manager
@@ -49,9 +56,10 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     print("Database tables created.")
 
-    # Create directories if they don't exist
-    os.makedirs("sessions", exist_ok=True)
-    os.makedirs("logs", exist_ok=True)
+    # Create directories if they don't exist (use BASE_DIR for cross-OS consistency)
+    (BASE_DIR / "sessions").mkdir(parents=True, exist_ok=True)
+    (BASE_DIR / "logs").mkdir(parents=True, exist_ok=True)
+    (BASE_DIR / "data" / "sessions").mkdir(parents=True, exist_ok=True)
 
     # Auto-recover bots that were marked as running
     await auto_recover_bots()
@@ -62,7 +70,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    print("Shutting down WhatsApp Bot Dashboard...")
+    print("Shutting down ChatHub...")
 
     # Stop the content scheduler
     await content_scheduler.stop()
@@ -110,6 +118,7 @@ async def auto_recover_bots():
                 # Build config for bot
                 config = {
                     "bot_profile_id": bot.id,
+                    "ai_provider": bot.ai_provider or "openai",
                     "openai_api_key": api_key,
                     "openai_model": bot.openai_model or "gpt-4o-mini",
                     "system_prompt": bot.system_prompt,
@@ -152,11 +161,17 @@ async def auto_recover_bots():
 
 # Create FastAPI application
 app = FastAPI(
-    title="WhatsApp Bot Dashboard",
-    description="Multi-tenant WhatsApp Bot Management Platform",
+    title="ChatHub",
+    description="Multi-tenant AI Bot Platform for WhatsApp, Telegram, Messenger, Line, WeChat and more",
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+
+# Add rate limit exception handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Configure CORS (use CORS_ORIGINS env var, defaults to "*" for development)
 cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS != "*" else ["*"]
@@ -248,6 +263,9 @@ app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(agents_router, tags=["Agents"])
 
+# Prometheus metrics endpoint
+app.get("/metrics")(metrics_endpoint)
+
 
 # Root redirect
 @app.get("/")
@@ -331,12 +349,36 @@ async def dashboard_hubs(
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
-    """Health check endpoint"""
+async def health_check(db: Session = Depends(get_db)):
+    """Comprehensive health check endpoint"""
+    from sqlalchemy import text
+
+    checks = {
+        "database": "unknown",
+        "bot_manager": "unknown"
+    }
+
+    # Check database
+    try:
+        db.execute(text("SELECT 1"))
+        checks["database"] = "healthy"
+    except Exception as e:
+        checks["database"] = f"unhealthy: {str(e)}"
+
+    # Check bot manager
+    try:
+        running = len(bot_manager.get_all_running())
+        checks["bot_manager"] = f"healthy ({running} bots running)"
+    except Exception as e:
+        checks["bot_manager"] = f"unhealthy: {str(e)}"
+
+    overall = "healthy" if all("healthy" in str(v) for v in checks.values()) else "degraded"
+
     return {
-        "status": "healthy",
-        "service": "WhatsApp Bot Dashboard",
-        "version": "1.0.0"
+        "status": overall,
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "checks": checks
     }
 
 
@@ -347,8 +389,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Handle HTTP exceptions"""
-    # For API routes, return JSON
-    if "/api/" in str(request.url):
+    # For API routes and auth POST endpoints, return JSON
+    url_str = str(request.url)
+    is_api_route = "/api/" in url_str
+    is_auth_api = "/auth/" in url_str and request.method == "POST"
+
+    if is_api_route or is_auth_api:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Bot Management - WhatsApp Bot{% endblock %}
+{% block title %}Bot Management - ChatHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -223,6 +223,33 @@
         scrollbar-width: thin;
         scrollbar-color: var(--bs-border-color) var(--bs-body-bg);
     }
+
+    /* Sync All checkbox label - no border, no hover effect */
+    .sync-all-label {
+        background: transparent;
+        border: none;
+        color: var(--bs-body-color);
+    }
+    .sync-all-label:hover {
+        background: transparent;
+    }
+
+    /* Sync count input - more space for number display */
+    #botsContainer input[type="number"]::-webkit-inner-spin-button {
+        margin-left: 6px;
+    }
+
+    /* Align AI Response switch to right edge - override Bootstrap defaults */
+    .bot-controls .form-switch {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        min-height: auto;
+    }
+    .bot-controls .form-switch .form-check-input {
+        float: right !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
 </style>
 {% endblock %}
 
@@ -230,7 +257,7 @@
 <div class="row mb-4">
     <div class="col">
         <h2>Bot Management</h2>
-        <p class="text-muted">Create and manage your WhatsApp bots</p>
+        <p class="text-muted">Create and manage your messaging bots</p>
     </div>
     <div class="col-auto">
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createBotModal">
@@ -263,41 +290,40 @@
                             <input type="text" class="form-control" name="name" required placeholder="e.g., Customer Support Bot">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">OpenAI Model</label>
+                            <label class="form-label">AI Provider</label>
+                            <input type="hidden" name="ai_provider" id="createProviderValue" value="openai">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="createProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    OpenAI (Default)
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="createProviderDropdown">
+                                    <div class="model-dropdown-menu-inner">
+                                        <a class="dropdown-item selected" href="#" data-value="openai">OpenAI (Default)</a>
+                                        <a class="dropdown-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                        <a class="dropdown-item" href="#" data-value="google">Google (Gemini)</a>
+                                        <a class="dropdown-item" href="#" data-value="deepseek">DeepSeek</a>
+                                        <a class="dropdown-item" href="#" data-value="qwen">Qwen</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Model</label>
                             <input type="hidden" name="openai_model" id="createModelValue" value="gpt-4o-mini">
                             <div class="dropdown model-dropdown">
                                 <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="createModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     GPT-4o Mini (Default)
                                 </button>
                                 <div class="dropdown-menu model-dropdown-menu" aria-labelledby="createModelDropdown">
-                                    <div class="model-dropdown-menu-inner">
-                                        <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-nano">GPT-5.2 Nano</a>
-                                        <h6 class="dropdown-header">GPT-5.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
-                                        <h6 class="dropdown-header">GPT-5 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-nano">GPT-4.1 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4o">GPT-4o</a>
-                                        <a class="dropdown-item selected" href="#" data-value="gpt-4o-mini">GPT-4o Mini (Default)</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4-turbo">GPT-4 Turbo</a>
+                                    <div class="model-dropdown-menu-inner" id="createModelList">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">OpenAI API Key *</label>
+                        <div class="col-md-6">
+                            <label class="form-label">API Key *</label>
                             <input type="password" class="form-control" name="openai_api_key" required placeholder="sk-...">
-                            <small class="text-muted">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+                            <small class="text-muted" id="createApiKeyHelp">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
                         </div>
                         <div class="col-12">
                             <label class="form-label">System Prompt (AI Role)</label>
@@ -437,40 +463,40 @@
                             <input type="text" class="form-control" name="name" id="editName" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">OpenAI Model</label>
+                            <label class="form-label">AI Provider</label>
+                            <input type="hidden" name="ai_provider" id="editProviderValue" value="openai">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="editProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    OpenAI (Default)
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="editProviderDropdown">
+                                    <div class="model-dropdown-menu-inner">
+                                        <a class="dropdown-item selected" href="#" data-value="openai">OpenAI (Default)</a>
+                                        <a class="dropdown-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                        <a class="dropdown-item" href="#" data-value="google">Google (Gemini)</a>
+                                        <a class="dropdown-item" href="#" data-value="deepseek">DeepSeek</a>
+                                        <a class="dropdown-item" href="#" data-value="qwen">Qwen</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Model</label>
                             <input type="hidden" name="openai_model" id="editModelValue" value="gpt-4o-mini">
                             <div class="dropdown model-dropdown">
                                 <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="editModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     GPT-4o Mini (Default)
                                 </button>
                                 <div class="dropdown-menu model-dropdown-menu" aria-labelledby="editModelDropdown">
-                                    <div class="model-dropdown-menu-inner">
-                                        <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-nano">GPT-5.2 Nano</a>
-                                        <h6 class="dropdown-header">GPT-5.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
-                                        <h6 class="dropdown-header">GPT-5 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-nano">GPT-4.1 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4o">GPT-4o</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4o-mini">GPT-4o Mini (Default)</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4-turbo">GPT-4 Turbo</a>
+                                    <div class="model-dropdown-menu-inner" id="editModelList">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">OpenAI API Key</label>
+                        <div class="col-md-6">
+                            <label class="form-label">API Key</label>
                             <input type="password" class="form-control" name="openai_api_key" id="editApiKey" placeholder="Leave empty to keep current">
+                            <small class="text-muted" id="editApiKeyHelp"></small>
                         </div>
                         <div class="col-12">
                             <label class="form-label">System Prompt</label>
@@ -639,7 +665,7 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                ${bot.whatsapp_phone || bot.whatsapp_about || bot.whatsapp_push_name ? `
+                                ${bot.whatsapp_phone || bot.whatsapp_name || bot.whatsapp_push_name ? `
                                     <div class="mb-3 p-2 rounded" style="background-color: #dcf8c6;">
                                         <div class="d-flex justify-content-between align-items-start mb-1">
                                             <p class="mb-0 small fw-bold" style="color: #25D366;">
@@ -649,25 +675,20 @@
                                                 Disconnect
                                             </button>
                                         </div>
-                                        ${bot.whatsapp_push_name ? `
+                                        ${bot.whatsapp_name || bot.whatsapp_push_name ? `
                                             <p class="mb-1 small text-dark">
-                                                <i class="bi bi-person me-1"></i> ${bot.whatsapp_push_name}
+                                                <i class="bi bi-person me-1"></i> ${bot.whatsapp_name || bot.whatsapp_push_name}
                                             </p>
                                         ` : ''}
                                         ${bot.whatsapp_phone ? `
-                                            <p class="mb-1 small text-dark">
+                                            <p class="mb-0 small text-dark">
                                                 <i class="bi bi-telephone me-1"></i> +${bot.whatsapp_phone}
-                                            </p>
-                                        ` : ''}
-                                        ${bot.whatsapp_about ? `
-                                            <p class="mb-0 small text-muted fst-italic">
-                                                "${bot.whatsapp_about}"
                                             </p>
                                         ` : ''}
                                     </div>
                                 ` : ''}
                                 <p class="text-muted small mb-2">
-                                    <i class="bi bi-cpu me-1"></i> ${bot.openai_model}
+                                    <i class="bi bi-cpu me-1"></i> ${(PROVIDER_LABELS[bot.ai_provider] || bot.ai_provider || 'OpenAI')} / ${bot.openai_model}
                                 </p>
                                 <p class="text-muted small mb-2">
                                     <i class="bi bi-chat-dots me-1"></i> ${bot.conversation_count} conversations
@@ -676,6 +697,46 @@
                                     <i class="bi bi-envelope me-1"></i> ${bot.message_count} messages
                                 </p>
                             </div>
+                            ${bot.is_running && bot.whatsapp_connected ? `
+                            <div class="card-body bot-controls border-top pt-2 pb-2" id="botControls_${bot.id}">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted small"><i class="bi bi-robot me-1"></i> AI Response</span>
+                                    <div class="d-flex align-items-center justify-content-end" id="aiToggleWrapper_${bot.id}" style="min-width: 200px;">
+                                        <div class="form-check form-switch mb-0 me-0" style="padding-right: 0;">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                   id="aiToggle_${bot.id}"
+                                                   onchange="toggleAIResponse(${bot.id}, this.checked)">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="text-muted small"><i class="bi bi-clock-history me-1"></i> Sync History</span>
+                                    <div class="d-flex align-items-center justify-content-end gap-1" id="syncControls_${bot.id}" style="min-width: 200px;">
+                                        <label class="py-0 px-1 mb-0 sync-all-label"
+                                               style="font-size: 12px; height: 28px; display: flex; align-items: center; gap: 4px; cursor: pointer;"
+                                               for="syncAll_${bot.id}">
+                                            <input class="form-check-input mt-0" type="checkbox" id="syncAll_${bot.id}"
+                                                   style="width: 14px; height: 14px; border-radius: 50%;" onchange="toggleSyncAll(${bot.id}, this.checked)">
+                                            All
+                                        </label>
+                                        <input type="number" class="form-control form-control-sm" id="syncCount_${bot.id}"
+                                               value="50" min="10" max="9999" style="width: 75px; height: 28px; font-size: 12px; padding-right: 4px;">
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" id="syncBtn_${bot.id}"
+                                                style="font-size: 12px; height: 28px;"
+                                                onclick="startHistorySync(${bot.id})">Sync</button>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-2" id="stopSyncBtn_${bot.id}"
+                                                style="font-size: 12px; height: 28px; display: none;"
+                                                onclick="stopHistorySync(${bot.id})">Stop</button>
+                                    </div>
+                                </div>
+                                <div id="syncProgress_${bot.id}" style="display: none;" class="mt-1">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-success" id="syncProgressBar_${bot.id}" style="width: 0%"></div>
+                                    </div>
+                                    <small class="text-muted" id="syncProgressText_${bot.id}" style="font-size: 11px;"></small>
+                                </div>
+                            </div>
+                            ` : ''}
                             <div class="card-footer">
                                 <div class="btn-group w-100">
                                     ${bot.is_running ? `
@@ -695,6 +756,13 @@
                         </div>
                     </div>
                 `).join('');
+
+                // Fetch toggle states for running bots
+                data.bots.forEach(bot => {
+                    if (bot.is_running && bot.whatsapp_connected) {
+                        updateBotToggleState(bot.id);
+                    }
+                });
             }
         } catch (e) {
             console.error('Error loading bots:', e);
@@ -707,6 +775,7 @@
         const form = e.target;
         const data = {
             name: form.name.value,
+            ai_provider: form.ai_provider.value,
             openai_api_key: form.openai_api_key.value,
             openai_model: form.openai_model.value,
             system_prompt: form.system_prompt.value,
@@ -737,8 +806,9 @@
             if (res.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('createBotModal')).hide();
                 form.reset();
-                // Reset model dropdown to default
-                setModelDropdownValue('createModelDropdown', 'gpt-4o-mini');
+                // Reset provider and model dropdowns to default
+                setProviderDropdownValue('createProviderDropdown', 'openai');
+                updateModelDropdown('create', 'openai');
                 loadBots();
                 showToast('Bot created successfully', 'success');
             } else {
@@ -821,6 +891,206 @@
             }
         } catch (e) {
             showToast('Error stopping bot', 'danger');
+        }
+    }
+
+    // ============== AI Response Toggle & History Sync ==============
+
+    async function toggleAIResponse(botId, enabled) {
+        try {
+            const res = await fetch(`/api/bots/${botId}/toggle-ai`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enabled})
+            });
+            if (res.ok) {
+                showToast(`AI Response ${enabled ? 'enabled' : 'disabled'}`, 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error toggling AI', 'danger');
+                // Revert checkbox
+                const toggle = document.getElementById(`aiToggle_${botId}`);
+                if (toggle) toggle.checked = !enabled;
+            }
+        } catch (e) {
+            showToast('Error toggling AI response', 'danger');
+            const toggle = document.getElementById(`aiToggle_${botId}`);
+            if (toggle) toggle.checked = !enabled;
+        }
+    }
+
+    function toggleSyncAll(botId, checked) {
+        const countInput = document.getElementById(`syncCount_${botId}`);
+        if (countInput) {
+            countInput.disabled = checked;
+            if (checked) {
+                countInput.dataset.prevValue = countInput.value;
+                countInput.value = '∞';
+            } else {
+                countInput.value = countInput.dataset.prevValue || '50';
+            }
+        }
+    }
+
+    async function startHistorySync(botId) {
+        const countInput = document.getElementById(`syncCount_${botId}`);
+        const syncAllCheckbox = document.getElementById(`syncAll_${botId}`);
+        const syncAll = syncAllCheckbox ? syncAllCheckbox.checked : false;
+        const count = syncAll ? 99999 : (countInput ? parseInt(countInput.value) || 50 : 50);
+        const syncBtn = document.getElementById(`syncBtn_${botId}`);
+        const stopBtn = document.getElementById(`stopSyncBtn_${botId}`);
+
+        try {
+            if (syncBtn) {
+                syncBtn.disabled = true;
+                syncBtn.textContent = 'Syncing...';
+                syncBtn.classList.remove('btn-outline-primary');
+                syncBtn.classList.add('btn-warning');
+            }
+            if (stopBtn) {
+                stopBtn.style.display = 'inline-block';
+            }
+            const res = await fetch(`/api/bots/${botId}/sync-history`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message_count: count, sync_all: syncAll})
+            });
+            if (res.ok) {
+                showToast('History sync started', 'success');
+                pollSyncProgress(botId);
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error starting sync', 'danger');
+                resetSyncButton(botId);
+            }
+        } catch (e) {
+            showToast('Error starting history sync', 'danger');
+            resetSyncButton(botId);
+        }
+    }
+
+    async function stopHistorySync(botId) {
+        const stopBtn = document.getElementById(`stopSyncBtn_${botId}`);
+        try {
+            if (stopBtn) {
+                stopBtn.disabled = true;
+                stopBtn.textContent = 'Stopping...';
+            }
+            const res = await fetch(`/api/bots/${botId}/sync-history/stop`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+            if (res.ok) {
+                showToast('Sync stop requested', 'info');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error stopping sync', 'danger');
+            }
+        } catch (e) {
+            showToast('Error stopping sync', 'danger');
+        }
+    }
+
+    function resetSyncButton(botId) {
+        const syncBtn = document.getElementById(`syncBtn_${botId}`);
+        const stopBtn = document.getElementById(`stopSyncBtn_${botId}`);
+        if (syncBtn) {
+            syncBtn.disabled = false;
+            syncBtn.textContent = 'Sync';
+            syncBtn.classList.remove('btn-warning');
+            syncBtn.classList.add('btn-outline-primary');
+        }
+        if (stopBtn) {
+            stopBtn.style.display = 'none';
+            stopBtn.disabled = false;
+            stopBtn.textContent = 'Stop';
+        }
+    }
+
+    function pollSyncProgress(botId, alreadyRunning = false) {
+        const progressDiv = document.getElementById(`syncProgress_${botId}`);
+        const progressBar = document.getElementById(`syncProgressBar_${botId}`);
+        const progressText = document.getElementById(`syncProgressText_${botId}`);
+
+        if (progressDiv) progressDiv.style.display = 'block';
+        if (progressText) progressText.textContent = alreadyRunning ? 'Syncing...' : 'Starting sync...';
+
+        let hasStarted = alreadyRunning;  // Track if sync has actually started
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/bots/${botId}/sync-history/status`);
+                if (!res.ok) {
+                    // Don't reset on auth errors, keep polling
+                    return;
+                }
+                const data = await res.json();
+
+                const total = data.total || 0;
+                const completed = data.completed || 0;
+                const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                // Track if sync has started (status changed to 'running')
+                if (data.status === 'running') {
+                    hasStarted = true;
+                }
+
+                if (progressBar) progressBar.style.width = `${pct}%`;
+                if (progressText) {
+                    if (data.status === 'running') {
+                        progressText.textContent = `${completed}/${total} - ${data.current_chat || 'Scanning...'}`;
+                    } else if (data.status === 'completed') {
+                        progressText.textContent = `Done! ${completed}/${total} conversations synced`;
+                    } else if (data.status === 'idle' && !hasStarted) {
+                        progressText.textContent = 'Starting sync...';
+                    }
+                }
+
+                // Only stop polling if sync completed (not if idle before start)
+                if (data.status === 'completed' || (data.status === 'idle' && hasStarted)) {
+                    clearInterval(interval);
+                    resetSyncButton(botId);
+                    // Hide progress after a delay
+                    setTimeout(() => {
+                        if (progressDiv) progressDiv.style.display = 'none';
+                        if (progressBar) progressBar.style.width = '0%';
+                    }, 5000);
+                }
+            } catch (e) {
+                // Don't stop polling on errors, keep trying
+                console.log('Sync status poll error:', e);
+            }
+        }, 2000);
+    }
+
+    // Fetch and set AI toggle state for a bot card after render
+    async function updateBotToggleState(botId) {
+        try {
+            const res = await fetch(`/api/bots/${botId}/status`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const toggle = document.getElementById(`aiToggle_${botId}`);
+            if (toggle) {
+                toggle.checked = data.ai_response_enabled || false;
+            }
+            // If sync is active, show progress and update button states
+            if (data.history_sync_active) {
+                // Set button states to show sync is in progress
+                const syncBtn = document.getElementById(`syncBtn_${botId}`);
+                const stopBtn = document.getElementById(`stopSyncBtn_${botId}`);
+                if (syncBtn) {
+                    syncBtn.disabled = true;
+                    syncBtn.textContent = 'Syncing...';
+                    syncBtn.classList.remove('btn-outline-primary');
+                    syncBtn.classList.add('btn-warning');
+                }
+                if (stopBtn) {
+                    stopBtn.style.display = 'inline-block';
+                }
+                pollSyncProgress(botId, true);  // true = sync already running
+            }
+        } catch (e) {
+            // Ignore errors
         }
     }
 
@@ -1234,6 +1504,10 @@
 
             document.getElementById('editBotId').value = bot.id;
             document.getElementById('editName').value = bot.name;
+            // Set provider first, then populate models, then set model
+            const provider = bot.ai_provider || 'openai';
+            setProviderDropdownValue('editProviderDropdown', provider);
+            updateModelDropdown('edit', provider);
             setModelDropdownValue('editModelDropdown', bot.openai_model);
             document.getElementById('editPrompt').value = bot.system_prompt;
             document.getElementById('editTemperature').value = bot.temperature ?? 0.7;
@@ -1266,6 +1540,7 @@
 
         const data = {
             name: form.name.value,
+            ai_provider: form.ai_provider.value,
             openai_model: form.openai_model.value,
             system_prompt: form.system_prompt.value,
             temperature: parseFloat(form.temperature.value),
@@ -1371,29 +1646,218 @@
         }
     }
 
-    // Setup custom model dropdowns
-    function setupModelDropdowns() {
-        document.querySelectorAll('.model-dropdown-menu .dropdown-item').forEach(item => {
+    // Provider models configuration
+    const PROVIDER_MODELS = {
+        openai: {
+            label: 'OpenAI',
+            defaultModel: 'gpt-4o-mini',
+            apiKeyUrl: 'https://platform.openai.com/api-keys',
+            apiKeyPlaceholder: 'sk-...',
+            groups: [
+                { header: 'GPT-5.2 Series (Latest)', models: [
+                    { value: 'gpt-5.2', label: 'GPT-5.2' },
+                    { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
+                    { value: 'gpt-5.2-mini', label: 'GPT-5.2 Mini' },
+                    { value: 'gpt-5.2-nano', label: 'GPT-5.2 Nano' },
+                ]},
+                { header: 'GPT-5.1 Series', models: [
+                    { value: 'gpt-5.1', label: 'GPT-5.1' },
+                ]},
+                { header: 'GPT-5 Series', models: [
+                    { value: 'gpt-5', label: 'GPT-5' },
+                    { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                    { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+                ]},
+                { header: 'GPT-4.1 Series', models: [
+                    { value: 'gpt-4.1', label: 'GPT-4.1' },
+                    { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                    { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+                ]},
+                { header: 'GPT-4 Series', models: [
+                    { value: 'gpt-4o', label: 'GPT-4o' },
+                    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+                ]},
+            ]
+        },
+        anthropic: {
+            label: 'Anthropic',
+            defaultModel: 'claude-sonnet-4-20250514',
+            apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+            apiKeyPlaceholder: 'sk-ant-...',
+            groups: [
+                { header: 'Claude 4 Series (Latest)', models: [
+                    { value: 'claude-opus-4-0-20250514', label: 'Claude Opus 4' },
+                    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (Default)' },
+                ]},
+                { header: 'Claude 3.7 Series', models: [
+                    { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet' },
+                ]},
+                { header: 'Claude 3.5 Series', models: [
+                    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+                ]},
+                { header: 'Claude 3 Series', models: [
+                    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+                    { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+                    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
+                ]},
+            ]
+        },
+        google: {
+            label: 'Google',
+            defaultModel: 'gemini-2.0-flash',
+            apiKeyUrl: 'https://aistudio.google.com/apikey',
+            apiKeyPlaceholder: 'AIza...',
+            groups: [
+                { header: 'Gemini 2.5 Series (Latest)', models: [
+                    { value: 'gemini-2.5-pro-preview-05-06', label: 'Gemini 2.5 Pro' },
+                    { value: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash' },
+                ]},
+                { header: 'Gemini 2.0 Series', models: [
+                    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (Default)' },
+                    { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+                ]},
+                { header: 'Gemini 1.5 Series', models: [
+                    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+                ]},
+            ]
+        },
+        deepseek: {
+            label: 'DeepSeek',
+            defaultModel: 'deepseek-chat',
+            apiKeyUrl: 'https://platform.deepseek.com/api_keys',
+            apiKeyPlaceholder: 'sk-...',
+            groups: [
+                { header: 'DeepSeek Models', models: [
+                    { value: 'deepseek-chat', label: 'DeepSeek Chat (Default)' },
+                    { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+                ]},
+            ]
+        },
+        qwen: {
+            label: 'Qwen',
+            defaultModel: 'qwen-turbo',
+            apiKeyUrl: 'https://dashscope.console.aliyun.com/apiKey',
+            apiKeyPlaceholder: 'sk-...',
+            groups: [
+                { header: 'Qwen Models', models: [
+                    { value: 'qwen-turbo', label: 'Qwen Turbo (Default)' },
+                    { value: 'qwen-plus', label: 'Qwen Plus' },
+                    { value: 'qwen-max', label: 'Qwen Max' },
+                ]},
+            ]
+        }
+    };
+
+    const PROVIDER_LABELS = {
+        openai: 'OpenAI',
+        anthropic: 'Anthropic',
+        google: 'Google',
+        deepseek: 'DeepSeek',
+        qwen: 'Qwen'
+    };
+
+    // Populate model dropdown based on selected provider
+    function updateModelDropdown(prefix, providerName) {
+        const provider = PROVIDER_MODELS[providerName];
+        if (!provider) return;
+
+        const listEl = document.getElementById(prefix + 'ModelList');
+        const hiddenInput = document.getElementById(prefix + 'ModelValue');
+        const btn = document.getElementById(prefix + 'ModelDropdown');
+
+        // Build model list HTML
+        let html = '';
+        provider.groups.forEach(group => {
+            html += `<h6 class="dropdown-header">${group.header}</h6>`;
+            group.models.forEach(m => {
+                const isDefault = m.value === provider.defaultModel;
+                html += `<a class="dropdown-item${isDefault ? ' selected' : ''}" href="#" data-value="${m.value}">${m.label}</a>`;
+            });
+        });
+        listEl.innerHTML = html;
+
+        // Set default model
+        hiddenInput.value = provider.defaultModel;
+        const defaultItem = listEl.querySelector(`.dropdown-item[data-value="${provider.defaultModel}"]`);
+        btn.textContent = defaultItem ? defaultItem.textContent : provider.defaultModel;
+
+        // Re-bind click events for new items
+        listEl.querySelectorAll('.dropdown-item').forEach(item => {
             item.addEventListener('click', function(e) {
                 e.preventDefault();
                 const dropdown = this.closest('.model-dropdown');
-                const btn = dropdown.querySelector('.model-dropdown-btn');
-                const hiddenInput = dropdown.previousElementSibling;
-                const value = this.getAttribute('data-value');
-                const text = this.textContent;
-
-                // Update button text and hidden input value
-                btn.textContent = text;
-                hiddenInput.value = value;
-
-                // Update selected state
+                const dropBtn = dropdown.querySelector('.model-dropdown-btn');
+                const input = dropdown.previousElementSibling;
+                dropBtn.textContent = this.textContent;
+                input.value = this.getAttribute('data-value');
                 dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
                 this.classList.add('selected');
-
-                // Close dropdown
-                bootstrap.Dropdown.getInstance(btn)?.hide();
+                bootstrap.Dropdown.getInstance(dropBtn)?.hide();
             });
         });
+
+        // Update API key help text
+        const helpEl = document.getElementById(prefix + 'ApiKeyHelp');
+        if (helpEl) {
+            helpEl.innerHTML = `Get your key at <a href="${provider.apiKeyUrl}" target="_blank">${provider.apiKeyUrl.replace('https://', '').split('/')[0]}</a>`;
+        }
+
+        // Update API key placeholder
+        const form = listEl.closest('form');
+        if (form) {
+            const apiKeyInput = form.querySelector('input[name="openai_api_key"]');
+            if (apiKeyInput) {
+                apiKeyInput.placeholder = provider.apiKeyPlaceholder;
+            }
+        }
+    }
+
+    // Set provider dropdown value programmatically
+    function setProviderDropdownValue(dropdownId, value) {
+        const btn = document.getElementById(dropdownId);
+        const dropdown = btn.closest('.model-dropdown');
+        const hiddenInput = dropdown.previousElementSibling;
+        const item = dropdown.querySelector(`.dropdown-item[data-value="${value}"]`);
+        if (item) {
+            btn.textContent = item.textContent;
+            hiddenInput.value = value;
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+        }
+    }
+
+    // Setup custom model dropdowns (provider + model)
+    function setupModelDropdowns() {
+        // Setup provider dropdown click handlers
+        document.querySelectorAll('#createProviderDropdown, #editProviderDropdown').forEach(providerBtn => {
+            const menu = providerBtn.nextElementSibling;
+            if (!menu) return;
+            menu.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const dropdown = this.closest('.model-dropdown');
+                    const btn = dropdown.querySelector('.model-dropdown-btn');
+                    const hiddenInput = dropdown.previousElementSibling;
+                    const value = this.getAttribute('data-value');
+                    btn.textContent = this.textContent;
+                    hiddenInput.value = value;
+                    dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    bootstrap.Dropdown.getInstance(btn)?.hide();
+
+                    // Determine prefix (create or edit) and update models
+                    const prefix = providerBtn.id.includes('create') ? 'create' : 'edit';
+                    updateModelDropdown(prefix, value);
+                });
+            });
+        });
+
+        // Initialize model dropdowns with default provider
+        updateModelDropdown('create', 'openai');
+        updateModelDropdown('edit', 'openai');
 
         // Scroll to top when dropdown opens
         document.querySelectorAll('.model-dropdown-btn').forEach(btn => {
@@ -1417,6 +1881,11 @@
             hiddenInput.value = value;
             dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
             item.classList.add('selected');
+        } else if (value) {
+            // Model not in the list (custom model) - still set it
+            btn.textContent = value;
+            hiddenInput.value = value;
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
         }
     }
 

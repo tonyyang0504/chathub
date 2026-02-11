@@ -8,7 +8,7 @@ import base64
 import logging
 from typing import Optional, List, Dict, Any, Union
 
-from app.ai.providers.base import AIProvider, AIResponse, AIMessage, ToolCall
+from app.ai.providers.base import AIProvider, AIResponse, AIMessage, ToolCall, create_retry_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -109,13 +109,14 @@ class GoogleProvider(AIProvider):
 
         logger.debug(f"Gemini request: model={use_model}, messages={len(gemini_messages)}")
 
-        # Start chat and send message
+        # Start chat and send message with retry logic
         chat = genai_model.start_chat(history=gemini_messages[:-1] if len(gemini_messages) > 1 else [])
 
-        response = chat.send_message(
+        response = self._make_api_call(
+            chat,
             gemini_messages[-1] if gemini_messages else "",
-            generation_config=self._genai.GenerationConfig(**generation_config),
-            tools=gemini_tools
+            generation_config,
+            gemini_tools
         )
 
         # Extract content and tool calls
@@ -267,6 +268,28 @@ class GoogleProvider(AIProvider):
                 elif "SAFETY" in reason:
                     return "content_filter"
         return "stop"
+
+    @create_retry_decorator(max_attempts=3)
+    def _make_api_call(self, chat, message, generation_config, tools) -> Any:
+        """Make API call with retry logic."""
+        try:
+            return chat.send_message(
+                message,
+                generation_config=self._genai.GenerationConfig(**generation_config),
+                tools=tools
+            )
+        except Exception as e:
+            error_str = str(e).lower()
+            if "rate" in error_str or "quota" in error_str:
+                logger.error(f"Google rate limit exceeded: {e}")
+                raise
+            elif "connection" in error_str or "network" in error_str:
+                logger.error(f"Google connection error: {e}")
+                raise ConnectionError(str(e))
+            elif "timeout" in error_str:
+                logger.error(f"Google timeout error: {e}")
+                raise TimeoutError(str(e))
+            raise
 
     def get_available_models(self) -> List[str]:
         """Return list of available Google models."""

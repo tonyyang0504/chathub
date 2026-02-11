@@ -519,8 +519,6 @@ async def simulate_content_generator(
     db: Session = Depends(get_db)
 ):
     """Generate content using AI for simulation."""
-    from openai import OpenAI
-
     user = await get_current_user_optional(request, None, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -530,15 +528,26 @@ async def simulate_content_generator(
     topic = data.get("topic", "")
     tone = data.get("tone", "professional")
 
+    # Get custom AI configuration from request
+    custom_api_key = data.get("api_key", "")
+    ai_provider = data.get("ai_provider", "openai")
+    ai_model = data.get("ai_model", "gpt-4o-mini")
+
     if not topic:
         raise HTTPException(status_code=400, detail="Topic is required")
 
-    api_key = get_user_api_key(user, db)
+    # Use custom API key if provided (required for simulation)
+    api_key = custom_api_key.strip() if custom_api_key else None
     if not api_key:
-        raise HTTPException(status_code=400, detail="No API key configured. Please create a hub with an OpenAI API key first.")
+        raise HTTPException(status_code=400, detail="Please enter an API key to test the content generator.")
+
+    # Basic API key validation
+    if len(api_key) < 10:
+        raise HTTPException(status_code=400, detail="Invalid API key format. Please check your API key.")
 
     try:
-        client = OpenAI(api_key=api_key)
+        from app.ai.providers import get_ai_provider
+        provider = get_ai_provider(ai_provider, api_key, ai_model)
 
         system_prompt = f"""You are a professional content writer for WhatsApp messages.
 Generate a {content_type} message with a {tone} tone about the given topic.
@@ -546,8 +555,7 @@ Keep it concise (under 200 words), suitable for WhatsApp, and engaging.
 Use appropriate emojis if the tone is friendly or casual.
 Do not include subject lines or greetings like "Subject:" - just the message body."""
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+        ai_response = provider.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Generate a {content_type} message about: {topic}"}
@@ -556,8 +564,8 @@ Do not include subject lines or greetings like "Subject:" - just the message bod
             temperature=0.7
         )
 
-        generated_content = response.choices[0].message.content.strip()
-        tokens_used = response.usage.total_tokens if response.usage else 0
+        generated_content = ai_response.content.strip()
+        tokens_used = ai_response.usage.get("total_tokens", 0) if ai_response.usage else 0
 
         return {
             "success": True,
@@ -574,7 +582,6 @@ async def simulate_contact_analyzer(
     db: Session = Depends(get_db)
 ):
     """Analyze a message/contact using AI for simulation."""
-    from openai import OpenAI
     import json
 
     user = await get_current_user_optional(request, None, db)
@@ -584,15 +591,26 @@ async def simulate_contact_analyzer(
     data = await request.json()
     message = data.get("message", "")
 
+    # Get custom AI configuration from request
+    custom_api_key = data.get("api_key", "")
+    ai_provider = data.get("ai_provider", "openai")
+    ai_model = data.get("ai_model", "gpt-4o-mini")
+
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
 
-    api_key = get_user_api_key(user, db)
+    # Use custom API key if provided (required for simulation)
+    api_key = custom_api_key.strip() if custom_api_key else None
     if not api_key:
-        raise HTTPException(status_code=400, detail="No API key configured. Please create a hub with an OpenAI API key first.")
+        raise HTTPException(status_code=400, detail="Please enter an API key to test the contact analyzer.")
+
+    # Basic API key validation
+    if len(api_key) < 10:
+        raise HTTPException(status_code=400, detail="Invalid API key format. Please check your API key.")
 
     try:
-        client = OpenAI(api_key=api_key)
+        from app.ai.providers import get_ai_provider
+        provider = get_ai_provider(ai_provider, api_key, ai_model)
 
         system_prompt = """You are a contact analyzer AI. Analyze the given message and return a JSON object with:
 {
@@ -605,8 +623,7 @@ async def simulate_contact_analyzer(
 }
 Only return valid JSON, no other text."""
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+        ai_response = provider.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Analyze this message: {message}"}
@@ -615,7 +632,7 @@ Only return valid JSON, no other text."""
             temperature=0.3
         )
 
-        result_text = response.choices[0].message.content.strip()
+        result_text = ai_response.content.strip()
         # Try to parse JSON from response
         try:
             # Remove markdown code blocks if present
@@ -648,7 +665,6 @@ async def simulate_message_routing(
     db: Session = Depends(get_db)
 ):
     """Classify and route a message using AI for simulation with detailed steps."""
-    from openai import OpenAI
     import json
 
     user = await get_current_user_optional(request, None, db)
@@ -660,12 +676,22 @@ async def simulate_message_routing(
     available_bots = data.get("bots", ["Sales Bot", "Support Bot", "General Bot"])
     detailed = data.get("detailed", False)  # Whether to return step-by-step info
 
+    # Get custom AI configuration from request
+    custom_api_key = data.get("api_key", "")
+    ai_provider = data.get("ai_provider", "openai")
+    ai_model = data.get("ai_model", "gpt-4o-mini")
+
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
 
-    api_key = get_user_api_key(user, db)
+    # Use custom API key if provided (required for simulation)
+    api_key = custom_api_key.strip() if custom_api_key else None
     if not api_key:
-        raise HTTPException(status_code=400, detail="No API key configured. Please create a hub with an OpenAI API key first.")
+        raise HTTPException(status_code=400, detail="Please enter an API key to test the simulation.")
+
+    # Basic API key validation
+    if len(api_key) < 10:
+        raise HTTPException(status_code=400, detail="Invalid API key format. Please check your API key.")
 
     # Define bot expertise for simulation
     bot_expertise = {
@@ -674,11 +700,8 @@ async def simulate_message_routing(
         "General Bot": ["general", "info", "greetings", "questions"]
     }
 
-    try:
-        client = OpenAI(api_key=api_key)
-
-        bots_list = ", ".join(available_bots)
-        system_prompt = f"""You are a message routing classifier for a multi-bot WhatsApp system. Analyze the message and determine routing.
+    bots_list = ", ".join(available_bots)
+    system_prompt = f"""You are a message routing classifier for a multi-bot WhatsApp system. Analyze the message and determine routing.
 
 Available bots and their expertise:
 - Sales Bot: sales, pricing, quotes, products, purchasing
@@ -702,8 +725,12 @@ Return a JSON object with:
 }}
 Only return valid JSON, no other text."""
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+    try:
+        # Use the appropriate AI provider
+        from app.ai.providers import get_ai_provider
+        provider = get_ai_provider(ai_provider, api_key, ai_model)
+
+        ai_response = provider.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Route this message: {message}"}
@@ -711,8 +738,9 @@ Only return valid JSON, no other text."""
             max_tokens=300,
             temperature=0.3
         )
+        response_text = ai_response.content
 
-        result_text = response.choices[0].message.content.strip()
+        result_text = response_text.strip()
         try:
             if result_text.startswith("```"):
                 result_text = result_text.split("```")[1]

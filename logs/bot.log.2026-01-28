@@ -1,5 +1,0 @@
-2026-01-28 11:12:57,840 - root - INFO - === Server Starting ===
-2026-01-28 11:13:01,556 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
-2026-01-28 11:13:01,715 - app.hubs.scheduler - INFO - Content scheduler started.
-2026-01-28 11:19:08,345 - app.hubs.scheduler - INFO - Content scheduler stopped.
-2026-01-28 11:19:08,345 - app.bots.manager - INFO - All bots stopped

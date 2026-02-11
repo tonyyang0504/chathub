@@ -68,7 +68,7 @@ class BotProfile(Base):
     __tablename__ = "bot_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
 
     # AI Provider Settings
@@ -140,7 +140,7 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id = Column(Integer, primary_key=True, index=True)
-    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=False)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=False, index=True)
     chat_id = Column(String(255), nullable=False, index=True)  # Unique identifier (name or data-id)
     chat_name = Column(String(255))  # Display name shown in sidebar (contact name or phone)
     display_name = Column(String(255))  # WhatsApp saved contact name (if available)
@@ -148,7 +148,7 @@ class Conversation(Base):
     is_group = Column(Boolean, default=False)
     profile_pic = Column(Text)  # Contact/group profile picture URL or base64
     message_count = Column(Integer, default=0)
-    last_message_at = Column(DateTime)
+    last_message_at = Column(DateTime, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Sync status - track if full history has been fetched
@@ -169,13 +169,17 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False, index=True)
     role = Column(String(20), nullable=False)  # 'user', 'assistant', 'system'
     content = Column(Text, nullable=False)
     sender_name = Column(String(255))
-    sender_id = Column(String(255))
+    sender_id = Column(String(255))  # WhatsApp ID (could be LID or phone)
+    sender_phone = Column(String(50))  # Extracted phone number (distinct from LID)
     sender_profile_pic = Column(Text)  # Sender's profile picture for group messages
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # WhatsApp message tracking
+    whatsapp_message_id = Column(String(255))  # Message ID from WhatsApp data-id
 
     # File attachment fields
     file_url = Column(Text)  # URL or path to the uploaded file
@@ -410,15 +414,15 @@ class ScheduledContent(Base):
     __tablename__ = "scheduled_contents"
 
     id = Column(Integer, primary_key=True, index=True)
-    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False, index=True)
     bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=True)  # NULL = unassigned
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)  # NULL = broadcast
     content = Column(Text, nullable=False)
     content_type = Column(String(50), default="message")  # 'message', 'followup', 'promo'
     topic = Column(String(255))
-    scheduled_for = Column(DateTime)
+    scheduled_for = Column(DateTime, index=True)
     sent_at = Column(DateTime)
-    status = Column(String(50), default="pending")  # 'pending', 'assigned', 'sent', 'failed', 'cancelled'
+    status = Column(String(50), default="pending", index=True)  # 'pending', 'assigned', 'sent', 'failed', 'cancelled'
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Recipient type: 'broadcast' (all contacts), 'all_groups', 'contacts' (selected), 'groups' (selected)

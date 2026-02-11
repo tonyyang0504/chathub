@@ -8,7 +8,7 @@ import base64
 import logging
 from typing import Optional, List, Dict, Any, Union
 
-from app.ai.providers.base import AIProvider, AIResponse, AIMessage, ToolCall
+from app.ai.providers.base import AIProvider, AIResponse, AIMessage, ToolCall, create_retry_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +122,8 @@ class AnthropicProvider(AIProvider):
 
         logger.debug(f"Anthropic request: model={use_model}, messages={len(anthropic_messages)}")
 
-        # Make the API call
-        response = self.client.messages.create(**params)
+        # Make the API call with retry logic
+        response = self._make_api_call(params)
 
         # Convert response
         content = ""
@@ -306,6 +306,21 @@ class AnthropicProvider(AIProvider):
             return json.loads(json_str)
         except:
             return {"raw": json_str}
+
+    @create_retry_decorator(max_attempts=3)
+    def _make_api_call(self, params: Dict) -> Any:
+        """Make API call with retry logic."""
+        try:
+            return self.client.messages.create(**params)
+        except self._anthropic.RateLimitError as e:
+            logger.error(f"Anthropic rate limit exceeded: {e}")
+            raise
+        except self._anthropic.APIConnectionError as e:
+            logger.error(f"Anthropic connection error: {e}")
+            raise ConnectionError(str(e))
+        except self._anthropic.APITimeoutError as e:
+            logger.error(f"Anthropic timeout error: {e}")
+            raise TimeoutError(str(e))
 
     def get_available_models(self) -> List[str]:
         """Return list of available Anthropic models."""

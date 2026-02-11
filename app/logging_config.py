@@ -33,8 +33,9 @@ LOG_CATEGORIES = {
     'errors': 'errors',     # All errors (aggregated)
 }
 
-# Base logs directory
-LOGS_BASE_DIR = Path("logs")
+# Base logs directory (relative to project root for cross-OS consistency)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+LOGS_BASE_DIR = _PROJECT_ROOT / "logs"
 
 
 class JsonFormatter(logging.Formatter):
@@ -110,7 +111,7 @@ class CategoryLogger:
 
     def __init__(self, category: str, use_json: bool = False):
         self.category = category
-        self.logger = logging.getLogger(f'aibot.{category}')
+        self.logger = logging.getLogger(f'chathub.{category}')
         self.use_json = use_json
 
     def _log(self, level: int, msg: str, *args, **kwargs):
@@ -204,7 +205,7 @@ def setup_logging() -> None:
         log_file = category_dir / f'{category}.log'
 
         # Create logger for this category
-        logger = logging.getLogger(f'aibot.{category}')
+        logger = logging.getLogger(f'chathub.{category}')
         logger.setLevel(log_level)
         logger.propagate = False  # Don't propagate to root logger
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Conversations - WhatsApp Bot{% endblock %}
+{% block title %}Conversations - ChatHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -304,13 +304,14 @@
         display: inline-block;
     }
 
-    /* Right Panel - Messages */
+    /* Right Panel - Messages - WhatsApp-style doodle background */
     .message-panel {
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: var(--wa-chat-bg);
-        background-image: url("data:image/svg+xml,%3Csvg width='412' height='412' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='wa-pattern' x='0' y='0' width='412' height='412' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 0h412v412H0z' fill='%23efeae2'/%3E%3Cg fill='%23ddd8cf' opacity='0.4'%3E%3Cpath d='M40 40l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8z'/%3E%3Cpath d='M0 80l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8z'/%3E%3Cpath d='M40 120l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8zm80 0l8-8 8 8-8 8z'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect fill='url(%23wa-pattern)' width='412' height='412'/%3E%3C/svg%3E");
+        background-color: #efeae2;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='412.5' height='412.5' viewBox='0 0 412.5 412.5'%3E%3Cdefs%3E%3Cpattern id='wa-pattern' x='0' y='0' width='412.5' height='412.5' patternUnits='userSpaceOnUse'%3E%3Crect fill='%23efeae2' width='412.5' height='412.5'/%3E%3Cg fill='%23ddd6cc' fill-opacity='0.4' stroke='none'%3E%3Cpath d='M22.5 15a6 6 0 00-6 6v7.5a6 6 0 006 6h1.5l2.25 3.75 2.25-3.75h1.5a6 6 0 006-6V21a6 6 0 00-6-6h-7.5z'/%3E%3Crect x='60' y='18' width='9' height='15' rx='1.5'/%3E%3Ccircle cx='64.5' cy='30' r='1.5'/%3E%3Ccircle cx='105' cy='25.5' r='9'/%3E%3Cpath d='M105 19.5v6l4.5 3' stroke='%23efeae2' stroke-width='1.5' fill='none'/%3E%3Cpath d='M142.5 18c-2.25-3.75-7.5-3.75-9 1.5-1.5-5.25-6.75-5.25-9-1.5-3 4.5 3 10.5 9 15 6-4.5 12-10.5 9-15z'/%3E%3Cpath d='M180 22.5h6a3 3 0 013 3v9a3 3 0 01-3 3h-6a3 3 0 01-3-3v-9a3 3 0 013-3zm3 12a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3Cpath d='M217.5 18l2.25 6.75h6.75l-5.25 3.75 2.25 6.75-6-4.5-6 4.5 2.25-6.75-5.25-3.75h6.75z'/%3E%3Ccircle cx='262.5' cy='27' r='9'/%3E%3Cpath fill='%23efeae2' d='M257.25 24a1.5 1.5 0 103 0 1.5 1.5 0 00-3 0zm6 0a1.5 1.5 0 103 0 1.5 1.5 0 00-3 0zm-6.75 3.75c0 3 3.75 5.25 6 5.25s6-2.25 6-5.25h-12z'/%3E%3Crect x='292.5' y='18' width='15' height='12' rx='1.5'/%3E%3Ccircle cx='300' cy='24' r='3.75'/%3E%3Crect x='296.25' y='15' width='7.5' height='3' rx='0.75'/%3E%3Cpath d='M337.5 19.5v11.25c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3V22.5l7.5-2.25v9.75c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3V16.5l-13.5 3.75z'/%3E%3Cpath d='M382.5 18c-4.5 0-7.5 3-7.5 7.5 0 6 7.5 13.5 7.5 13.5s7.5-7.5 7.5-13.5c0-4.5-3-7.5-7.5-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z'/%3E%3Cpath d='M22.5 63h9l4.5 4.5v12a1.5 1.5 0 01-1.5 1.5h-12a1.5 1.5 0 01-1.5-1.5V64.5a1.5 1.5 0 011.5-1.5zm8.25 0.75v4.5h4.5z'/%3E%3Cpath d='M67.5 63c-3.75 0-6 2.25-6 6v4.5H60v1.5h15v-1.5h-1.5V69c0-3.75-2.25-6-6-6zm0-2.25a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-2.25 16.5a2.25 2.25 0 004.5 0h-4.5z'/%3E%3Crect x='102' y='63' width='6' height='10.5' rx='3'/%3E%3Cpath d='M99 70.5v1.5c0 3 2.25 5.25 5.25 5.25h1.5c3 0 5.25-2.25 5.25-5.25V70.5h-1.5v1.5c0 2.25-1.5 3.75-3.75 3.75h-1.5c-2.25 0-3.75-1.5-3.75-3.75V70.5H99zm3.75 9v3h4.5v-3h-4.5z'/%3E%3Crect x='133.5' y='66' width='15' height='12' rx='1.5'/%3E%3Ccircle cx='139.5' cy='72' r='1.5'/%3E%3Cpath d='M135 75l3-3 2.25 2.25 3.75-3.75 3 3.75v1.5H135z'/%3E%3Crect x='172.5' y='67.5' width='12' height='9' rx='1.5'/%3E%3Cpath d='M186 69l6 3v3l-6 3z'/%3E%3Cpath d='M217.5 70.5c-2.25 0-3.75 1.5-3.75 3.75s1.5 3.75 3.75 3.75h2.25v-1.5h-2.25c-1.5 0-2.25-0.75-2.25-2.25s0.75-2.25 2.25-2.25h2.25v-1.5h-2.25zm7.5 0h-2.25v1.5h2.25c1.5 0 2.25 0.75 2.25 2.25s-0.75 2.25-2.25 2.25H222.75v1.5H225c2.25 0 3.75-1.5 3.75-3.75s-1.5-3.75-3.75-3.75zm-6 3v1.5h4.5V73.5H219z'/%3E%3Cpath d='M255 70.5h-2.25a1.5 1.5 0 00-1.5 1.5v6a1.5 1.5 0 001.5 1.5H255V70.5zm3-2.25l-0.75 3.75h3.75a1.5 1.5 0 011.5 1.5l-0.75 4.5a1.5 1.5 0 01-1.5 1.5h-4.5V70.5l2.25-4.5a1.5 1.5 0 011.5 1.5v0.75z'/%3E%3Cpath d='M300 63a6 6 0 00-6 6v7.5a6 6 0 006 6h1.5l2.25 3.75 2.25-3.75h1.5a6 6 0 006-6V69a6 6 0 00-6-6H300z'/%3E%3Cpath d='M345 72a3 3 0 00-3-3h-6v12h6a3 3 0 003-3v-1.5a2.85 2.85 0 00-1.05-2.25c0.66-0.54 1.05-1.35 1.05-2.25V72zm-3 1.5h-3v-3h3v3zm0 6h-3V75h3v4.5z'/%3E%3Cpath d='M375 63v7.5l3.75 5.25V63H375zm12 0v12.75l3.75-5.25V63H387z'/%3E%3Ccircle cx='22.5' cy='120' r='9'/%3E%3Cpath d='M22.5 115.5v4.5h-4.5' stroke='%23efeae2' stroke-width='1.5' fill='none'/%3E%3Cpath d='M52.5 111h15a3 3 0 013 3v10.5a3 3 0 01-3 3H62.25l-3 4.5-3-4.5H52.5a3 3 0 01-3-3V114a3 3 0 013-3zm3 6h9m-9 3h6' stroke='%23efeae2' stroke-width='1.5' fill='none'/%3E%3Cpath d='M105 111c-3.75 0-6 2.4-6 6 0 4.8 6 10.8 6 10.8s6-6 6-10.8c0-3.6-2.25-6-6-6zm0 8.4a2.4 2.4 0 110-4.8 2.4 2.4 0 010 4.8z'/%3E%3Crect x='133.5' y='112.5' width='13.5' height='10.5' rx='1.5'/%3E%3Ccircle cx='140.25' cy='117.75' r='3'/%3E%3Crect x='137.25' y='109.5' width='6' height='3' rx='0.6'/%3E%3Cpath d='M172.5 120a7.5 7.5 0 1015 0 7.5 7.5 0 00-15 0zm7.5-3v3.75l2.625 2.625' stroke='%23efeae2' stroke-width='1.2' fill='none'/%3E%3Cpath d='M217.5 111a9 9 0 100 18 9 9 0 000-18zm-3.75 6.75h2.25v-2.25h3v2.25h2.25v3h-2.25v2.25h-3v-2.25h-3.75v-3z' fill-rule='evenodd'/%3E%3Cpath d='M252 120l9-9v6h7.5v6H261v6z'/%3E%3Cpath d='M300 111a9 9 0 100 18 9 9 0 000-18zm-2.25 5.25a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm4.5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6.75 6h9s-0.75 4.5-4.5 4.5-4.5-4.5-4.5-4.5z'/%3E%3Crect x='333' y='111' width='9' height='15' rx='1.5'/%3E%3Ccircle cx='337.5' cy='123' r='1.5'/%3E%3Crect x='334.5' y='113.25' width='6' height='7.5' rx='0.75' fill='%23efeae2'/%3E%3Cpath d='M382.5 111l2.25 6.75h6.75l-5.25 3.75 2.25 6.75-6-4.5-6 4.5 2.25-6.75-5.25-3.75h6.75z'/%3E%3Cpath d='M22.5 159a9 9 0 100 18 9 9 0 000-18zm0 3a6 6 0 110 12 6 6 0 010-12z'/%3E%3Cpath d='M60 159h10.5a1.5 1.5 0 011.5 1.5v15a1.5 1.5 0 01-1.5 1.5H60a1.5 1.5 0 01-1.5-1.5v-15a1.5 1.5 0 011.5-1.5zm4.125 2.25a0.375 0.375 0 100 0.75h2.25a0.375 0.375 0 100-0.75h-2.25zm1.125 12a1.125 1.125 0 100-2.25 1.125 1.125 0 000 2.25z'/%3E%3Cpath d='M105 156.75v11.25c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3v-9.75l7.5-2.25v9.75c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3v-15l-13.5 3.75z'/%3E%3Cpath d='M140.25 159a9 9 0 100 18 9 9 0 000-18zm-3.75 5.25h7.5v1.5h-7.5v-1.5zm0 3h7.5v1.5h-7.5v-1.5zm0 3h5.25v1.5h-5.25v-1.5z'/%3E%3Cpath d='M172.5 168a9 9 0 1018 0 9 9 0 00-18 0zm9-3.75l4.5 4.5h-3v3.75h-3v-3.75h-3z' fill-rule='evenodd'/%3E%3Cpath d='M225 159c-3.75 0-6.75 3-6.75 6.75v3c0 1.5 0.45 2.85 1.2 4.05l-1.95 4.2 4.35-1.8c1.05 0.6 2.25 0.9 3.6 0.9h0.3c3.75 0 6.75-3 6.75-6.75v-3.6c0-3.75-3-6.75-6.75-6.75H225zm-3.375 8.25a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z'/%3E%3Cpath d='M262.5 159c-4.5 0-7.5 3-7.5 7.5 0 6 7.5 13.5 7.5 13.5s7.5-7.5 7.5-13.5c0-4.5-3-7.5-7.5-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z'/%3E%3Crect x='292.5' y='159' width='15' height='18' rx='1.5'/%3E%3Cpath d='M296.25 162.75h7.5v7.5h-7.5z' fill='%23efeae2'/%3E%3Cpath d='M296.25 171.75h7.5m-7.5 2.25h5.25' stroke='%23efeae2' stroke-width='0.75'/%3E%3Cpath d='M337.5 162c-3 0-5.25 2.25-5.25 5.25v5.25c0 3 2.25 5.25 5.25 5.25h6v-3h-6c-1.2 0-2.25-1.05-2.25-2.25v-5.25c0-1.2 1.05-2.25 2.25-2.25h6v-3h-6z'/%3E%3Cpath d='M375 166.5h7.5l-3.75-7.5-3.75 7.5zm3.75 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 4.5v4.5'/%3E%3Cpath d='M15 207a9 9 0 1018 0 9 9 0 00-18 0zm6.75-2.25h4.5v-2.25l3.75 3.75-3.75 3.75v-2.25h-4.5v2.25L18 206.25l3.75-3.75v2.25z' fill-rule='evenodd'/%3E%3Cpath d='M60 199.5h10.5a3 3 0 013 3v12a3 3 0 01-3 3H60a3 3 0 01-3-3v-12a3 3 0 013-3zm0 1.5a1.5 1.5 0 00-1.5 1.5v12a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5v-12a1.5 1.5 0 00-1.5-1.5H60z'/%3E%3Crect x='100.5' y='199.5' width='9' height='18' rx='1.5'/%3E%3Ccircle cx='105' cy='205.5' r='2.25'/%3E%3Cpath d='M101.25 214.5c0-2.1 1.65-3.75 3.75-3.75s3.75 1.65 3.75 3.75v1.5h-7.5v-1.5z'/%3E%3Ccircle cx='142.5' cy='207' r='9'/%3E%3Cpath fill='%23efeae2' d='M138 204.75a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.5 0a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm-6.375 3.375c0 3.375 4.125 5.625 6.375 5.625s6.375-2.25 6.375-5.625h-12.75z'/%3E%3Cpath d='M172.5 199.5h15a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5h-15a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5zm1.5 3l6 4.5 6-4.5' stroke='%23efeae2' stroke-width='1.5' fill='none'/%3E%3Cpath d='M210 204v3h-3a1.5 1.5 0 000 3h3v3a1.5 1.5 0 003 0v-3h3a1.5 1.5 0 000-3h-3v-3a1.5 1.5 0 00-3 0z'/%3E%3Cpath d='M251.25 199.5a9 9 0 100 18 9 9 0 000-18zm0 3a6 6 0 110 12 6 6 0 010-12zm0 3a3 3 0 100 6 3 3 0 000-6z'/%3E%3Ccircle cx='300' cy='207' r='9'/%3E%3Cpath fill='%23efeae2' d='M295.5 204.75a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm6.75 0a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z'/%3E%3Cpath fill='%23efeae2' d='M296.25 210.75c0 0 0.75-2.25 3.75-2.25s3.75 2.25 3.75 2.25h-7.5z'/%3E%3Cpath d='M337.5 199.5a9 9 0 100 18 9 9 0 000-18zm-3 6h1.5v-1.5h3v1.5h1.5v3h-1.5v1.5h-3v-1.5h-1.5v-3z'/%3E%3Cpath d='M375 202.5l3 9h9l-7 5.25 2.625 7.875-7.625-5.625-7.625 5.625 2.625-7.875-7-5.25h9z'/%3E%3Cpath d='M22.5 247.5c-4.5 0-7.5 3-7.5 7.5s3 7.5 7.5 7.5c1.35 0 2.55-0.3 3.6-0.9l4.35 1.8-1.95-4.2c0.75-1.2 1.2-2.55 1.2-4.05v-0.15c0-3.75-3-7.5-7.5-7.5h-0.15zm-3.375 6a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z'/%3E%3Cpath d='M57 255a9 9 0 1018 0 9 9 0 00-18 0zm6.75-2.25a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm4.5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6.75 4.5h9s-0.75 4.5-4.5 4.5-4.5-4.5-4.5-4.5z'/%3E%3Crect x='96' y='247.5' width='18' height='15' rx='1.5'/%3E%3Ccircle cx='105' cy='255' r='4.5'/%3E%3Crect x='100.5' y='244.5' width='9' height='3' rx='0.75'/%3E%3Cpath d='M142.5 247.5c-4.5 0-7.5 3-7.5 7.5 0 6 7.5 13.5 7.5 13.5s7.5-7.5 7.5-13.5c0-4.5-3-7.5-7.5-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z'/%3E%3Cpath d='M172.5 255a7.5 7.5 0 1015 0 7.5 7.5 0 00-15 0zm6-2.25h3v-2.25l4.5 4.5-4.5 4.5v-2.25h-3a1.5 1.5 0 010-3v-1.5z' fill-rule='evenodd'/%3E%3Cpath d='M210 250.5h10.5a3 3 0 013 3v10.5a3 3 0 01-3 3H210a3 3 0 01-3-3v-10.5a3 3 0 013-3zm3 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm4.5 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-4.5 4.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm4.5 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3z'/%3E%3Cpath d='M262.5 247.5l2.25 6.75h6.75l-5.25 3.75 2.25 6.75-6-4.5-6 4.5 2.25-6.75-5.25-3.75h6.75z'/%3E%3Crect x='292.5' y='250.5' width='15' height='12' rx='1.5'/%3E%3Cpath d='M296.25 258.75l3-3 2.25 2.25 3.75-3.75L309 258v2.25h-12.75z'/%3E%3Ccircle cx='298.125' cy='254.25' r='1.875'/%3E%3Cpath d='M330 255c0-4.125 3.375-7.5 7.5-7.5s7.5 3.375 7.5 7.5-3.375 7.5-7.5 7.5-7.5-3.375-7.5-7.5zm7.5-3.75v4.125l2.925 2.925' stroke='%23efeae2' stroke-width='1.2' fill='none'/%3E%3Cpath d='M375 247.5h10.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H375a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5z'/%3E%3Cpath d='M376.5 252h7.5m-7.5 3h5.25m-5.25 3h6.75' stroke='%23efeae2' stroke-width='1.2'/%3E%3Cpath d='M22.5 292.5a9 9 0 100 18 9 9 0 000-18zm-4.5 9a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0z'/%3E%3Cpath d='M57 301.5a9 9 0 1018 0 9 9 0 00-18 0zm5.25-3h3v-2.25l4.5 4.5-4.5 4.5v-2.25h-3a1.5 1.5 0 010-3z' fill-rule='evenodd'/%3E%3Ccircle cx='105' cy='301.5' r='9'/%3E%3Cpath fill='%23efeae2' d='M102 298.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm3.75 0a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm-4.125 3.375h6.75c0 0-0.375 3.375-3.375 3.375s-3.375-3.375-3.375-3.375z'/%3E%3Cpath d='M142.5 295.5v11.25c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3V300l7.5-2.25v9c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3v-13.5l-13.5 3.75z'/%3E%3Cpath d='M172.5 295.5a9 9 0 100 18 9 9 0 000-18zm-3.375 6.75a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z'/%3E%3Crect x='210' y='295.5' width='10.5' height='15' rx='1.5'/%3E%3Ccircle cx='215.25' cy='307.5' r='1.125'/%3E%3Crect x='211.5' y='297.75' width='7.5' height='7.5' rx='0.75' fill='%23efeae2'/%3E%3Cpath d='M262.5 295.5c-4.125 0-7.5 3.375-7.5 7.5s3.375 7.5 7.5 7.5h6v-3h-6a4.5 4.5 0 010-9h6v-3h-6z'/%3E%3Crect x='292.5' y='295.5' width='15' height='18' rx='1.5'/%3E%3Cpath d='M296.25 299.25h7.5v7.5h-7.5z' fill='%23efeae2'/%3E%3Cpath d='M296.25 308.25h7.5m-7.5 2.25h5.25' stroke='%23efeae2' stroke-width='0.75'/%3E%3Cpath d='M337.5 295.5a9 9 0 100 18 9 9 0 000-18zm-2.25 5.25a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm4.5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6.75 5.25h9s-0.75 4.5-4.5 4.5-4.5-4.5-4.5-4.5z'/%3E%3Cpath d='M375 295.5a9 9 0 100 18 9 9 0 000-18zm-3 6h1.5v-1.5h3v1.5h1.5v3h-1.5v1.5h-3v-1.5h-1.5v-3z'/%3E%3Cpath d='M22.5 340.5a9 9 0 100 18 9 9 0 000-18zm0 4.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z'/%3E%3Cpath d='M60 340.5h10.5a1.5 1.5 0 011.5 1.5v15a1.5 1.5 0 01-1.5 1.5H60a1.5 1.5 0 01-1.5-1.5v-15a1.5 1.5 0 011.5-1.5zm4.125 2.25a0.375 0.375 0 100 0.75h2.25a0.375 0.375 0 100-0.75h-2.25zm1.125 12a1.125 1.125 0 100-2.25 1.125 1.125 0 000 2.25z'/%3E%3Cpath d='M105 340.5c-4.5 0-7.5 3-7.5 7.5 0 6 7.5 13.5 7.5 13.5s7.5-7.5 7.5-13.5c0-4.5-3-7.5-7.5-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z'/%3E%3Cpath d='M142.5 349.5a9 9 0 1018 0 9 9 0 00-18 0zm9-3.75l4.5 4.5h-3v3.75h-3v-3.75h-3z' fill-rule='evenodd'/%3E%3Cpath d='M180 340.5h-7.5a1.5 1.5 0 00-1.5 1.5v15a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-15a1.5 1.5 0 00-1.5-1.5h-7.5zm-4.5 4.5h9v9h-9v-9z' fill-rule='evenodd'/%3E%3Cpath d='M217.5 340.5l2.25 6.75h6.75l-5.25 3.75 2.25 6.75-6-4.5-6 4.5 2.25-6.75-5.25-3.75h6.75z'/%3E%3Cpath d='M262.5 340.5a9 9 0 100 18 9 9 0 000-18zm-3.375 6.75a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z'/%3E%3Cpath d='M300 340.5c-4.125 0-7.5 3.375-7.5 7.5v1.5c0 4.125 3.375 7.5 7.5 7.5s7.5-3.375 7.5-7.5v-1.5c0-4.125-3.375-7.5-7.5-7.5zm0 3a4.5 4.5 0 014.5 4.5v1.5a4.5 4.5 0 01-9 0v-1.5a4.5 4.5 0 014.5-4.5z'/%3E%3Cpath d='M337.5 343.5c-3.75 0-6 2.25-6 6v4.5H330v1.5h15v-1.5h-1.5v-4.5c0-3.75-2.25-6-6-6zm0-2.25a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-2.25 16.5a2.25 2.25 0 004.5 0h-4.5z'/%3E%3Cpath d='M375 340.5a9 9 0 100 18 9 9 0 000-18zm-2.25 6a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm4.5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6 4.5h7.5c0 0-0.75 3.75-3.75 3.75s-3.75-3.75-3.75-3.75z'/%3E%3Cpath d='M22.5 385.5c-4.5 0-7.5 3-7.5 7.5s3 7.5 7.5 7.5c1.35 0 2.55-0.3 3.6-0.9l4.35 1.8-1.95-4.2c0.75-1.2 1.2-2.55 1.2-4.05v-0.15c0-3.75-3-7.5-7.5-7.5h-0.15zm-3.375 6a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zm3.375 0a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z'/%3E%3Crect x='57' y='385.5' width='12' height='15' rx='1.5'/%3E%3Crect x='58.5' y='387.75' width='9' height='9' rx='0.75' fill='%23efeae2'/%3E%3Cpath d='M60 398.25h6' stroke='%23efeae2' stroke-width='0.75'/%3E%3Cpath d='M105 385.5a9 9 0 100 18 9 9 0 000-18zm-3 6h1.5v-1.5h3v1.5h1.5v3h-1.5v1.5h-3v-1.5h-1.5v-3z'/%3E%3Cpath d='M142.5 388.5v11.25c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3v-9.75l7.5-2.25v9.75c-1.5-0.75-3 0-3.75 1.5s0 3.75 1.5 4.5 3.75 0 4.5-1.5c0.75-0.75 0.75-2.25 0.75-3v-15l-13.5 3.75z'/%3E%3Ccircle cx='180' cy='393' r='9'/%3E%3Cpath fill='%23efeae2' d='M175.5 390.75a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm6.75 0a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z'/%3E%3Cpath fill='%23efeae2' d='M175.5 396.75c0 0 0.75-2.25 4.5-2.25s4.5 2.25 4.5 2.25h-9z'/%3E%3Crect x='210' y='387' width='12' height='9' rx='1.5'/%3E%3Cpath d='M224.25 389.25l6 3v3l-6 3z'/%3E%3Cpath d='M262.5 385.5a9 9 0 100 18 9 9 0 000-18zm0 3a6 6 0 110 12 6 6 0 010-12zm0 3a3 3 0 100 6 3 3 0 000-6z'/%3E%3Cpath d='M300 385.5c-4.5 0-7.5 3-7.5 7.5 0 6 7.5 13.5 7.5 13.5s7.5-7.5 7.5-13.5c0-4.5-3-7.5-7.5-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z'/%3E%3Cpath d='M337.5 385.5l2.25 6.75h6.75l-5.25 3.75 2.25 6.75-6-4.5-6 4.5 2.25-6.75-5.25-3.75h6.75z'/%3E%3Cpath d='M382.5 385.5a6 6 0 00-6 6v7.5a6 6 0 006 6h1.5l2.25 3.75 2.25-3.75h1.5a6 6 0 006-6v-7.5a6 6 0 00-6-6h-7.5z'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect fill='url(%23wa-pattern)' width='412.5' height='412.5'/%3E%3C/svg%3E");
+        background-repeat: repeat;
     }
 
     .message-header {
@@ -473,7 +474,7 @@
     .file-preview-document {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 6px;
         padding: 15px 20px;
         background: white;
         border-radius: 8px;
@@ -904,7 +905,7 @@
     .forward-contact-item {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 6px;
         padding: 10px 20px;
         cursor: pointer;
         transition: background 0.15s;
@@ -1186,7 +1187,7 @@
     .attach-menu-item {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 6px;
         padding: 10px 12px;
         cursor: pointer;
         border-radius: 8px;
@@ -1262,7 +1263,7 @@
     .header-dropdown-item {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 6px;
         padding: 12px 20px;
         cursor: pointer;
         color: #3b4a54;
@@ -1313,24 +1314,53 @@
         padding: 10px 16px;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 6px;
         flex-shrink: 0;
         border-radius: 12px 12px 0 0;
     }
 
     .contact-info-header .close-btn {
-        background: transparent;
-        border: none;
-        color: white;
-        font-size: 20px;
-        cursor: pointer;
-        padding: 8px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
         border-radius: 50%;
-        transition: background 0.15s;
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease, transform 0.15s ease;
+        cursor: pointer;
+        position: relative;
+        padding: 0;
     }
 
     .contact-info-header .close-btn:hover {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.05);
+    }
+
+    .contact-info-header .close-btn:active {
+        transform: scale(0.95);
+    }
+
+    .contact-info-header .close-btn::before,
+    .contact-info-header .close-btn::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 2px;
+        background-color: white;
+        border-radius: 1px;
+        transition: background-color 0.2s ease;
+    }
+
+    .contact-info-header .close-btn::before {
+        transform: rotate(45deg);
+    }
+
+    .contact-info-header .close-btn::after {
+        transform: rotate(-45deg);
     }
 
     .contact-info-header h5 {
@@ -1991,7 +2021,7 @@
 <div class="row mb-4">
     <div class="col">
         <h2>Conversations</h2>
-        <p class="text-muted">View and manage your WhatsApp conversations</p>
+        <p class="text-muted">View and manage your conversations</p>
     </div>
 </div>
 
@@ -2034,8 +2064,8 @@
     <!-- Middle Panel - Messages -->
     <div class="message-panel" id="messagePanel">
         <div class="empty-state">
-            <i class="bi bi-whatsapp"></i>
-            <h3>WhatsApp Bot Dashboard</h3>
+            <i class="bi bi-chat-dots"></i>
+            <h3>ChatHub</h3>
             <p>Select a conversation from the list to view messages and track your bot's interactions.</p>
         </div>
     </div>
@@ -2329,6 +2359,14 @@
         }).join('');
     }
 
+    // Normalize phone number display - ensures single + prefix
+    function normalizePhoneDisplay(phone) {
+        if (!phone) return null;
+        // Remove all existing + prefixes and add exactly one
+        const cleaned = phone.replace(/^\++/, '');
+        return cleaned ? '+' + cleaned : null;
+    }
+
     // Format phone number - returns only if chat_id is a private chat with phone number
     function formatPhoneNumber(chatId) {
         if (!chatId) return null;
@@ -2442,6 +2480,15 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <div class="d-flex align-items-center me-2" style="display: none !important; gap: 6px;"
+                         id="aiToggleWrapper" title="AI Response (all conversations)">
+                        <span class="small">AI Response</span>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="convAiToggle"
+                                   onchange="toggleAIResponseFromConv(this.checked)"
+                                   style="width: 2.5em; height: 1.25em;">
+                        </div>
+                    </div>
                     <button class="header-action-btn" title="Search" onclick="toggleMessageSearch()">
                         <i class="bi bi-search"></i>
                     </button>
@@ -2501,6 +2548,7 @@
         await loadMessages(convId);
         connectConversationWebSocket(convId);
         checkHumanTakeover();
+        updateAIToggleState();
     }
 
     function connectConversationWebSocket(convId) {
@@ -3137,8 +3185,8 @@
                 loadConversations(document.getElementById('botFilter').value || null);
                 document.getElementById('messagePanel').innerHTML = `
                     <div class="empty-state">
-                        <i class="bi bi-whatsapp"></i>
-                        <h3>WhatsApp Bot Dashboard</h3>
+                        <i class="bi bi-chat-dots"></i>
+                        <h3>ChatHub</h3>
                         <p>Select a conversation from the list to view messages.</p>
                     </div>
                 `;
@@ -4087,10 +4135,11 @@
         const menu = document.createElement('div');
         menu.id = 'headerDropdown';
         menu.className = 'header-dropdown';
+        const menuIsGroup = currentConversation && isGroupChat(currentConversation);
         menu.innerHTML = `
             <div class="header-dropdown-item" onclick="toggleContactInfo(); closeAllMenus();">
-                <i class="bi bi-person"></i>
-                <span>Contact info</span>
+                <i class="bi bi-${menuIsGroup ? 'people' : 'person'}"></i>
+                <span>${menuIsGroup ? 'Group info' : 'Contact info'}</span>
             </div>
             <div class="header-dropdown-item" onclick="exportConversation(); closeAllMenus();">
                 <i class="bi bi-download"></i>
@@ -4131,13 +4180,12 @@
         // Get phone number - use dedicated phone field, or try to extract from chat_id/chat_name
         const phoneNumber = currentConversation.phone || formatPhoneNumber(currentConversation.chat_id) || formatPhoneNumber(currentConversation.chat_name);
         const displayName = currentConversation.display_name || currentConversation.chat_name || 'Unknown';
+        const chatId = currentConversation.chat_id || 'Not available';
 
         panel.innerHTML = `
             <div class="contact-info-header">
-                <button class="close-btn" onclick="closeContactInfo()">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-                <h5>Contact info</h5>
+                <button class="close-btn" onclick="closeContactInfo()" aria-label="Close"></button>
+                <h5>${contactIsGroup ? 'Group info' : 'Contact info'}</h5>
             </div>
             <div class="contact-info-body">
                 <div class="contact-info-profile">
@@ -4145,15 +4193,19 @@
                         ${avatarContent}
                     </div>
                     <div class="contact-info-name">${displayName}</div>
-                    ${phoneNumber ? `<div class="contact-info-phone">+${phoneNumber}</div>` : ''}
                 </div>
 
                 ${!contactIsGroup ? `
                 <div class="contact-info-section">
                     <div class="contact-info-section-title">Phone</div>
-                    <div class="contact-info-section-content">${phoneNumber ? '+' + phoneNumber : 'Not available'}</div>
+                    <div class="contact-info-section-content">${normalizePhoneDisplay(phoneNumber) || 'Not available'}</div>
                 </div>
                 ` : ''}
+
+                <div class="contact-info-section">
+                    <div class="contact-info-section-title">Chat ID</div>
+                    <div class="contact-info-section-content" style="font-family: monospace; font-size: 12px; word-break: break-all;">${chatId}</div>
+                </div>
 
                 <div class="contact-info-section">
                     <div class="contact-info-section-title">Chat Type</div>
@@ -4175,6 +4227,18 @@
                     <div class="contact-info-section-content">${currentConversation.created_at ? new Date(currentConversation.created_at).toLocaleDateString() : 'Unknown'}</div>
                 </div>
 
+                ${contactIsGroup ? `
+                <div class="contact-info-section">
+                    <div class="contact-info-section-title">Group Members</div>
+                    <div class="contact-info-section-content" id="groupMembersContainer">
+                        <div class="text-center py-2">
+                            <div class="spinner-border spinner-border-sm text-secondary"></div>
+                            <span class="ms-2 small text-muted">Loading members...</span>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
                 <div class="contact-info-actions">
                     <div class="contact-info-action" onclick="exportConversation();">
                         <i class="bi bi-download"></i>
@@ -4190,6 +4254,89 @@
 
         // Show panel with animation
         setTimeout(() => panel.classList.add('show'), 10);
+
+        // Load group members if this is a group chat
+        if (contactIsGroup) {
+            loadGroupMembers(currentConversation.id);
+        }
+    }
+
+    // Store members data for "Show all" functionality
+    let groupMembersData = [];
+
+    async function loadGroupMembers(conversationId) {
+        const container = document.getElementById('groupMembersContainer');
+        if (!container) return;
+
+        try {
+            const response = await fetch(`/api/conversations/${conversationId}/members`);
+            if (!response.ok) throw new Error('Failed to load members');
+
+            const data = await response.json();
+            groupMembersData = data.members || [];
+
+            if (groupMembersData.length === 0) {
+                container.innerHTML = '<div class="text-muted small">No members found</div>';
+                return;
+            }
+
+            renderGroupMembers(container, false);
+
+        } catch (error) {
+            console.error('Error loading group members:', error);
+            container.innerHTML = '<div class="text-danger small">Failed to load members</div>';
+        }
+    }
+
+    function renderGroupMembers(container, showAll) {
+        const INITIAL_LIMIT = 10;
+        const members = groupMembersData;
+        const displayMembers = showAll ? members : members.slice(0, INITIAL_LIMIT);
+        const hasMore = members.length > INITIAL_LIMIT;
+
+        container.innerHTML = displayMembers.map((member, index) => `
+            <div class="group-member-item" style="display: flex; align-items: center; padding: 8px 0; ${index < displayMembers.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''}">
+                <div class="member-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: #dfe5e7; display: flex; align-items: center; justify-content: center; margin-right: 12px; overflow: hidden; flex-shrink: 0;">
+                    ${member.sender_profile_pic
+                        ? `<img src="${member.sender_profile_pic}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                           <i class="bi bi-person-fill" style="display: none; color: #8696a0;"></i>`
+                        : '<i class="bi bi-person-fill" style="color: #8696a0;"></i>'
+                    }
+                </div>
+                <div class="member-info" style="flex: 1; min-width: 0;">
+                    <div class="member-name" style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${member.sender_name || 'Unknown'}</div>
+                    <div class="member-details" style="font-size: 12px; color: #667781;">
+                        ${member.sender_phone ? `<span style="font-family: monospace;">${normalizePhoneDisplay(member.sender_phone)}</span>` : ''}
+                        ${member.sender_phone && member.message_count ? ' • ' : ''}
+                        ${member.message_count ? `${member.message_count} messages` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Add "Show all" or "Show less" button if there are more than INITIAL_LIMIT members
+        if (hasMore) {
+            const buttonText = showAll
+                ? 'Show less'
+                : `Show all ${members.length} members`;
+            container.innerHTML += `
+                <div class="show-more-members" style="padding: 12px 0 4px; text-align: center;">
+                    <button onclick="toggleShowAllMembers()" style="background: none; border: none; color: #25D366; font-size: 13px; cursor: pointer; font-weight: 500;">
+                        <i class="bi bi-${showAll ? 'chevron-up' : 'chevron-down'} me-1"></i>
+                        ${buttonText}
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    function toggleShowAllMembers() {
+        const container = document.getElementById('groupMembersContainer');
+        if (!container) return;
+
+        // Check if currently showing all by looking for "Show less" text
+        const isShowingAll = container.querySelector('.show-more-members button')?.textContent.includes('Show less');
+        renderGroupMembers(container, !isShowingAll);
     }
 
     function closeContactInfo() {
@@ -4447,6 +4594,64 @@
             notice.style.display = 'flex';
         } else {
             notice.style.display = 'none';
+        }
+    }
+
+    // ============== AI Response Toggle (bot-wide, from conversations page) ==============
+
+    function getCurrentBotId() {
+        if (!currentConversation) return null;
+        return currentConversation.bot_id;
+    }
+
+    async function toggleAIResponseFromConv(enabled) {
+        const botId = getCurrentBotId();
+        if (!botId) return;
+        try {
+            const res = await fetch(`/api/bots/${botId}/toggle-ai`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enabled})
+            });
+            if (res.ok) {
+                showToast(`AI Response ${enabled ? 'enabled' : 'disabled'}`, 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error toggling AI', 'danger');
+                const toggle = document.getElementById('convAiToggle');
+                if (toggle) toggle.checked = !enabled;
+            }
+        } catch (e) {
+            showToast('Error toggling AI response', 'danger');
+            const toggle = document.getElementById('convAiToggle');
+            if (toggle) toggle.checked = !enabled;
+        }
+    }
+
+    async function updateAIToggleState() {
+        const botId = getCurrentBotId();
+        if (!botId) return;
+        const wrapper = document.getElementById('aiToggleWrapper');
+        const toggle = document.getElementById('convAiToggle');
+        if (!wrapper || !toggle) return;
+
+        try {
+            const showStyle = 'display: inline-flex !important; gap: 6px;';
+            const hideStyle = 'display: none !important; gap: 6px;';
+            const res = await fetch(`/api/bots/${botId}/status`);
+            if (!res.ok) {
+                wrapper.style.cssText = hideStyle;
+                return;
+            }
+            const data = await res.json();
+            if (data.is_running && data.whatsapp_connected) {
+                wrapper.style.cssText = showStyle;
+                toggle.checked = data.ai_response_enabled || false;
+            } else {
+                wrapper.style.cssText = hideStyle;
+            }
+        } catch (e) {
+            wrapper.style.cssText = 'display: none !important; gap: 6px;';
         }
     }
 

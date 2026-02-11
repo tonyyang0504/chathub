@@ -205,6 +205,7 @@ class AgentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     agent_type: str  # 'classifier', 'router', 'generator', 'scheduler', 'analyzer', 'followup'
     description: Optional[str] = None
+    ai_provider: str = "openai"  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o-mini"
     system_prompt: Optional[str] = None  # Custom prompt for generator, analyzer, followup
@@ -215,6 +216,7 @@ class AgentCreate(BaseModel):
 class AgentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
+    ai_provider: Optional[str] = None  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
     openai_api_key: Optional[str] = None
     openai_model: Optional[str] = None
     system_prompt: Optional[str] = None  # Custom prompt for generator, analyzer, followup
@@ -229,6 +231,7 @@ class AgentResponse(BaseModel):
     name: str
     agent_type: str
     description: Optional[str] = None
+    ai_provider: str = "openai"
     openai_model: str
     is_active: bool
     last_run_at: Optional[datetime] = None

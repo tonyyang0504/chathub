@@ -18,6 +18,7 @@ from pydantic import BaseModel, EmailStr
 
 from app.config import settings
 from app.database import get_db, User
+from app.middleware.rate_limit import limiter
 from app.auth.utils import (
     verify_password,
     get_password_hash,
@@ -91,7 +92,9 @@ async def register_page(
 # ============== API Routes ==============
 
 @router.post("/register", response_model=UserResponse)
+@limiter.limit("3/minute")
 async def register(
+    request: Request,
     user_data: UserCreate,
     db: Session = Depends(get_db)
 ):
@@ -128,7 +131,9 @@ async def register(
 
 
 @router.post("/login")
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     response: Response,
     user_data: UserLogin,
     db: Session = Depends(get_db)

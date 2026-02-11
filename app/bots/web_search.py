@@ -349,66 +349,63 @@ def execute_tool(tool_name: str, arguments: dict) -> str:
     return f"Error: Unknown tool '{tool_name}'"
 
 
-def process_ai_response_with_tools(openai_client, messages: List[Dict], model: str = "gpt-4o-mini",
+def process_ai_response_with_tools(ai_provider, messages: List[Dict], model: str = "gpt-4o-mini",
                                     max_tokens: int = 2000, temperature: float = 0.7,
                                     top_p: float = 1.0, frequency_penalty: float = 0.0,
                                     presence_penalty: float = 0.0,
                                     max_tool_iterations: int = 3) -> str:
     """
     Process AI response with tool calling support.
+    Uses the AI provider abstraction layer instead of direct OpenAI calls.
     """
     current_messages = messages.copy()
     iterations = 0
+
+    # Only pass tools if the provider supports them
+    tools = AVAILABLE_TOOLS if ai_provider.supports_tools else None
 
     while iterations < max_tool_iterations:
         iterations += 1
 
         try:
-            # Call OpenAI with tools
-            response = openai_client.chat.completions.create(
-                model=model,
+            response = ai_provider.chat_completion(
                 messages=current_messages,
+                model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
                 frequency_penalty=frequency_penalty,
                 presence_penalty=presence_penalty,
-                tools=AVAILABLE_TOOLS,
-                tool_choice="auto"
+                tools=tools,
+                tool_choice="auto" if tools else None,
             )
 
-            choice = response.choices[0]
-            message = choice.message
-
             # Check if the model wants to call a tool
-            if message.tool_calls:
-                print(f"[WEB_SEARCH] AI requested {len(message.tool_calls)} tool call(s)")
-                logger.info(f"AI requested {len(message.tool_calls)} tool call(s)")
+            if response.tool_calls:
+                print(f"[WEB_SEARCH] AI requested {len(response.tool_calls)} tool call(s)")
+                logger.info(f"AI requested {len(response.tool_calls)} tool call(s)")
 
                 # Add the assistant's message with tool calls
                 current_messages.append({
                     "role": "assistant",
-                    "content": message.content,
+                    "content": response.content,
                     "tool_calls": [
                         {
                             "id": tc.id,
                             "type": "function",
                             "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments
+                                "name": tc.name,
+                                "arguments": json.dumps(tc.arguments) if isinstance(tc.arguments, dict) else tc.arguments
                             }
                         }
-                        for tc in message.tool_calls
+                        for tc in response.tool_calls
                     ]
                 })
 
                 # Execute each tool call
-                for tool_call in message.tool_calls:
-                    tool_name = tool_call.function.name
-                    try:
-                        arguments = json.loads(tool_call.function.arguments)
-                    except json.JSONDecodeError:
-                        arguments = {}
+                for tc in response.tool_calls:
+                    tool_name = tc.name
+                    arguments = tc.arguments if isinstance(tc.arguments, dict) else {}
 
                     logger.info(f"Executing tool '{tool_name}' with args: {arguments}")
 
@@ -420,14 +417,14 @@ def process_ai_response_with_tools(openai_client, messages: List[Dict], model: s
                     # Add tool result
                     current_messages.append({
                         "role": "tool",
-                        "tool_call_id": tool_call.id,
+                        "tool_call_id": tc.id,
                         "content": tool_result
                     })
 
                 continue
 
             # No tool calls - final response
-            return message.content or ""
+            return response.content or ""
 
         except Exception as e:
             logger.error(f"Error in tool-enabled AI response: {e}")

@@ -36,6 +36,60 @@ SESSIONS_DIR = BASE_DIR / "data" / "sessions"
 # Default profile picture for AI Agent messages
 AI_AGENT_PROFILE_PIC = "/static/images/ai-agent.svg"
 
+
+def _is_browser_connected(page, context) -> bool:
+    """
+    Check if the browser/page is still connected and responsive.
+    Returns True if browser is working, False if disconnected.
+    """
+    try:
+        if page is None or context is None:
+            return False
+        # Try a simple operation that will fail if browser is disconnected
+        # Checking if page is closed is lightweight
+        if page.is_closed():
+            return False
+        # Try to get page title as a connectivity test
+        page.title()
+        return True
+    except Exception:
+        return False
+
+
+def _media_url_to_path(file_url: str) -> Path:
+    """
+    Convert a media URL to an absolute file system path.
+    Works correctly on all operating systems (Windows, macOS, Linux).
+
+    Args:
+        file_url: URL like '/media/bot_1/chat_abc/image.jpg'
+
+    Returns:
+        Absolute Path object to the file
+    """
+    from urllib.parse import unquote
+
+    # Decode URL encoding (e.g., %20 -> space)
+    decoded_url = unquote(file_url)
+
+    # Remove the /media/ prefix and split into path components
+    # URLs always use forward slashes regardless of OS
+    if decoded_url.startswith('/media/'):
+        relative_parts = decoded_url[7:].split('/')  # Skip '/media/'
+    elif decoded_url.startswith('media/'):
+        relative_parts = decoded_url[6:].split('/')  # Skip 'media/'
+    else:
+        relative_parts = decoded_url.split('/')
+
+    # Build the path using pathlib (handles OS-specific separators)
+    file_path = SESSIONS_DIR
+    for part in relative_parts:
+        if part:  # Skip empty parts
+            file_path = file_path / part
+
+    return file_path
+
+
 # Global storage for Playwright pages (for manual message sending)
 # Maps bot_profile_id -> page object
 _bot_pages: Dict[int, Any] = {}
@@ -930,26 +984,62 @@ def _get_system_timezone() -> tuple:
                                 "Eastern Standard Time": "America/New_York",
                                 "GMT Standard Time": "Europe/London",
                                 "Central European Standard Time": "Europe/Paris",
+                                "W. Europe Standard Time": "Europe/Berlin",
+                                "Romance Standard Time": "Europe/Paris",
                                 "Arabian Standard Time": "Asia/Dubai",
+                                "Arab Standard Time": "Asia/Riyadh",
                                 "India Standard Time": "Asia/Kolkata",
                                 "China Standard Time": "Asia/Shanghai",
                                 "Singapore Standard Time": "Asia/Singapore",
                                 "Tokyo Standard Time": "Asia/Tokyo",
+                                "Korea Standard Time": "Asia/Seoul",
+                                "AUS Eastern Standard Time": "Australia/Sydney",
+                                "New Zealand Standard Time": "Pacific/Auckland",
                             }
                             tz_name = win_to_iana.get(tz_name, None)
                         except Exception:
                             pass
-                    else:
-                        # Unix: try /etc/timezone or /etc/localtime
+                    elif sys.platform == 'darwin':
+                        # macOS: check multiple possible locations
                         try:
-                            if os.path.exists('/etc/timezone'):
-                                with open('/etc/timezone', 'r') as f:
-                                    tz_name = f.read().strip()
-                            elif os.path.exists('/etc/localtime'):
-                                import os.path
-                                tz_path = os.path.realpath('/etc/localtime')
-                                if '/zoneinfo/' in tz_path:
-                                    tz_name = tz_path.split('/zoneinfo/')[-1]
+                            # Method 1: /etc/localtime symlink
+                            localtime_path = Path('/etc/localtime')
+                            if localtime_path.is_symlink():
+                                tz_path = str(localtime_path.resolve())
+                                # Extract timezone from path like /var/db/timezone/zoneinfo/America/New_York
+                                for marker in ['/zoneinfo/', '/share/zoneinfo/']:
+                                    if marker in tz_path:
+                                        tz_name = tz_path.split(marker)[-1]
+                                        break
+                            # Method 2: Read from system preferences (if above fails)
+                            if not tz_name:
+                                import subprocess
+                                result = subprocess.run(
+                                    ['systemsetup', '-gettimezone'],
+                                    capture_output=True, text=True, timeout=5
+                                )
+                                if result.returncode == 0:
+                                    # Output: "Time Zone: America/New_York"
+                                    output = result.stdout.strip()
+                                    if 'Time Zone:' in output:
+                                        tz_name = output.split('Time Zone:')[-1].strip()
+                        except Exception:
+                            pass
+                    else:
+                        # Linux/Unix: try /etc/timezone or /etc/localtime
+                        try:
+                            etc_timezone = Path('/etc/timezone')
+                            etc_localtime = Path('/etc/localtime')
+
+                            if etc_timezone.exists():
+                                tz_name = etc_timezone.read_text().strip()
+                            elif etc_localtime.exists():
+                                tz_path = str(etc_localtime.resolve())
+                                # Extract timezone from path like /usr/share/zoneinfo/America/New_York
+                                for marker in ['/zoneinfo/', '/share/zoneinfo/']:
+                                    if marker in tz_path:
+                                        tz_name = tz_path.split(marker)[-1]
+                                        break
                         except Exception:
                             pass
 
@@ -1265,12 +1355,12 @@ def _parse_whatsapp_timestamp(full_timestamp: str, fallback_time: str = None, ti
     return None
 
 
-def _analyze_image_with_ai(openai_client, file_path: str, file_type: str, user_message: str = "") -> str:
+def _analyze_image_with_ai(ai_provider, file_path: str, file_type: str, user_message: str = "") -> str:
     """
-    Analyze an image using OpenAI Vision and return a text description.
+    Analyze an image using AI vision and return a text description.
 
     Args:
-        openai_client: OpenAI client instance
+        ai_provider: AI provider instance (supports vision check)
         file_path: Path to the image file
         file_type: MIME type of the image
         user_message: Optional user's message accompanying the image
@@ -1282,6 +1372,9 @@ def _analyze_image_with_ai(openai_client, file_path: str, file_type: str, user_m
     from pathlib import Path
 
     try:
+        if not ai_provider.supports_vision:
+            return "[Image received - AI provider does not support image analysis]"
+
         path = Path(file_path)
         if not path.exists():
             logger.warning(f"Image file not found for analysis: {file_path}")
@@ -1297,29 +1390,14 @@ def _analyze_image_with_ai(openai_client, file_path: str, file_type: str, user_m
         if user_message:
             analysis_prompt = f"The user sent this image with the message: '{user_message}'. Describe what's in the image in 2-3 sentences, focusing on details relevant to their message."
 
-        # Call OpenAI Vision API
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",  # Use mini for cost efficiency on analysis
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": analysis_prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{file_type};base64,{image_base64}",
-                                "detail": "low"  # Use low detail for faster/cheaper analysis
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=200,
-            temperature=0.3
+        response = ai_provider.analyze_image(
+            image_data=f"data:{file_type};base64,{image_base64}",
+            prompt=analysis_prompt,
+            detail="low",
+            max_tokens=200
         )
 
-        analysis = response.choices[0].message.content
+        analysis = response.content
         logger.info(f"Image analysis completed: {analysis[:100]}...")
         return analysis
 
@@ -1361,26 +1439,39 @@ def _extract_document_text(file_path: str, file_type: str, max_chars: int = 5000
         # PDF files
         if file_type == 'application/pdf' or file_ext == '.pdf':
             try:
-                import PyPDF2
+                # Try pypdf first (successor to PyPDF2)
+                from pypdf import PdfReader
                 with open(file_path, 'rb') as f:
-                    reader = PyPDF2.PdfReader(f)
+                    reader = PdfReader(f)
                     text_parts = []
                     for page in reader.pages[:10]:  # Limit to first 10 pages
                         text_parts.append(page.extract_text() or '')
                     text_content = '\n'.join(text_parts)
-                logger.info(f"Extracted {len(text_content)} chars from PDF")
+                logger.info(f"Extracted {len(text_content)} chars from PDF using pypdf")
             except ImportError:
-                logger.warning("PyPDF2 not installed, trying pdfplumber...")
+                logger.warning("pypdf not installed, trying PyPDF2...")
                 try:
-                    import pdfplumber
-                    with pdfplumber.open(file_path) as pdf:
+                    import PyPDF2
+                    with open(file_path, 'rb') as f:
+                        reader = PyPDF2.PdfReader(f)
                         text_parts = []
-                        for page in pdf.pages[:10]:
+                        for page in reader.pages[:10]:
                             text_parts.append(page.extract_text() or '')
                         text_content = '\n'.join(text_parts)
+                    logger.info(f"Extracted {len(text_content)} chars from PDF using PyPDF2")
                 except ImportError:
-                    logger.error("No PDF library available (install PyPDF2 or pdfplumber)")
-                    return None
+                    logger.warning("PyPDF2 not installed, trying pdfplumber...")
+                    try:
+                        import pdfplumber
+                        with pdfplumber.open(file_path) as pdf:
+                            text_parts = []
+                            for page in pdf.pages[:10]:
+                                text_parts.append(page.extract_text() or '')
+                            text_content = '\n'.join(text_parts)
+                        logger.info(f"Extracted {len(text_content)} chars from PDF using pdfplumber")
+                    except ImportError:
+                        logger.error("No PDF library available (install pypdf, PyPDF2, or pdfplumber)")
+                        return None
 
         # Word documents (.docx)
         elif file_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1494,16 +1585,16 @@ def _extract_document_text(file_path: str, file_type: str, max_chars: int = 5000
         return text_content.strip() if text_content else None
 
     except Exception as e:
-        logger.error(f"Error extracting document text: {e}")
+        logger.error(f"Error extracting document text from {file_path}: {e}", exc_info=True)
         return None
 
 
-def _analyze_document_with_ai(openai_client, file_path: str, file_type: str, user_message: str = "") -> str:
+def _analyze_document_with_ai(ai_provider, file_path: str, file_type: str, user_message: str = "") -> str:
     """
     Analyze a document using AI and return a summary.
 
     Args:
-        openai_client: OpenAI client instance
+        ai_provider: AI provider instance
         file_path: Path to the document file
         file_type: MIME type of the document
         user_message: Optional user's message accompanying the document
@@ -1512,11 +1603,16 @@ def _analyze_document_with_ai(openai_client, file_path: str, file_type: str, use
         AI-generated summary/analysis of the document
     """
     try:
+        logger.info(f"Document analysis starting: file_path={file_path}, file_type={file_type}")
+
         # Extract text from document
         text_content = _extract_document_text(file_path, file_type)
 
         if not text_content:
+            logger.warning(f"Document analysis failed: No text could be extracted from {file_path}")
             return None
+
+        logger.info(f"Document text extracted: {len(text_content)} characters")
 
         # Build the analysis prompt
         if user_message:
@@ -1532,17 +1628,13 @@ Provide a concise summary (2-4 sentences) of this document, focusing on the key 
 Document content:
 {text_content}"""
 
-        # Call OpenAI API for analysis
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": analysis_prompt}
-            ],
+        response = ai_provider.chat_completion(
+            messages=[{"role": "user", "content": analysis_prompt}],
             max_tokens=300,
             temperature=0.3
         )
 
-        analysis = response.choices[0].message.content
+        analysis = response.content
         logger.info(f"Document analysis completed: {analysis[:100]}...")
         return analysis
 
@@ -1551,14 +1643,14 @@ Document content:
         return None
 
 
-def _analyze_media_with_ai(openai_client, file_path: str, file_type: str, user_message: str = "") -> str:
+def _analyze_media_with_ai(ai_provider, file_path: str, file_type: str, user_message: str = "") -> str:
     """
     Analyze any media file (image, document, etc.) and return a description/summary.
 
     Routes to appropriate analyzer based on file type.
 
     Args:
-        openai_client: OpenAI client instance
+        ai_provider: AI provider instance
         file_path: Path to the media file
         file_type: MIME type of the file
         user_message: Optional user's message accompanying the file
@@ -1567,9 +1659,9 @@ def _analyze_media_with_ai(openai_client, file_path: str, file_type: str, user_m
         AI-generated analysis of the media
     """
     if file_type.startswith('image/'):
-        return _analyze_image_with_ai(openai_client, file_path, file_type, user_message)
+        return _analyze_image_with_ai(ai_provider, file_path, file_type, user_message)
     else:
-        return _analyze_document_with_ai(openai_client, file_path, file_type, user_message)
+        return _analyze_document_with_ai(ai_provider, file_path, file_type, user_message)
 
 
 def _build_openai_message(msg, sender_prefix: str = None, include_image: bool = False) -> dict:
@@ -1609,10 +1701,7 @@ def _build_openai_message(msg, sender_prefix: str = None, include_image: bool = 
         if include_image or not has_analysis:
             logger.info(f"_build_openai_message: Including actual image - file_url={msg.file_url}")
             try:
-                base_dir = Path(__file__).resolve().parent.parent.parent
-                from urllib.parse import unquote
-                relative_path = unquote(msg.file_url.replace('/media/', 'data/sessions/'))
-                file_path = base_dir / relative_path
+                file_path = _media_url_to_path(msg.file_url)
 
                 if file_path.exists():
                     with open(file_path, 'rb') as f:
@@ -1759,7 +1848,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
     from playwright.sync_api import sync_playwright
     from app.database import get_db_session, BotProfile, Conversation, Message, ActivityLog
     from app.auth.utils import decrypt_string
-    from openai import OpenAI
+    from app.ai.factory import get_ai_provider
     from datetime import datetime, timedelta  # Import at function start to avoid scoping issues
     import time
 
@@ -1777,9 +1866,13 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
             api_key = config['openai_api_key']
         else:
             api_key = decrypt_string(config['openai_api_key_encrypted'])
-        openai_client = OpenAI(api_key=api_key)
+        ai_provider = get_ai_provider(
+            config.get('ai_provider', 'openai'),
+            api_key,
+            model=config.get('openai_model')
+        )
 
-        print(f"Bot {bot_profile_id}: OpenAI client initialized, launching browser...", flush=True)
+        print(f"Bot {bot_profile_id}: AI provider ({config.get('ai_provider', 'openai')}) initialized, launching browser...", flush=True)
         notify_status({"status": "launching", "message": "Launching browser..."})
 
         playwright = sync_playwright().start()
@@ -1918,6 +2011,28 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
         else:
             page = context.new_page()
         print(f"Bot {bot_profile_id}: Browser page ready", flush=True)
+
+        # Mark browser as connected and record start time for auto-restart
+        instance.browser_connected = True
+        instance.browser_started_at = datetime.now()
+
+        # Minimize the browser window to avoid covering the screen
+        # Uses CDP (Chrome DevTools Protocol) to set window state
+        try:
+            cdp = context.new_cdp_session(page)
+            # Get the window ID first
+            window_info = cdp.send("Browser.getWindowForTarget")
+            window_id = window_info.get("windowId")
+            if window_id:
+                # Minimize the window
+                cdp.send("Browser.setWindowBounds", {
+                    "windowId": window_id,
+                    "bounds": {"windowState": "minimized"}
+                })
+                print(f"Bot {bot_profile_id}: Browser window minimized", flush=True)
+        except Exception as e:
+            # Non-fatal - browser will just remain visible
+            print(f"Bot {bot_profile_id}: Could not minimize browser window: {e}", flush=True)
 
         print(f"Bot {bot_profile_id}: Loading WhatsApp Web...", flush=True)
         notify_status({"status": "loading", "message": "Loading WhatsApp Web..."})
@@ -2067,116 +2182,272 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
             if phone_info:
                 account_info['phone'] = phone_info
 
-            # Extract name from Profile section in Settings
+            # Extract name from Profile section by clicking on the Profile navbar button
             try:
                 # Press Escape first to reset any open panels
                 page.keyboard.press('Escape')
                 page.wait_for_timeout(500)
 
-                # Click the menu button (three dots) or use keyboard shortcut
-                page.keyboard.press('Control+Alt+,')
-                page.wait_for_timeout(1500)
-
-                # Click on profile section at top of settings
-                page.evaluate('''() => {
-                    // Look for the profile section in settings menu
-                    const profileBtn = document.querySelector('[data-testid="mi-profile"]');
+                # Click the Profile button in the navbar (aria-label="Profile", data-navbar-item="true")
+                # This works for both Business and Personal WhatsApp accounts
+                profile_clicked = page.evaluate('''() => {
+                    // Look for the Profile button in the navbar
+                    const profileBtn = document.querySelector('button[aria-label="Profile"][data-navbar-item="true"]');
                     if (profileBtn) {
                         profileBtn.click();
-                        return true;
+                        return {result: 'navbar_profile', hasImg: !!profileBtn.querySelector('img')};
                     }
-                    // Fallback: click on first menu item (usually profile)
-                    const menuItems = document.querySelectorAll('[role="button"]');
-                    for (const item of menuItems) {
-                        const rect = item.getBoundingClientRect();
-                        if (rect.top > 150 && rect.top < 350 && rect.left < 400) {
-                            item.click();
-                            return true;
-                        }
+
+                    // Fallback: try aria-label="Profile" without data-navbar-item
+                    const profileBtnAlt = document.querySelector('button[aria-label="Profile"]');
+                    if (profileBtnAlt) {
+                        profileBtnAlt.click();
+                        return {result: 'aria_profile', hasImg: !!profileBtnAlt.querySelector('img')};
                     }
-                    return false;
+
+                    return {result: null};
                 }''')
+
+                click_result = profile_clicked.get('result') if isinstance(profile_clicked, dict) else profile_clicked
+                print(f"Bot {bot_profile_id}: Profile click result: {click_result}", flush=True)
+                logger.info(f"Bot {bot_profile_id}: Profile click result: {click_result}")
+
+                # Wait for the profile panel to open
                 page.wait_for_timeout(1500)
 
                 # Now extract the name and profile pic from profile screen
+                # This handles both Personal and Business WhatsApp profiles
                 profile_data = page.evaluate('''() => {
-                    const result = {};
+                    const result = { debug: {} };
 
-                    // Look for the editable name field
-                    // In WhatsApp profile, there's a "Name" section with editable content
-                    const editableDivs = document.querySelectorAll('div[contenteditable="true"]');
-                    for (const div of editableDivs) {
-                        const text = div.textContent?.trim();
-                        if (text && text.length > 0 && text.length < 50) {
-                            // Check if this is in a "Name" section (not "About")
-                            const parent = div.closest('[data-testid]') || div.parentElement?.parentElement;
-                            const parentText = parent?.textContent || '';
-                            // Skip if it contains "About" indicators
-                            if (!parentText.includes('About') || parentText.indexOf('Name') < parentText.indexOf('About')) {
-                                result.name = text;
-                                break;
+                    // Check if profile panel is open by looking for "Profile" header or close button
+                    const headers = document.querySelectorAll('h2, header span, [class*="header"] span, header');
+                    let profilePanelOpen = false;
+                    for (const h of headers) {
+                        const text = h.textContent?.trim() || '';
+                        if (text === 'Profile' || text.includes('Business profile') || text.includes('Edit profile')) {
+                            profilePanelOpen = true;
+                            break;
+                        }
+                    }
+                    // Also check for close button which indicates a panel is open
+                    if (!profilePanelOpen) {
+                        const closeBtn = document.querySelector('[data-icon="close"], [data-icon="close-refreshed"], [aria-label="Close"]');
+                        if (closeBtn) {
+                            const rect = closeBtn.getBoundingClientRect();
+                            // Close button should be in a slide-out panel (right side or large left offset)
+                            if (rect.left > 200 || rect.right > 300) {
+                                profilePanelOpen = true;
                             }
                         }
                     }
+                    result.debug.profilePanelOpen = profilePanelOpen;
 
-                    // Try looking for span after "Name" label
-                    if (!result.name) {
-                        const allSpans = document.querySelectorAll('span[dir="auto"]');
-                        let foundName = false;
+                    // Check if this is a Business profile by looking for "Business Information" section
+                    const pageText = document.body.innerText || '';
+                    const isBusiness = pageText.includes('Business Information') || pageText.includes('Business name') || pageText.includes('Business profile');
+                    result.is_business = isBusiness;
+                    result.debug.isBusiness = isBusiness;
+                    result.debug.hasProfileText = pageText.includes('Profile');
+                    result.debug.hasNameText = pageText.includes('Name');
+
+                    if (isBusiness) {
+                        // ===== BUSINESS WHATSAPP PROFILE =====
+                        // Business name: Look for "Business name" label and get the value span
+                        const allSpans = document.querySelectorAll('span');
+                        let foundBusinessName = false;
                         for (const span of allSpans) {
+                            const text = span.textContent?.trim();
+                            if (text === 'Business name') {
+                                foundBusinessName = true;
+                                continue;
+                            }
+                            if (foundBusinessName && text && text.length > 0 && text.length < 100) {
+                                const lower = text.toLowerCase();
+                                // Skip labels and empty values
+                                if (!['business name', 'description', 'address', 'category', 'edit'].includes(lower)) {
+                                    result.name = text;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Business phone: Look for call-refreshed icon then get phone number
+                        const callIcon = document.querySelector('[data-icon="call-refreshed"]');
+                        if (callIcon) {
+                            // Navigate up to find the container, then find the phone span
+                            let container = callIcon.closest('div[class*="x1c4vz4f"]');
+                            if (container) {
+                                // Look for span with phone number pattern
+                                const spans = container.querySelectorAll('span');
+                                for (const span of spans) {
+                                    const text = span.textContent?.trim();
+                                    // Phone numbers typically start with + and contain digits
+                                    if (text && /^\+?[\d\s\-()]+$/.test(text.replace(/\s/g, '').slice(0,20))) {
+                                        result.phone_display = text;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Business profile pic: Look for img._ao3e with WhatsApp CDN URL
+                        const profileImages = document.querySelectorAll('img._ao3e, img[src*="pps.whatsapp.net"], img[src*="cdn.whatsapp.net"]');
+                        for (const img of profileImages) {
+                            if (!img.src) continue;
+                            // Must be a real profile pic URL (not placeholder)
+                            if (img.src.includes('whatsapp.net') && !img.src.includes('default')) {
+                                const rect = img.getBoundingClientRect();
+                                // Profile image should be reasonably large
+                                if (rect.width >= 80 && rect.height >= 80) {
+                                    result.profile_pic = img.src;
+                                    break;
+                                }
+                            }
+                        }
+
+                    } else {
+                        // ===== PERSONAL WHATSAPP PROFILE =====
+                        // Name: Look for "Name" label section with copyable-text span
+                        const nameLabels = document.querySelectorAll('span');
+                        let foundName = false;
+                        for (const span of nameLabels) {
                             const text = span.textContent?.trim();
                             if (text === 'Name') {
                                 foundName = true;
                                 continue;
                             }
-                            if (foundName && text && text.length > 1 && text.length < 50) {
+                            if (foundName && text && text.length > 0 && text.length < 50) {
                                 const lower = text.toLowerCase();
-                                if (!['name', 'edit', 'about', 'phone', 'profile', 'this is not your username', 'your name'].includes(lower)) {
+                                // Skip common labels
+                                if (!['name', 'edit', 'about', 'phone', 'profile', 'this is not your username'].includes(lower)) {
                                     result.name = text;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Also try finding name in copyable-text span (more reliable)
+                        if (!result.name) {
+                            const copyableTexts = document.querySelectorAll('span.copyable-text, span._ao3e._aupe');
+                            for (const span of copyableTexts) {
+                                const text = span.textContent?.trim();
+                                if (text && text.length > 0 && text.length < 50) {
+                                    // Check if this span is in the Name section (not About)
+                                    const parentText = span.closest('div')?.parentElement?.innerText || '';
+                                    if (parentText.includes('Name') && !parentText.startsWith('About')) {
+                                        result.name = text;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Personal phone: Look for phone icon then get phone number
+                        const phoneIcon = document.querySelector('[data-icon="phone"]');
+                        if (phoneIcon) {
+                            let container = phoneIcon.closest('div[class*="x1c4vz4f"]') || phoneIcon.parentElement?.parentElement?.parentElement;
+                            if (container) {
+                                const spans = container.querySelectorAll('span');
+                                for (const span of spans) {
+                                    const text = span.textContent?.trim();
+                                    if (text && /^\+?[\d\s\-()]+$/.test(text.replace(/\s/g, '').slice(0,20))) {
+                                        result.phone_display = text;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Personal profile pic
+                        const profileImages = document.querySelectorAll('img[src*="pps.whatsapp.net"], img[src*="cdn.whatsapp.net"]');
+                        for (const img of profileImages) {
+                            if (!img.src) continue;
+                            if (!img.src.includes('default')) {
+                                const rect = img.getBoundingClientRect();
+                                if (rect.width >= 80 && rect.height >= 80 && rect.top < 400) {
+                                    result.profile_pic = img.src;
                                     break;
                                 }
                             }
                         }
                     }
 
-                    // Get "About" text (second editable field or after "About" label)
-                    const allSpans = document.querySelectorAll('span[dir="auto"]');
-                    let foundAbout = false;
-                    for (const span of allSpans) {
-                        const text = span.textContent?.trim();
-                        if (text === 'About') {
-                            foundAbout = true;
-                            continue;
-                        }
-                        if (foundAbout && text && text.length > 1 && text.length < 200) {
-                            const lower = text.toLowerCase();
-                            if (!['about', 'edit', 'phone', 'profile'].includes(lower)) {
-                                result.about = text;
+                    // Get "About" or "Description" text based on account type
+                    if (isBusiness) {
+                        // For Business: Prioritize Description, fallback to About
+                        // Get Description from input field
+                        let description = null;
+                        const descLabels = document.querySelectorAll('label');
+                        for (const label of descLabels) {
+                            if (label.textContent?.trim() === 'Description') {
+                                const input = label.parentElement?.querySelector('input');
+                                if (input && input.value && input.value.trim()) {
+                                    description = input.value.trim();
+                                }
                                 break;
                             }
                         }
-                    }
 
-                    // Get profile pic - only if we found the name (confirms we're in profile section)
-                    // Look for the large profile image in the profile edit screen
-                    if (result.name) {
-                        const profileImages = document.querySelectorAll('img');
-                        for (const img of profileImages) {
-                            if (!img.src) continue;
-                            // Must be a WhatsApp profile pic URL (not default/placeholder)
-                            if (!img.src.includes('pps.whatsapp.net')) continue;
+                        // Get About from Contact information section (look for info-refreshed icon section)
+                        let aboutText = null;
+                        const infoIcon = document.querySelector('[data-icon="info-refreshed"]');
+                        if (infoIcon) {
+                            const container = infoIcon.closest('div[class*="x1c4vz4f"]');
+                            if (container) {
+                                const spans = container.querySelectorAll('span');
+                                let foundAboutLabel = false;
+                                for (const span of spans) {
+                                    const text = span.textContent?.trim();
+                                    if (text === 'About') {
+                                        foundAboutLabel = true;
+                                        continue;
+                                    }
+                                    if (foundAboutLabel && text && text.length > 0 && text.length < 200) {
+                                        aboutText = text;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
 
-                            const rect = img.getBoundingClientRect();
-                            // Profile image in edit screen is large (>100px) and positioned at top of drawer
-                            if (rect.width >= 100 && rect.height >= 100 && rect.top < 300) {
-                                result.profile_pic = img.src;
-                                break;
+                        // Prioritize About, fallback to Description (matches Personal account behavior)
+                        result.about = aboutText || description || null;
+                    } else {
+                        // For Personal: About is a simple label/value pair
+                        const allSpans = document.querySelectorAll('span');
+                        let foundAbout = false;
+                        for (const span of allSpans) {
+                            const text = span.textContent?.trim();
+                            if (text === 'About') {
+                                foundAbout = true;
+                                continue;
+                            }
+                            if (foundAbout && text && text.length > 1 && text.length < 200) {
+                                const lower = text.toLowerCase();
+                                // Skip labels and common UI elements
+                                if (!['about', 'edit', 'phone', 'profile', 'name'].includes(lower) &&
+                                    !lower.includes('-refreshed') && !lower.includes('-icon')) {
+                                    // Skip phone numbers
+                                    const digitsOnly = text.replace(/[\s\-\(\)\+]/g, '');
+                                    if (/^\d{6,}$/.test(digitsOnly)) {
+                                        continue;
+                                    }
+                                    result.about = text;
+                                    break;
+                                }
                             }
                         }
                     }
 
                     return result;
                 }''')
+
+                # Log debug info from extraction
+                debug_info = profile_data.get('debug', {})
+                print(f"Bot {bot_profile_id}: Profile extraction debug: panelOpen={debug_info.get('profilePanelOpen')}, isBusiness={debug_info.get('isBusiness')}, hasProfileText={debug_info.get('hasProfileText')}, hasNameText={debug_info.get('hasNameText')}", flush=True)
+                print(f"Bot {bot_profile_id}: Profile data: name={profile_data.get('name')}, profile_pic={bool(profile_data.get('profile_pic'))}", flush=True)
+                logger.info(f"Bot {bot_profile_id}: Profile extraction debug: panelOpen={debug_info.get('profilePanelOpen')}, isBusiness={debug_info.get('isBusiness')}, hasProfileText={debug_info.get('hasProfileText')}, hasNameText={debug_info.get('hasNameText')}")
 
                 if profile_data.get('name'):
                     account_info['name'] = profile_data['name']
@@ -2188,6 +2459,14 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                 if profile_data.get('about'):
                     account_info['about'] = profile_data['about']
 
+                if profile_data.get('phone_display'):
+                    account_info['phone_display'] = profile_data['phone_display']
+
+                if profile_data.get('is_business'):
+                    account_info['account_type'] = 'business'
+
+                logger.info(f"Bot {bot_profile_id}: Profile data extracted: name={profile_data.get('name')}, phone_display={profile_data.get('phone_display')}, has_pic={bool(profile_data.get('profile_pic'))}, is_business={profile_data.get('is_business')}")
+
                 # Close panels and return to main screen
                 page.keyboard.press('Escape')
                 page.wait_for_timeout(300)
@@ -2195,7 +2474,8 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                 page.wait_for_timeout(300)
 
             except Exception as e:
-                logger.debug(f"Bot {bot_profile_id}: Profile extraction failed: {e}")
+                print(f"Bot {bot_profile_id}: Profile extraction failed: {e}", flush=True)
+                logger.warning(f"Bot {bot_profile_id}: Profile extraction failed: {e}")
                 # Make sure to close any open panels
                 try:
                     page.keyboard.press('Escape')
@@ -2204,9 +2484,11 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                 except:
                     pass
 
+            print(f"Bot {bot_profile_id}: Extracted account info: {account_info}", flush=True)
             logger.info(f"Bot {bot_profile_id}: Extracted account info: {account_info}")
 
         except Exception as e:
+            print(f"Bot {bot_profile_id}: Could not extract account info: {e}", flush=True)
             logger.warning(f"Bot {bot_profile_id}: Could not extract account info: {e}")
 
         with get_db_session() as db:
@@ -2341,12 +2623,16 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
             "message": "Bot is running and listening for messages...",
             "account_info": {
                 "phone": account_info.get('phone'),
+                "phone_display": account_info.get('phone_display'),  # Formatted phone from profile
                 "name": account_info.get('name'),
                 "push_name": account_info.get('push_name'),
                 "profile_pic": account_info.get('profile_pic'),
                 "about": account_info.get('about'),
                 "account_type": account_info.get('account_type')
-            }
+            },
+            "ai_response_enabled": instance.ai_response_enabled,
+            "history_sync_active": instance.history_sync_active,
+            "history_sync_progress": instance.history_sync_progress,
         }
         notify_status(status_data)
 
@@ -2391,8 +2677,164 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
 
         while instance.is_running:
             try:
+                # === Check browser connectivity ===
+                if not _is_browser_connected(page, context):
+                    instance.browser_connected = False
+                    instance.browser_recovery_attempts += 1
+                    logger.warning(f"Bot {bot_profile_id}: Browser disconnected! Recovery attempt {instance.browser_recovery_attempts}/{instance.max_browser_recovery_attempts}")
+                    print(f"Bot {bot_profile_id}: Browser disconnected! Recovery attempt {instance.browser_recovery_attempts}/{instance.max_browser_recovery_attempts}", flush=True)
+
+                    if instance.browser_recovery_attempts > instance.max_browser_recovery_attempts:
+                        logger.error(f"Bot {bot_profile_id}: Max browser recovery attempts exceeded. Stopping bot.")
+                        notify_status({
+                            "status": "error",
+                            "message": "Browser closed unexpectedly. Max recovery attempts exceeded. Please restart the bot.",
+                            "browser_connected": False
+                        })
+                        instance.is_running = False
+                        break
+
+                    # Notify user about disconnection
+                    notify_status({
+                        "status": "reconnecting",
+                        "message": f"Browser disconnected. Attempting recovery ({instance.browser_recovery_attempts}/{instance.max_browser_recovery_attempts})...",
+                        "browser_connected": False
+                    })
+
+                    # Attempt to recover - close old context and relaunch
+                    try:
+                        if context:
+                            try:
+                                context.close()
+                            except Exception:
+                                pass
+
+                        # Relaunch browser with same settings
+                        headless = config.get('headless', False)
+                        context_options = {
+                            "headless": headless,
+                            "viewport": {"width": 1280, "height": 900},
+                            "args": [
+                                "--disable-blink-features=AutomationControlled",
+                                "--no-sandbox"
+                            ]
+                        }
+
+                        # Add proxy if configured
+                        if config.get('proxy_enabled') and config.get('proxy_url'):
+                            proxy_config = {"server": config['proxy_url']}
+                            if config.get('proxy_username'):
+                                proxy_config["username"] = config['proxy_username']
+                            if config.get('proxy_password'):
+                                proxy_config["password"] = config['proxy_password']
+                            context_options["proxy"] = proxy_config
+
+                        context = playwright.chromium.launch_persistent_context(
+                            user_data_dir=session_path,
+                            **context_options
+                        )
+
+                        context.add_init_script('''
+                            Object.defineProperty(navigator, 'webdriver', {
+                                get: () => undefined
+                            });
+                        ''')
+
+                        if context.pages:
+                            page = context.pages[0]
+                        else:
+                            page = context.new_page()
+
+                        # Store page reference
+                        with _bot_pages_lock:
+                            _bot_pages[bot_profile_id] = page
+
+                        # Minimize the browser window
+                        try:
+                            cdp = context.new_cdp_session(page)
+                            window_info = cdp.send("Browser.getWindowForTarget")
+                            window_id = window_info.get("windowId")
+                            if window_id:
+                                cdp.send("Browser.setWindowBounds", {
+                                    "windowId": window_id,
+                                    "bounds": {"windowState": "minimized"}
+                                })
+                        except Exception:
+                            pass
+
+                        # Reload WhatsApp Web
+                        page.goto("https://web.whatsapp.com", wait_until="networkidle")
+
+                        # Wait for reconnection (session should auto-login)
+                        reconnected = False
+                        for i in range(30):  # Wait up to 30 seconds
+                            if not instance.is_running:
+                                break
+                            auth_selectors = [
+                                '[data-testid="chat-list"]',
+                                '[data-testid="chatlist-header"]',
+                                '[aria-label="Chat list"]',
+                                '[data-testid="side"]'
+                            ]
+                            for selector in auth_selectors:
+                                if page.query_selector(selector):
+                                    reconnected = True
+                                    break
+                            if reconnected:
+                                break
+                            time.sleep(1)
+
+                        if reconnected:
+                            instance.browser_connected = True
+                            instance.browser_started_at = datetime.now()  # Reset timer after recovery
+                            instance.browser_recovery_attempts = 0
+                            instance.whatsapp_connected = True
+                            logger.info(f"Bot {bot_profile_id}: Browser recovered successfully!")
+                            print(f"Bot {bot_profile_id}: Browser recovered successfully!", flush=True)
+                            notify_status({
+                                "status": "running",
+                                "message": "Browser recovered. Bot is running.",
+                                "browser_connected": True,
+                                "whatsapp_connected": True
+                            })
+                            time.sleep(2)
+                            continue
+                        else:
+                            # Might need QR scan again
+                            logger.warning(f"Bot {bot_profile_id}: Browser recovered but WhatsApp needs re-authentication")
+                            notify_status({
+                                "status": "waiting_qr",
+                                "message": "Browser recovered but WhatsApp session expired. Please scan QR code.",
+                                "browser_connected": True,
+                                "whatsapp_connected": False
+                            })
+                            # Let the loop continue - user needs to scan QR
+                            time.sleep(5)
+                            continue
+
+                    except Exception as recovery_error:
+                        logger.error(f"Bot {bot_profile_id}: Browser recovery failed: {recovery_error}")
+                        print(f"Bot {bot_profile_id}: Browser recovery failed: {recovery_error}", flush=True)
+                        time.sleep(5)
+                        continue
+                else:
+                    # Browser is connected - reset recovery counter
+                    if instance.browser_recovery_attempts > 0:
+                        instance.browser_recovery_attempts = 0
+                    instance.browser_connected = True
+
                 loop_count += 1
                 current_time = time.time()
+
+                # === History sync takes EXCLUSIVE control of the page ===
+                if instance.history_sync_requested and not instance.history_sync_active:
+                    _run_full_history_sync(page, instance, bot_profile_id, notify_status)
+                    time.sleep(2)
+                    continue
+
+                if instance.history_sync_active:
+                    time.sleep(1)
+                    continue
 
                 # Cleanup processed_messages set if it gets too large
                 if len(processed_messages) > MAX_PROCESSED_MESSAGES:
@@ -2400,7 +2842,149 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                     processed_messages.clear()
                     logger.info(f"Bot {bot_profile_id}: Cleared processed_messages set (was > {MAX_PROCESSED_MESSAGES})")
 
+                # Cleanup processed_chats_cooldown dict to prevent memory leak
+                # This dict tracks when each chat was last processed for rate limiting
+                MAX_COOLDOWN_ENTRIES = 500
+                if len(processed_chats_cooldown) > MAX_COOLDOWN_ENTRIES:
+                    processed_chats_cooldown.clear()
+                    logger.info(f"Bot {bot_profile_id}: Cleared processed_chats_cooldown dict (was > {MAX_COOLDOWN_ENTRIES})")
+
+                # Cleanup last_processed_message_hash dict to prevent memory leak
+                # This dict tracks last message hash per chat for deduplication
+                MAX_HASH_ENTRIES = 500
+                if len(last_processed_message_hash) > MAX_HASH_ENTRIES:
+                    last_processed_message_hash.clear()
+                    logger.info(f"Bot {bot_profile_id}: Cleared last_processed_message_hash dict (was > {MAX_HASH_ENTRIES})")
+
+                # Auto browser restart for memory management
+                # Check if browser has been running longer than auto_restart_hours
+                if instance.browser_started_at and instance.auto_restart_hours > 0:
+                    hours_running = (datetime.now() - instance.browser_started_at).total_seconds() / 3600
+                    if hours_running >= instance.auto_restart_hours:
+                        logger.info(f"Bot {bot_profile_id}: Auto-restarting browser after {hours_running:.1f} hours for memory management")
+                        print(f"Bot {bot_profile_id}: Auto-restarting browser after {hours_running:.1f} hours...", flush=True)
+                        notify_status({
+                            "status": "restarting",
+                            "message": f"Auto-restarting browser for memory management ({hours_running:.1f}h uptime)..."
+                        })
+
+                        try:
+                            # Close current browser
+                            instance.browser_connected = False
+                            context.close()
+                            playwright.stop()
+                            logger.info(f"Bot {bot_profile_id}: Browser closed for auto-restart")
+
+                            # Small delay before relaunch
+                            time.sleep(3)
+
+                            # Relaunch browser with same settings
+                            playwright = sync_playwright().start()
+                            session_dir = f"data/sessions/bot_{bot_profile_id}"
+                            os.makedirs(session_dir, exist_ok=True)
+
+                            browser_args = [
+                                '--disable-blink-features=AutomationControlled',
+                                '--disable-infobars',
+                                '--no-sandbox',
+                                '--disable-dev-shm-usage',
+                                '--disable-gpu',
+                            ]
+
+                            context = playwright.chromium.launch_persistent_context(
+                                user_data_dir=session_dir,
+                                headless=False,
+                                args=browser_args,
+                                viewport={"width": 1280, "height": 800},
+                                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                            )
+
+                            if context.pages:
+                                page = context.pages[0]
+                            else:
+                                page = context.new_page()
+
+                            # Store page reference
+                            with _bot_pages_lock:
+                                _bot_pages[bot_profile_id] = page
+
+                            # Minimize browser window
+                            try:
+                                cdp = context.new_cdp_session(page)
+                                window_info = cdp.send("Browser.getWindowForTarget")
+                                window_id = window_info.get("windowId")
+                                if window_id:
+                                    cdp.send("Browser.setWindowBounds", {
+                                        "windowId": window_id,
+                                        "bounds": {"windowState": "minimized"}
+                                    })
+                            except Exception:
+                                pass
+
+                            # Navigate to WhatsApp Web
+                            page.goto("https://web.whatsapp.com", wait_until="networkidle")
+
+                            # Wait for WhatsApp to reconnect (session should auto-login)
+                            reconnected = False
+                            for i in range(30):
+                                if not instance.is_running:
+                                    break
+                                auth_selectors = [
+                                    '[data-testid="chat-list"]',
+                                    '[data-testid="chatlist-header"]',
+                                    '[aria-label="Chat list"]',
+                                    '[data-testid="side"]'
+                                ]
+                                for selector in auth_selectors:
+                                    if page.query_selector(selector):
+                                        reconnected = True
+                                        break
+                                if reconnected:
+                                    break
+                                time.sleep(1)
+
+                            if reconnected:
+                                instance.browser_connected = True
+                                instance.browser_started_at = datetime.now()
+                                instance.whatsapp_connected = True
+                                logger.info(f"Bot {bot_profile_id}: Browser auto-restart successful!")
+                                print(f"Bot {bot_profile_id}: Browser auto-restart successful!", flush=True)
+                                notify_status({
+                                    "status": "running",
+                                    "message": "Browser restarted successfully. Bot is running.",
+                                    "browser_connected": True,
+                                    "whatsapp_connected": True
+                                })
+                            else:
+                                logger.warning(f"Bot {bot_profile_id}: Browser restarted but WhatsApp needs re-authentication")
+                                notify_status({
+                                    "status": "waiting_qr",
+                                    "message": "Browser restarted but WhatsApp session expired. Please scan QR code.",
+                                    "browser_connected": True,
+                                    "whatsapp_connected": False
+                                })
+
+                            # Clear memory tracking dicts after restart
+                            processed_messages.clear()
+                            processed_chats_cooldown.clear()
+                            last_processed_message_hash.clear()
+                            logger.info(f"Bot {bot_profile_id}: Cleared all memory tracking dicts after browser restart")
+
+                            time.sleep(2)
+                            continue
+
+                        except Exception as restart_error:
+                            logger.error(f"Bot {bot_profile_id}: Browser auto-restart failed: {restart_error}")
+                            print(f"Bot {bot_profile_id}: Browser auto-restart failed: {restart_error}", flush=True)
+                            notify_status({
+                                "status": "error",
+                                "message": f"Browser auto-restart failed: {restart_error}"
+                            })
+                            time.sleep(5)
+                            continue
+
                 # Process any pending outgoing messages (manual sends from dashboard)
+                # These ALWAYS run regardless of AI toggle state
                 try:
                     _process_outgoing_messages(page, bot_profile_id)
                 except Exception as e:
@@ -2411,6 +2995,11 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                     _process_outgoing_files(page, bot_profile_id)
                 except Exception as e:
                     logger.error(f"Bot {bot_profile_id}: Error processing outgoing files: {e}")
+
+                # === Only check unreads + AI respond if toggle is ON ===
+                if not instance.ai_response_enabled:
+                    time.sleep(2)
+                    continue
 
                 if loop_count % 15 == 1:  # Log every 30 seconds (15 * 2 sec sleep)
                     # Debug: check page state
@@ -3346,7 +3935,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
 
                                             _process_message_sync(
                                                 page=page,
-                                                openai_client=openai_client,
+                                                ai_provider=ai_provider,
                                                 config=config,
                                                 bot_profile_id=bot_profile_id,
                                                 chat_name=chat_name,
@@ -3355,7 +3944,8 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                                 message=message_content,
                                                 chat_data_id=chat_data_id,
                                                 file_info=file_info,
-                                                whatsapp_timestamp=whatsapp_timestamp
+                                                whatsapp_timestamp=whatsapp_timestamp,
+                                                whatsapp_message_id=msg_whatsapp_id
                                             )
 
                                             # Close the chat window after processing
@@ -5618,8 +6208,8 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                         logger.info(f"Bot {bot_profile_id}: SKIPPING historical message: {text[:30]}...")
                                         continue
 
-                                    # New message - add to processing queue (includes timestamp for timezone detection)
-                                    new_messages.append((text, sender, sender_pic, file_info, sender_whatsapp_id, whatsapp_timestamp))
+                                    # New message - add to processing queue (includes timestamp and message ID for proper storage)
+                                    new_messages.append((text, sender, sender_pic, file_info, sender_whatsapp_id, whatsapp_timestamp, msg_whatsapp_id))
 
                                 # Process ALL new incoming messages (store in DB)
                                 # But only generate AI response for the LAST message to avoid spam
@@ -5645,7 +6235,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                         logger.info(f"Bot {bot_profile_id}: Pre-syncing history for {chat_name} before storing new messages")
                                         _sync_conversation_history_on_demand(page, bot_profile_id, conv.id, chat_name)
 
-                                    for idx, (text, sender, sender_pic, file_info, sender_wa_id, whatsapp_ts) in enumerate(new_messages):
+                                    for idx, (text, sender, sender_pic, file_info, sender_wa_id, whatsapp_ts, msg_wa_id) in enumerate(new_messages):
                                         is_last_message = (idx == len(new_messages) - 1)
 
                                         # Clean placeholder text for media-only messages
@@ -5654,11 +6244,11 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                         if file_info and re.match(r'^\[(image|video|audio|document|sticker|media)\]$', text, re.IGNORECASE):
                                             message_content = ''  # No caption, just media
 
-                                        logger.info(f"Bot {bot_profile_id}: Processing message {idx+1}/{len(new_messages)} from {sender or chat_name} (wa_id: {sender_wa_id}): {text[:50]}... (has_media: {bool(file_info)}, is_last: {is_last_message})")
+                                        logger.info(f"Bot {bot_profile_id}: Processing message {idx+1}/{len(new_messages)} from {sender or chat_name} (wa_id: {sender_wa_id}, msg_id: {msg_wa_id}): {text[:50]}... (has_media: {bool(file_info)}, is_last: {is_last_message})")
 
                                         _process_message_sync(
                                             page=page,
-                                            openai_client=openai_client,
+                                            ai_provider=ai_provider,
                                             config=config,
                                             bot_profile_id=bot_profile_id,
                                             chat_name=chat_name,
@@ -5671,7 +6261,8 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                             file_info=file_info,
                                             skip_ai_response=(not is_last_message),  # Only AI response for last msg
                                             sender_whatsapp_id=sender_wa_id,  # Sender's WhatsApp ID for tracking
-                                            whatsapp_timestamp=whatsapp_ts  # For timezone offset detection
+                                            whatsapp_timestamp=whatsapp_ts,  # For timezone offset detection and actual timestamp
+                                            whatsapp_message_id=msg_wa_id  # WhatsApp's unique message ID
                                         )
 
                                     # After processing all messages, close the chat window
@@ -5722,6 +6313,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
     finally:
         instance.is_running = False
         instance.whatsapp_connected = False
+        instance.browser_connected = False
 
         # Remove page reference
         with _bot_pages_lock:
@@ -5761,12 +6353,13 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
             db.add(log)
 
 
-def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name, is_group, sender, message, contact_profile_pic=None, sender_profile_pic=None, chat_data_id=None, file_info=None, skip_ai_response=False, sender_whatsapp_id=None, whatsapp_timestamp=None):
+def _process_message_sync(page, ai_provider, config, bot_profile_id, chat_name, is_group, sender, message, contact_profile_pic=None, sender_profile_pic=None, chat_data_id=None, file_info=None, skip_ai_response=False, sender_whatsapp_id=None, whatsapp_timestamp=None, whatsapp_message_id=None):
     """Synchronous message processing. If skip_ai_response=True, only stores the message without generating AI response.
 
     Args:
         sender_whatsapp_id: The sender's WhatsApp ID (e.g., "971524906816@c.us") for tracking unique senders.
-        whatsapp_timestamp: Raw timestamp from data-pre-plain-text (e.g., "7:13 AM, 1/20/2026") for timezone detection.
+        whatsapp_timestamp: Raw timestamp from data-pre-plain-text (e.g., "7:13 AM, 1/20/2026") for timezone detection and actual message timestamp.
+        whatsapp_message_id: WhatsApp's unique message ID for deduplication and tracking.
     """
     from app.database import get_db_session, Conversation, Message, ActivityLog, BotProfile
     import time
@@ -6027,11 +6620,26 @@ def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name
             # IMPORTANT: Skip duplicate check for media messages - each image needs its own DB entry
             if not file_info:
                 # Text-only message - check for duplicates in synced history
-                existing_synced_msg = db.query(Message).filter(
-                    Message.conversation_id == conversation.id,
-                    Message.role == 'user',
-                    Message.content == message
-                ).order_by(Message.timestamp.desc()).first()
+                # PRIMARY: Use WhatsApp message ID if available (unique per message)
+                existing_synced_msg = None
+                if whatsapp_message_id:
+                    existing_synced_msg = db.query(Message).filter(
+                        Message.conversation_id == conversation.id,
+                        Message.whatsapp_message_id == whatsapp_message_id
+                    ).first()
+                    if existing_synced_msg:
+                        logger.info(f"Bot {bot_profile_id}: Found existing message by WhatsApp ID: {whatsapp_message_id[:20]}...")
+
+                # FALLBACK: Content-based check, but ONLY for recent messages (last 5 minutes)
+                # This catches rapid duplicates but allows legitimate repeat messages (e.g., asking same question hours later)
+                if not existing_synced_msg:
+                    five_mins_ago = datetime.utcnow() - timedelta(minutes=5)
+                    existing_synced_msg = db.query(Message).filter(
+                        Message.conversation_id == conversation.id,
+                        Message.role == 'user',
+                        Message.content == message,
+                        Message.timestamp > five_mins_ago  # Only check recent messages!
+                    ).order_by(Message.timestamp.desc()).first()
 
                 if existing_synced_msg:
                     # Check if there's a response AFTER this message
@@ -6060,11 +6668,26 @@ def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name
             # Content-based duplicate check only applies to text-only messages
             if not file_info:
                 # Text-only message - check for duplicates
-                existing_msg_in_db = db.query(Message).filter(
-                    Message.conversation_id == conversation.id,
-                    Message.role == 'user',
-                    Message.content == message
-                ).order_by(Message.timestamp.desc()).first()
+                # PRIMARY: Use WhatsApp message ID if available (unique per message)
+                existing_msg_in_db = None
+                if whatsapp_message_id:
+                    existing_msg_in_db = db.query(Message).filter(
+                        Message.conversation_id == conversation.id,
+                        Message.whatsapp_message_id == whatsapp_message_id
+                    ).first()
+                    if existing_msg_in_db:
+                        logger.info(f"Bot {bot_profile_id}: Found existing message by WhatsApp ID: {whatsapp_message_id[:20]}...")
+
+                # FALLBACK: Content-based check, but ONLY for recent messages (last 5 minutes)
+                # This catches rapid duplicates but allows legitimate repeat messages (e.g., asking same question hours later)
+                if not existing_msg_in_db:
+                    five_mins_ago = datetime.utcnow() - timedelta(minutes=5)
+                    existing_msg_in_db = db.query(Message).filter(
+                        Message.conversation_id == conversation.id,
+                        Message.role == 'user',
+                        Message.content == message,
+                        Message.timestamp > five_mins_ago  # Only check recent messages!
+                    ).order_by(Message.timestamp.desc()).first()
 
                 if existing_msg_in_db:
                     # Check if there's a response AFTER this message
@@ -6129,6 +6752,23 @@ def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name
         # Clean sender_whatsapp_id - remove @c.us/@g.us/@lid suffix, keep only ID
         clean_sender_id = _normalize_sender_id(sender_whatsapp_id)
 
+        # Extract sender phone from sender_whatsapp_id if it's @c.us format (contains actual phone)
+        sender_phone_clean = None
+        if sender_whatsapp_id and '@c.us' in sender_whatsapp_id:
+            phone_match = re.search(r'(\d{8,15})@c\.us', sender_whatsapp_id)
+            if phone_match:
+                sender_phone_clean = phone_match.group(1)
+
+        # Parse the WhatsApp timestamp to get the actual message time
+        # Get bot's timezone offset for conversion
+        msg_timestamp = None
+        if whatsapp_timestamp:
+            timezone_offset = None
+            bot_profile = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+            if bot_profile:
+                timezone_offset = bot_profile.whatsapp_timezone_offset
+            msg_timestamp = _parse_whatsapp_timestamp(whatsapp_timestamp, None, timezone_offset)
+
         # Create message with file info if available (skip if already synced)
         user_msg = None
         user_msg_data = None
@@ -6140,7 +6780,10 @@ def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name
                 content=message,
                 sender_name=effective_sender_name,
                 sender_id=clean_sender_id,  # Phone number only (e.g., "971524906816")
+                sender_phone=sender_phone_clean,
                 sender_profile_pic=effective_sender_pic,
+                whatsapp_message_id=whatsapp_message_id,
+                timestamp=msg_timestamp,  # Use parsed WhatsApp timestamp instead of DB default
                 file_url=file_info.get('file_url') if file_info else None,
                 file_type=file_info.get('file_type') if file_info else None,
                 file_name=file_info.get('file_name') if file_info else None,
@@ -6170,10 +6813,7 @@ def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name
                             logger.info(f"Bot {bot_profile_id}: Using local_file_path for analysis: {file_path}")
                         else:
                             # Fallback to reconstructing path from URL (for backwards compatibility)
-                            base_dir = Path(__file__).resolve().parent.parent.parent
-                            from urllib.parse import unquote
-                            relative_path = unquote(file_url.replace('/media/', 'data/sessions/'))
-                            file_path = str(base_dir / relative_path)
+                            file_path = str(_media_url_to_path(file_url))
                             logger.info(f"Bot {bot_profile_id}: Reconstructed file_path for analysis: {file_path}")
 
                         # Verify the file exists before analyzing
@@ -6185,7 +6825,7 @@ def _process_message_sync(page, openai_client, config, bot_profile_id, chat_name
 
                         # Analyze media with AI (handles both images and documents)
                         analysis = _analyze_media_with_ai(
-                            openai_client,
+                            ai_provider,
                             file_path,
                             file_info.get('file_type'),
                             message  # Include user's message for context
@@ -6293,7 +6933,18 @@ REAL-TIME INFORMATION:
 - Always search when you're unsure or when the question requires current data
 - Summarize search results naturally without mentioning you searched"""
 
-        full_system_prompt = base_prompt + date_info + natural_style
+        closing_instructions = """
+
+CONVERSATION ENDING GUIDELINES:
+- Recognize when a conversation has naturally concluded
+- If the user sends a simple closing (thanks, bye, take care), respond BRIEFLY without asking follow-up questions that would extend the conversation
+- Good closing responses: "You're welcome!", "Take care!", "Happy to help!"
+- BAD closing responses: "You're welcome! Is there anything else I can help with?" (This invites continuation when the user wants to end)
+- If you've already exchanged goodbyes once, do NOT respond to further pleasantries - let the conversation end naturally
+- Match the user's energy - if they send a brief "bye", respond with a brief "bye", don't write a paragraph
+- Look at the conversation history: if the last 2-3 exchanges are just short pleasantries (thanks, bye, take care), the conversation is OVER - do not respond"""
+
+        full_system_prompt = base_prompt + date_info + natural_style + closing_instructions
         messages = [
             {"role": "system", "content": full_system_prompt}
         ]
@@ -6435,7 +7086,8 @@ REAL-TIME INFORMATION:
             sender_phone=sender_phone,  # Can be None - coordinator will handle
             sender_name=sender_display_name,  # Pass name separately
             chat_id=chat_data_id or chat_name,
-            is_group=is_group
+            is_group=is_group,
+            whatsapp_message_id=whatsapp_message_id  # For bot-to-bot detection by message ID
         )
 
         # Store execution_id for response logging
@@ -6508,7 +7160,18 @@ IMPORTANT - Response Style:
 - NEVER start your response with [Name]: or any similar prefix - just write the message directly
 - The [Name]: prefixes in the conversation are just to show who said what - do NOT copy this format"""
 
-            full_system_prompt = base_prompt + natural_style
+            closing_instructions = """
+
+CONVERSATION ENDING GUIDELINES:
+- Recognize when a conversation has naturally concluded
+- If the user sends a simple closing (thanks, bye, take care), respond BRIEFLY without asking follow-up questions that would extend the conversation
+- Good closing responses: "You're welcome!", "Take care!", "Happy to help!"
+- BAD closing responses: "You're welcome! Is there anything else I can help with?" (This invites continuation when the user wants to end)
+- If you've already exchanged goodbyes once, do NOT respond to further pleasantries - let the conversation end naturally
+- Match the user's energy - if they send a brief "bye", respond with a brief "bye", don't write a paragraph
+- Look at the conversation history: if the last 2-3 exchanges are just short pleasantries (thanks, bye, take care), the conversation is OVER - do not respond"""
+
+            full_system_prompt = base_prompt + natural_style + closing_instructions
             messages = [
                 {"role": "system", "content": full_system_prompt}
             ]
@@ -6544,10 +7207,7 @@ IMPORTANT - Response Style:
             import base64 as b64
             from pathlib import Path
             try:
-                base_dir = Path(__file__).resolve().parent.parent.parent
-                from urllib.parse import unquote
-                relative_path = unquote(file_info.get('file_url', '').replace('/media/', 'data/sessions/'))
-                file_path = base_dir / relative_path
+                file_path = _media_url_to_path(file_info.get('file_url', ''))
                 logger.info(f"Bot {bot_profile_id}: Current image - file_url={file_info.get('file_url')}, file_path={file_path}")
                 if file_path.exists():
                     with open(file_path, 'rb') as f:
@@ -6617,7 +7277,7 @@ IMPORTANT - Response Style:
         from app.bots.web_search import process_ai_response_with_tools
 
         reply = process_ai_response_with_tools(
-            openai_client=openai_client,
+            ai_provider=ai_provider,
             messages=messages,
             model=config.get('openai_model', 'gpt-4o-mini'),
             max_tokens=config.get('max_tokens', 1000),
@@ -6801,8 +7461,54 @@ IMPORTANT - Response Style:
 
         logger.info(f"Bot {bot_profile_id}: Sent to {chat_name}: {reply[:50]}...")
 
-        # Wait a moment for the message to be sent
-        time.sleep(1)
+        # Wait a moment for the message to be sent and appear in DOM
+        time.sleep(1.5)
+
+        # Extract the WhatsApp message ID from the most recent outgoing message
+        # This is needed for reliable bot-to-bot detection across hubs
+        try:
+            sent_msg_id = page.evaluate('''() => {
+                // Find all outgoing messages (message-out class or data-id starting with "true_")
+                const outMsgs = document.querySelectorAll('.message-out[data-id], [data-id^="true_"]');
+                if (outMsgs.length === 0) return null;
+
+                // Get the last (most recent) outgoing message
+                const lastOut = outMsgs[outMsgs.length - 1];
+                const dataId = lastOut.getAttribute('data-id');
+                if (!dataId) return null;
+
+                // Extract the message ID portion from data-id
+                // Format: "true_PHONE@c.us_MSGID" or "true_GROUPID@g.us_MSGID_SENDERID@lid"
+                const parts = dataId.split('_');
+                if (parts.length >= 3) {
+                    // The message ID is typically the 3rd part (index 2)
+                    return parts[2];
+                }
+                return null;
+            }''')
+
+            if sent_msg_id:
+                logger.info(f"Bot {bot_profile_id}: Captured sent message ID: {sent_msg_id}")
+                # Update the stored message with the WhatsApp message ID
+                with get_db_session() as db:
+                    # Find the most recent assistant message for this conversation
+                    from app.database import Message, Conversation
+                    conv = db.query(Conversation).filter(
+                        Conversation.bot_profile_id == bot_profile_id,
+                        Conversation.chat_name == chat_name
+                    ).first()
+                    if conv:
+                        last_assistant_msg = db.query(Message).filter(
+                            Message.conversation_id == conv.id,
+                            Message.role == 'assistant'
+                        ).order_by(Message.timestamp.desc()).first()
+                        if last_assistant_msg:
+                            last_assistant_msg.whatsapp_message_id = sent_msg_id
+                            logger.info(f"Bot {bot_profile_id}: Updated message {last_assistant_msg.id} with whatsapp_message_id={sent_msg_id}")
+            else:
+                logger.debug(f"Bot {bot_profile_id}: Could not extract sent message ID from DOM")
+        except Exception as msg_id_err:
+            logger.warning(f"Bot {bot_profile_id}: Failed to capture sent message ID: {msg_id_err}")
 
         # Navigate away from the chat so new messages will appear as unread
         # Press Escape to deselect, then click on chat list header area
@@ -7159,10 +7865,50 @@ def _sync_all_conversations_and_messages(page, bot_profile_id, notify_status):
             messages_data = page.evaluate('''() => {
                 const messages = [];
 
-                // Find all message containers
-                const msgContainers = document.querySelectorAll('[data-testid="msg-container"], .message-in, .message-out');
+                // Track current date from date separators
+                let currentDateStr = null;
 
-                for (const msg of msgContainers) {
+                // Get main panel to query all elements in order
+                const mainPanel = document.querySelector('#main [role="application"]') ||
+                                 document.querySelector('#main .copyable-area') ||
+                                 document.querySelector('#main');
+
+                if (!mainPanel) return messages;
+
+                // Select all rows including date separators and messages
+                const allRows = mainPanel.querySelectorAll('[role="row"], .focusable-list-item');
+
+                for (const row of allRows) {
+                    // Check if this is a date separator
+                    const isMsgContainer = row.querySelector('[data-testid="msg-container"]') ||
+                                          row.classList.contains('message-in') ||
+                                          row.classList.contains('message-out') ||
+                                          row.querySelector('.message-in, .message-out');
+
+                    if (!isMsgContainer) {
+                        // Extract date from separator
+                        const dateSpan = row.querySelector('span[dir="auto"]');
+                        if (dateSpan) {
+                            const dateText = (dateSpan.innerText || '').trim();
+                            if (/^\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}$/.test(dateText)) {
+                                currentDateStr = dateText;
+                            } else if (/^(Today|Yesterday)$/i.test(dateText)) {
+                                const today = new Date();
+                                if (dateText.toLowerCase() === 'yesterday') {
+                                    today.setDate(today.getDate() - 1);
+                                }
+                                currentDateStr = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Find the actual message container
+                    const msg = row.querySelector('[data-testid="msg-container"]') ||
+                               row.querySelector('.message-in, .message-out') ||
+                               (row.classList.contains('message-in') || row.classList.contains('message-out') ? row : null);
+
+                    if (!msg) continue;
                     // Check if this is a media message (has image/document/video)
                     const hasMedia = msg.querySelector('[data-testid="image-thumb"]') ||
                                     msg.querySelector('[data-testid="video-thumb"]') ||
@@ -7313,33 +8059,23 @@ def _sync_all_conversations_and_messages(page, bot_profile_id, notify_status):
                     }
 
                     // Get full timestamp from data-pre-plain-text attribute
-                    // Format: "[HH:MM, DD/MM/YYYY] Name:" or "[HH:MM AM/PM, DD/MM/YYYY] Name:"
-                    // Also handles Arabic AM (ص) and PM (م)
-                    let timestamp = null;
+                    // ONLY use timestamps that include both date and time - skip messages without valid timestamps
                     let fullTimestamp = null;
                     const copyableText = msg.querySelector('.copyable-text[data-pre-plain-text]');
                     if (copyableText) {
                         const preText = copyableText.getAttribute('data-pre-plain-text') || '';
-                        // Extract timestamp: [10:30, 1/15/2026] or [10:30 AM, 15/01/2026] or [10:30 ص, 15/01/2026]
+                        // Extract full timestamp with date - this is the ONLY reliable source
                         const tsMatch = preText.match(/\\[(\\d{1,2}:\\d{2}(?:\\s*(?:[AP]M|ص|م))?),\\s*(\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})\\]/i);
                         if (tsMatch) {
                             let timeStr = tsMatch[1].trim();
-                            // Convert Arabic AM/PM to English for parsing
                             timeStr = timeStr.replace(/\\s*ص$/, ' AM').replace(/\\s*م$/, ' PM');
-                            timestamp = timeStr;  // Time part
-                            fullTimestamp = timeStr + ', ' + tsMatch[2].trim();  // "HH:MM AM/PM, DD/MM/YYYY"
+                            fullTimestamp = timeStr + ', ' + tsMatch[2].trim();
                         }
                     }
-                    // Fallback: get just time from msg-meta
-                    if (!timestamp) {
-                        const timeEl = msg.querySelector('[data-testid="msg-meta"] span') ||
-                                      msg.querySelector('span[dir="auto"]');
-                        if (timeEl) {
-                            const timeText = timeEl.innerText || '';
-                            if (/\\d{1,2}:\\d{2}/.test(timeText)) {
-                                timestamp = timeText;
-                            }
-                        }
+
+                    // Skip messages without valid full timestamp (date + time)
+                    if (!fullTimestamp) {
+                        continue;
                     }
 
                     messages.push({
@@ -7347,8 +8083,8 @@ def _sync_all_conversations_and_messages(page, bot_profile_id, notify_status):
                         isOutgoing: isOutgoing,
                         sender: sender,
                         senderProfilePic: senderProfilePic,
-                        timestamp: timestamp,
-                        fullTimestamp: fullTimestamp
+                        fullTimestamp: fullTimestamp,
+                        messageIndex: messages.length,
                     });
                 }
 
@@ -7401,6 +8137,9 @@ def _sync_all_conversations_and_messages(page, bot_profile_id, notify_status):
 
                         # Cache for sender profile pics
                         sender_profile_pics = {}
+
+                        # Sort messages by messageIndex to ensure correct chronological order
+                        messages_data.sort(key=lambda m: m.get('messageIndex', 0))
 
                         added_count = 0
                         for idx, msg in enumerate(messages_data):
@@ -7501,6 +8240,1434 @@ def _sync_all_conversations_and_messages(page, bot_profile_id, notify_status):
     notify_status({"status": "running", "message": f"Synced {synced_count} conversations with {total_messages} messages"})
 
     return synced_count, total_messages
+
+
+def _run_full_history_sync(page, instance, bot_profile_id, notify_status):
+    """
+    Run a full history sync for ALL conversations.
+    Takes exclusive control of the browser page while running.
+    Syncs up to instance.history_sync_count messages per conversation.
+    Tracks progress via instance.history_sync_progress for frontend polling.
+    """
+    from app.database import get_db_session, Conversation, Message, BotProfile
+    from datetime import datetime, timedelta
+
+    target_count = instance.history_sync_count
+    instance.history_sync_active = True
+    instance.history_sync_requested = False
+    instance.history_sync_progress = {
+        "total": 0,
+        "completed": 0,
+        "current_chat": "",
+        "status": "running"
+    }
+    notify_status({
+        "status": "running",
+        "message": "History sync started...",
+        "history_sync_active": True,
+        "history_sync_progress": instance.history_sync_progress,
+    })
+
+    logger.info(f"Bot {bot_profile_id}: Starting full history sync (target: {target_count} msgs/conversation)")
+
+    # Step 1: Scan ALL sidebar conversations (not just unread) and upsert into DB
+    notify_status({
+        "status": "running",
+        "message": "Scanning WhatsApp sidebar for conversations...",
+        "history_sync_active": True,
+        "history_sync_progress": instance.history_sync_progress,
+    })
+
+    # Close any open chat so sidebar is visible
+    try:
+        page.keyboard.press('Escape')
+        time.sleep(0.5)
+    except Exception:
+        pass
+
+    # Scroll sidebar to load all conversations
+    try:
+        for _ in range(10):
+            page.evaluate('''() => {
+                const sidePanel = document.querySelector('#pane-side');
+                if (sidePanel) sidePanel.scrollTop = sidePanel.scrollHeight;
+            }''')
+            time.sleep(0.5)
+        # Scroll back to top
+        page.evaluate('''() => {
+            const sidePanel = document.querySelector('#pane-side');
+            if (sidePanel) sidePanel.scrollTop = 0;
+        }''')
+        time.sleep(0.5)
+    except Exception as e:
+        logger.debug(f"Bot {bot_profile_id}: Sidebar scroll error: {e}")
+
+    # Brief diagnostic
+    try:
+        diag = page.evaluate('''() => {
+            const rows = document.querySelectorAll('#pane-side [role="row"]');
+            const listitems = document.querySelectorAll('#pane-side [role="listitem"]');
+            return { rowCount: rows.length, listitemCount: listitems.length };
+        }''')
+        print(f"Bot {bot_profile_id}: SIDEBAR rows={diag.get('rowCount')}, listitems={diag.get('listitemCount')}", flush=True)
+    except Exception as diag_err:
+        print(f"Bot {bot_profile_id}: SIDEBAR DIAGNOSTIC ERROR: {diag_err}", flush=True)
+
+    # Extract ALL conversations from sidebar (no unread filter)
+    # Uses broad selectors compatible with both WhatsApp Personal and Business
+    sidebar_data = page.evaluate('''async () => {
+        const conversations = [];
+        const processedNames = new Set();
+        await new Promise(r => setTimeout(r, 500));
+
+        // Broad selector set: listitem (Personal), row (Business), cell-frame-container (fallback)
+        const chatRows = document.querySelectorAll(
+            '#pane-side [role="listitem"], #pane-side [role="row"], [data-testid="cell-frame-container"]'
+        );
+
+        for (const row of chatRows) {
+            // Try multiple name selectors (WhatsApp Business uses different class names)
+            let nameSpan = row.querySelector('span[title][dir="auto"]._ao3e') ||
+                          row.querySelector('span._ao3e[title]') ||
+                          row.querySelector('[data-testid="cell-frame-title"] span[title]') ||
+                          row.querySelector('span.ggj6brxn[title]');
+
+            // Fallback: find span[title] not in message preview area
+            if (!nameSpan) {
+                const allTitleSpans = row.querySelectorAll('span[title]');
+                for (const span of allTitleSpans) {
+                    const isInMessagePreview = span.closest('[data-testid="cell-frame-secondary"]') ||
+                                              span.closest('[data-testid="last-msg-status"]') ||
+                                              span.closest('[data-testid="msg-time"]');
+                    if (isInMessagePreview) continue;
+                    const title = span.getAttribute('title');
+                    if (title && title.length <= 100) { nameSpan = span; break; }
+                }
+            }
+            if (!nameSpan) continue;
+
+            // Get name from both title attr and text content
+            const titleAttr = nameSpan.getAttribute('title');
+            const textContent = nameSpan.textContent ? nameSpan.textContent.trim() : null;
+
+            // Determine which is the name (prefer non-phone-number)
+            const isTextPhone = textContent && /^[\\+\\d][\\d\\s\\-\\(\\)]{7,}$/.test(textContent);
+            const isTitlePhone = titleAttr && /^[\\+\\d][\\d\\s\\-\\(\\)]{7,}$/.test(titleAttr);
+
+            let chatName;
+            if (textContent && !isTextPhone) {
+                chatName = textContent;
+            } else if (titleAttr && !isTitlePhone) {
+                chatName = titleAttr;
+            } else {
+                chatName = titleAttr || textContent;
+            }
+
+            if (!chatName || processedNames.has(chatName)) continue;
+            processedNames.add(chatName);
+
+            // Extract data-id with multiple methods
+            let fullDataId = null;
+            let dataId = row.getAttribute('data-id');
+            if (dataId && (dataId.includes('@c.us') || dataId.includes('@g.us'))) {
+                fullDataId = dataId;
+            }
+            if (!fullDataId) {
+                const rowChild = row.querySelector(':scope > div[data-id]');
+                if (rowChild) {
+                    const id = rowChild.getAttribute('data-id');
+                    if (id && (id.includes('@c.us') || id.includes('@g.us'))) fullDataId = id;
+                }
+            }
+            if (!fullDataId) {
+                for (const child of row.children) {
+                    const id = child.getAttribute('data-id');
+                    if (id && (id.includes('@c.us') || id.includes('@g.us'))) { fullDataId = id; break; }
+                }
+            }
+            if (!fullDataId) {
+                const dataIdElements = row.querySelectorAll('[data-id]');
+                for (const elem of dataIdElements) {
+                    const id = elem.getAttribute('data-id');
+                    if (id && (id.includes('@c.us') || id.includes('@g.us'))) { fullDataId = id; break; }
+                }
+            }
+
+            // Group detection: data-id suffix is source of truth
+            let isGroup = false;
+            if (fullDataId) {
+                isGroup = fullDataId.includes('@g.us');
+            } else {
+                const avatarArea = row.querySelector('[data-testid="cell-frame-primary"]') || row;
+                isGroup = avatarArea.querySelector('[data-icon="default-group"]') !== null ||
+                         avatarArea.querySelector('[data-testid="default-group"]') !== null;
+            }
+
+            conversations.push({
+                name: chatName,
+                fullDataId: fullDataId,
+                isGroup: isGroup,
+            });
+        }
+        return conversations;
+    }''')
+
+    print(f"Bot {bot_profile_id}: History sync - found {len(sidebar_data)} conversations in sidebar", flush=True)
+    logger.info(f"Bot {bot_profile_id}: History sync - found {len(sidebar_data)} conversations in sidebar")
+
+    # Debug: log first few discovered conversations
+    for i, conv in enumerate(sidebar_data[:5]):
+        print(f"Bot {bot_profile_id}: History sync sidebar[{i}]: name='{conv.get('name')}', dataId='{conv.get('fullDataId')}', isGroup={conv.get('isGroup')}", flush=True)
+    if not sidebar_data:
+        print(f"Bot {bot_profile_id}: History sync - NO conversations found in sidebar! Check WhatsApp selectors.", flush=True)
+
+    # Upsert sidebar conversations into DB
+    conversations_data = []
+    with get_db_session() as db:
+        for conv_info in sidebar_data:
+            sidebar_name = conv_info.get('name')
+            chat_data_id = conv_info.get('fullDataId')
+            is_group = conv_info.get('isGroup', False)
+
+            if not sidebar_name:
+                continue
+
+            chat_id = chat_data_id if _is_valid_whatsapp_id(chat_data_id) else None
+            is_phone_format = bool(re.match(r'^[\+\d\s\-\(\)]+$', sidebar_name.strip()))
+            display_name = sidebar_name if (not is_phone_format and not is_group) else None
+
+            conversation = None
+            if chat_id:
+                conversation = db.query(Conversation).filter(
+                    Conversation.bot_profile_id == bot_profile_id,
+                    Conversation.chat_id == chat_id
+                ).first()
+            if not conversation:
+                all_matching = db.query(Conversation).filter(
+                    Conversation.bot_profile_id == bot_profile_id,
+                    Conversation.chat_name == sidebar_name
+                ).all()
+                for existing in all_matching:
+                    if _is_valid_whatsapp_id(existing.chat_id):
+                        conversation = existing
+                        break
+                if not conversation and all_matching:
+                    conversation = all_matching[0]
+
+            if not conversation:
+                # Use valid WhatsApp ID if available, otherwise use chat name as placeholder ID
+                conv_chat_id = chat_data_id if _is_valid_whatsapp_id(chat_data_id) else sidebar_name
+                conversation = Conversation(
+                    bot_profile_id=bot_profile_id,
+                    chat_id=conv_chat_id,
+                    chat_name=sidebar_name,
+                    display_name=display_name,
+                    is_group=is_group,
+                )
+                db.add(conversation)
+                db.flush()  # Get the ID
+                print(f"Bot {bot_profile_id}: History sync - created conversation: {sidebar_name} (chat_id={conv_chat_id})", flush=True)
+            else:
+                if _is_valid_whatsapp_id(chat_data_id) and conversation.chat_id != chat_data_id:
+                    conversation.chat_id = chat_data_id
+                if display_name and not conversation.display_name:
+                    conversation.display_name = display_name
+
+            conversations_data.append({
+                'id': conversation.id,
+                'chat_id': conversation.chat_id,
+                'chat_name': conversation.chat_name or sidebar_name,
+                'is_group': conversation.is_group,
+                'profile_pic': conversation.profile_pic,
+            })
+
+        db.commit()
+
+    instance.history_sync_progress["total"] = len(conversations_data)
+    notify_status({
+        "status": "running",
+        "message": f"Syncing history for {len(conversations_data)} conversations...",
+        "history_sync_active": True,
+        "history_sync_progress": instance.history_sync_progress,
+    })
+
+    logger.info(f"Bot {bot_profile_id}: History sync - {len(conversations_data)} conversations to process")
+
+    synced_total = 0
+    for conv_info in conversations_data:
+        # Check for stop command (either bot stopping or user clicked stop sync)
+        if not instance.is_running:
+            logger.info(f"Bot {bot_profile_id}: History sync aborted - bot stopping")
+            break
+        if instance.history_sync_stop_requested:
+            logger.info(f"Bot {bot_profile_id}: History sync stopped by user request")
+            break
+
+        chat_name = conv_info['chat_name']
+        conv_id = conv_info['id']
+
+        instance.history_sync_progress["current_chat"] = chat_name or ""
+        notify_status({
+            "status": "running",
+            "message": f"Syncing: {chat_name}",
+            "history_sync_active": True,
+            "history_sync_progress": instance.history_sync_progress,
+        })
+
+        try:
+            # Close any open chat first
+            try:
+                page.keyboard.press('Escape')
+                time.sleep(0.3)
+            except Exception:
+                pass
+
+            # Find the chat in the sidebar
+            safe_name = (chat_name or "").replace('"', '\\"').replace("'", "\\'")
+            chat_id = conv_info.get('chat_id', '')
+            title_el = page.query_selector(f'#pane-side [title="{safe_name}"]')
+
+            if not title_el:
+                # Try partial match
+                title_el = page.query_selector(f'#pane-side span[title*="{safe_name[:20]}"]')
+
+            # Fallback: use search box to find the chat
+            if not title_el:
+                try:
+                    search_term = chat_name
+                    if chat_id and '@' in chat_id:
+                        phone_part = chat_id.split('@')[0]
+                        if phone_part.isdigit():
+                            search_term = phone_part
+
+                    search_box = page.query_selector('[data-testid="chat-list-search"]') or \
+                                 page.query_selector('[contenteditable="true"][data-tab="3"]') or \
+                                 page.query_selector('[aria-label*="Search"]')
+
+                    if search_box:
+                        search_box.click()
+                        time.sleep(0.3)
+                        search_box.fill(search_term)
+                        time.sleep(1.5)
+
+                        title_el = page.query_selector(f'[title="{safe_name}"]') or \
+                                   page.query_selector(f'span[title*="{safe_name[:20]}"]') or \
+                                   page.query_selector(f'span[title*="{search_term}"]')
+
+                        if title_el:
+                            logger.info(f"Bot {bot_profile_id}: History sync - found '{chat_name}' via search")
+                except Exception as search_err:
+                    logger.debug(f"Bot {bot_profile_id}: History sync - search failed for '{chat_name}': {search_err}")
+
+            if not title_el:
+                print(f"Bot {bot_profile_id}: History sync - chat not found: {chat_name}", flush=True)
+                instance.history_sync_progress["completed"] += 1
+                continue
+
+            # Click to open the chat
+            print(f"Bot {bot_profile_id}: History sync - opening chat: {chat_name}", flush=True)
+            title_el.click()
+            time.sleep(2.5)
+
+            # Verify chat opened - wait for conversation panel
+            conv_panel = None
+            for _wait in range(5):
+                conv_panel = page.query_selector('[data-testid="conversation-panel-messages"]') or \
+                            page.query_selector('#main')
+                if conv_panel:
+                    break
+                time.sleep(0.5)
+
+            if not conv_panel:
+                print(f"Bot {bot_profile_id}: History sync - chat did not open: {chat_name}", flush=True)
+                instance.history_sync_progress["completed"] += 1
+                continue
+
+            # Wait for at least one message to render
+            for _wait in range(6):
+                has_msgs = page.evaluate('''() => {
+                    return document.querySelectorAll('[data-testid="msg-container"], .message-in, .message-out').length;
+                }''')
+                if has_msgs and has_msgs > 0:
+                    break
+                time.sleep(0.5)
+
+            # Extract profile pic and phone number from chat header + message data-id
+            try:
+                header_info = page.evaluate('''() => {
+                    const result = {profilePic: null, phoneNumber: null, groupId: null, debug: {}};
+
+                    // === PROFILE PIC: search broadly in the header area ===
+                    // First try: any img with pps.whatsapp.net in the header section
+                    const headerArea = document.querySelector('#main header') ||
+                                      document.querySelector('[data-testid="conversation-header"]') ||
+                                      document.querySelector('#main [data-testid="chat-header"]');
+
+                    result.debug.headerFound = !!headerArea;
+
+                    if (headerArea) {
+                        // Get ALL images in the header
+                        const headerImgs = headerArea.querySelectorAll('img');
+                        result.debug.headerImgCount = headerImgs.length;
+                        for (const img of headerImgs) {
+                            if (img.src && img.src.includes('pps.whatsapp.net') &&
+                                !img.src.includes('default-user') && !img.src.includes('default-group')) {
+                                result.profilePic = img.src;
+                                break;
+                            }
+                        }
+                        // Fallback: any non-default, non-data img in header
+                        if (!result.profilePic) {
+                            for (const img of headerImgs) {
+                                if (img.src && !img.src.startsWith('data:') &&
+                                    !img.src.includes('default-user') && !img.src.includes('default-group') &&
+                                    img.width >= 30 && img.height >= 30) {
+                                    result.profilePic = img.src;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Second try: search the avatar area before the header text
+                    if (!result.profilePic) {
+                        const avatarSelectors = [
+                            '#main img[src*="pps.whatsapp.net"]',
+                            '#main [data-testid*="avatar"] img',
+                            '#main [role="img"] img',
+                        ];
+                        for (const selector of avatarSelectors) {
+                            const img = document.querySelector(selector);
+                            if (img && img.src && !img.src.includes('default-user') &&
+                                !img.src.includes('default-group') && !img.src.startsWith('data:')) {
+                                // Make sure this is in the header, not in messages
+                                const msgPanel = document.querySelector('[data-testid="conversation-panel-messages"]');
+                                if (msgPanel && msgPanel.contains(img)) continue;
+                                result.profilePic = img.src;
+                                break;
+                            }
+                        }
+                    }
+
+                    // === EXTRACT IDs FROM MESSAGE DATA-ID ATTRIBUTES ===
+                    const dataIdEls = document.querySelectorAll('#main [data-id]');
+                    result.debug.dataIdCount = dataIdEls.length;
+
+                    for (const el of dataIdEls) {
+                        const dataId = el.getAttribute('data-id') || '';
+
+                        // GROUP chat: "false_GROUPID@g.us_MSGID_SENDERID@lid"
+                        if (dataId.includes('@g.us') && !result.groupId) {
+                            const parts = dataId.split('_');
+                            for (let i = 1; i < parts.length; i++) {
+                                if (parts[i].includes('@g.us')) {
+                                    result.groupId = parts[i];  // Keep full format: "GROUPID@g.us"
+                                    break;
+                                }
+                            }
+                        }
+
+                        // PRIVATE chat: "true_PHONE@c.us_MSGID" or "false_PHONE@c.us_MSGID"
+                        if (dataId.includes('@c.us') && !result.phoneNumber && !dataId.includes('@g.us')) {
+                            const parts = dataId.split('_');
+                            for (let i = 1; i < parts.length; i++) {
+                                if (parts[i].includes('@c.us')) {
+                                    result.phoneNumber = '+' + parts[i].replace('@c.us', '');
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Stop if we found what we need
+                        if (result.groupId || result.phoneNumber) break;
+                    }
+
+                    // === PHONE NUMBER from header (fallback for private chats) ===
+                    if (!result.phoneNumber && !result.groupId && headerArea) {
+                        const allSpans = headerArea.querySelectorAll('span[title], span[dir="auto"]');
+                        for (const span of allSpans) {
+                            const text = (span.getAttribute('title') || span.innerText || '').trim();
+                            if (/^\\+?\\d[\\d\\s\\-()]{7,}$/.test(text)) {
+                                result.phoneNumber = text.replace(/[\\s\\-()]/g, '');
+                                break;
+                            }
+                        }
+                    }
+
+                    result.debug.profilePicFound = !!result.profilePic;
+                    result.debug.phoneFound = !!result.phoneNumber;
+                    result.debug.groupIdFound = !!result.groupId;
+                    return result;
+                }''')
+
+                if header_info:
+                    debug = header_info.get('debug', {})
+                    print(f"Bot {bot_profile_id}: History sync - '{chat_name}' header: pic={debug.get('profilePicFound')}, phone={debug.get('phoneFound')}, groupId={debug.get('groupIdFound')}, headerFound={debug.get('headerFound')}, imgs={debug.get('headerImgCount', 0)}, dataIds={debug.get('dataIdCount', 0)}", flush=True)
+
+                    with get_db_session() as db:
+                        conv_to_update = db.query(Conversation).filter(Conversation.id == conv_id).first()
+                        if conv_to_update:
+                            updated = False
+                            # Update profile pic if we got one and it's not already set
+                            if header_info.get('profilePic') and not conv_to_update.profile_pic:
+                                conv_to_update.profile_pic = header_info['profilePic']
+                                updated = True
+
+                            # For GROUP chats: update chat_id with group ID from message data-id
+                            group_id = header_info.get('groupId')
+                            if group_id and conv_info.get('is_group'):
+                                # Group ID is already in format "GROUPID@g.us"
+                                if conv_to_update.chat_id != group_id:
+                                    conv_to_update.chat_id = group_id
+                                    conv_to_update.is_group = True  # Ensure it's marked as group
+                                    updated = True
+                                    print(f"Bot {bot_profile_id}: History sync - '{chat_name}' updated group chat_id to {group_id}", flush=True)
+
+                            # For PRIVATE chats: update chat_id with phone if current is a placeholder
+                            # ONLY for non-group chats
+                            phone = header_info.get('phoneNumber')
+                            if phone and not conv_info.get('is_group') and not group_id and '@' not in (conv_to_update.chat_id or ''):
+                                # Current chat_id is a placeholder (sidebar name), replace with phone
+                                phone_clean = phone.lstrip('+')
+                                conv_to_update.chat_id = f"{phone_clean}@c.us"
+                                # Also store phone with + prefix for display
+                                phone_formatted = phone if phone.startswith('+') else f"+{phone}"
+                                conv_to_update.phone = phone_formatted
+                                updated = True
+                                print(f"Bot {bot_profile_id}: History sync - '{chat_name}' updated chat_id to {conv_to_update.chat_id}, phone to {phone_formatted}", flush=True)
+                            if updated:
+                                db.commit()
+                                # Update local conv_info with new data
+                                conv_info['profile_pic'] = conv_to_update.profile_pic
+                                conv_info['chat_id'] = conv_to_update.chat_id
+                                if phone:
+                                    conv_info['phone'] = conv_to_update.phone
+            except Exception as header_err:
+                print(f"Bot {bot_profile_id}: History sync - header extraction error for '{chat_name}': {header_err}", flush=True)
+
+            # For NON-GROUP chats: click header to open contact panel and extract phone number
+            # This is necessary because data-id may contain LID instead of phone number
+            if not conv_info.get('is_group'):
+                try:
+                    # Check if we need to extract phone (no valid phone in chat_id yet)
+                    current_chat_id = conv_info.get('chat_id', '')
+                    needs_phone = not current_chat_id or '@' not in current_chat_id or current_chat_id.endswith('@lid')
+
+                    if needs_phone:
+                        print(f"Bot {bot_profile_id}: History sync - '{chat_name}' clicking header to extract phone...", flush=True)
+
+                        # Click the header to open contact details panel
+                        # Try multiple selectors for both Business and Personal WhatsApp
+                        header_clicked = False
+                        header_selectors = [
+                            '#main header [role="button"]',
+                            '#main [data-tab="6"][role="button"]',
+                            '#main header',
+                        ]
+                        for selector in header_selectors:
+                            try:
+                                header_btn = page.query_selector(selector)
+                                if header_btn:
+                                    header_btn.click()
+                                    header_clicked = True
+                                    break
+                            except Exception:
+                                continue
+
+                        if header_clicked:
+                            time.sleep(1.5)  # Wait for contact panel to open
+
+                            # Extract phone number from contact details panel
+                            # Display name is already extracted from sidebar - only need phone here
+                            phone_from_panel = page.evaluate('''() => {
+                                // Try multiple selectors for the phone number in contact panel
+                                const phoneSelectors = [
+                                    '.x1evy7pa.x1anpbxc span',
+                                    '[data-testid="contact-info-phone"] span',
+                                    'section span[dir="auto"]',
+                                ];
+
+                                for (const selector of phoneSelectors) {
+                                    const elements = document.querySelectorAll(selector);
+                                    for (const el of elements) {
+                                        const text = (el.textContent || '').trim();
+                                        // Match phone number pattern: starts with + or digit, 7+ digits
+                                        if (/^\\+?\\d[\\d\\s\\-()]{7,}$/.test(text)) {
+                                            return text.replace(/[\\s\\-()]/g, '');
+                                        }
+                                    }
+                                }
+
+                                // Fallback: search all spans in the right panel for phone pattern
+                                const rightPanel = document.querySelector('[data-testid="contact-info-drawer"]') ||
+                                                  document.querySelector('aside') ||
+                                                  document.querySelector('section[data-testid]');
+                                if (rightPanel) {
+                                    const spans = rightPanel.querySelectorAll('span');
+                                    for (const span of spans) {
+                                        const text = (span.textContent || '').trim();
+                                        if (/^\\+?\\d[\\d\\s\\-()]{7,}$/.test(text)) {
+                                            return text.replace(/[\\s\\-()]/g, '');
+                                        }
+                                    }
+                                }
+
+                                return null;
+                            }''')
+
+                            # Close the contact panel
+                            try:
+                                page.keyboard.press('Escape')
+                                time.sleep(0.5)
+                            except Exception:
+                                pass
+
+                            if phone_from_panel:
+                                print(f"Bot {bot_profile_id}: History sync - '{chat_name}' extracted phone from panel: {phone_from_panel}", flush=True)
+                                # Update the database with the phone number
+                                with get_db_session() as db:
+                                    conv_to_update = db.query(Conversation).filter(Conversation.id == conv_id).first()
+                                    if conv_to_update:
+                                        phone_clean = phone_from_panel.lstrip('+')
+                                        conv_to_update.chat_id = f"{phone_clean}@c.us"
+                                        conv_to_update.phone = phone_from_panel  # Store with original format (e.g., +1234567890)
+                                        db.commit()
+                                        conv_info['chat_id'] = conv_to_update.chat_id
+                                        conv_info['phone'] = phone_from_panel
+                                        print(f"Bot {bot_profile_id}: History sync - '{chat_name}' updated chat_id to {conv_to_update.chat_id}, phone to {phone_from_panel}", flush=True)
+                            else:
+                                print(f"Bot {bot_profile_id}: History sync - '{chat_name}' could not extract phone from panel", flush=True)
+                        else:
+                            print(f"Bot {bot_profile_id}: History sync - '{chat_name}' could not click header", flush=True)
+                except Exception as panel_err:
+                    print(f"Bot {bot_profile_id}: History sync - '{chat_name}' contact panel phone extraction error: {panel_err}", flush=True)
+                    # Close any open panel
+                    try:
+                        page.keyboard.press('Escape')
+                        time.sleep(0.3)
+                    except Exception:
+                        pass
+
+            # In-chat group detection: check header for group indicators and data-id on messages
+            try:
+                in_chat_is_group = page.evaluate('''() => {
+                    // Method 1: Check ALL elements with data-id for @g.us
+                    const dataIdEls = document.querySelectorAll('#main [data-id]');
+                    for (const el of dataIdEls) {
+                        const dataId = el.getAttribute('data-id') || '';
+                        if (dataId.includes('@g.us')) return true;
+                    }
+                    // Method 2: Check for group-specific header elements
+                    const header = document.querySelector('#main header, [data-testid="conversation-header"]');
+                    if (header) {
+                        // Group chats show member count or "click here for group info"
+                        const subtitle = header.querySelector('[data-testid="conversation-info-header-chat-subtitle"]') ||
+                                        header.querySelector('span[title*="participant"]') ||
+                                        header.querySelector('span[title*="members"]');
+                        if (subtitle) return true;
+                        // Check for default-group icon
+                        if (header.querySelector('[data-icon="default-group"]') ||
+                            header.querySelector('[data-testid="default-group"]')) return true;
+                    }
+                    return false;
+                }''')
+                if in_chat_is_group and not conv_info.get('is_group'):
+                    # Update in DB
+                    with get_db_session() as db:
+                        conv_to_update = db.query(Conversation).filter(Conversation.id == conv_id).first()
+                        if conv_to_update and not conv_to_update.is_group:
+                            conv_to_update.is_group = True
+                            db.commit()
+                            print(f"Bot {bot_profile_id}: History sync - '{chat_name}' detected as GROUP from in-chat header", flush=True)
+                    conv_info['is_group'] = True
+            except Exception:
+                pass
+
+            # Scroll up to load messages
+            # For sync_all (-1), use a large number to load everything
+            if target_count == -1:
+                max_scroll_attempts = 500  # Effectively unlimited for most chats
+            else:
+                max_scroll_attempts = max(20, target_count // 5)  # Scale scroll attempts with target
+            prev_message_count = 0
+
+            # Initial scroll to top
+            try:
+                page.evaluate('''() => {
+                    const panel = document.querySelector('[data-testid="conversation-panel-messages"]') ||
+                                 document.querySelector('#main .copyable-area') ||
+                                 document.querySelector('#main');
+                    if (panel) panel.scrollTop = 0;
+                }''')
+                time.sleep(0.5)
+            except Exception:
+                pass
+
+            no_change_count = 0
+            scroll_attempt = 0
+            min_scroll_before_break = 3  # Require at least 3 scroll attempts before giving up
+
+            for scroll_attempt in range(max_scroll_attempts):
+                if not instance.is_running or instance.history_sync_stop_requested:
+                    break
+
+                # Count ALL message containers (including media-only) for scroll decisions
+                current_count = page.evaluate('''() => {
+                    return document.querySelectorAll('[data-testid="msg-container"], .message-in, .message-out').length;
+                }''')
+
+                # For sync_all (-1), don't break based on count - continue until no more messages load
+                if target_count != -1 and current_count >= target_count:
+                    break
+
+                if current_count == prev_message_count:
+                    no_change_count += 1
+                    # Only break after minimum attempts AND consecutive no-change
+                    if scroll_attempt >= min_scroll_before_break and no_change_count >= 2:
+                        break
+                else:
+                    no_change_count = 0
+
+                prev_message_count = current_count
+
+                try:
+                    for _ in range(3):
+                        page.keyboard.press('PageUp')
+                        time.sleep(0.3)
+                except Exception:
+                    page.evaluate('''() => {
+                        const selectors = [
+                            '[data-testid="conversation-panel-messages"]',
+                            '#main [role="application"]',
+                            '#main .copyable-area',
+                            '#main'
+                        ];
+                        for (const selector of selectors) {
+                            const panel = document.querySelector(selector);
+                            if (panel) { panel.scrollTop = 0; break; }
+                        }
+                    }''')
+
+                time.sleep(1.5)
+
+            print(f"Bot {bot_profile_id}: History sync - '{chat_name}' scroll done: {prev_message_count} containers after {scroll_attempt + 1 if scroll_attempt < max_scroll_attempts else max_scroll_attempts} attempts", flush=True)
+
+            # Extract messages - same comprehensive JS as _sync_conversation_history_on_demand
+            messages_data = page.evaluate('''() => {
+                const messages = [];
+
+                // Track current date from date separators
+                // Date separators are focusable-list-item divs that contain just a date like "1/24/2026"
+                let currentDateStr = null;
+
+                // Get all elements in order: both messages AND date separators
+                // Date separator structure: div.focusable-list-item > div > span with date text
+                const mainPanel = document.querySelector('#main [role="application"]') ||
+                                 document.querySelector('#main .copyable-area') ||
+                                 document.querySelector('#main');
+
+                if (!mainPanel) return messages;
+
+                // Select all rows including date separators and messages
+                const allRows = mainPanel.querySelectorAll('[role="row"], .focusable-list-item');
+
+                for (const row of allRows) {
+                    // Check if this is a date separator (contains only a date, no message)
+                    // Date separator: has focusable-list-item class but no msg-container inside
+                    const isMsgContainer = row.querySelector('[data-testid="msg-container"]') ||
+                                          row.classList.contains('message-in') ||
+                                          row.classList.contains('message-out') ||
+                                          row.querySelector('.message-in, .message-out');
+
+                    if (!isMsgContainer) {
+                        // This might be a date separator - extract date
+                        const dateSpan = row.querySelector('span[dir="auto"]');
+                        if (dateSpan) {
+                            const dateText = (dateSpan.innerText || '').trim();
+                            // Check if it matches date pattern: M/D/YYYY, DD/MM/YYYY, or text like "Today", "Yesterday"
+                            if (/^\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}$/.test(dateText)) {
+                                currentDateStr = dateText;
+                            } else if (/^(Today|Yesterday)$/i.test(dateText)) {
+                                // Convert relative dates
+                                const today = new Date();
+                                if (dateText.toLowerCase() === 'yesterday') {
+                                    today.setDate(today.getDate() - 1);
+                                }
+                                currentDateStr = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
+                            }
+                        }
+                        continue;  // Skip to next element
+                    }
+
+                    // Find the actual message container
+                    const msg = row.querySelector('[data-testid="msg-container"]') ||
+                               row.querySelector('.message-in, .message-out') ||
+                               (row.classList.contains('message-in') || row.classList.contains('message-out') ? row : null);
+
+                    if (!msg) continue;
+                    let text = '';
+                    let mediaType = '';
+
+                    // Detect media types
+                    const hasImage = msg.querySelector('[data-testid="image-thumb"]') || msg.querySelector('img[src*="blob:"]');
+                    const hasVideo = msg.querySelector('[data-testid="video-thumb"]');
+                    const hasDocument = msg.querySelector('[data-testid="document-thumb"]');
+                    const hasAudio = msg.querySelector('[data-testid="audio-play"]') || msg.querySelector('[data-testid="ptt-duration"]');
+                    const hasSticker = msg.querySelector('[data-testid="sticker"]') || msg.querySelector('img[data-testid="sticker"]');
+                    const hasMedia = hasImage || hasVideo || hasDocument || hasAudio || hasSticker;
+
+                    // Check if this is a group message via data-id
+                    // data-id may be on msg itself, or on a parent element (.message-in/.message-out wrapper)
+                    const dataIdEl = msg.closest('[data-id]') || msg;
+                    const dataIdAttr = dataIdEl.getAttribute('data-id') || '';
+                    const isGroupMsg = dataIdAttr.includes('@g.us');
+
+                    // For media messages, try caption-specific selectors first
+                    if (hasMedia) {
+                        // Determine media type for placeholder
+                        if (hasVideo) mediaType = '[Video]';
+                        else if (hasDocument) mediaType = '[Document]';
+                        else if (hasAudio) mediaType = '[Audio]';
+                        else if (hasSticker) mediaType = '[Sticker]';
+                        else if (hasImage) mediaType = '[Image]';
+
+                        const captionSelectors = [
+                            '[data-testid="media-caption"] span.selectable-text',
+                            '[data-testid="media-caption"]',
+                        ];
+                        for (const selector of captionSelectors) {
+                            const captionEl = msg.querySelector(selector);
+                            if (captionEl) {
+                                text = (captionEl.innerText || '').trim();
+                                if (text) break;
+                            }
+                        }
+                    }
+
+                    // Fallback to standard text extraction
+                    if (!text) {
+                        const selectableText = msg.querySelector('span.selectable-text');
+                        if (selectableText) text = selectableText.innerText || '';
+                    }
+                    if (!text) {
+                        const copyableText = msg.querySelector('.copyable-text');
+                        if (copyableText) text = copyableText.innerText || '';
+                    }
+                    if (!text) {
+                        const msgText = msg.querySelector('[data-testid="msg-text"]');
+                        if (msgText) text = msgText.innerText || '';
+                    }
+
+                    text = text.trim();
+
+                    // For media messages in groups, clean out sender name, phone, timestamp
+                    if (hasMedia && text && isGroupMsg) {
+                        const lines = text.split('\\n').map(l => l.trim()).filter(l => l);
+                        const cleanLines = [];
+
+                        // Get sender name to exclude it from content
+                        let detectedSender = null;
+                        const authorEl = msg.querySelector('[data-testid="author"]') ||
+                                        msg.querySelector('[data-testid="msg-author-title"]') ||
+                                        msg.querySelector('[data-testid="author-name"]');
+                        if (authorEl) {
+                            detectedSender = (authorEl.innerText || '').trim().toLowerCase();
+                        }
+
+                        for (const line of lines) {
+                            const lineLower = line.toLowerCase();
+                            // Skip if line matches sender name
+                            if (detectedSender && lineLower === detectedSender) continue;
+                            // Skip if line matches timestamp pattern
+                            if (/^\\d{1,2}:\\d{2}(\\s*([APap][Mm]|ص|م))?$/i.test(line)) continue;
+                            // Skip if line matches phone number pattern
+                            if (/^\\+?\\d[\\d\\s\\-()]{6,}$/.test(line)) continue;
+                            // Skip common metadata patterns
+                            if (/^(Yesterday|Today|\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})$/i.test(line)) continue;
+                            cleanLines.push(line);
+                        }
+                        text = cleanLines.join('\\n').trim();
+                    }
+
+                    // For media without text, use the media type as placeholder
+                    if (!text && mediaType) {
+                        text = mediaType;
+                    }
+
+                    // Skip system messages and empty non-media messages
+                    if (!text || text.length < 1) continue;
+
+                    const isOutgoing = msg.classList.contains('message-out') ||
+                                      msg.closest('.message-out') !== null ||
+                                      msg.querySelector('[data-testid="msg-dblcheck"]') !== null ||
+                                      msg.querySelector('[data-testid="msg-check"]') !== null;
+
+                    // Get sender name - try multiple selectors (5 methods for group chats)
+                    let sender = null;
+                    if (!isOutgoing) {
+                        // Method 1: Standard author elements
+                        const authorEl = msg.querySelector('[data-testid="author"]') ||
+                                        msg.querySelector('[data-testid="msg-author-title"]') ||
+                                        msg.querySelector('[data-testid="author-name"]') ||
+                                        msg.querySelector('span[dir="auto"][aria-label]');
+                        if (authorEl) {
+                            sender = authorEl.innerText || authorEl.getAttribute('aria-label') || '';
+                        }
+
+                        // Method 2: Extract from data-pre-plain-text attribute
+                        if (!sender) {
+                            const copyableEl = msg.querySelector('.copyable-text[data-pre-plain-text]');
+                            if (copyableEl) {
+                                const preText = copyableEl.getAttribute('data-pre-plain-text') || '';
+                                const match = preText.match(/\\]\\s*([^:]+):/);
+                                if (match) {
+                                    sender = match[1].trim();
+                                }
+                            }
+                        }
+
+                        // Method 3: For MEDIA messages in groups - colored span at top
+                        if (!sender) {
+                            const msgContainer = msg.closest('[data-testid="msg-container"]') || msg;
+                            const allSpans = msgContainer.querySelectorAll('span[dir="auto"]');
+                            for (const span of allSpans) {
+                                const style = window.getComputedStyle(span);
+                                const color = style.color;
+                                const spanText = (span.innerText || '').trim();
+
+                                if (spanText && spanText.length > 0 && spanText.length < 30) {
+                                    if (color && !color.includes('rgb(255, 255, 255)') &&
+                                        !color.includes('rgba(255, 255, 255') &&
+                                        !color.includes('rgb(0, 0, 0)') &&
+                                        !color.includes('rgba(0, 0, 0')) {
+                                        const spanRect = span.getBoundingClientRect();
+                                        const msgRect = msgContainer.getBoundingClientRect();
+                                        if (spanRect.top - msgRect.top < 50) {
+                                            if (!spanText.match(/^\\d+:\\d+/) &&
+                                                !spanText.match(/^[\\d,.]+ [KMG]?B$/i) &&
+                                                !spanText.match(/^\\d+ page/i) &&
+                                                spanText !== 'PDF' && spanText !== 'DOC' && spanText !== 'XLS') {
+                                                sender = spanText;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Method 4: Check for sender in message row's context
+                        if (!sender) {
+                            const msgRow = msg.closest('[role="row"]') || msg.parentElement;
+                            if (msgRow) {
+                                const rowAuthor = msgRow.querySelector('[data-testid="author"]') ||
+                                                 msgRow.querySelector('[data-testid="msg-author-title"]');
+                                if (rowAuthor) {
+                                    sender = rowAuthor.innerText || '';
+                                }
+                            }
+                        }
+
+                        // Method 5: Check aria-label on the message container
+                        if (!sender) {
+                            const ariaLabel = msg.getAttribute('aria-label') || '';
+                            const ariaMatch = ariaLabel.match(/from\\s+([^,:.]+)/i);
+                            if (ariaMatch) {
+                                sender = ariaMatch[1].trim();
+                            }
+                        }
+                    }
+
+                    // Get sender profile picture (for group chats)
+                    // IMPORTANT: In Private WhatsApp, avatar is in a SIBLING div BEFORE the message row
+                    // Structure: <div class="x1n2onr6"> contains:
+                    //   - <div class="x16ye13r..."> with avatar button + img (SIBLING)
+                    //   - <div role="row"> with message content (SIBLING)
+                    let senderProfilePic = null;
+                    let senderAvatarButtonSelector = null;  // For clicking to get contact info
+                    let senderPhoneFromHeader = null;  // Phone visible in Business WhatsApp message header
+
+                    if (!isOutgoing) {
+                        // Find the outermost container that holds both avatar and message
+                        const msgRow = msg.closest('[role="row"]');
+                        const outerContainer = msgRow ? msgRow.parentElement : msg.closest('.x1n2onr6');
+
+                        if (outerContainer) {
+                            // Look for avatar in PREVIOUS SIBLING of message row
+                            // The avatar is in: div.x16ye13r > div[role="button"][aria-label*="Open chat details"] > img
+                            const avatarSibling = outerContainer.querySelector('.x16ye13r, [class*="x16ye13r"]');
+                            if (avatarSibling) {
+                                const avatarButton = avatarSibling.querySelector('div[role="button"][aria-label*="Open chat details"]');
+                                if (avatarButton) {
+                                    // Store selector for later clicking
+                                    const ariaLabel = avatarButton.getAttribute('aria-label') || '';
+                                    if (ariaLabel) {
+                                        senderAvatarButtonSelector = `div[role="button"][aria-label="${ariaLabel.replace(/"/g, '\\"')}"]`;
+                                    }
+
+                                    // Get profile pic from the button
+                                    const avatarImg = avatarButton.querySelector('img');
+                                    if (avatarImg && avatarImg.src &&
+                                        (avatarImg.src.includes('pps.whatsapp.net') || avatarImg.src.includes('media-')) &&
+                                        !avatarImg.src.includes('default-user')) {
+                                        senderProfilePic = avatarImg.src;
+                                    }
+                                }
+                            }
+
+                            // Fallback: search for any img with profile pic URL in outer container
+                            if (!senderProfilePic) {
+                                const fallbackImg = outerContainer.querySelector('img[src*="pps.whatsapp.net"]') ||
+                                                   outerContainer.querySelector('img[src*="media-"][draggable="false"]');
+                                if (fallbackImg && fallbackImg.src && !fallbackImg.src.includes('default-user')) {
+                                    senderProfilePic = fallbackImg.src;
+                                }
+                            }
+                        }
+
+                        // Also try the previous patterns as fallback
+                        if (!senderProfilePic && msgRow) {
+                            const avatarSelectors = [
+                                'img[data-testid="author-avatar"]',
+                                '[data-testid="contact-avatar"] img',
+                                'div[role="button"] img[src*="pps.whatsapp.net"]',
+                                'img[src*="pps.whatsapp.net"]',
+                            ];
+                            for (const selector of avatarSelectors) {
+                                const avatar = msgRow.querySelector(selector);
+                                if (avatar && avatar.src && !avatar.src.includes('default-user')) {
+                                    senderProfilePic = avatar.src;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Extract phone from message header (Business WhatsApp shows phone in header)
+                        // Look for: <span class="_ahx_" role="button">+60 16-260 9676</span>
+                        const phoneSpan = msg.querySelector('span._ahx_[role="button"]') ||
+                                         msg.querySelector('span[class*="_ahx"]');
+                        if (phoneSpan) {
+                            const phoneText = (phoneSpan.innerText || '').trim();
+                            if (/^\\+?\\d[\\d\\s\\-()]{6,}$/.test(phoneText)) {
+                                senderPhoneFromHeader = phoneText.replace(/[\\s\\-()]/g, '');
+                            }
+                        }
+                    }
+
+                    // Extract ALL components from data-id attribute
+                    // Format: "{isOutgoing}_{groupId}@g.us_{messageId}_{senderId}@lid"
+                    // Example: "false_120363425279786981@g.us_AC6D878D90A12D0C36C39AC9E709F070_232336423682301@lid"
+                    let senderWhatsappId = null;
+                    let groupId = null;
+                    let messageWhatsappId = null;
+
+                    if (dataIdAttr) {
+                        const parts = dataIdAttr.split('_');
+                        if (parts.length >= 2) {
+                            if (isGroupMsg) {
+                                // Group message format: {bool}_{groupId}@g.us_{msgId}_{senderId}@lid
+                                for (let i = 1; i < parts.length; i++) {
+                                    if (parts[i].includes('@g.us')) {
+                                        groupId = parts[i];  // Keep full format: "120363425279786981@g.us"
+                                    } else if (parts[i].includes('@lid')) {
+                                        senderWhatsappId = parts[i].replace('@lid', '');
+                                    } else if (!parts[i].includes('@') && parts[i].length > 10) {
+                                        // This is likely the message ID (long alphanumeric string)
+                                        messageWhatsappId = parts[i];
+                                    }
+                                }
+                            } else {
+                                // Private chat format: {bool}_{phone}@c.us_{msgId} or {bool}_{lid}@lid_{msgId}
+                                for (let i = 1; i < parts.length; i++) {
+                                    if (parts[i].includes('@c.us')) {
+                                        senderWhatsappId = parts[i].replace('@c.us', '');
+                                    } else if (parts[i].includes('@lid')) {
+                                        senderWhatsappId = parts[i].replace('@lid', '');
+                                    } else if (!parts[i].includes('@') && parts[i].length > 10) {
+                                        messageWhatsappId = parts[i];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Get full timestamp from data-pre-plain-text attribute
+                    // ONLY use timestamps that include both date and time - skip messages without valid timestamps
+                    let fullTimestamp = null;
+                    let preTextDebug = null;
+                    const copyableTextTs = msg.querySelector('.copyable-text[data-pre-plain-text]');
+                    if (copyableTextTs) {
+                        const preText = copyableTextTs.getAttribute('data-pre-plain-text') || '';
+                        preTextDebug = preText.substring(0, 100);
+                        // Extract full timestamp with date - this is the ONLY reliable source
+                        const tsMatch = preText.match(/\\[(\\d{1,2}:\\d{2}(?:\\s*(?:[AP]M|ص|م))?),\\s*(\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})\\]/i);
+                        if (tsMatch) {
+                            let timeStr = tsMatch[1].trim();
+                            timeStr = timeStr.replace(/\\s*ص$/, ' AM').replace(/\\s*م$/, ' PM');
+                            fullTimestamp = timeStr + ', ' + tsMatch[2].trim();
+                        }
+                    }
+
+                    // Skip messages without valid full timestamp (date + time)
+                    // It's better to skip than to display with incorrect date
+                    if (!fullTimestamp) {
+                        continue;
+                    }
+
+                    messages.push({
+                        text: text.substring(0, 2000),
+                        isOutgoing: isOutgoing,
+                        isGroupMsg: isGroupMsg,
+                        sender: sender,
+                        senderProfilePic: senderProfilePic,
+                        senderWhatsappId: senderWhatsappId,
+                        senderPhoneFromHeader: senderPhoneFromHeader,
+                        senderAvatarButtonSelector: senderAvatarButtonSelector,
+                        groupId: groupId,
+                        messageWhatsappId: messageWhatsappId,
+                        fullDataId: dataIdAttr,
+                        fullTimestamp: fullTimestamp,
+                        preTextDebug: preTextDebug,
+                        messageIndex: messages.length,  // Preserve order within page
+                    });
+                }
+                return messages;
+            }''')
+
+            # Store messages in DB with deduplication
+            print(f"Bot {bot_profile_id}: History sync - '{chat_name}' extracted {len(messages_data) if messages_data else 0} messages from page", flush=True)
+            added_count = 0
+            if messages_data and len(messages_data) > 0:
+                # Sort messages by messageIndex to ensure correct chronological order
+                # messageIndex captures DOM order (top=oldest to bottom=newest)
+                # This is critical when messages have the same timestamp (same minute)
+                messages_data.sort(key=lambda m: m.get('messageIndex', 0))
+                # Check if any message's data-id indicates this is a group
+                # This is more reliable than sidebar-based group detection
+                detected_as_group = any(m.get('isGroupMsg') for m in messages_data)
+
+                # Extract group ID from messages (for groups)
+                extracted_group_id = None
+                for m in messages_data:
+                    if m.get('groupId'):
+                        extracted_group_id = m.get('groupId')
+                        break
+
+                # Get bot timezone offset
+                timezone_offset = None
+                with get_db_session() as db:
+                    bot = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+                    if bot:
+                        timezone_offset = bot.whatsapp_timezone_offset
+
+                # === CLICK-TO-EXTRACT: Get phone numbers for unique senders in groups ===
+                sender_info_cache = {}  # {senderId: {phone, profile_pic}}
+
+                if detected_as_group:
+                    # Collect unique senders who need phone extraction
+                    unique_senders = {}  # {senderId: {name, avatarSelector, profilePic, phoneFromHeader}}
+                    for m in messages_data:
+                        if m.get('isOutgoing'):
+                            continue
+                        sender_id = m.get('senderWhatsappId')
+                        if not sender_id or sender_id in unique_senders:
+                            continue
+                        unique_senders[sender_id] = {
+                            'name': m.get('sender'),
+                            'avatarSelector': m.get('senderAvatarButtonSelector'),
+                            'profilePic': m.get('senderProfilePic'),
+                            'phoneFromHeader': m.get('senderPhoneFromHeader'),
+                        }
+
+                    print(f"Bot {bot_profile_id}: History sync - '{chat_name}' found {len(unique_senders)} unique senders", flush=True)
+
+                    # For each unique sender, try to get their phone number
+                    for sender_id, sender_data in unique_senders.items():
+                        # Already have phone from header (Business WhatsApp)?
+                        if sender_data.get('phoneFromHeader'):
+                            sender_info_cache[sender_id] = {
+                                'phone': sender_data['phoneFromHeader'],
+                                'profile_pic': sender_data.get('profilePic'),
+                            }
+                            print(f"Bot {bot_profile_id}: History sync - sender '{sender_data.get('name')}' phone from header: {sender_data['phoneFromHeader']}", flush=True)
+                            continue
+
+                        # Try to click avatar button to get contact info
+                        avatar_selector = sender_data.get('avatarSelector')
+                        if avatar_selector:
+                            try:
+                                avatar_btn = page.query_selector(avatar_selector)
+                                if avatar_btn:
+                                    avatar_btn.click()
+                                    time.sleep(1.5)
+
+                                    # Extract phone from contact panel
+                                    contact_phone = page.evaluate('''() => {
+                                        const phoneSelectors = [
+                                            '.x1evy7pa.x1anpbxc span',
+                                            '[data-testid="contact-info-phone"] span',
+                                            'section span[dir="auto"]',
+                                        ];
+                                        for (const selector of phoneSelectors) {
+                                            const elements = document.querySelectorAll(selector);
+                                            for (const el of elements) {
+                                                const text = (el.textContent || '').trim();
+                                                if (/^\\+?\\d[\\d\\s\\-()]{7,}$/.test(text)) {
+                                                    return text.replace(/[\\s\\-()]/g, '');
+                                                }
+                                            }
+                                        }
+                                        // Fallback: search all spans in right panel
+                                        const panel = document.querySelector('[data-testid="contact-info-drawer"]') ||
+                                                     document.querySelector('aside') ||
+                                                     document.querySelector('section[data-testid]');
+                                        if (panel) {
+                                            const spans = panel.querySelectorAll('span');
+                                            for (const span of spans) {
+                                                const text = (span.textContent || '').trim();
+                                                if (/^\\+?\\d[\\d\\s\\-()]{7,}$/.test(text)) {
+                                                    return text.replace(/[\\s\\-()]/g, '');
+                                                }
+                                            }
+                                        }
+                                        return null;
+                                    }''')
+
+                                    # Close the panel
+                                    page.keyboard.press('Escape')
+                                    time.sleep(0.5)
+
+                                    if contact_phone:
+                                        sender_info_cache[sender_id] = {
+                                            'phone': contact_phone,
+                                            'profile_pic': sender_data.get('profilePic'),
+                                        }
+                                        print(f"Bot {bot_profile_id}: History sync - sender '{sender_data.get('name')}' phone from panel: {contact_phone}", flush=True)
+                                    else:
+                                        # Cache without phone but with profile pic
+                                        sender_info_cache[sender_id] = {
+                                            'phone': None,
+                                            'profile_pic': sender_data.get('profilePic'),
+                                        }
+                            except Exception as click_err:
+                                print(f"Bot {bot_profile_id}: History sync - error clicking sender avatar: {click_err}", flush=True)
+                                try:
+                                    page.keyboard.press('Escape')
+                                    time.sleep(0.3)
+                                except:
+                                    pass
+                        else:
+                            # No avatar selector, just cache profile pic
+                            sender_info_cache[sender_id] = {
+                                'phone': None,
+                                'profile_pic': sender_data.get('profilePic'),
+                            }
+
+                with get_db_session() as db:
+                    conv_obj = db.query(Conversation).filter(Conversation.id == conv_id).first()
+                    is_group_conv = conv_obj.is_group if conv_obj else False
+                    conv_chat_name = conv_obj.chat_name if conv_obj else chat_name
+                    conv_profile_pic = conv_obj.profile_pic if conv_obj else None
+
+                    # Update group status if detected from message data-id
+                    if detected_as_group and conv_obj and not conv_obj.is_group:
+                        conv_obj.is_group = True
+                        is_group_conv = True
+                        print(f"Bot {bot_profile_id}: History sync - '{chat_name}' detected as GROUP from message data-id", flush=True)
+
+                    # Update chat_id with GROUP ID if this is a group
+                    if detected_as_group and extracted_group_id and conv_obj:
+                        if conv_obj.chat_id != extracted_group_id:
+                            conv_obj.chat_id = extracted_group_id
+                            print(f"Bot {bot_profile_id}: History sync - '{chat_name}' updated group chat_id: {extracted_group_id}", flush=True)
+                    # For private chats: update chat_id from message data-id if still a placeholder
+                    elif not detected_as_group and conv_obj and '@' not in (conv_obj.chat_id or ''):
+                        for m in messages_data:
+                            wid = m.get('senderWhatsappId')
+                            if wid and wid.strip():
+                                phone_clean = wid.replace('+', '').replace(' ', '').replace('-', '')
+                                if phone_clean.isdigit() and len(phone_clean) >= 7:
+                                    conv_obj.chat_id = f"{phone_clean}@c.us"
+                                    conv_obj.phone = f"+{phone_clean}"  # Store with + prefix for display
+                                    print(f"Bot {bot_profile_id}: History sync - '{chat_name}' updated chat_id from message data-id: {conv_obj.chat_id}, phone: {conv_obj.phone}", flush=True)
+                                    break
+
+                    # Re-read conv fields after potential updates
+                    conv_chat_name = conv_obj.chat_name if conv_obj else chat_name
+                    conv_profile_pic = conv_obj.profile_pic if conv_obj else None
+
+                    # Build set of existing message content for deduplication
+                    existing_msgs = db.query(Message.content, Message.role).filter(
+                        Message.conversation_id == conv_id
+                    ).all()
+                    existing_content = set()
+                    for em in existing_msgs:
+                        existing_content.add((em.content[:100] if em.content else "", em.role))
+
+                    # Find earliest existing timestamp for ordering
+                    earliest_existing = None
+                    existing_timestamps = db.query(Message.timestamp).filter(
+                        Message.conversation_id == conv_id,
+                        Message.timestamp.isnot(None)
+                    ).all()
+                    if existing_timestamps:
+                        earliest_existing = min(t[0] for t in existing_timestamps)
+
+                    # Cache for sender profile pics from private conversations
+                    sender_profile_pics = {}
+
+                    # Find the last user message that has NO response after it
+                    # These are "new incoming" messages that should NOT be stored in history
+                    last_responded_user_idx = -1
+                    for scan_idx in range(len(messages_data) - 1, -1, -1):
+                        if messages_data[scan_idx].get('isOutgoing', False):
+                            last_responded_user_idx = scan_idx
+                            break
+
+                    for idx, msg in enumerate(messages_data):
+                        role = "assistant" if msg.get('isOutgoing') else "user"
+                        content = msg.get('text', '')
+
+                        # Simple deduplication: skip if same content+role already exists
+                        key = (content[:100], role)
+                        if key in existing_content:
+                            continue
+
+                        # Skip user messages after the last assistant response
+                        # These are "new incoming" messages - let normal processing handle them
+                        if role == "user" and idx > last_responded_user_idx and last_responded_user_idx >= 0:
+                            continue
+
+                        # Debug timestamp extraction
+                        if msg.get('preTextDebug'):
+                            logger.info(f"Bot {bot_profile_id}: HIST TIMESTAMP DEBUG - preText='{msg.get('preTextDebug')}', fullTimestamp='{msg.get('fullTimestamp')}'")
+
+                        # Parse actual timestamp from WhatsApp
+                        msg_timestamp = _parse_whatsapp_timestamp(msg.get('fullTimestamp'), None, timezone_offset)
+                        if not msg_timestamp:
+                            if earliest_existing:
+                                msg_timestamp = earliest_existing - timedelta(minutes=len(messages_data) - idx)
+                            else:
+                                msg_timestamp = datetime.utcnow() - timedelta(minutes=len(messages_data) - idx)
+
+                        # Get sender name, profile pic, WhatsApp ID, and phone
+                        sender_name = msg.get('sender')
+                        sender_pic = msg.get('senderProfilePic')
+                        sender_whatsapp_id = _normalize_sender_id(msg.get('senderWhatsappId'))
+                        sender_phone = msg.get('senderPhoneFromHeader')  # From Business WhatsApp header
+
+                        if role == "user":
+                            if is_group_conv:
+                                # For group chats, use extracted sender name, pic, and phone
+                                raw_sender_id = msg.get('senderWhatsappId')
+
+                                # First, check sender_info_cache (from click-to-extract)
+                                if raw_sender_id and raw_sender_id in sender_info_cache:
+                                    cached_info = sender_info_cache[raw_sender_id]
+                                    if not sender_pic and cached_info.get('profile_pic'):
+                                        sender_pic = cached_info['profile_pic']
+                                    if not sender_phone and cached_info.get('phone'):
+                                        sender_phone = cached_info['phone']
+
+                                if sender_name:
+                                    # If no pic extracted from message or cache, check private conversation
+                                    if not sender_pic:
+                                        if sender_name in sender_profile_pics:
+                                            sender_pic = sender_profile_pics[sender_name]
+                                        else:
+                                            # Look up sender's private conversation
+                                            sender_private_conv = db.query(Conversation).filter(
+                                                Conversation.bot_profile_id == bot_profile_id,
+                                                Conversation.is_group == False,
+                                                Conversation.chat_name == sender_name
+                                            ).first()
+                                            if sender_private_conv and sender_private_conv.profile_pic:
+                                                sender_pic = sender_private_conv.profile_pic
+                                            sender_profile_pics[sender_name] = sender_pic
+                                    else:
+                                        # Cache the extracted pic for future use
+                                        sender_profile_pics[sender_name] = sender_pic
+                            else:
+                                # For private chats, sender is the contact (chat_name)
+                                sender_name = conv_chat_name
+                                sender_pic = conv_profile_pic
+                                # For private chats, try to extract sender_id from conversation's chat_id
+                                if not sender_whatsapp_id and conv_obj and conv_obj.chat_id:
+                                    sender_whatsapp_id = _normalize_sender_id(conv_obj.chat_id)
+                        else:
+                            # For assistant messages, use bot's actual WhatsApp profile pic and phone
+                            sender_name = "AI Agent"
+                            bot_obj = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+                            if bot_obj:
+                                if bot_obj.whatsapp_profile_pic:
+                                    sender_pic = bot_obj.whatsapp_profile_pic
+                                else:
+                                    sender_pic = AI_AGENT_PROFILE_PIC
+                                if bot_obj.whatsapp_phone:
+                                    sender_whatsapp_id = bot_obj.whatsapp_phone.replace('+', '').replace(' ', '').replace('-', '')
+                            else:
+                                sender_pic = AI_AGENT_PROFILE_PIC
+
+                        # Get WhatsApp message ID for tracking
+                        whatsapp_msg_id = msg.get('messageWhatsappId')
+
+                        # Clean up sender_phone for storage
+                        sender_phone_clean = None
+                        if sender_phone:
+                            phone_clean = sender_phone.replace('+', '').replace(' ', '').replace('-', '')
+                            if phone_clean.isdigit() and len(phone_clean) >= 7:
+                                sender_phone_clean = phone_clean
+
+                        new_msg = Message(
+                            conversation_id=conv_id,
+                            role=role,
+                            content=content,
+                            sender_name=sender_name,
+                            sender_id=sender_whatsapp_id,
+                            sender_phone=sender_phone_clean,
+                            sender_profile_pic=sender_pic,
+                            whatsapp_message_id=whatsapp_msg_id,
+                            timestamp=msg_timestamp
+                        )
+                        db.add(new_msg)
+                        existing_content.add(key)
+                        added_count += 1
+
+                    # Mark conversation as synced
+                    if conv_obj:
+                        conv_obj.history_synced = True
+                        conv_obj.last_synced_at = datetime.utcnow()
+                        conv_obj.message_count = (conv_obj.message_count or 0) + added_count
+
+                    db.commit()
+
+            synced_total += added_count
+            print(f"Bot {bot_profile_id}: History sync - '{chat_name}' done, {added_count} messages added", flush=True)
+
+        except Exception as e:
+            logger.error(f"Bot {bot_profile_id}: History sync error for '{chat_name}': {e}", exc_info=True)
+
+        instance.history_sync_progress["completed"] += 1
+
+    # Close any open chat
+    try:
+        page.keyboard.press('Escape')
+        time.sleep(0.3)
+    except Exception:
+        pass
+
+    # Mark sync as complete and reset flags
+    instance.history_sync_active = False
+    instance.history_sync_stop_requested = False
+    instance.history_sync_progress["status"] = "completed"
+    instance.history_sync_progress["current_chat"] = ""
+    notify_status({
+        "status": "running",
+        "message": f"History sync complete - {synced_total} messages synced",
+        "history_sync_active": False,
+        "history_sync_progress": instance.history_sync_progress,
+    })
+    logger.info(f"Bot {bot_profile_id}: Full history sync complete - {synced_total} total messages synced across {len(conversations_data)} conversations")
 
 
 def _sync_conversation_history_on_demand(page, bot_profile_id, conversation_id, chat_name):
@@ -7645,9 +9812,52 @@ def _sync_conversation_history_on_demand(page, bot_profile_id, conversation_id, 
         # Extract all messages
         messages_data = page.evaluate('''() => {
             const messages = [];
-            const msgContainers = document.querySelectorAll('[data-testid="msg-container"], .message-in, .message-out');
 
-            for (const msg of msgContainers) {
+            // Track current date from date separators
+            let currentDateStr = null;
+
+            // Get main panel
+            const mainPanel = document.querySelector('#main [role="application"]') ||
+                             document.querySelector('#main .copyable-area') ||
+                             document.querySelector('#main');
+
+            if (!mainPanel) return messages;
+
+            // Select all rows including date separators
+            const allRows = mainPanel.querySelectorAll('[role="row"], .focusable-list-item');
+
+            for (const row of allRows) {
+                // Check if this is a date separator
+                const isMsgContainer = row.querySelector('[data-testid="msg-container"]') ||
+                                      row.classList.contains('message-in') ||
+                                      row.classList.contains('message-out') ||
+                                      row.querySelector('.message-in, .message-out');
+
+                if (!isMsgContainer) {
+                    // Extract date from separator
+                    const dateSpan = row.querySelector('span[dir="auto"]');
+                    if (dateSpan) {
+                        const dateText = (dateSpan.innerText || '').trim();
+                        if (/^\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}$/.test(dateText)) {
+                            currentDateStr = dateText;
+                        } else if (/^(Today|Yesterday)$/i.test(dateText)) {
+                            const today = new Date();
+                            if (dateText.toLowerCase() === 'yesterday') {
+                                today.setDate(today.getDate() - 1);
+                            }
+                            currentDateStr = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
+                        }
+                    }
+                    continue;
+                }
+
+                // Find the actual message container
+                const msg = row.querySelector('[data-testid="msg-container"]') ||
+                           row.querySelector('.message-in, .message-out') ||
+                           (row.classList.contains('message-in') || row.classList.contains('message-out') ? row : null);
+
+                if (!msg) continue;
+
                 let text = '';
 
                 // Check if this is a media message (has image/document/video)
@@ -7846,22 +10056,26 @@ def _sync_conversation_history_on_demand(page, bot_profile_id, conversation_id, 
                     }
                 }
 
-                // Extract sender WhatsApp ID from data-id attribute
+                // Extract sender WhatsApp ID and message ID from data-id attribute
                 // Private chat: "false_PHONE@c.us_MSGID" - PHONE is the sender
                 // Group chat: "false_GROUPID@g.us_MSGID_SENDERID@lid" - extract SENDERID from @lid
                 // Note: dataIdAttr already declared above at line 6583
                 let senderWhatsappId = null;
+                let messageWhatsappId = null;
+                const isGroupMsg = dataIdAttr.includes('@g.us');
+
                 if (dataIdAttr) {
                     const parts = dataIdAttr.split('_');
                     if (parts.length >= 2) {
-                        const isGroupMsg = dataIdAttr.includes('@g.us');
-
                         if (isGroupMsg) {
                             // For group messages: extract sender's LID (the part with @lid)
+                            // and message ID (long alphanumeric string without @)
                             for (let i = parts.length - 1; i >= 0; i--) {
                                 if (parts[i].includes('@lid')) {
                                     senderWhatsappId = parts[i].replace('@lid', '');
-                                    break;
+                                } else if (!parts[i].includes('@') && parts[i].length > 10) {
+                                    // This is likely the message ID (long alphanumeric string)
+                                    messageWhatsappId = parts[i];
                                 }
                             }
                         } else {
@@ -7869,45 +10083,66 @@ def _sync_conversation_history_on_demand(page, bot_profile_id, conversation_id, 
                             for (let i = 1; i < parts.length; i++) {
                                 if (parts[i].includes('@c.us')) {
                                     senderWhatsappId = parts[i].replace('@c.us', '');
-                                    break;
                                 } else if (parts[i].includes('@lid')) {
                                     // WhatsApp 2025+ format for private chats
                                     senderWhatsappId = parts[i].replace('@lid', '');
-                                    break;
+                                } else if (!parts[i].includes('@') && parts[i].length > 10) {
+                                    // This is likely the message ID (long alphanumeric string)
+                                    messageWhatsappId = parts[i];
                                 }
                             }
                         }
                     }
                 }
 
+                // Extract phone from message header (Business WhatsApp shows phone in header)
+                // Look for: <span class="_ahx_" role="button">+60 16-260 9676</span>
+                let senderPhoneFromHeader = null;
+                if (!isOutgoing) {
+                    const phoneSpan = msg.querySelector('span._ahx_[role="button"]') ||
+                                     msg.querySelector('span[class*="_ahx"]');
+                    if (phoneSpan) {
+                        const phoneText = (phoneSpan.innerText || '').trim();
+                        if (/^\\+?\\d[\\d\\s\\-()]{6,}$/.test(phoneText)) {
+                            senderPhoneFromHeader = phoneText.replace(/[\\s\\-()]/g, '');
+                        }
+                    }
+                }
+
                 // Get full timestamp from data-pre-plain-text attribute
-                // Format: "[HH:MM, DD/MM/YYYY] Name:" or "[HH:MM AM/PM, DD/MM/YYYY] Name:"
-                // Also handles Arabic AM (ص) and PM (م)
+                // ONLY use timestamps that include both date and time - skip messages without valid timestamps
                 let fullTimestamp = null;
                 let preTextDebug = null;
                 const copyableTextTs = msg.querySelector('.copyable-text[data-pre-plain-text]');
                 if (copyableTextTs) {
                     const preText = copyableTextTs.getAttribute('data-pre-plain-text') || '';
-                    preTextDebug = preText.substring(0, 100);  // For debugging
-                    // Extract timestamp: [10:30, 1/15/2026] or [10:30 AM, 15/01/2026] or [10:30 ص, 15/01/2026]
-                    // Capture AM/PM/ص/م if present
+                    preTextDebug = preText.substring(0, 100);
+                    // Extract full timestamp with date - this is the ONLY reliable source
                     const tsMatch = preText.match(/\\[(\\d{1,2}:\\d{2}(?:\\s*(?:[AP]M|ص|م))?),\\s*(\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})\\]/i);
                     if (tsMatch) {
                         let timeStr = tsMatch[1].trim();
-                        // Convert Arabic AM/PM to English for parsing
                         timeStr = timeStr.replace(/\\s*ص$/, ' AM').replace(/\\s*م$/, ' PM');
-                        fullTimestamp = timeStr + ', ' + tsMatch[2].trim();  // "HH:MM AM/PM, DD/MM/YYYY"
+                        fullTimestamp = timeStr + ', ' + tsMatch[2].trim();
                     }
+                }
+
+                // Skip messages without valid full timestamp (date + time)
+                if (!fullTimestamp) {
+                    continue;
                 }
 
                 messages.push({
                     text: text.substring(0, 2000),
                     isOutgoing: isOutgoing,
+                    isGroupMsg: isGroupMsg,
                     sender: sender,
                     senderProfilePic: senderProfilePic,
                     senderWhatsappId: senderWhatsappId,
+                    senderPhoneFromHeader: senderPhoneFromHeader,
+                    messageWhatsappId: messageWhatsappId,
                     fullTimestamp: fullTimestamp,
-                    preTextDebug: preTextDebug
+                    preTextDebug: preTextDebug,
+                    messageIndex: messages.length,
                 });
             }
             return messages;
@@ -7917,6 +10152,10 @@ def _sync_conversation_history_on_demand(page, bot_profile_id, conversation_id, 
         added_count = 0
         with get_db_session() as db:
             if messages_data and len(messages_data) > 0:
+                # Sort messages by messageIndex to ensure correct chronological order
+                # messageIndex captures DOM order (top=oldest to bottom=newest)
+                messages_data.sort(key=lambda m: m.get('messageIndex', 0))
+
                 # Get conversation info FIRST to check if it's a group
                 conv_info = db.query(Conversation).filter(Conversation.id == conversation_id).first()
                 is_group_conv = conv_info.is_group if conv_info else False
@@ -8030,13 +10269,26 @@ def _sync_conversation_history_on_demand(page, bot_profile_id, conversation_id, 
                         else:
                             sender_pic = AI_AGENT_PROFILE_PIC
 
+                    # Get WhatsApp message ID for tracking
+                    whatsapp_msg_id = msg.get('messageWhatsappId')
+
+                    # Get sender phone from header (Business WhatsApp) and clean it
+                    sender_phone = msg.get('senderPhoneFromHeader')
+                    sender_phone_clean = None
+                    if sender_phone:
+                        phone_clean = sender_phone.replace('+', '').replace(' ', '').replace('-', '')
+                        if phone_clean.isdigit() and len(phone_clean) >= 7:
+                            sender_phone_clean = phone_clean
+
                     new_msg = Message(
                         conversation_id=conversation_id,
                         role=role,
                         content=content,
                         sender_name=sender_name,
                         sender_id=sender_whatsapp_id,  # Phone number only (no @c.us/@g.us)
+                        sender_phone=sender_phone_clean,
                         sender_profile_pic=sender_pic,
+                        whatsapp_message_id=whatsapp_msg_id,
                         timestamp=msg_timestamp
                     )
                     db.add(new_msg)
@@ -8464,9 +10716,52 @@ def _sync_messages_batch(page, bot_profile_id, _unused=None, batch_size=5):
             # Extract all messages
             messages_data = page.evaluate('''() => {
                 const messages = [];
-                const msgContainers = document.querySelectorAll('[data-testid="msg-container"], .message-in, .message-out');
 
-                for (const msg of msgContainers) {
+                // Track current date from date separators
+                let currentDateStr = null;
+
+                // Get main panel
+                const mainPanel = document.querySelector('#main [role="application"]') ||
+                                 document.querySelector('#main .copyable-area') ||
+                                 document.querySelector('#main');
+
+                if (!mainPanel) return messages;
+
+                // Select all rows including date separators
+                const allRows = mainPanel.querySelectorAll('[role="row"], .focusable-list-item');
+
+                for (const row of allRows) {
+                    // Check if this is a date separator
+                    const isMsgContainer = row.querySelector('[data-testid="msg-container"]') ||
+                                          row.classList.contains('message-in') ||
+                                          row.classList.contains('message-out') ||
+                                          row.querySelector('.message-in, .message-out');
+
+                    if (!isMsgContainer) {
+                        // Extract date from separator
+                        const dateSpan = row.querySelector('span[dir="auto"]');
+                        if (dateSpan) {
+                            const dateText = (dateSpan.innerText || '').trim();
+                            if (/^\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}$/.test(dateText)) {
+                                currentDateStr = dateText;
+                            } else if (/^(Today|Yesterday)$/i.test(dateText)) {
+                                const today = new Date();
+                                if (dateText.toLowerCase() === 'yesterday') {
+                                    today.setDate(today.getDate() - 1);
+                                }
+                                currentDateStr = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Find the actual message container
+                    const msg = row.querySelector('[data-testid="msg-container"]') ||
+                               row.querySelector('.message-in, .message-out') ||
+                               (row.classList.contains('message-in') || row.classList.contains('message-out') ? row : null);
+
+                    if (!msg) continue;
+
                     // Check if this is a media message (has image/document/video)
                     const hasMedia = msg.querySelector('[data-testid="image-thumb"]') ||
                                     msg.querySelector('[data-testid="video-thumb"]') ||
@@ -8601,20 +10896,23 @@ def _sync_messages_batch(page, bot_profile_id, _unused=None, batch_size=5):
                     }
 
                     // Get full timestamp from data-pre-plain-text attribute
-                    // Format: "[HH:MM, DD/MM/YYYY] Name:" or "[HH:MM AM/PM, DD/MM/YYYY] Name:"
-                    // Also handles Arabic AM (ص) and PM (م)
+                    // ONLY use timestamps that include both date and time - skip messages without valid timestamps
                     let fullTimestamp = null;
                     const copyableTextTs = msg.querySelector('.copyable-text[data-pre-plain-text]');
                     if (copyableTextTs) {
                         const preText = copyableTextTs.getAttribute('data-pre-plain-text') || '';
-                        // Extract timestamp: [10:30, 1/15/2026] or [10:30 AM, 15/01/2026] or [10:30 ص, 15/01/2026]
+                        // Extract full timestamp with date - this is the ONLY reliable source
                         const tsMatch = preText.match(/\\[(\\d{1,2}:\\d{2}(?:\\s*(?:[AP]M|ص|م))?),\\s*(\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})\\]/i);
                         if (tsMatch) {
                             let timeStr = tsMatch[1].trim();
-                            // Convert Arabic AM/PM to English for parsing
                             timeStr = timeStr.replace(/\\s*ص$/, ' AM').replace(/\\s*م$/, ' PM');
-                            fullTimestamp = timeStr + ', ' + tsMatch[2].trim();  // "HH:MM AM/PM, DD/MM/YYYY"
+                            fullTimestamp = timeStr + ', ' + tsMatch[2].trim();
                         }
+                    }
+
+                    // Skip messages without valid full timestamp (date + time)
+                    if (!fullTimestamp) {
+                        continue;
                     }
 
                     messages.push({
@@ -8622,7 +10920,8 @@ def _sync_messages_batch(page, bot_profile_id, _unused=None, batch_size=5):
                         isOutgoing: isOutgoing,
                         sender: sender,
                         senderProfilePic: senderProfilePic,
-                        fullTimestamp: fullTimestamp
+                        fullTimestamp: fullTimestamp,
+                        messageIndex: messages.length,
                     });
                 }
                 return messages;
@@ -8658,6 +10957,9 @@ def _sync_messages_batch(page, bot_profile_id, _unused=None, batch_size=5):
 
                     # Cache for sender profile pics
                     sender_profile_pics = {}
+
+                    # Sort messages by messageIndex to ensure correct chronological order
+                    messages_data.sort(key=lambda m: m.get('messageIndex', 0))
 
                     added_count = 0
                     for idx, msg in enumerate(messages_data):
@@ -8952,7 +11254,7 @@ async def _run_whatsapp_bot_async(instance, config, bot_profile_id, notify_statu
     from playwright.async_api import async_playwright
     from app.database import get_db_session, BotProfile, Conversation, Message, ActivityLog
     from app.auth.utils import decrypt_string
-    from openai import OpenAI
+    from app.ai.factory import get_ai_provider
 
     playwright = None
     context = None  # Persistent context (replaces browser)
@@ -8967,7 +11269,11 @@ async def _run_whatsapp_bot_async(instance, config, bot_profile_id, notify_statu
             api_key = config['openai_api_key']
         else:
             api_key = decrypt_string(config['openai_api_key_encrypted'])
-        openai_client = OpenAI(api_key=api_key)
+        ai_provider = get_ai_provider(
+            config.get('ai_provider', 'openai'),
+            api_key,
+            model=config.get('openai_model')
+        )
 
         notify_status({"status": "launching", "message": "Launching browser..."})
 
@@ -9102,6 +11408,7 @@ async def _run_whatsapp_bot_async(instance, config, bot_profile_id, notify_statu
     finally:
         instance.is_running = False
         instance.whatsapp_connected = False
+        instance.browser_connected = False
         # Close context (persistent context - session data is auto-saved)
         if context:
             try:

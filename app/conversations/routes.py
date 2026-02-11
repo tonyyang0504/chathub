@@ -23,7 +23,7 @@ from openai import OpenAI
 from app.database import get_db, User, BotProfile, Conversation, Message
 from app.auth.utils import get_current_user, decrypt_string, get_websocket_user
 from app.auth.ownership import verify_conversation_ownership, verify_bot_ownership
-from app.bots.whatsapp_bot import _analyze_image_with_ai, _analyze_document_with_ai
+from app.bots.whatsapp_bot import _analyze_image_with_ai, _analyze_document_with_ai, _media_url_to_path
 
 logger = logging.getLogger(__name__)
 
@@ -409,9 +409,10 @@ async def get_messages(
     actual_limit = min(limit, total - offset) if total > offset else 0
 
     # Get messages in chronological order
+    # Use id as secondary sort to preserve insertion order when timestamps are identical
     messages = db.query(Message).filter(
         Message.conversation_id == conversation_id
-    ).order_by(Message.timestamp).offset(skip_from_start).limit(actual_limit).all()
+    ).order_by(Message.timestamp, Message.id).offset(skip_from_start).limit(actual_limit).all()
 
     return MessageListResponse(
         messages=[MessageResponse.model_validate(m) for m in messages],
@@ -429,6 +430,64 @@ async def get_messages(
             created_at=conversation.created_at
         )
     )
+
+
+class GroupMemberResponse(BaseModel):
+    """Response model for a group member."""
+    sender_id: Optional[str] = None
+    sender_name: Optional[str] = None
+    sender_phone: Optional[str] = None
+    sender_profile_pic: Optional[str] = None
+    message_count: int = 0
+
+
+@router.get("/{conversation_id}/members")
+async def get_conversation_members(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get unique members (senders) from a group conversation.
+    Returns distinct senders with their profile info and message counts.
+    """
+    conversation = get_conversation(conversation_id, current_user, db)
+
+    # Query distinct senders from messages
+    # Group by sender_id (or sender_name as fallback) to get unique senders
+    members_query = db.query(
+        Message.sender_id,
+        Message.sender_name,
+        Message.sender_phone,
+        Message.sender_profile_pic,
+        func.count(Message.id).label('message_count')
+    ).filter(
+        Message.conversation_id == conversation_id,
+        Message.role == 'user'  # Only incoming messages have sender info
+    ).group_by(
+        func.coalesce(Message.sender_id, Message.sender_name)
+    ).order_by(
+        desc(func.count(Message.id))  # Most active senders first
+    ).all()
+
+    members = []
+    for m in members_query:
+        # Skip if no sender info at all
+        if not m.sender_id and not m.sender_name:
+            continue
+        members.append(GroupMemberResponse(
+            sender_id=m.sender_id,
+            sender_name=m.sender_name,
+            sender_phone=m.sender_phone,
+            sender_profile_pic=m.sender_profile_pic,
+            message_count=m.message_count
+        ))
+
+    return {
+        "members": [m.model_dump() for m in members],
+        "total": len(members),
+        "is_group": conversation.is_group
+    }
 
 
 @router.delete("/{conversation_id}")
@@ -823,10 +882,8 @@ async def send_file_message(
             if local_path:
                 saved_path = Path(local_path)
             else:
-                # Fallback: reconstruct from URL (URL-decode to handle %20, etc.)
-                base_dir = Path(__file__).resolve().parent.parent.parent
-                relative_path = unquote(file_url.replace('/media/', 'data/sessions/'))
-                saved_path = base_dir / relative_path
+                # Fallback: reconstruct from URL using cross-platform helper
+                saved_path = _media_url_to_path(file_url)
             logger.info(f"Saved outgoing file to {saved_path}, URL: {file_url}")
         else:
             logger.error("Failed to save outgoing file")

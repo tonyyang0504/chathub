@@ -8,9 +8,9 @@ import base64
 import logging
 from typing import Optional, List, Dict, Any, Union
 
-from openai import OpenAI
+from openai import OpenAI, APIConnectionError, RateLimitError, APITimeoutError
 
-from app.ai.providers.base import AIProvider, AIResponse, AIMessage, ToolCall
+from app.ai.providers.base import AIProvider, AIResponse, AIMessage, ToolCall, create_retry_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -97,8 +97,8 @@ class OpenAIProvider(AIProvider):
 
         logger.debug(f"OpenAI request: model={use_model}, messages={len(openai_messages)}")
 
-        # Make the API call
-        response = self.client.chat.completions.create(**params)
+        # Make the API call with retry logic
+        response = self._make_api_call(params)
 
         # Convert response
         choice = response.choices[0]
@@ -221,6 +221,21 @@ class OpenAIProvider(AIProvider):
             return json.loads(json_str)
         except:
             return {"raw": json_str}
+
+    @create_retry_decorator(max_attempts=3)
+    def _make_api_call(self, params: Dict) -> Any:
+        """Make API call with retry logic."""
+        try:
+            return self.client.chat.completions.create(**params)
+        except RateLimitError as e:
+            logger.error(f"OpenAI rate limit exceeded: {e}")
+            raise
+        except APIConnectionError as e:
+            logger.error(f"OpenAI connection error: {e}")
+            raise ConnectionError(str(e))
+        except APITimeoutError as e:
+            logger.error(f"OpenAI timeout error: {e}")
+            raise TimeoutError(str(e))
 
     def get_available_models(self) -> List[str]:
         """Return list of available OpenAI models."""

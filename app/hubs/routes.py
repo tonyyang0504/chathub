@@ -773,6 +773,7 @@ async def list_agents(
             name=a.name,
             agent_type=a.agent_type,
             description=a.description,
+            ai_provider=a.ai_provider or "openai",
             openai_model=a.openai_model,
             is_active=a.is_active,
             last_run_at=a.last_run_at,
@@ -816,6 +817,7 @@ async def create_agent(
         name=data.name,
         agent_type=data.agent_type,
         description=data.description,
+        ai_provider=data.ai_provider,
         openai_api_key_encrypted=encrypted_key,
         openai_model=data.openai_model,
         system_prompt=data.system_prompt,
@@ -833,6 +835,7 @@ async def create_agent(
         name=agent.name,
         agent_type=agent.agent_type,
         description=agent.description,
+        ai_provider=agent.ai_provider,
         openai_model=agent.openai_model,
         is_active=agent.is_active,
         last_run_at=agent.last_run_at,
@@ -868,6 +871,7 @@ async def get_agent(
         name=agent.name,
         agent_type=agent.agent_type,
         description=agent.description,
+        ai_provider=agent.ai_provider or "openai",
         openai_model=agent.openai_model,
         is_active=agent.is_active,
         last_run_at=agent.last_run_at,
@@ -898,6 +902,8 @@ async def update_agent(
         agent.name = data.name
     if data.description is not None:
         agent.description = data.description
+    if data.ai_provider is not None:
+        agent.ai_provider = data.ai_provider
     if data.openai_api_key is not None:
         agent.openai_api_key_encrypted = encrypt_string(data.openai_api_key)
     if data.openai_model is not None:
@@ -920,6 +926,7 @@ async def update_agent(
         name=agent.name,
         agent_type=agent.agent_type,
         description=agent.description,
+        ai_provider=agent.ai_provider or "openai",
         openai_model=agent.openai_model,
         is_active=agent.is_active,
         last_run_at=agent.last_run_at,
@@ -1762,9 +1769,10 @@ async def list_hub_groups(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List available WhatsApp groups from bots in this hub.
+    """List available WhatsApp groups from ALL user's bots.
 
-    Returns groups from all bot conversations that are members of this hub.
+    Returns groups from all bot conversations owned by the user.
+    Each group includes list of bot_ids that are members of that group.
     """
     hub = db.query(Hub).filter(
         Hub.id == hub_id,
@@ -1774,39 +1782,36 @@ async def list_hub_groups(
     if not hub:
         raise HTTPException(status_code=404, detail="Hub not found")
 
-    # Get bot IDs that are members of this hub
-    bot_ids = db.query(HubBotMembership.bot_profile_id).filter(
-        HubBotMembership.hub_id == hub_id,
-        HubBotMembership.is_active == True
+    # Get ALL bot IDs owned by this user
+    all_bot_ids = db.query(BotProfile.id).filter(
+        BotProfile.user_id == current_user.id
     ).all()
-    bot_ids = [b[0] for b in bot_ids]
+    all_bot_ids = [b[0] for b in all_bot_ids]
 
-    if not bot_ids:
+    if not all_bot_ids:
         return []
 
-    # Get group conversations from these bots
+    # Get group conversations from ALL user's bots
     groups = db.query(Conversation).filter(
-        Conversation.bot_profile_id.in_(bot_ids),
+        Conversation.bot_profile_id.in_(all_bot_ids),
         Conversation.is_group == True
     ).order_by(Conversation.last_message_at.desc().nullslast()).all()
 
-    # Deduplicate by chat_id (same group might appear in multiple bots)
-    seen_chat_ids = set()
-    result = []
-
+    # Group by chat_id and collect all bot_ids for each group
+    groups_map = {}
     for g in groups:
-        if g.chat_id not in seen_chat_ids:
-            seen_chat_ids.add(g.chat_id)
-            result.append({
+        if g.chat_id not in groups_map:
+            groups_map[g.chat_id] = {
                 "chat_id": g.chat_id,
                 "name": g.chat_name or g.chat_id,
                 "profile_pic": g.profile_pic,
                 "message_count": g.message_count,
                 "last_message_at": g.last_message_at.isoformat() if g.last_message_at else None,
-                "bot_profile_id": g.bot_profile_id
-            })
+                "bot_ids": []
+            }
+        groups_map[g.chat_id]["bot_ids"].append(g.bot_profile_id)
 
-    return result
+    return list(groups_map.values())
 
 
 # ============== Message Topics ==============
@@ -2005,6 +2010,85 @@ async def init_default_topics(
     return {
         "status": "success",
         "added": created_count,
+        "topics": [
+            {
+                "id": t.id,
+                "name": t.name,
+                "description": t.description,
+                "is_system": t.is_system,
+                "created_at": t.created_at.isoformat() if t.created_at else None
+            }
+            for t in all_topics
+        ]
+    }
+
+
+@router.post("/{hub_id}/topics/upload")
+async def upload_topics(
+    hub_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload topics from file (CSV or JSON format)."""
+    hub = db.query(Hub).filter(Hub.id == hub_id, Hub.user_id == current_user.id).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    topics = data.get("topics", [])
+    import_mode = data.get("import_mode", "add")  # add, replace, update
+
+    if not topics:
+        raise HTTPException(status_code=400, detail="No topics provided")
+
+    added_count = 0
+    updated_count = 0
+
+    # If replace mode, delete all existing topics first
+    if import_mode == "replace":
+        db.query(HubMessageTopic).filter(HubMessageTopic.hub_id == hub_id).delete()
+        db.flush()
+
+    for topic_data in topics:
+        name = topic_data.get("name", "").strip().lower()
+        description = topic_data.get("description", "").strip()
+
+        if not name or len(name) > 100:
+            continue  # Skip invalid names
+
+        existing = db.query(HubMessageTopic).filter(
+            HubMessageTopic.hub_id == hub_id,
+            HubMessageTopic.name == name
+        ).first()
+
+        if existing:
+            if import_mode == "update":
+                # Update description
+                existing.description = description
+                updated_count += 1
+            # In "add" mode, skip duplicates
+        else:
+            # Add new topic
+            topic = HubMessageTopic(
+                hub_id=hub_id,
+                name=name,
+                description=description,
+                is_system=False
+            )
+            db.add(topic)
+            added_count += 1
+
+    db.commit()
+
+    # Return all topics for this hub
+    all_topics = db.query(HubMessageTopic).filter(
+        HubMessageTopic.hub_id == hub_id
+    ).order_by(HubMessageTopic.is_system.desc(), HubMessageTopic.name).all()
+
+    return {
+        "status": "success",
+        "added": added_count,
+        "updated": updated_count,
         "topics": [
             {
                 "id": t.id,

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Hubs - WhatsApp Bot Dashboard{% endblock %}
+{% block title %}Hubs - ChatHub{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -261,10 +261,65 @@
         border: 1px solid var(--bs-border-color);
         background: var(--bs-body-bg);
         color: var(--bs-body-color);
+        line-height: 1.4;
+        /* Ensure full name is displayed - no truncation */
+        white-space: normal;
+        word-wrap: break-word;
+        word-break: break-word;
+        /* Allow badge to grow with content */
+        height: auto;
+        min-height: unset;
+    }
+
+    /* Topics container - ensure all badges are fully visible */
+    #hubTopicsList,
+    #botExpertiseContainer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
     }
 
     .expertise-badge:hover {
         border-color: var(--wa-teal);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Custom tooltip for badges - rendered in body to avoid modal overflow */
+    .badge-tooltip-container {
+        display: none;
+        position: fixed;
+        background: #ffffff;
+        color: #111b21;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        white-space: normal;
+        text-align: left;
+        z-index: 999999;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e0e0e0;
+        word-wrap: break-word;
+        line-height: 1.5;
+        max-width: 350px;
+    }
+
+    .badge-tooltip-container.visible {
+        display: block;
+    }
+
+    .badge-tooltip-container strong {
+        color: #25D366;
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    /* Hide inline tooltip spans */
+    .expertise-badge .badge-tooltip {
+        display: none !important;
     }
 
     .expertise-badge.selected {
@@ -277,6 +332,62 @@
         background: #6f42c1;
         border-color: #6f42c1;
         color: white;
+    }
+
+    /* Import mode button styling - pill shaped toggle buttons */
+    .import-mode-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid #e0e0e0;
+        background: #fff;
+        color: #666;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .import-mode-btn i {
+        display: none;
+        color: var(--wa-teal, #25D366);
+    }
+
+    .import-mode-btn:hover {
+        border-color: var(--wa-teal, #25D366);
+        color: var(--wa-teal, #25D366);
+    }
+
+    .import-mode-btn.active {
+        border-color: var(--wa-teal, #25D366);
+        color: var(--wa-teal, #25D366);
+        background: rgba(37, 211, 102, 0.05);
+    }
+
+    .import-mode-btn.active i {
+        display: inline-block;
+    }
+
+    /* File input styling - fix vertical divider line */
+    #topicFileInput {
+        padding: 0;
+        padding-left: 0;
+    }
+
+    #topicFileInput::file-selector-button {
+        padding: 8px 16px;
+        margin: 0;
+        margin-right: 12px;
+        border: none;
+        border-right: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        color: #212529;
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    #topicFileInput::file-selector-button:hover {
+        background-color: #e9ecef;
     }
 
     .expertise-badge .remove-btn {
@@ -696,45 +807,35 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="hubApiKey" class="form-label">OpenAI API Key (Optional)</label>
-                            <input type="password" class="form-control" id="hubApiKey" name="openai_api_key" placeholder="sk-...">
-                            <small class="text-muted">Default API key for all agents in this hub</small>
+                    <!-- Message Topics Section -->
+                    <h6 class="text-muted mb-3 mt-3"><i class="bi bi-tags me-2"></i>Message Topics</h6>
+                    <div class="mb-3">
+                        <div class="d-flex flex-wrap gap-2 mb-2" id="hubTopicsList">
+                            <!-- Topics will be added here dynamically -->
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Default Model</label>
-                            <input type="hidden" name="openai_model" id="hubModelValue" value="gpt-4o-mini">
-                            <div class="dropdown model-dropdown">
-                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="hubModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    GPT-4o Mini (Default)
+                        <div class="d-flex gap-2 align-items-center mb-2">
+                            <div class="input-group" style="max-width: 200px;">
+                                <input type="text" class="form-control form-control-sm" id="newTopicInput" placeholder="Topic name..." maxlength="100" style="border-radius: 20px;">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <input type="text" class="form-control form-control-sm" id="newTopicDescInput" placeholder="Description (optional - helps AI classify messages)..." style="border-radius: 20px 0 0 20px;">
+                                <button class="btn btn-sm btn-outline-primary" type="button" onclick="addNewTopic()" style="border-radius: 0 20px 20px 0;">
+                                    <i class="bi bi-plus"></i> Add
                                 </button>
-                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="hubModelDropdown">
-                                    <div class="model-dropdown-menu-inner">
-                                        <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-nano">GPT-5.2 Nano</a>
-                                        <h6 class="dropdown-header">GPT-5.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
-                                        <h6 class="dropdown-header">GPT-5 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-nano">GPT-4.1 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4o">GPT-4o</a>
-                                        <a class="dropdown-item selected" href="#" data-value="gpt-4o-mini">GPT-4o Mini (Default)</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4-turbo">GPT-4 Turbo</a>
-                                    </div>
-                                </div>
                             </div>
                         </div>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="initDefaultTopics()">
+                                <i class="bi bi-arrow-repeat me-1"></i>Load Defaults
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="showTopicUploadModal()">
+                                <i class="bi bi-upload me-1"></i>Upload File
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadTopicsTemplate()">
+                                <i class="bi bi-download me-1"></i>Template
+                            </button>
+                        </div>
+                        <small class="text-muted">Topics for message classification and bot expertise. Description helps AI understand what messages belong to each topic.</small>
                     </div>
 
                     <!-- Multi-Bot Response Settings -->
@@ -779,7 +880,7 @@
                             <div id="hubMaxBotsCustom" class="mt-2" style="display: none;">
                                 <input type="number" class="form-control form-control-sm" id="hubMaxBotsCustomInput" min="1" max="99" placeholder="Enter number" style="width: 120px;">
                             </div>
-                            <small class="text-muted d-block mt-1">Default when no category rule matches</small>
+                            <small class="text-muted d-block mt-1">Default when no topic rule matches</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Default Response Delay</label>
@@ -793,9 +894,9 @@
                         </div>
                     </div>
 
-                    <!-- Per-Category Rules Section -->
+                    <!-- Per-Topic Rules Section -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label mb-0">Per-Category Rules <span class="badge bg-secondary" id="rulesCount">0</span></label>
+                        <label class="form-label mb-0">Per-Topic Rules <span class="badge bg-secondary" id="rulesCount">0</span></label>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-sm btn-outline-danger" id="deleteAllRulesBtn" style="display: none;" onclick="deleteAllCategoryRules()">
                                 <i class="bi bi-trash"></i> Delete All
@@ -805,7 +906,7 @@
                             </button>
                         </div>
                     </div>
-                    <small class="text-muted d-block mb-2">Override default settings for specific message categories (e.g., greeting, discussion, support)</small>
+                    <small class="text-muted d-block mb-2">Override default settings for specific message topics defined above</small>
                     <div id="categoryRulesList" class="mb-3">
                         <!-- Rules will be added here dynamically -->
                     </div>
@@ -865,26 +966,6 @@
                         </div>
                     </div>
 
-                    <!-- Message Topics Section -->
-                    <hr class="my-3">
-                    <h6 class="text-muted mb-3"><i class="bi bi-tags me-2"></i>Message Topics</h6>
-                    <div class="mb-3">
-                        <div class="d-flex flex-wrap gap-2 mb-2" id="hubTopicsList">
-                            <!-- Topics will be added here dynamically -->
-                        </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <div class="input-group" style="max-width: 300px;">
-                                <input type="text" class="form-control form-control-sm" id="newTopicInput" placeholder="Add new topic..." style="border-radius: 20px 0 0 20px;">
-                                <button class="btn btn-sm btn-outline-primary" type="button" onclick="addNewTopic()" style="border-radius: 0 20px 20px 0;">
-                                    <i class="bi bi-plus"></i>
-                                </button>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="initDefaultTopics()">
-                                <i class="bi bi-arrow-repeat me-1"></i>Load Defaults
-                            </button>
-                        </div>
-                        <small class="text-muted">Topics for message classification and bot expertise</small>
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -945,7 +1026,7 @@
                                 <i class="bi bi-arrow-repeat me-1"></i>Refresh
                             </button>
                         </div>
-                        <p class="text-muted small mb-3">Select which WhatsApp groups this hub will manage. Only bots that are members of selected groups will be available.</p>
+                        <p class="text-muted small mb-3">Select which WhatsApp groups this hub will manage. Then add bots that are members of these groups.</p>
                         <div class="d-flex flex-wrap gap-2 mb-3" id="hubDetailGroupsList">
                             <span class="text-muted small">Loading groups...</span>
                         </div>
@@ -1027,6 +1108,59 @@
     </div>
 </div>
 
+<!-- Topic Upload Modal -->
+<div class="modal fade" id="topicUploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Upload Topics</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Select File</label>
+                    <input type="file" class="form-control" id="topicFileInput" accept=".csv,.json">
+                    <small class="text-muted">Supported formats: CSV, JSON</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Import Mode</label>
+                    <div class="import-mode-options d-flex flex-wrap gap-2 mt-2">
+                        <label class="import-mode-btn active" data-value="add">
+                            <input type="radio" name="importMode" value="add" checked style="display: none;">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <span>Add to existing</span>
+                        </label>
+                        <label class="import-mode-btn" data-value="replace">
+                            <input type="radio" name="importMode" value="replace" style="display: none;">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <span>Replace all</span>
+                        </label>
+                        <label class="import-mode-btn" data-value="update">
+                            <input type="radio" name="importMode" value="update" style="display: none;">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <span>Add & Update</span>
+                        </label>
+                    </div>
+                    <div class="import-mode-desc text-muted small mt-2" id="importModeDesc">
+                        Skip duplicates, keep current topics
+                    </div>
+                </div>
+                <div class="alert alert-info small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>CSV format:</strong> First row should be headers: <code>name,description</code><br>
+                    <strong>JSON format:</strong> Array of objects: <code>[{"name": "...", "description": "..."}]</code>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="uploadTopicsFile()">
+                    <i class="bi bi-upload me-1"></i>Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add Bot Modal -->
 <div class="modal fade" id="addBotModal" tabindex="-1">
     <div class="modal-dialog">
@@ -1091,13 +1225,18 @@
                         <div class="d-flex flex-wrap gap-2 mb-2" id="botExpertiseContainer">
                             <!-- Topic badges will be rendered here -->
                         </div>
-                        <div class="input-group" style="max-width: 300px;">
-                            <input type="text" class="form-control form-control-sm" id="customExpertiseInput" placeholder="Add custom expertise..." style="border-radius: 20px 0 0 20px;">
-                            <button class="btn btn-sm btn-outline-primary" type="button" onclick="addCustomExpertise()" style="border-radius: 0 20px 20px 0;">
-                                <i class="bi bi-plus"></i>
-                            </button>
+                        <div class="d-flex gap-2 align-items-center mb-2">
+                            <div class="input-group" style="max-width: 150px;">
+                                <input type="text" class="form-control form-control-sm" id="customExpertiseInput" placeholder="Expertise name..." maxlength="100" style="border-radius: 20px;">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <input type="text" class="form-control form-control-sm" id="customExpertiseDescInput" placeholder="Description (optional)..." style="border-radius: 20px 0 0 20px;">
+                                <button class="btn btn-sm btn-outline-primary" type="button" onclick="addCustomExpertise()" style="border-radius: 0 20px 20px 0;">
+                                    <i class="bi bi-plus"></i> Add
+                                </button>
+                            </div>
                         </div>
-                        <small class="text-muted">Topics this bot specializes in for routing decisions</small>
+                        <small class="text-muted">Topics this bot specializes in. Hover over badges to see descriptions.</small>
                         <input type="hidden" id="botExpertise">
                     </div>
 
@@ -1227,8 +1366,22 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="agentApiKey" class="form-label">OpenAI API Key (Optional)</label>
-                            <input type="password" class="form-control" id="agentApiKey" placeholder="Uses hub default if empty">
+                            <label class="form-label">AI Provider</label>
+                            <input type="hidden" id="agentProviderValue" value="openai">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="agentProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    OpenAI (Default)
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="agentProviderDropdown">
+                                    <div class="model-dropdown-menu-inner">
+                                        <a class="dropdown-item agent-provider-item selected" href="#" data-value="openai">OpenAI (Default)</a>
+                                        <a class="dropdown-item agent-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                        <a class="dropdown-item agent-provider-item" href="#" data-value="google">Google (Gemini)</a>
+                                        <a class="dropdown-item agent-provider-item" href="#" data-value="deepseek">DeepSeek</a>
+                                        <a class="dropdown-item agent-provider-item" href="#" data-value="qwen">Qwen</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Model</label>
@@ -1238,29 +1391,17 @@
                                     GPT-4o Mini (Default)
                                 </button>
                                 <div class="dropdown-menu model-dropdown-menu" aria-labelledby="agentModelDropdown">
-                                    <div class="model-dropdown-menu-inner">
-                                        <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-nano">GPT-5.2 Nano</a>
-                                        <h6 class="dropdown-header">GPT-5.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
-                                        <h6 class="dropdown-header">GPT-5 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4.1 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4.1-nano">GPT-4.1 Nano</a>
-                                        <h6 class="dropdown-header">GPT-4 Series</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4o">GPT-4o</a>
-                                        <a class="dropdown-item selected" href="#" data-value="gpt-4o-mini">GPT-4o Mini (Default)</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-4-turbo">GPT-4 Turbo</a>
+                                    <div class="model-dropdown-menu-inner" id="agentModelList">
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="agentApiKey" class="form-label">API Key (Optional)</label>
+                            <input type="password" class="form-control" id="agentApiKey" placeholder="sk-...">
+                            <small class="text-muted" id="agentApiKeyHelp">Uses hub default if empty. Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
                         </div>
                     </div>
 
@@ -1626,6 +1767,210 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Provider models configuration for agents
+const AGENT_PROVIDER_MODELS = {
+    openai: {
+        label: 'OpenAI',
+        defaultModel: 'gpt-4o-mini',
+        apiKeyUrl: 'https://platform.openai.com/api-keys',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'GPT-5.2 Series (Latest)', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+                { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
+                { value: 'gpt-5.2-mini', label: 'GPT-5.2 Mini' },
+                { value: 'gpt-5.2-nano', label: 'GPT-5.2 Nano' },
+            ]},
+            { header: 'GPT-5.1 Series', models: [
+                { value: 'gpt-5.1', label: 'GPT-5.1' },
+            ]},
+            { header: 'GPT-5 Series', models: [
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+            ]},
+            { header: 'GPT-4 Series', models: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+            ]},
+        ]
+    },
+    anthropic: {
+        label: 'Anthropic',
+        defaultModel: 'claude-sonnet-4-20250514',
+        apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+        apiKeyPlaceholder: 'sk-ant-...',
+        groups: [
+            { header: 'Claude 4 Series (Latest)', models: [
+                { value: 'claude-opus-4-0-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (Default)' },
+            ]},
+            { header: 'Claude 3.7 Series', models: [
+                { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet' },
+            ]},
+            { header: 'Claude 3.5 Series', models: [
+                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+            ]},
+            { header: 'Claude 3 Series', models: [
+                { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+                { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+                { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
+            ]},
+        ]
+    },
+    google: {
+        label: 'Google',
+        defaultModel: 'gemini-2.0-flash',
+        apiKeyUrl: 'https://aistudio.google.com/apikey',
+        apiKeyPlaceholder: 'AIza...',
+        groups: [
+            { header: 'Gemini 2.5 Series (Latest)', models: [
+                { value: 'gemini-2.5-pro-preview-05-06', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash' },
+            ]},
+            { header: 'Gemini 2.0 Series', models: [
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (Default)' },
+                { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+            ]},
+            { header: 'Gemini 1.5 Series', models: [
+                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            ]},
+        ]
+    },
+    deepseek: {
+        label: 'DeepSeek',
+        defaultModel: 'deepseek-chat',
+        apiKeyUrl: 'https://platform.deepseek.com/api_keys',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'DeepSeek Models', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek Chat (Default)' },
+                { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+            ]},
+        ]
+    },
+    qwen: {
+        label: 'Qwen',
+        defaultModel: 'qwen-turbo',
+        apiKeyUrl: 'https://dashscope.console.aliyun.com/apiKey',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'Qwen Models', models: [
+                { value: 'qwen-turbo', label: 'Qwen Turbo (Default)' },
+                { value: 'qwen-plus', label: 'Qwen Plus' },
+                { value: 'qwen-max', label: 'Qwen Max' },
+            ]},
+        ]
+    }
+};
+
+const AGENT_PROVIDER_LABELS = {
+    openai: 'OpenAI (Default)',
+    anthropic: 'Anthropic (Claude)',
+    google: 'Google (Gemini)',
+    deepseek: 'DeepSeek',
+    qwen: 'Qwen'
+};
+
+// Update agent model dropdown based on selected provider
+function updateAgentModelDropdown(providerName) {
+    const provider = AGENT_PROVIDER_MODELS[providerName];
+    if (!provider) return;
+
+    const listEl = document.getElementById('agentModelList');
+    const hiddenInput = document.getElementById('agentModelValue');
+    const btn = document.getElementById('agentModelDropdown');
+
+    // Build model list HTML
+    let html = '';
+    provider.groups.forEach(group => {
+        html += `<h6 class="dropdown-header">${group.header}</h6>`;
+        group.models.forEach(m => {
+            const isDefault = m.value === provider.defaultModel;
+            html += `<a class="dropdown-item agent-model-item${isDefault ? ' selected' : ''}" href="#" data-value="${m.value}">${m.label}</a>`;
+        });
+    });
+    listEl.innerHTML = html;
+
+    // Set default model
+    hiddenInput.value = provider.defaultModel;
+    const defaultItem = listEl.querySelector(`.dropdown-item[data-value="${provider.defaultModel}"]`);
+    btn.textContent = defaultItem ? defaultItem.textContent : provider.defaultModel;
+
+    // Re-bind click events for new items
+    listEl.querySelectorAll('.agent-model-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.model-dropdown');
+            const dropBtn = dropdown.querySelector('.model-dropdown-btn');
+            const input = document.getElementById('agentModelValue');
+            dropBtn.textContent = this.textContent;
+            input.value = this.getAttribute('data-value');
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            bootstrap.Dropdown.getInstance(dropBtn)?.hide();
+        });
+    });
+
+    // Update API key help text
+    const helpEl = document.getElementById('agentApiKeyHelp');
+    if (helpEl) {
+        helpEl.innerHTML = `Uses hub default if empty. Get your key at <a href="${provider.apiKeyUrl}" target="_blank">${provider.apiKeyUrl.replace('https://', '').split('/')[0]}</a>`;
+    }
+
+    // Update API key placeholder
+    const apiKeyInput = document.getElementById('agentApiKey');
+    if (apiKeyInput) {
+        apiKeyInput.placeholder = provider.apiKeyPlaceholder;
+    }
+}
+
+// Set agent provider dropdown value programmatically
+function setAgentProviderDropdownValue(value, updateModels = true) {
+    const btn = document.getElementById('agentProviderDropdown');
+    const hiddenInput = document.getElementById('agentProviderValue');
+    const dropdown = btn.closest('.model-dropdown');
+    const item = dropdown.querySelector(`.agent-provider-item[data-value="${value}"]`);
+
+    if (item) {
+        btn.textContent = item.textContent;
+        hiddenInput.value = value;
+        dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+    }
+
+    if (updateModels) {
+        updateAgentModelDropdown(value);
+    }
+}
+
+// Set agent model dropdown value programmatically
+function setAgentModelDropdownValue(value) {
+    const btn = document.getElementById('agentModelDropdown');
+    const hiddenInput = document.getElementById('agentModelValue');
+    const listEl = document.getElementById('agentModelList');
+    const item = listEl.querySelector(`.dropdown-item[data-value="${value}"]`);
+
+    if (item) {
+        btn.textContent = item.textContent;
+        hiddenInput.value = value;
+        listEl.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+    } else {
+        // Model not in list, just set the value
+        hiddenInput.value = value;
+        btn.textContent = value;
+    }
+}
+
 // Setup custom model dropdowns
 function setupModelDropdowns() {
     // Model dropdown items (exclude agent-type-item)
@@ -1673,6 +2018,31 @@ function setupModelDropdowns() {
 
             // Trigger prompt and description update
             updateAgentPrompt();
+        });
+    });
+
+    // Agent provider dropdown items
+    document.querySelectorAll('.agent-provider-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.model-dropdown');
+            const btn = dropdown.querySelector('.model-dropdown-btn');
+            const hiddenInput = document.getElementById('agentProviderValue');
+            const value = this.getAttribute('data-value');
+
+            // Update button text
+            btn.textContent = this.textContent.trim();
+            hiddenInput.value = value;
+
+            // Update selected state
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+
+            // Close dropdown
+            bootstrap.Dropdown.getInstance(btn)?.hide();
+
+            // Update model dropdown based on new provider
+            updateAgentModelDropdown(value);
         });
     });
 
@@ -2010,8 +2380,8 @@ function cancelCustomRole() {
     document.getElementById('botRoleDropdownContainer').style.display = 'block';
     document.getElementById('customRoleContainer').style.display = 'none';
     document.getElementById('customRoleInput').value = '';
-    // Reset to default member role
-    setBotRoleDropdownValue('member');
+    // Reset to default specialist role
+    setBotRoleDropdownValue('specialist');
 }
 
 // Working periods management
@@ -2573,7 +2943,6 @@ function showCreateHubModal() {
     document.getElementById('hubModalTitle').textContent = 'Create Hub';
     document.getElementById('hubForm').reset();
     document.getElementById('hubId').value = '';
-    setModelDropdownValue('hubModelDropdown', 'gpt-4o-mini');
     setTaskTypeDropdownValue('group_management');
     // Reset multi-bot settings to defaults
     setMaxBotsDropdownValue(1);
@@ -2647,7 +3016,7 @@ function updateDeleteAllRulesBtn() {
 function renderCategoryRules() {
     const container = document.getElementById('categoryRulesList');
     if (categoryRules.length === 0) {
-        container.innerHTML = '<div class="text-muted small p-2 border rounded bg-light">No category rules. Using defaults for all message types.</div>';
+        container.innerHTML = '<div class="text-muted small p-2 border rounded bg-light">No topic rules. Using defaults for all message types.</div>';
         return;
     }
 
@@ -2668,7 +3037,7 @@ function renderCategoryRules() {
             <table class="table table-sm table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 28%;">Category</th>
+                        <th style="width: 28%;">Topic</th>
                         <th style="width: 22%;">Max Bots</th>
                         <th style="width: 42%;">Delay (s)</th>
                         <th style="width: 8%;"></th>
@@ -2678,9 +3047,27 @@ function renderCategoryRules() {
                     ${categoryRules.map((rule, index) => `
                         <tr>
                             <td>
-                                <input type="text" class="form-control form-control-sm" style="width: 120px;"
-                                       placeholder="e.g. greeting" value="${rule.category || ''}"
-                                       onchange="updateCategoryRule(${index}, 'category', this.value)">
+                                <div class="dropdown model-dropdown">
+                                    <button class="btn model-dropdown-btn dropdown-toggle" type="button"
+                                            id="ruleCategoryBtn_${index}" data-bs-toggle="dropdown" aria-expanded="false"
+                                            style="min-width: 120px; text-align: left;"
+                                            data-bs-popper-config='{"modifiers":[{"name":"flip","options":{"boundary":"viewport"}},{"name":"preventOverflow","options":{"boundary":"viewport"}}]}'>
+                                        ${rule.category || 'Select topic...'}
+                                    </button>
+                                    <div class="dropdown-menu model-dropdown-menu">
+                                        <div class="model-dropdown-menu-inner">
+                                            ${hubTopics.length === 0 ?
+                                                '<span class="dropdown-item text-muted">No topics defined</span>' :
+                                                hubTopics.map(topic => `
+                                                    <a class="dropdown-item rule-category-item ${rule.category === topic.name ? 'selected' : ''}"
+                                                       href="#" data-index="${index}" data-value="${topic.name}">
+                                                        ${topic.name}
+                                                    </a>
+                                                `).join('')
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-1">
@@ -2734,7 +3121,10 @@ function renderCategoryRules() {
     `;
 
     // Initialize dropdown event listeners after rendering
-    setTimeout(() => initRuleMaxBotsDropdowns(), 0);
+    setTimeout(() => {
+        initRuleMaxBotsDropdowns();
+        initRuleCategoryDropdowns();
+    }, 0);
 }
 
 function handleRuleMaxBotsChange(index, value) {
@@ -2787,6 +3177,31 @@ function initRuleMaxBotsDropdowns() {
     });
 }
 
+function initRuleCategoryDropdowns() {
+    document.querySelectorAll('.rule-category-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const index = parseInt(this.getAttribute('data-index'));
+            const value = this.getAttribute('data-value');
+            const dropdown = this.closest('.model-dropdown');
+            const btn = dropdown.querySelector('.model-dropdown-btn');
+
+            // Update selected state
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+
+            // Update button text
+            btn.textContent = value;
+
+            // Close dropdown
+            bootstrap.Dropdown.getInstance(btn)?.hide();
+
+            // Update the rule
+            updateCategoryRule(index, 'category', value);
+        });
+    });
+}
+
 // ============== Hub Groups Functions ==============
 
 let availableGroups = [];
@@ -2809,7 +3224,7 @@ async function loadAvailableGroups(hubId, targetContainer = 'hubDetailGroupsList
     } catch (error) {
         console.error('Error loading groups:', error);
         availableGroups = [];
-        container.innerHTML = '<span class="text-muted small">No groups available. Add bots to this hub first.</span>';
+        container.innerHTML = '<span class="text-muted small">Failed to load groups. Please try again.</span>';
     }
 }
 
@@ -2818,7 +3233,7 @@ function renderHubGroups(targetContainer = 'hubDetailGroupsList') {
     if (!container) return;
 
     if (availableGroups.length === 0) {
-        container.innerHTML = '<span class="text-muted small">No groups available. Add bots with WhatsApp groups to this hub first.</span>';
+        container.innerHTML = '<span class="text-muted small">No WhatsApp groups found. Make sure your bots are connected to WhatsApp and have joined groups.</span>';
         return;
     }
 
@@ -2948,25 +3363,38 @@ function renderTopics() {
         return;
     }
 
-    container.innerHTML = hubTopics.map(topic => `
-        <span class="expertise-badge ${topic.is_system ? 'selected' : 'custom'}"
-              onclick="deleteTopic(${topic.id})"
-              style="cursor: pointer;"
-              title="Click to remove">
-            ${escapeHtml(topic.name)}
-        </span>
-    `).join('');
+    container.innerHTML = hubTopics.map(topic => {
+        // Build tooltip content with styled title and description
+        let tooltipHtml = '';
+        if (topic.description) {
+            tooltipHtml = `<span class="badge-tooltip"><strong>${escapeHtml(topic.name)}</strong>${escapeHtml(topic.description)}</span>`;
+        }
+        return `
+            <span class="expertise-badge ${topic.is_system ? 'selected' : 'custom'}"
+                  onclick="deleteTopic(${topic.id})"
+                  style="cursor: pointer; white-space: normal; overflow: visible; text-overflow: clip; max-width: none;">
+                ${escapeHtml(topic.name)}${tooltipHtml}
+            </span>
+        `;
+    }).join('');
 }
 
 async function addNewTopic() {
     // Safety check - ensure hubTopics is an array
     if (!Array.isArray(hubTopics)) hubTopics = [];
 
-    const input = document.getElementById('newTopicInput');
-    const topicName = input.value.trim().toLowerCase();
+    const nameInput = document.getElementById('newTopicInput');
+    const descInput = document.getElementById('newTopicDescInput');
+    const topicName = nameInput.value.trim().toLowerCase();
+    const topicDesc = descInput ? descInput.value.trim() : '';
 
     if (!topicName) {
         showToast('Please enter a topic name', 'warning');
+        return;
+    }
+
+    if (topicName.length > 100) {
+        showToast('Topic name must be 100 characters or less', 'warning');
         return;
     }
 
@@ -2979,13 +3407,18 @@ async function addNewTopic() {
     // If editing existing hub, save to API
     if (currentEditingHubId) {
         try {
+            const payload = { name: topicName };
+            if (topicDesc) {
+                payload.description = topicDesc;
+            }
+
             const response = await fetch(`/api/hubs/${currentEditingHubId}/topics`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${getToken()}`
                 },
-                body: JSON.stringify({ name: topicName })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) throw new Error('Failed to add topic');
@@ -2993,7 +3426,8 @@ async function addNewTopic() {
             const newTopic = await response.json();
             hubTopics.push(newTopic);
             renderTopics();
-            input.value = '';
+            nameInput.value = '';
+            if (descInput) descInput.value = '';
             showToast('Topic added', 'success');
         } catch (error) {
             showToast('Failed to add topic', 'error');
@@ -3003,11 +3437,13 @@ async function addNewTopic() {
         hubTopics.push({
             id: Date.now(), // Temporary ID
             name: topicName,
+            description: topicDesc || null,
             is_system: false,
             _isNew: true
         });
         renderTopics();
-        input.value = '';
+        nameInput.value = '';
+        if (descInput) descInput.value = '';
     }
 }
 
@@ -3089,11 +3525,242 @@ async function initDefaultTopics() {
     }
 }
 
-// Handle enter key in topic input
+// Topic file upload modal
+let topicUploadModal = null;
+
+function showTopicUploadModal() {
+    if (!topicUploadModal) {
+        topicUploadModal = new bootstrap.Modal(document.getElementById('topicUploadModal'));
+        // Setup import mode button handlers
+        document.querySelectorAll('.import-mode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.import-mode-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                this.querySelector('input[type="radio"]').checked = true;
+                updateImportModeDesc(this.dataset.value);
+            });
+        });
+    }
+    // Reset the form
+    document.getElementById('topicFileInput').value = '';
+    document.querySelectorAll('.import-mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.import-mode-btn[data-value="add"]').classList.add('active');
+    document.querySelector('input[name="importMode"][value="add"]').checked = true;
+    updateImportModeDesc('add');
+    topicUploadModal.show();
+}
+
+function updateImportModeDesc(mode) {
+    const desc = document.getElementById('importModeDesc');
+    const descriptions = {
+        'add': 'Skip duplicates, keep current topics',
+        'replace': 'Remove all existing topics first, then add new ones',
+        'update': 'Add new topics, update descriptions for existing ones'
+    };
+    desc.textContent = descriptions[mode] || '';
+}
+
+// Download topics template
+function downloadTopicsTemplate() {
+    const csvContent = `name,description
+sales,Sales inquiries and product questions
+support,Customer support and help requests
+billing,Billing payments and invoices
+general,General inquiries and conversations
+greeting,Greetings and welcome messages`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'topics_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Template downloaded', 'success');
+}
+
+// Upload topics file
+async function uploadTopicsFile() {
+    const fileInput = document.getElementById('topicFileInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showToast('Please select a file', 'warning');
+        return;
+    }
+
+    const importMode = document.querySelector('input[name="importMode"]:checked').value;
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+
+    if (!['csv', 'json'].includes(fileExtension)) {
+        showToast('Please upload a CSV or JSON file', 'warning');
+        return;
+    }
+
+    try {
+        const content = await file.text();
+        let topics = [];
+
+        // Parse file based on extension
+        if (fileExtension === 'json') {
+            topics = parseJsonTopics(content);
+        } else {
+            topics = parseCsvTopics(content);
+        }
+
+        if (topics.length === 0) {
+            showToast('No valid topics found in file', 'warning');
+            return;
+        }
+
+        // Process topics based on import mode
+        if (currentEditingHubId) {
+            // Use API for existing hubs
+            await uploadTopicsToApi(topics, importMode);
+        } else {
+            // Handle locally for new hubs
+            processTopicsLocally(topics, importMode);
+        }
+
+        topicUploadModal.hide();
+    } catch (error) {
+        console.error('Error processing file:', error);
+        showToast('Error processing file: ' + error.message, 'error');
+    }
+}
+
+// Parse JSON topics
+function parseJsonTopics(content) {
+    try {
+        const data = JSON.parse(content);
+        const topics = Array.isArray(data) ? data : [data];
+        return topics.filter(t => t.name && typeof t.name === 'string').map(t => ({
+            name: t.name.trim().toLowerCase(),
+            description: (t.description || '').trim()
+        }));
+    } catch (e) {
+        throw new Error('Invalid JSON format');
+    }
+}
+
+// Parse CSV topics
+function parseCsvTopics(content) {
+    const lines = content.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length < 2) {
+        throw new Error('CSV must have header row and at least one data row');
+    }
+
+    // Parse header
+    const header = lines[0].toLowerCase();
+    const hasDescription = header.includes('description');
+
+    const topics = [];
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Simple CSV parsing (handles basic cases)
+        const parts = parseCSVLine(line);
+        if (parts.length > 0 && parts[0]) {
+            topics.push({
+                name: parts[0].trim().toLowerCase(),
+                description: (parts[1] || '').trim()
+            });
+        }
+    }
+    return topics;
+}
+
+// Parse a single CSV line (handles quoted fields)
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current.trim());
+    return result;
+}
+
+// Upload topics via API (for existing hubs)
+async function uploadTopicsToApi(topics, importMode) {
+    try {
+        const response = await fetch(`/api/hubs/${currentEditingHubId}/topics/upload`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({ topics, import_mode: importMode })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Upload failed');
+        }
+
+        const result = await response.json();
+        hubTopics = Array.isArray(result.topics) ? result.topics : [];
+        renderTopics();
+        showToast(`Imported ${result.added || 0} topics, updated ${result.updated || 0}`, 'success');
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Process topics locally (for new hubs)
+function processTopicsLocally(topics, importMode) {
+    if (!Array.isArray(hubTopics)) hubTopics = [];
+
+    let added = 0, updated = 0;
+
+    if (importMode === 'replace') {
+        hubTopics = [];
+    }
+
+    topics.forEach(topic => {
+        const existingIndex = hubTopics.findIndex(t => t.name.toLowerCase() === topic.name.toLowerCase());
+
+        if (existingIndex === -1) {
+            // Add new topic
+            hubTopics.push({
+                id: Date.now() + Math.random(),
+                name: topic.name,
+                description: topic.description,
+                is_system: false,
+                _isNew: true
+            });
+            added++;
+        } else if (importMode === 'update') {
+            // Update existing topic description
+            hubTopics[existingIndex].description = topic.description;
+            updated++;
+        }
+    });
+
+    renderTopics();
+    showToast(`Imported ${added} topics, updated ${updated}`, 'success');
+}
+
+// Handle enter key in topic inputs (both name and description)
 document.addEventListener('DOMContentLoaded', function() {
-    const topicInput = document.getElementById('newTopicInput');
-    if (topicInput) {
-        topicInput.addEventListener('keypress', function(e) {
+    const topicNameInput = document.getElementById('newTopicInput');
+    const topicDescInput = document.getElementById('newTopicDescInput');
+
+    if (topicNameInput) {
+        topicNameInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addNewTopic();
@@ -3101,10 +3768,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle enter key in custom expertise input
-    const expertiseInput = document.getElementById('customExpertiseInput');
-    if (expertiseInput) {
-        expertiseInput.addEventListener('keypress', function(e) {
+    if (topicDescInput) {
+        topicDescInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewTopic();
+            }
+        });
+    }
+
+    // Handle enter key in custom expertise inputs (both name and description)
+    const expertiseNameInput = document.getElementById('customExpertiseInput');
+    const expertiseDescInput = document.getElementById('customExpertiseDescInput');
+
+    if (expertiseNameInput) {
+        expertiseNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomExpertise();
+            }
+        });
+    }
+
+    if (expertiseDescInput) {
+        expertiseDescInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addCustomExpertise();
@@ -3157,23 +3844,37 @@ function renderExpertiseBadges(topics) {
             return;
         }
         const isSelected = selectedExpertise.includes(topicNameLower);
+        // Build tooltip content (only show if description exists)
+        let tooltipHtml = '';
+        if (topic.description) {
+            tooltipHtml = `<span class="badge-tooltip"><strong>${escapeHtml(topic.name)}</strong>${escapeHtml(topic.description)}</span>`;
+        }
         html += `
             <span class="expertise-badge ${isSelected ? 'selected' : ''}"
                   data-topic="${escapeHtml(topic.name)}"
-                  onclick="toggleExpertiseTopic('${escapeHtml(topic.name)}')">
-                ${escapeHtml(topic.name)}
+                  onclick="toggleExpertiseTopic('${escapeHtml(topic.name)}')"
+                  style="white-space: normal; overflow: visible; text-overflow: clip; max-width: none;">
+                ${escapeHtml(topic.name)}${tooltipHtml}
             </span>
         `;
     });
 
-    // Render custom expertise badges
+    // Render custom expertise badges (find description from topics if exists)
     customExpertise.forEach(exp => {
         const isSelected = selectedExpertise.includes(exp.toLowerCase());
+        // Try to find description from topics
+        const matchingTopic = topics.find(t => t.name.toLowerCase() === exp.toLowerCase());
+        // Build tooltip content (only show if description exists)
+        let tooltipHtml = '';
+        if (matchingTopic && matchingTopic.description) {
+            tooltipHtml = `<span class="badge-tooltip"><strong>${escapeHtml(exp)}</strong>${escapeHtml(matchingTopic.description)}</span>`;
+        }
         html += `
             <span class="expertise-badge custom ${isSelected ? 'selected' : ''}"
                   data-topic="${escapeHtml(exp)}"
-                  onclick="toggleExpertiseTopic('${escapeHtml(exp)}')">
-                ${escapeHtml(exp)}
+                  onclick="toggleExpertiseTopic('${escapeHtml(exp)}')"
+                  style="white-space: normal; overflow: visible; text-overflow: clip; max-width: none;">
+                ${escapeHtml(exp)}${tooltipHtml}
                 <button type="button" class="remove-btn" onclick="event.stopPropagation(); removeCustomExpertise('${escapeHtml(exp)}')" title="Remove">
                     <i class="bi bi-x"></i>
                 </button>
@@ -3205,11 +3906,18 @@ function toggleExpertiseTopic(topicName) {
 }
 
 async function addCustomExpertise() {
-    const input = document.getElementById('customExpertiseInput');
-    const expertiseName = input.value.trim().toLowerCase();
+    const nameInput = document.getElementById('customExpertiseInput');
+    const descInput = document.getElementById('customExpertiseDescInput');
+    const expertiseName = nameInput.value.trim().toLowerCase();
+    const expertiseDesc = descInput ? descInput.value.trim() : '';
 
     if (!expertiseName) {
         showToast('Please enter expertise name', 'warning');
+        return;
+    }
+
+    if (expertiseName.length > 100) {
+        showToast('Expertise name must be 100 characters or less', 'warning');
         return;
     }
 
@@ -3232,20 +3940,28 @@ async function addCustomExpertise() {
             }).then(r => r.json());
 
             if (!existingTopics.some(t => t.name.toLowerCase() === expertiseName)) {
-                // Add new topic to hub
+                // Add new topic to hub (with description)
+                const payload = { name: expertiseName };
+                if (expertiseDesc) {
+                    payload.description = expertiseDesc;
+                }
                 await fetch(`/api/hubs/${currentHubId}/topics`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${getToken()}`
                     },
-                    body: JSON.stringify({ name: expertiseName })
+                    body: JSON.stringify(payload)
                 });
             }
         } catch (error) {
             console.error('Error adding topic:', error);
         }
     }
+
+    // Clear inputs
+    nameInput.value = '';
+    if (descInput) descInput.value = '';
 
     // Reload badges
     await loadBotExpertiseTopics();
@@ -3290,9 +4006,7 @@ async function editHub(hubId) {
         document.getElementById('hubId').value = hub.id;
         document.getElementById('hubName').value = hub.name;
         document.getElementById('hubDescription').value = hub.description || '';
-        setModelDropdownValue('hubModelDropdown', hub.openai_model);
         setTaskTypeDropdownValue(hub.task_type || 'group_management');
-        document.getElementById('hubApiKey').value = '';
 
         // Multi-bot response settings
         setMaxBotsDropdownValue(hub.max_responding_bots || 1);
@@ -3364,7 +4078,6 @@ async function saveHub() {
         name: document.getElementById('hubName').value,
         description: document.getElementById('hubDescription').value,
         task_type: document.getElementById('hubTaskTypeValue').value,
-        openai_model: document.getElementById('hubModelValue').value,
         // Selected groups
         selected_groups: selectedHubGroups.length > 0 ? selectedHubGroups : null,
         // Multi-bot response settings
@@ -3376,9 +4089,6 @@ async function saveHub() {
         bot_conversation_limit: parseInt(document.getElementById('hubBotConvLimitValue').value),
         bot_conversation_interval: document.getElementById('hubBotConvIntervalValue').value || 'hour'
     };
-
-    const apiKey = document.getElementById('hubApiKey').value;
-    if (apiKey) data.openai_api_key = apiKey;
 
     try {
         const url = hubId ? `/api/hubs/${hubId}` : '/api/hubs';
@@ -3521,8 +4231,14 @@ function configureTabsForTaskType(taskType, stayOnTab = null) {
 function renderHubBots(bots) {
     const container = document.getElementById('hubBotsContainer');
 
+    // Check if groups are selected
+    if (!selectedHubGroups || selectedHubGroups.length === 0) {
+        container.innerHTML = '<p class="text-muted"><i class="bi bi-info-circle me-1"></i>Please select groups in the Groups tab first, then add bots that are members of those groups.</p>';
+        return;
+    }
+
     if (bots.length === 0) {
-        container.innerHTML = '<p class="text-muted">No bots in this hub yet. Add bots to enable coordination.</p>';
+        container.innerHTML = '<p class="text-muted">No bots in this hub yet. Click "Add Bot" to add bots from the selected groups.</p>';
         return;
     }
 
@@ -3615,39 +4331,27 @@ function renderHubAgents(agents) {
 
 // Show add bot modal
 async function showAddBotModal() {
+    // Check if groups are selected first
+    if (!selectedHubGroups || selectedHubGroups.length === 0) {
+        showToast('Please select groups first in the Groups tab', 'warning');
+        return;
+    }
+
     try {
-        const response = await fetch(`/api/hubs/${currentHubId}/available-bots`, {
+        // Get bots that are in the selected groups
+        const groupIds = selectedHubGroups.map(g => g.chat_id).join(',');
+        const response = await fetch(`/api/hubs/${currentHubId}/bots-by-groups?group_ids=${encodeURIComponent(groupIds)}`, {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
 
         if (!response.ok) throw new Error('Failed to load bots');
 
-        let bots = await response.json();
-
-        // If groups are selected, filter bots to only show those in selected groups
-        if (selectedHubGroups && selectedHubGroups.length > 0) {
-            const groupIds = selectedHubGroups.map(g => g.chat_id).join(',');
-            try {
-                const groupBotsResponse = await fetch(`/api/hubs/${currentHubId}/bots-by-groups?group_ids=${encodeURIComponent(groupIds)}`, {
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-                if (groupBotsResponse.ok) {
-                    const groupBots = await groupBotsResponse.json();
-                    const groupBotIds = new Set(groupBots.map(b => b.id));
-                    // Filter available bots to only include those in selected groups
-                    bots = bots.filter(b => groupBotIds.has(b.id));
-                }
-            } catch (e) {
-                console.error('Error filtering bots by groups:', e);
-            }
-        }
+        const bots = await response.json();
 
         const container = document.getElementById('selectBotOptions');
 
         // Populate dropdown options
-        const noBotsMessage = selectedHubGroups && selectedHubGroups.length > 0
-            ? 'No bots available for selected groups'
-            : 'No bots available';
+        const noBotsMessage = 'No bots available for selected groups';
 
         container.innerHTML = '<a class="dropdown-item select-bot-item selected" href="#" data-value="">Choose a bot...</a>' +
             (bots.length > 0
@@ -3668,7 +4372,7 @@ async function showAddBotModal() {
         document.getElementById('botNameDisplay').style.display = 'none';
         document.getElementById('saveBotBtn').textContent = 'Add Bot';
         document.getElementById('botCanInitiate').checked = true;
-        setBotRoleDropdownValue('member');
+        setBotRoleDropdownValue('specialist');
 
         // Reset working hours
         clearWorkingPeriods();
@@ -3879,7 +4583,8 @@ function showCreateAgentModal() {
     document.getElementById('agentId').value = '';
     document.getElementById('agentAdditionalInstructions').value = '';
     setAgentTypeDropdownValue('classifier');
-    setModelDropdownValue('agentModelDropdown', 'gpt-4o-mini');
+    // Initialize provider and model dropdowns
+    setAgentProviderDropdownValue('openai', true);
     updateAgentPrompt();
     agentModal.show();
 }
@@ -3927,7 +4632,13 @@ async function editAgent(agentId) {
         document.getElementById('agentName').value = agent.name;
         setAgentTypeDropdownValue(agent.agent_type);
         document.getElementById('agentDescription').value = agent.description || '';
-        setModelDropdownValue('agentModelDropdown', agent.openai_model);
+
+        // Set provider first (this populates model dropdown), then set model
+        const provider = agent.ai_provider || 'openai';
+        setAgentProviderDropdownValue(provider, true);
+        if (agent.openai_model) {
+            setAgentModelDropdownValue(agent.openai_model);
+        }
 
         // Toggle prompt sections based on agent type
         const useDefaultPrompt = ['classifier', 'router'].includes(agent.agent_type);
@@ -3961,6 +4672,7 @@ async function saveAgent() {
         name: document.getElementById('agentName').value,
         agent_type: agentType,
         description: document.getElementById('agentDescription').value,
+        ai_provider: document.getElementById('agentProviderValue').value,
         openai_model: document.getElementById('agentModelValue').value
     };
 
@@ -4585,6 +5297,143 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Global tooltip container - rendered in body to avoid modal overflow issues
+let globalTooltip = null;
+
+function getGlobalTooltip() {
+    if (!globalTooltip) {
+        globalTooltip = document.createElement('div');
+        globalTooltip.className = 'badge-tooltip-container';
+        document.body.appendChild(globalTooltip);
+    }
+    return globalTooltip;
+}
+
+function showBadgeTooltip(badge) {
+    // Get tooltip content from data attribute or hidden span
+    const tooltipSpan = badge.querySelector('.badge-tooltip');
+    if (!tooltipSpan) return;
+
+    const tooltip = getGlobalTooltip();
+    tooltip.innerHTML = tooltipSpan.innerHTML;
+
+    // Reset styles
+    tooltip.style.maxHeight = '';
+    tooltip.style.overflowY = '';
+
+    // Position calculation
+    const padding = 15;
+    const gap = 10;
+    const badgeRect = badge.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Show tooltip off-screen to measure it
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '-9999px';
+    tooltip.classList.add('visible');
+
+    const tooltipWidth = tooltip.offsetWidth;
+    let tooltipHeight = tooltip.offsetHeight;
+
+    // Calculate horizontal position - center on badge
+    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipWidth / 2);
+
+    // Adjust if goes off edges
+    if (left < padding) {
+        left = padding;
+    }
+    if (left + tooltipWidth > viewportWidth - padding) {
+        left = viewportWidth - tooltipWidth - padding;
+    }
+
+    // Calculate available space above and below badge
+    const spaceAbove = badgeRect.top - padding - gap;
+    const spaceBelow = viewportHeight - badgeRect.bottom - padding - gap;
+
+    // Determine position and if scrollbar is needed
+    let top;
+    let maxAvailableHeight;
+
+    if (spaceAbove >= tooltipHeight) {
+        // Fits above - no scrollbar needed
+        top = badgeRect.top - tooltipHeight - gap;
+    } else if (spaceBelow >= tooltipHeight) {
+        // Fits below - no scrollbar needed
+        top = badgeRect.bottom + gap;
+    } else {
+        // Doesn't fit fully - use larger space and add scrollbar
+        if (spaceAbove > spaceBelow) {
+            // Position above with scrollbar
+            maxAvailableHeight = spaceAbove;
+            top = padding;
+            tooltip.style.maxHeight = maxAvailableHeight + 'px';
+            tooltip.style.overflowY = 'auto';
+        } else {
+            // Position below with scrollbar
+            maxAvailableHeight = spaceBelow;
+            top = badgeRect.bottom + gap;
+            tooltip.style.maxHeight = maxAvailableHeight + 'px';
+            tooltip.style.overflowY = 'auto';
+        }
+    }
+
+    // Apply position
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+}
+
+function hideBadgeTooltip() {
+    if (globalTooltip) {
+        globalTooltip.classList.remove('visible');
+        globalTooltip.style.maxHeight = '';
+        globalTooltip.style.overflowY = '';
+    }
+}
+
+// Track current badge for tooltip
+let currentTooltipBadge = null;
+
+// Initialize tooltip handlers
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('mouseenter', function(e) {
+        const badge = e.target.closest('.expertise-badge');
+        if (badge && badge.querySelector('.badge-tooltip')) {
+            currentTooltipBadge = badge;
+            showBadgeTooltip(badge);
+        }
+        // Keep tooltip visible when hovering over the tooltip itself
+        if (e.target.closest('.badge-tooltip-container')) {
+            // Do nothing - keep it visible
+        }
+    }, true);
+
+    document.addEventListener('mouseleave', function(e) {
+        const badge = e.target.closest('.expertise-badge');
+        const tooltip = e.target.closest('.badge-tooltip-container');
+
+        if (badge) {
+            // Check if moving to tooltip
+            const relatedTarget = e.relatedTarget;
+            if (relatedTarget && relatedTarget.closest && relatedTarget.closest('.badge-tooltip-container')) {
+                return; // Moving to tooltip, keep visible
+            }
+            hideBadgeTooltip();
+            currentTooltipBadge = null;
+        }
+
+        if (tooltip) {
+            // Check if moving back to badge
+            const relatedTarget = e.relatedTarget;
+            if (relatedTarget && relatedTarget.closest && relatedTarget.closest('.expertise-badge') === currentTooltipBadge) {
+                return; // Moving back to badge, keep visible
+            }
+            hideBadgeTooltip();
+            currentTooltipBadge = null;
+        }
+    }, true);
+});
 
 function getTaskTypeLabel(taskType) {
     const labels = {

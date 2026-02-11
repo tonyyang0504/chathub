@@ -30,6 +30,31 @@ class BotInstance:
         self.outbound_queue: list = []  # Queue for scheduled/proactive messages
         self._queue_lock = threading.Lock()  # Thread-safe queue access
 
+        # AI Response toggle (OFF by default after connection)
+        self.ai_response_enabled = False
+
+        # Browser state tracking
+        self.browser_connected = False  # True when browser is open and responsive
+        self.browser_recovery_attempts = 0  # Count of recovery attempts
+        self.max_browser_recovery_attempts = 3  # Max attempts before giving up
+
+        # History sync state
+        self.history_sync_active = False       # Currently running
+        self.history_sync_requested = False    # Signal to main loop to start
+        self.history_sync_stop_requested = False  # Signal to stop sync
+        self.history_sync_count = 50           # Messages per conversation
+        self.history_sync_progress = {         # Progress tracking for UI
+            "total": 0,
+            "completed": 0,
+            "current_chat": "",
+            "status": "idle"                   # idle | running | completed
+        }
+
+        # Auto browser restart for memory management
+        self.browser_started_at: Optional[datetime] = None  # When browser was launched
+        self.auto_restart_hours: float = 12.0  # Restart browser every N hours (default 12)
+        self.browser_restart_requested: bool = False  # Signal to main loop to restart browser
+
     def add_qr_callback(self, callback: Callable):
         """Add callback for QR code updates."""
         self.qr_callbacks.append(callback)
@@ -226,7 +251,10 @@ class BotManager:
             "is_running": instance.is_running,
             "whatsapp_connected": instance.whatsapp_connected,
             "qr_code": instance.qr_code,
-            "error": instance.error
+            "error": instance.error,
+            "ai_response_enabled": instance.ai_response_enabled,
+            "history_sync_active": instance.history_sync_active,
+            "history_sync_progress": instance.history_sync_progress,
         }
 
     def get_all_running(self) -> list:

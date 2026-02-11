@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Contact Analyzer - WhatsApp Bot Dashboard{% endblock %}
+{% block title %}Contact Analyzer - ChatHub{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/tools.css">
@@ -408,6 +408,45 @@ I've been using the basic version for a few months now.
 Can you tell me about enterprise features?</textarea>
                 </div>
 
+                <!-- AI Configuration for Testing -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">AI Provider</label>
+                        <input type="hidden" id="simProviderValue" value="openai">
+                        <div class="dropdown instance-dropdown" style="max-width: none;">
+                            <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="simProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                OpenAI
+                            </button>
+                            <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="simProviderDropdown">
+                                <a class="dropdown-item sim-provider-item selected" href="#" data-value="openai">OpenAI</a>
+                                <a class="dropdown-item sim-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
+                                <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
+                                <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Model</label>
+                        <input type="hidden" id="simModelValue" value="gpt-4o-mini">
+                        <div class="dropdown instance-dropdown" style="max-width: none;">
+                            <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="simModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                GPT-4o Mini
+                            </button>
+                            <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="simModelDropdown">
+                                <div id="simModelList">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-control" id="simApiKey" placeholder="sk-...">
+                    <small class="text-muted" id="simApiKeyHelp">Required for testing. Key is not stored.</small>
+                </div>
+
                 <button class="btn btn-theme" onclick="runSimulation()">
                     <i class="bi bi-play me-2"></i>Analyze Contact
                 </button>
@@ -492,10 +531,153 @@ Can you tell me about enterprise features?</textarea>
 
 {% block extra_js %}
 <script>
+// Provider models configuration (same as bots.html)
+const SIM_PROVIDER_MODELS = {
+    openai: {
+        label: 'OpenAI',
+        defaultModel: 'gpt-4o-mini',
+        apiKeyUrl: 'https://platform.openai.com/api-keys',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'GPT-4 Series', models: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+            ]},
+        ]
+    },
+    anthropic: {
+        label: 'Anthropic',
+        defaultModel: 'claude-sonnet-4-20250514',
+        apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+        apiKeyPlaceholder: 'sk-ant-...',
+        groups: [
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-0-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (Default)' },
+            ]},
+            { header: 'Claude 3.5 Series', models: [
+                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+            ]},
+        ]
+    },
+    google: {
+        label: 'Google',
+        defaultModel: 'gemini-2.0-flash',
+        apiKeyUrl: 'https://aistudio.google.com/apikey',
+        apiKeyPlaceholder: 'AIza...',
+        groups: [
+            { header: 'Gemini 2.0 Series', models: [
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (Default)' },
+                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            ]},
+        ]
+    },
+    deepseek: {
+        label: 'DeepSeek',
+        defaultModel: 'deepseek-chat',
+        apiKeyUrl: 'https://platform.deepseek.com/api_keys',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'DeepSeek Models', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek Chat (Default)' },
+                { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+            ]},
+        ]
+    },
+    qwen: {
+        label: 'Qwen',
+        defaultModel: 'qwen-turbo',
+        apiKeyUrl: 'https://dashscope.console.aliyun.com/apiKey',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'Qwen Models', models: [
+                { value: 'qwen-turbo', label: 'Qwen Turbo (Default)' },
+                { value: 'qwen-plus', label: 'Qwen Plus' },
+                { value: 'qwen-max', label: 'Qwen Max' },
+            ]},
+        ]
+    }
+};
+
+function updateSimModelDropdown(providerName) {
+    const provider = SIM_PROVIDER_MODELS[providerName];
+    if (!provider) return;
+
+    const listEl = document.getElementById('simModelList');
+    const hiddenInput = document.getElementById('simModelValue');
+    const btn = document.getElementById('simModelDropdown');
+
+    let html = '';
+    provider.groups.forEach(group => {
+        html += `<h6 class="dropdown-header">${group.header}</h6>`;
+        group.models.forEach(m => {
+            const isDefault = m.value === provider.defaultModel;
+            html += `<a class="dropdown-item sim-model-item${isDefault ? ' selected' : ''}" href="#" data-value="${m.value}">${m.label}</a>`;
+        });
+    });
+    listEl.innerHTML = html;
+
+    hiddenInput.value = provider.defaultModel;
+    const defaultItem = listEl.querySelector(`.dropdown-item[data-value="${provider.defaultModel}"]`);
+    btn.textContent = defaultItem ? defaultItem.textContent : provider.defaultModel;
+
+    listEl.querySelectorAll('.sim-model-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.instance-dropdown');
+            const dropBtn = dropdown.querySelector('.instance-dropdown-btn');
+            dropBtn.textContent = this.textContent;
+            hiddenInput.value = this.getAttribute('data-value');
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            bootstrap.Dropdown.getInstance(dropBtn)?.hide();
+        });
+    });
+
+    const helpEl = document.getElementById('simApiKeyHelp');
+    if (helpEl) {
+        const domain = provider.apiKeyUrl.replace('https://', '').split('/')[0];
+        helpEl.innerHTML = `Get your ${provider.label} key at <a href="${provider.apiKeyUrl}" target="_blank">${domain}</a>. Key is not stored.`;
+    }
+
+    const apiKeyInput = document.getElementById('simApiKey');
+    if (apiKeyInput) {
+        apiKeyInput.placeholder = provider.apiKeyPlaceholder;
+    }
+}
+
+function setupSimProviderDropdown() {
+    document.querySelectorAll('.sim-provider-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.instance-dropdown');
+            const btn = dropdown.querySelector('.instance-dropdown-btn');
+            const hiddenInput = document.getElementById('simProviderValue');
+            const value = this.getAttribute('data-value');
+
+            btn.textContent = this.textContent.trim();
+            hiddenInput.value = value;
+
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+
+            bootstrap.Dropdown.getInstance(btn)?.hide();
+            updateSimModelDropdown(value);
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadInstances();
     loadActivity();
+
+    // Initialize simulation dropdowns
+    setupSimProviderDropdown();
+    updateSimModelDropdown('openai');
 });
 
 async function loadStats() {
@@ -644,8 +826,18 @@ function createHubInstance() {
 async function runSimulation() {
     const messages = document.getElementById('simulationMessages').value;
 
+    // Get AI configuration
+    const aiProvider = document.getElementById('simProviderValue').value;
+    const aiModel = document.getElementById('simModelValue').value;
+    const apiKey = document.getElementById('simApiKey').value;
+
     if (!messages.trim()) {
         alert('Please enter some messages to analyze');
+        return;
+    }
+
+    if (!apiKey.trim()) {
+        alert('Please enter an API key to test the contact analyzer');
         return;
     }
 
@@ -661,7 +853,12 @@ async function runSimulation() {
         const response = await fetch('/tools/api/simulate/contact-analyzer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: messages })
+            body: JSON.stringify({
+                message: messages,
+                ai_provider: aiProvider,
+                ai_model: aiModel,
+                api_key: apiKey
+            })
         });
 
         const result = await response.json();

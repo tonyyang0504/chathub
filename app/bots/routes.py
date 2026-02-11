@@ -72,6 +72,7 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
     return BotProfileResponse(
         id=bot.id,
         name=bot.name,
+        ai_provider=bot.ai_provider or "openai",
         openai_model=bot.openai_model,
         system_prompt=bot.system_prompt or "",
         temperature=bot.temperature if bot.temperature is not None else 0.7,
@@ -104,6 +105,38 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
         whatsapp_about=bot.whatsapp_about,
         whatsapp_account_type=bot.whatsapp_account_type or "personal"
     )
+
+
+# ============== Provider Info ==============
+
+@router.get("/providers/info")
+async def get_providers_info():
+    """Return available AI providers with their models and capabilities."""
+    from app.ai.factory import get_available_providers, DEFAULT_MODELS
+    from app.ai.providers.openai_provider import OpenAIProvider
+    from app.ai.providers.anthropic_provider import AnthropicProvider
+    from app.ai.providers.google_provider import GoogleProvider
+    from app.ai.providers.deepseek_provider import DeepSeekProvider
+    from app.ai.providers.qwen_provider import QwenProvider
+
+    provider_classes = {
+        "openai": OpenAIProvider,
+        "anthropic": AnthropicProvider,
+        "google": GoogleProvider,
+        "deepseek": DeepSeekProvider,
+        "qwen": QwenProvider,
+    }
+
+    providers = {}
+    for name, cls in provider_classes.items():
+        providers[name] = {
+            "models": getattr(cls, 'MODELS', []),
+            "default_model": DEFAULT_MODELS.get(name),
+            "supports_tools": cls.supports_tools,
+            "supports_vision": cls.supports_vision,
+        }
+
+    return {"providers": providers}
 
 
 # ============== CRUD Routes ==============
@@ -158,6 +191,7 @@ async def check_and_recover_bots(
 
                 config = {
                     "bot_profile_id": bot.id,
+                    "ai_provider": bot.ai_provider or "openai",
                     "openai_api_key": api_key,
                     "openai_model": bot.openai_model or "gpt-4o-mini",
                     "system_prompt": bot.system_prompt,
@@ -236,6 +270,7 @@ async def create_bot(
     bot = BotProfile(
         user_id=current_user.id,
         name=bot_data.name,
+        ai_provider=bot_data.ai_provider,
         openai_api_key_encrypted=encrypted_key,
         openai_model=bot_data.openai_model,
         system_prompt=bot_data.system_prompt,
@@ -289,6 +324,8 @@ async def update_bot(
     # Update fields if provided
     if bot_data.name is not None:
         bot.name = bot_data.name
+    if bot_data.ai_provider is not None:
+        bot.ai_provider = bot_data.ai_provider
     if bot_data.openai_api_key is not None:
         bot.openai_api_key_encrypted = encrypt_string(bot_data.openai_api_key)
     if bot_data.openai_model is not None:
@@ -400,6 +437,7 @@ async def start_bot(
 
         # Prepare config
         config = {
+            "ai_provider": bot.ai_provider or "openai",
             "openai_api_key_encrypted": bot.openai_api_key_encrypted,
             "openai_model": bot.openai_model,
             "system_prompt": bot.system_prompt,
@@ -546,22 +584,149 @@ async def disconnect_whatsapp(
     return {"message": "WhatsApp disconnected. The bot will show a QR code on next start."}
 
 
-@router.get("/{bot_id}/status", response_model=BotStatusResponse)
+@router.get("/{bot_id}/status")
 async def get_bot_status(
     bot_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get bot status."""
+    """Get bot status including runtime toggle states."""
     bot = get_bot_profile(bot_id, current_user, db)
 
-    return BotStatusResponse(
-        id=bot.id,
-        name=bot.name,
-        is_running=bot.is_running,
-        whatsapp_connected=bot.whatsapp_connected,
-        last_active=bot.last_active
-    )
+    response = {
+        "id": bot.id,
+        "name": bot.name,
+        "is_running": bot.is_running,
+        "whatsapp_connected": bot.whatsapp_connected,
+        "last_active": bot.last_active.isoformat() if bot.last_active else None,
+    }
+
+    # Include runtime toggle state from in-memory instance
+    instance = bot_manager.get_instance(bot_id)
+    if instance:
+        response["ai_response_enabled"] = instance.ai_response_enabled
+        response["history_sync_active"] = instance.history_sync_active
+        response["history_sync_progress"] = instance.history_sync_progress
+    else:
+        response["ai_response_enabled"] = False
+        response["history_sync_active"] = False
+        response["history_sync_progress"] = {"total": 0, "completed": 0, "current_chat": "", "status": "idle"}
+
+    return response
+
+
+@router.post("/{bot_id}/toggle-ai")
+async def toggle_ai_response(
+    bot_id: int,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Toggle AI auto-response on/off for a running bot."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    if not bot.is_running:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bot is not running"
+        )
+
+    instance = bot_manager.get_instance(bot_id)
+    if not instance or not instance.whatsapp_connected:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bot is not connected to WhatsApp"
+        )
+
+    enabled = body.get("enabled", False)
+    instance.ai_response_enabled = bool(enabled)
+    logger.info(f"Bot {bot_id}: AI response toggled to {instance.ai_response_enabled}")
+
+    return {"success": True, "ai_response_enabled": instance.ai_response_enabled}
+
+
+@router.post("/{bot_id}/sync-history")
+async def start_history_sync(
+    bot_id: int,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start a one-time history sync for all conversations."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    if not bot.is_running:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bot is not running"
+        )
+
+    instance = bot_manager.get_instance(bot_id)
+    if not instance or not instance.whatsapp_connected:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bot is not connected to WhatsApp"
+        )
+
+    if instance.history_sync_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="History sync is already running"
+        )
+
+    sync_all = body.get("sync_all", False)
+    if sync_all:
+        # Use -1 to indicate sync all messages
+        message_count = -1
+    else:
+        message_count = body.get("message_count", 50)
+        message_count = max(10, min(9999, int(message_count)))
+
+    instance.history_sync_count = message_count
+    instance.history_sync_requested = True
+    instance.history_sync_stop_requested = False  # Reset stop flag for new sync
+    log_msg = "all messages" if sync_all else f"count={message_count}"
+    logger.info(f"Bot {bot_id}: History sync requested with {log_msg}")
+
+    return {"success": True, "message": "History sync started"}
+
+
+@router.get("/{bot_id}/sync-history/status")
+async def get_history_sync_status(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current history sync progress."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    instance = bot_manager.get_instance(bot_id)
+    if not instance:
+        return {"total": 0, "completed": 0, "current_chat": "", "status": "idle"}
+
+    return instance.history_sync_progress
+
+
+@router.post("/{bot_id}/sync-history/stop")
+async def stop_history_sync(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Stop an ongoing history sync."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    instance = bot_manager.get_instance(bot_id)
+    if not instance:
+        return {"success": False, "message": "Bot instance not found"}
+
+    if not instance.history_sync_active:
+        return {"success": False, "message": "No active sync to stop"}
+
+    instance.history_sync_stop_requested = True
+    logger.info(f"Bot {bot_id}: History sync stop requested")
+
+    return {"success": True, "message": "Sync stop requested"}
 
 
 @router.get("/{bot_id}/analytics/daily")

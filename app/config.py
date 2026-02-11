@@ -13,7 +13,7 @@ class Settings:
     """Application settings."""
 
     # App Settings
-    APP_NAME: str = "WhatsApp Bot Dashboard"
+    APP_NAME: str = "ChatHub"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 

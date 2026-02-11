@@ -35,8 +35,8 @@ A multi-tenant platform for managing AI-powered WhatsApp bots with real-time mon
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/tonyyang0504/aibot.git
-cd aibot
+git clone https://github.com/tonyyang0504/chathub.git
+cd chathub
 ```
 
 ### 2. Create virtual environment

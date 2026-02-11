@@ -403,7 +403,8 @@ class HubCoordinator:
         sender_phone: Optional[str],
         chat_id: str,
         is_group: bool = False,
-        sender_name: Optional[str] = None
+        sender_name: Optional[str] = None,
+        whatsapp_message_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Determine if a bot should respond to a message.
@@ -415,6 +416,7 @@ class HubCoordinator:
             chat_id: The chat/conversation ID
             is_group: Whether this is a group chat
             sender_name: Display name of the sender
+            whatsapp_message_id: WhatsApp's unique message ID for bot detection
 
         Returns:
             Dict with:
@@ -497,60 +499,52 @@ class HubCoordinator:
         detected_bot_name = None
         detection_method = None
 
-        # Method 1: Check by phone number (most reliable if available)
-        for mem in self.hub.bot_memberships:
-            if mem.is_active:
-                bot = self.db.query(BotProfile).filter(BotProfile.id == mem.bot_profile_id).first()
-                if not bot:
-                    continue
+        # Method 1: Check by WhatsApp Message ID + Role (MOST reliable)
+        # If this message_id exists in DB as role='assistant' from any hub bot,
+        # it means a bot sent this message (we're seeing another bot's response)
+        if not is_bot_to_bot and whatsapp_message_id:
+            bot_ids = list(self.bot_memberships.keys())
+            # Query for any message with same whatsapp_message_id and role='assistant'
+            existing_bot_msg = self.db.query(Message, Conversation, BotProfile).join(
+                Conversation, Message.conversation_id == Conversation.id
+            ).join(
+                BotProfile, Conversation.bot_profile_id == BotProfile.id
+            ).filter(
+                Conversation.bot_profile_id.in_(bot_ids),
+                Message.whatsapp_message_id == whatsapp_message_id,
+                Message.role == 'assistant'
+            ).first()
 
-                if sender_phone and bot.whatsapp_phone:
-                    sender_normalized = sender_phone.replace('+', '').replace(' ', '').replace('-', '')
-                    bot_phone_normalized = bot.whatsapp_phone.replace('+', '').replace(' ', '').replace('-', '')
-                    if sender_normalized in bot_phone_normalized or bot_phone_normalized in sender_normalized:
-                        is_bot_to_bot = True
-                        detected_bot_name = bot.name
-                        detection_method = "phone"
-                        break
+            if existing_bot_msg:
+                msg, conv, bot = existing_bot_msg
+                is_bot_to_bot = True
+                detected_bot_name = bot.name
+                detection_method = "message_id"
 
-        # Method 2: Check by sender name (for groups where phone not available)
-        # Compare against WhatsApp push_name and name, NOT bot profile name
-        if not is_bot_to_bot and sender_name:
-            sender_name_lower = sender_name.lower().strip()
+        # Method 2: Check by phone number (reliable if phone is available)
+        if not is_bot_to_bot:
             for mem in self.hub.bot_memberships:
                 if mem.is_active:
                     bot = self.db.query(BotProfile).filter(BotProfile.id == mem.bot_profile_id).first()
                     if not bot:
                         continue
 
-                    # Check against whatsapp_push_name (primary - what appears in groups)
-                    if bot.whatsapp_push_name:
-                        bot_push_name_lower = bot.whatsapp_push_name.lower().strip()
-                        if sender_name_lower == bot_push_name_lower or sender_name_lower in bot_push_name_lower or bot_push_name_lower in sender_name_lower:
-                            is_bot_to_bot = True
-                            detected_bot_name = bot.whatsapp_push_name
-                            detection_method = "push_name"
-                            break
-
-                    # Check against whatsapp_name (fallback)
-                    if bot.whatsapp_name:
-                        bot_wa_name_lower = bot.whatsapp_name.lower().strip()
-                        if sender_name_lower == bot_wa_name_lower or sender_name_lower in bot_wa_name_lower or bot_wa_name_lower in sender_name_lower:
-                            is_bot_to_bot = True
-                            detected_bot_name = bot.whatsapp_name
-                            detection_method = "wa_name"
-                            break
-
-                    # Also check bot profile name as last resort
-                    if bot.name:
-                        bot_name_lower = bot.name.lower().strip()
-                        if sender_name_lower == bot_name_lower or sender_name_lower in bot_name_lower or bot_name_lower in sender_name_lower:
+                    if sender_phone and bot.whatsapp_phone:
+                        sender_normalized = sender_phone.replace('+', '').replace(' ', '').replace('-', '')
+                        bot_phone_normalized = bot.whatsapp_phone.replace('+', '').replace(' ', '').replace('-', '')
+                        if sender_normalized in bot_phone_normalized or bot_phone_normalized in sender_normalized:
                             is_bot_to_bot = True
                             detected_bot_name = bot.name
-                            detection_method = "profile_name"
+                            detection_method = "phone"
                             break
 
-        # Method 3: Check by message content (most reliable for groups)
+        # NOTE: Name-based detection was REMOVED because:
+        # - WhatsApp names are NOT unique identifiers
+        # - Multiple accounts can have the same display name
+        # - A real user "Tony" and a bot named "Tony" are different accounts
+        # - Name matching causes false positives, blocking legitimate user messages
+
+        # Method 3: Check by message content (fallback - matches recent bot responses)
         # If the incoming message matches a recent bot response, it's from a bot
         if not is_bot_to_bot and message_content:
             content_is_bot, content_bot_name = self._is_message_from_hub_bot(message_content, chat_id)
@@ -574,6 +568,7 @@ class HubCoordinator:
                 reason = f"Bot-to-bot conversation disabled (limit: {self.bot_conversation_limit})"
                 if detected_bot_name:
                     reason = f"Message from bot '{detected_bot_name}' (detected by {detection_method}) - {reason}"
+                logger.info(f"Hub {self.hub_id}: Bot-to-bot BLOCKED - {reason} (should be logged to Recent Activity)")
                 return {
                     "should_respond": False,
                     "reason": reason,
@@ -750,7 +745,8 @@ class HubCoordinator:
                 else:
                     return {
                         "should_respond": False,
-                        "reason": f"{selected_name} selected (backup, fallback)"
+                        "reason": f"{selected_name} selected (backup, fallback)",
+                        "deferred": True
                     }
             # No bots available at all
             return {
@@ -787,7 +783,8 @@ class HubCoordinator:
                 else:
                     return {
                         "should_respond": False,
-                        "reason": f"{selected_name} selected (specialist, expertise: {suggested_expertise})"
+                        "reason": f"{selected_name} selected (specialist, expertise: {suggested_expertise})",
+                        "deferred": True
                     }
 
         # Step 2: Check PRIMARY bots (for general queries when no specialist matches)
@@ -805,7 +802,8 @@ class HubCoordinator:
             else:
                 return {
                     "should_respond": False,
-                    "reason": f"{selected_name} selected (primary, least busy)"
+                    "reason": f"{selected_name} selected (primary, least busy)",
+                    "deferred": True
                 }
 
         # Step 3: Check MEMBER/CUSTOM bots with matching expertise
@@ -826,7 +824,8 @@ class HubCoordinator:
                 else:
                     return {
                         "should_respond": False,
-                        "reason": f"{selected_name} selected (member, expertise: {suggested_expertise})"
+                        "reason": f"{selected_name} selected (member, expertise: {suggested_expertise})",
+                        "deferred": True
                     }
 
         # Step 4: Priority-based selection among remaining bots
@@ -848,7 +847,8 @@ class HubCoordinator:
 
             return {
                 "should_respond": False,
-                "reason": f"{selected_name} selected (member, highest priority)"
+                "reason": f"{selected_name} selected (member, highest priority)",
+                "deferred": True
             }
 
         # No suitable bot found (shouldn't normally reach here)
@@ -958,11 +958,19 @@ class HubCoordinator:
             if tags:
                 contact_info += f", Tags: {[t.tag for t in tags]}"
 
-            # Load hub topics for dynamic classification
+            # Load hub topics for dynamic classification (with descriptions)
             hub_topics = self.db.query(HubMessageTopic).filter(
                 HubMessageTopic.hub_id == self.hub_id
             ).all()
+
+            # Build topic info with descriptions for better AI understanding
             topic_names = [t.name for t in hub_topics]
+            topics_with_desc = []
+            for t in hub_topics:
+                if t.description:
+                    topics_with_desc.append(f"- {t.name}: {t.description}")
+                else:
+                    topics_with_desc.append(f"- {t.name}")
 
             # Also collect all expertise from bot memberships
             all_expertise = set()
@@ -974,7 +982,7 @@ class HubCoordinator:
                     except (json.JSONDecodeError, TypeError) as e:
                         logger.debug(f"Hub {self.hub_id}: Failed to parse expertise in classifier: {e}")
 
-            # Combine topics and expertise
+            # Combine topics and expertise for category list
             available_categories = list(set(topic_names) | all_expertise)
             if not available_categories:
                 available_categories = ["sales", "support", "billing", "general", "greeting", "feedback", "complaint"]
@@ -982,11 +990,26 @@ class HubCoordinator:
             # Build dynamic system prompt - ALWAYS use default with dynamic categories
             # Classifier MUST have access to current topics and expertise for accurate classification
             categories_str = ", ".join(available_categories)
-            system_prompt = f"""You are a message classifier. Analyze the message and return JSON with:
+
+            # Build categories description section (includes descriptions for better classification)
+            if topics_with_desc:
+                categories_desc = "\n".join(topics_with_desc)
+                categories_section = f"""Available categories and their meanings:
+{categories_desc}
+
+Additional expertise tags: {", ".join(all_expertise) if all_expertise else "none"}"""
+            else:
+                categories_section = f"Available categories: {categories_str}"
+
+            system_prompt = f"""You are a message classifier. Analyze the message and classify it.
+
+{categories_section}
+
+Return JSON with:
 - category: main topic (one of: {categories_str})
 - urgency: low, medium, high
 - sentiment: positive, negative, neutral
-- suggested_expertise: list of relevant expertise tags from this list: {categories_str}
+- suggested_expertise: list of relevant expertise tags from: {categories_str}
 - requires_single_bot: true if only one bot should respond
 
 Return ONLY valid JSON, no other text."""
@@ -1271,12 +1294,17 @@ Which bot(s) should respond?"""
                             reason = f"{reason} ({req_bot_name} responding #{idx + 1}, delay: {delay_s}s)"
                         break
 
+            # Mark as "deferred" if this bot should NOT respond but other bots will
+            # (used to skip logging redundant "not responded" records)
+            deferred_to_other_bot = (not should_respond and len(responding_bots_list) > 0)
+
             return {
                 "should_respond": should_respond,
                 "reason": reason,
                 "delay_s": delay_s,
                 "classification": classification,
-                "responding_bots": [b['bot_id'] for b in responding_bots_list]
+                "responding_bots": [b['bot_id'] for b in responding_bots_list],
+                "deferred": deferred_to_other_bot
             }
 
         except Exception as e:
@@ -1367,7 +1395,8 @@ def check_hub_routing(
     sender_phone: Optional[str],
     chat_id: str,
     is_group: bool = False,
-    sender_name: Optional[str] = None
+    sender_name: Optional[str] = None,
+    whatsapp_message_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Check if a bot should respond to a message based on hub routing rules.
@@ -1381,6 +1410,7 @@ def check_hub_routing(
         chat_id: The chat/conversation ID
         is_group: Whether this is a group chat
         sender_name: Display name of the sender
+        whatsapp_message_id: WhatsApp's unique message ID for bot detection
 
     Returns:
         Dict with should_respond, reason, and optional delay_ms
@@ -1423,13 +1453,26 @@ def check_hub_routing(
                 sender_phone=sender_phone,
                 chat_id=chat_id,
                 is_group=is_group,
-                sender_name=sender_name
+                sender_name=sender_name,
+                whatsapp_message_id=whatsapp_message_id
             )
 
-            # Log to ToolExecution for all decisions
+            # Log to ToolExecution - but skip logging when another bot was allocated
+            # (to avoid redundant "not responded" records when router selected a different bot)
             execution_time_ms = int((time.time() - start_time) * 1000)
             tool_type = hub.task_type or 'group_management'  # Default to group_management
             execution_id = None
+
+            # Check if this is a "deferred to other bot" case - don't log these
+            # The router sets 'deferred: True' when this bot should not respond but other bots will
+            if result.get('deferred', False):
+                # Skip logging - another bot was allocated to respond, no need to log this bot's "not responded"
+                logger.debug(f"Hub routing: Skipping log for deferred case (bot {bot_id})")
+                result['execution_id'] = None
+                return result
+
+            # Log this execution (including bot-to-bot blocked, working hours blocked, etc.)
+            logger.debug(f"Hub routing: Logging execution for bot {bot_id}, should_respond={result.get('should_respond')}, reason={result.get('reason', '')[:50]}")
 
             # Get names for display
             bot_profile = db.query(BotProfile).filter(BotProfile.id == bot_id).first()
@@ -1475,8 +1518,10 @@ def check_hub_routing(
                     user_id=hub.user_id
                 )
                 execution_id = execution.id if execution else None
+                if execution_id:
+                    logger.info(f"Hub routing: Logged execution {execution_id} for bot {bot_id}, should_respond={result.get('should_respond')}")
             except Exception as log_err:
-                print(f"Failed to log tool execution: {log_err}")
+                logger.error(f"Failed to log tool execution: {log_err}")
 
             # Add execution_id to result for response logging
             result['execution_id'] = execution_id
