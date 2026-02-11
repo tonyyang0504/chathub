@@ -1,11 +1,11 @@
-# WhatsApp Bot Dashboard
+# ChatHub
 
 A multi-tenant platform for managing AI-powered WhatsApp bots with real-time monitoring, conversation analytics, and coordinated bot orchestration.
 
 ## Features
 
 - **Multi-Bot Management** - Create and run multiple WhatsApp bots simultaneously
-- **AI-Powered Responses** - OpenAI GPT integration for intelligent conversations
+- **AI-Powered Responses** - Multi-provider support (OpenAI, Anthropic, Google, DeepSeek, Qwen)
 - **Real-Time Dashboard** - Monitor bot status, conversations, and analytics
 - **QR Code Authentication** - WebSocket-based real-time QR code display
 - **Conversation History** - Full message storage with media support (images, documents, audio)
