@@ -1650,32 +1650,25 @@
     const PROVIDER_MODELS = {
         openai: {
             label: 'OpenAI',
-            defaultModel: 'gpt-5.2',
+            defaultModel: 'gpt-4o-mini',
             apiKeyUrl: 'https://platform.openai.com/api-keys',
             apiKeyPlaceholder: 'sk-...',
             groups: [
-                { header: 'GPT-5.3 Codex (Latest)', models: [
-                    { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex' },
-                ]},
-                { header: 'GPT-5.2 Series', models: [
-                    { value: 'gpt-5.2', label: 'GPT-5.2 (Default)' },
-                    { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
+                { header: 'GPT-5.2 Series (Chat Completions)', models: [
+                    { value: 'gpt-5.2', label: 'GPT-5.2 Thinking' },
                     { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
-                    { value: 'gpt-5.2-codex', label: 'GPT-5.2 Codex' },
                 ]},
                 { header: 'GPT-5 Series', models: [
-                    { value: 'gpt-5', label: 'GPT-5' },
                     { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
-                    { value: 'gpt-5-codex', label: 'GPT-5 Codex' },
                 ]},
                 { header: 'GPT-4.1 Series', models: [
                     { value: 'gpt-4.1', label: 'GPT-4.1' },
                     { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
                     { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
                 ]},
-                { header: 'GPT-4 Series (Legacy)', models: [
+                { header: 'GPT-4 Series', models: [
                     { value: 'gpt-4o', label: 'GPT-4o' },
-                    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+                    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
                     { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
                 ]},
             ]
