@@ -82,7 +82,11 @@ class OpenAIProvider(AIProvider):
         }
 
         if max_tokens:
-            params["max_tokens"] = max_tokens
+            # Newer models (GPT-5.x, o1, etc.) use max_completion_tokens instead of max_tokens
+            if use_model.startswith(('gpt-5', 'o1', 'o3')):
+                params["max_completion_tokens"] = max_tokens
+            else:
+                params["max_tokens"] = max_tokens
 
         if tools:
             params["tools"] = tools
