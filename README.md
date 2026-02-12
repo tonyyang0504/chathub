@@ -124,23 +124,23 @@ systemctl enable xvfb
 systemctl start xvfb
 ```
 
-### Create chatbot service
+### Create chathub service
 
 ```bash
-cat > /etc/systemd/system/chatbot.service << 'EOF'
+cat > /etc/systemd/system/chathub.service << 'EOF'
 [Unit]
-Description=WhatsApp Chatbot
+Description=ChatHub
 After=network.target xvfb.service
 Requires=xvfb.service
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/var/www/chatbot
-Environment="PATH=/var/www/chatbot/venv/bin:/usr/local/bin:/usr/bin:/bin"
+WorkingDirectory=/var/www/chathub
+Environment="PATH=/var/www/chathub/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="DISPLAY=:99"
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/var/www/chatbot/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+ExecStart=/var/www/chathub/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=10
 
@@ -148,8 +148,8 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-systemctl enable chatbot
-systemctl start chatbot
+systemctl enable chathub
+systemctl start chathub
 ```
 
 ### Nginx reverse proxy (optional)
@@ -197,7 +197,7 @@ Navigate to `/auth/register` and create your account.
 ## Project Structure
 
 ```
-chatbot/
+chathub/
 ├── app/
 │   ├── main.py              # FastAPI entry point
 │   ├── config.py            # Configuration
@@ -249,7 +249,7 @@ chatbot/
 
 ### QR code not appearing
 - Ensure Xvfb is running: `systemctl status xvfb`
-- Check bot logs: `journalctl -u chatbot -f`
+- Check bot logs: `journalctl -u chathub -f`
 - Verify DISPLAY environment variable is set
 
 ### Bot not responding
