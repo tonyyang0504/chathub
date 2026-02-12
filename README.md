@@ -5,7 +5,7 @@ A multi-tenant platform for managing AI-powered WhatsApp bots with real-time mon
 ## Features
 
 - **Multi-Bot Management** - Create and run multiple WhatsApp bots simultaneously
-- **AI-Powered Responses** - Multi-provider support (OpenAI, Anthropic, Google, DeepSeek, Qwen)
+- **AI-Powered Responses** - Multi-provider support (OpenAI, Anthropic, Google, DeepSeek, Qwen, xAI Grok)
 - **Real-Time Dashboard** - Monitor bot status, conversations, and analytics
 - **QR Code Authentication** - WebSocket-based real-time QR code display
 - **Conversation History** - Full message storage with media support (images, documents, audio)
@@ -19,7 +19,7 @@ A multi-tenant platform for managing AI-powered WhatsApp bots with real-time mon
 
 - **Backend**: FastAPI, SQLAlchemy, Uvicorn
 - **Browser Automation**: Playwright (Chromium)
-- **AI**: OpenAI, Anthropic Claude, Google Gemini, DeepSeek, Qwen
+- **AI**: OpenAI, Anthropic Claude, Google Gemini, DeepSeek, Qwen, xAI Grok
 - **Database**: SQLite (dev) / PostgreSQL (prod)
 - **Frontend**: Jinja2 templates, Bootstrap, JavaScript
 
@@ -27,7 +27,7 @@ A multi-tenant platform for managing AI-powered WhatsApp bots with real-time mon
 
 - Python 3.10+
 - Node.js (for Playwright browsers)
-- AI provider API key (OpenAI, Anthropic, Google, DeepSeek, or Qwen)
+- AI provider API key (OpenAI, Anthropic, Google, DeepSeek, Qwen, or xAI)
 - Linux server with Xvfb (for headless deployment)
 
 ## Installation

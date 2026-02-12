@@ -623,6 +623,22 @@ const SIM_PROVIDER_MODELS = {
                 { value: 'qwen-turbo', label: 'Qwen Turbo' },
             ]},
         ]
+    },
+    grok: {
+        label: 'xAI (Grok)',
+        defaultModel: 'grok-4',
+        apiKeyUrl: 'https://console.x.ai/',
+        apiKeyPlaceholder: 'xai-...',
+        groups: [
+            { header: 'Grok 4 Series (Latest)', models: [
+                { value: 'grok-4', label: 'Grok 4 (Default)' },
+                { value: 'grok-4-1-fast-reasoning', label: 'Grok 4.1 Fast Reasoning' },
+                { value: 'grok-4-1-fast-non-reasoning', label: 'Grok 4.1 Fast' },
+            ]},
+            { header: 'Grok Code', models: [
+                { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+        ]
     }
 };
 

@@ -10,6 +10,7 @@ from app.ai.providers.anthropic_provider import AnthropicProvider
 from app.ai.providers.google_provider import GoogleProvider
 from app.ai.providers.deepseek_provider import DeepSeekProvider
 from app.ai.providers.qwen_provider import QwenProvider
+from app.ai.providers.grok_provider import GrokProvider
 
 
 def get_ai_provider(provider_name: str, api_key: str, model: str = None) -> AIProvider:
@@ -17,7 +18,7 @@ def get_ai_provider(provider_name: str, api_key: str, model: str = None) -> AIPr
     Factory function to create an AI provider instance.
 
     Args:
-        provider_name: Name of the provider ('openai', 'anthropic', 'google', 'deepseek', 'qwen')
+        provider_name: Name of the provider ('openai', 'anthropic', 'google', 'deepseek', 'qwen', 'grok')
         api_key: API key for the provider
         model: Optional model to use
 
@@ -30,6 +31,7 @@ def get_ai_provider(provider_name: str, api_key: str, model: str = None) -> AIPr
         'google': GoogleProvider,
         'deepseek': DeepSeekProvider,
         'qwen': QwenProvider,
+        'grok': GrokProvider,
     }
 
     provider_class = providers.get(provider_name.lower())
@@ -48,5 +50,6 @@ __all__ = [
     'GoogleProvider',
     'DeepSeekProvider',
     'QwenProvider',
+    'GrokProvider',
     'get_ai_provider',
 ]
