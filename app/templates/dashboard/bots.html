@@ -1654,11 +1654,18 @@
             apiKeyUrl: 'https://platform.openai.com/api-keys',
             apiKeyPlaceholder: 'sk-...',
             groups: [
-                { header: 'GPT-5.2 Series (Chat Completions)', models: [
+                { header: 'GPT-5.2 Series (Latest)', models: [
                     { value: 'gpt-5.2', label: 'GPT-5.2 Thinking' },
+                    { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
                     { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
+                    { value: 'gpt-5.2-mini', label: 'GPT-5.2 Mini' },
+                ]},
+                { header: 'GPT-5.1 Series', models: [
+                    { value: 'gpt-5.1', label: 'GPT-5.1' },
+                    { value: 'gpt-5.1-mini', label: 'GPT-5.1 Mini' },
                 ]},
                 { header: 'GPT-5 Series', models: [
+                    { value: 'gpt-5', label: 'GPT-5' },
                     { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
                 ]},
                 { header: 'GPT-4.1 Series', models: [
