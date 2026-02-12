@@ -672,28 +672,43 @@ function renderMarkdown(text) {
 const SIM_PROVIDER_MODELS = {
     openai: {
         label: 'OpenAI',
-        defaultModel: 'gpt-4o-mini',
+        defaultModel: 'gpt-5.2',
         apiKeyUrl: 'https://platform.openai.com/api-keys',
         apiKeyPlaceholder: 'sk-...',
         groups: [
-            { header: 'GPT-4 Series', models: [
+            { header: 'GPT-5.3 Codex (Latest)', models: [
+                { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex' },
+            ]},
+            { header: 'GPT-5.2 Series', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2 (Default)' },
+                { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
+                { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
+            ]},
+            { header: 'GPT-5 Series', models: [
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+            ]},
+            { header: 'GPT-4 Series (Legacy)', models: [
                 { value: 'gpt-4o', label: 'GPT-4o' },
-                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
-                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
             ]},
         ]
     },
     anthropic: {
         label: 'Anthropic',
-        defaultModel: 'claude-sonnet-4-20250514',
+        defaultModel: 'claude-sonnet-4-5-20241022',
         apiKeyUrl: 'https://console.anthropic.com/settings/keys',
         apiKeyPlaceholder: 'sk-ant-...',
         groups: [
-            { header: 'Claude 4 Series', models: [
-                { value: 'claude-opus-4-0-20250514', label: 'Claude Opus 4' },
-                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (Default)' },
+            { header: 'Claude 4.6 Series (Latest)', models: [
+                { value: 'claude-opus-4-6-20260205', label: 'Claude Opus 4.6' },
             ]},
-            { header: 'Claude 3.5 Series', models: [
+            { header: 'Claude 4.5 Series', models: [
+                { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
+                { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
+                { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 3.5 Series (Legacy)', models: [
                 { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
                 { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
             ]},
@@ -701,14 +716,17 @@ const SIM_PROVIDER_MODELS = {
     },
     google: {
         label: 'Google',
-        defaultModel: 'gemini-2.0-flash',
+        defaultModel: 'gemini-3-flash',
         apiKeyUrl: 'https://aistudio.google.com/apikey',
         apiKeyPlaceholder: 'AIza...',
         groups: [
-            { header: 'Gemini 2.0 Series', models: [
-                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (Default)' },
-                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            { header: 'Gemini 3 Series (Latest)', models: [
+                { value: 'gemini-3-pro', label: 'Gemini 3 Pro' },
+                { value: 'gemini-3-flash', label: 'Gemini 3 Flash (Default)' },
+            ]},
+            { header: 'Gemini 2.5 Series', models: [
+                { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
             ]},
         ]
     },
@@ -718,22 +736,28 @@ const SIM_PROVIDER_MODELS = {
         apiKeyUrl: 'https://platform.deepseek.com/api_keys',
         apiKeyPlaceholder: 'sk-...',
         groups: [
-            { header: 'DeepSeek Models', models: [
-                { value: 'deepseek-chat', label: 'DeepSeek Chat (Default)' },
-                { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+            { header: 'DeepSeek V3.2 (Latest)', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek V3.2 Chat (Default)' },
+            ]},
+            { header: 'DeepSeek Reasoning', models: [
+                { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
             ]},
         ]
     },
     qwen: {
         label: 'Qwen',
-        defaultModel: 'qwen-turbo',
+        defaultModel: 'qwen3-turbo',
         apiKeyUrl: 'https://dashscope.console.aliyun.com/apiKey',
         apiKeyPlaceholder: 'sk-...',
         groups: [
-            { header: 'Qwen Models', models: [
-                { value: 'qwen-turbo', label: 'Qwen Turbo (Default)' },
-                { value: 'qwen-plus', label: 'Qwen Plus' },
+            { header: 'Qwen3 Series (Latest)', models: [
+                { value: 'qwen3-max-thinking', label: 'Qwen3 Max Thinking' },
+                { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
+            ]},
+            { header: 'Qwen2.5 Series', models: [
                 { value: 'qwen-max', label: 'Qwen Max' },
+                { value: 'qwen-turbo', label: 'Qwen Turbo' },
             ]},
         ]
     }
