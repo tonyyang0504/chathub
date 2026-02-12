@@ -71,19 +71,25 @@ class OpenAIProvider(AIProvider):
         # Convert messages to OpenAI format
         openai_messages = self._convert_messages(messages)
 
+        # Check if model is a newer reasoning model with limited parameter support
+        is_reasoning_model = use_model.startswith(('gpt-5', 'o1', 'o3'))
+
         # Build request parameters
         params = {
             "model": use_model,
             "messages": openai_messages,
-            "temperature": temperature,
-            "top_p": top_p,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
         }
 
+        # Reasoning models (GPT-5.x, o1, o3) don't support temperature/top_p/penalties
+        if not is_reasoning_model:
+            params["temperature"] = temperature
+            params["top_p"] = top_p
+            params["frequency_penalty"] = frequency_penalty
+            params["presence_penalty"] = presence_penalty
+
         if max_tokens:
-            # Newer models (GPT-5.x, o1, etc.) use max_completion_tokens instead of max_tokens
-            if use_model.startswith(('gpt-5', 'o1', 'o3')):
+            # Newer models use max_completion_tokens instead of max_tokens
+            if is_reasoning_model:
                 params["max_completion_tokens"] = max_tokens
             else:
                 params["max_tokens"] = max_tokens
