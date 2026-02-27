@@ -40,8 +40,27 @@ from .scripts.routes import router as scripts_router
 from .metrics import metrics_endpoint
 from .logging_config import setup_logging
 
-# Base directory for consistent path resolution across all OS
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Detect if running as frozen executable (PyInstaller)
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    FROZEN = True
+    BASE_DIR = Path(sys._MEIPASS)
+    APP_DIR = Path(sys.executable).parent
+    # Use AppData for user data on Windows
+    if sys.platform == 'win32':
+        import os as _os
+        DATA_DIR = Path(_os.environ.get('APPDATA', '')) / 'ChatHub'
+    else:
+        DATA_DIR = APP_DIR / 'data'
+else:
+    # Running as script
+    FROZEN = False
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    APP_DIR = BASE_DIR
+    DATA_DIR = BASE_DIR / 'data'
+
+# Ensure data directory exists
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Lifespan context manager for startup/shutdown
@@ -60,9 +79,10 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     print("Database tables created.")
 
-    # Create directories if they don't exist (use BASE_DIR for cross-OS consistency)
-    (BASE_DIR / "logs").mkdir(parents=True, exist_ok=True)
-    (BASE_DIR / "data" / "sessions").mkdir(parents=True, exist_ok=True)
+    # Create directories if they don't exist
+    # Use DATA_DIR for user data (AppData on Windows when frozen)
+    (DATA_DIR / "logs").mkdir(parents=True, exist_ok=True)
+    (DATA_DIR / "sessions").mkdir(parents=True, exist_ok=True)
 
     # Initialize logging system
     setup_logging()
