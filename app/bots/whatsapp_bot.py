@@ -2992,7 +2992,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
 
                             # Relaunch browser with same settings
                             playwright = sync_playwright().start()
-                            session_dir = f"data/sessions/bot_{bot_profile_id}"
+                            session_dir = str(SESSIONS_DIR / f"bot_{bot_profile_id}")
                             os.makedirs(session_dir, exist_ok=True)
 
                             browser_args = [

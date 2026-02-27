@@ -33,7 +33,7 @@ class Settings:
     ENCRYPTION_KEY: Optional[str] = os.getenv("ENCRYPTION_KEY")
 
     # Session
-    SESSION_PATH: str = os.getenv("SESSION_PATH", "data/sessions")
+    SESSION_PATH: str = os.getenv("SESSION_PATH", os.path.join("data", "sessions"))
 
     # Bot defaults
     DEFAULT_MODEL: str = "gpt-4o-mini"
