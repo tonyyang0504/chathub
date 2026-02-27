@@ -57,6 +57,23 @@ def get_bot_profile(
     return bot
 
 
+def mask_api_key(encrypted_key: str) -> Optional[str]:
+    """
+    Decrypt and mask API key for display.
+    Shows first 8 and last 4 characters: sk-proj-...gasA
+    """
+    if not encrypted_key:
+        return None
+    try:
+        decrypted = decrypt_string(encrypted_key)
+        if not decrypted or len(decrypted) < 12:
+            return None
+        # Show first 8 chars and last 4 chars
+        return f"{decrypted[:8]}...{decrypted[-4:]}"
+    except Exception:
+        return None
+
+
 def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
     """Convert BotProfile to response schema with counts."""
     # Get conversation count
@@ -73,7 +90,8 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
         id=bot.id,
         name=bot.name,
         ai_provider=bot.ai_provider or "openai",
-        openai_model=bot.openai_model,
+        api_key_masked=mask_api_key(bot.api_key_encrypted),
+        model=bot.model,
         system_prompt=bot.system_prompt or "",
         temperature=bot.temperature if bot.temperature is not None else 0.7,
         max_tokens=bot.max_tokens if bot.max_tokens is not None else 1000,
@@ -85,6 +103,7 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
         response_delay_max=bot.response_delay_max,
         group_chat_enabled=bot.group_chat_enabled,
         respond_to_all_in_group=bot.respond_to_all_in_group,
+        ending_detection_enabled=bot.ending_detection_enabled if bot.ending_detection_enabled is not None else False,
         headless=bot.headless if bot.headless is not None else False,
         # Proxy Settings
         proxy_enabled=bot.proxy_enabled if bot.proxy_enabled is not None else False,
@@ -180,7 +199,7 @@ async def check_and_recover_bots(
                 logger.info(f"Bot {bot.id} ({bot.name}) needs recovery")
 
                 # Build config for recovery
-                api_key = decrypt_string(bot.openai_api_key_encrypted) if bot.openai_api_key_encrypted else None
+                api_key = decrypt_string(bot.api_key_encrypted) if bot.api_key_encrypted else None
 
                 if not api_key:
                     logger.warning(f"Bot {bot.id}: No API key, marking as stopped")
@@ -192,8 +211,8 @@ async def check_and_recover_bots(
                 config = {
                     "bot_profile_id": bot.id,
                     "ai_provider": bot.ai_provider or "openai",
-                    "openai_api_key": api_key,
-                    "openai_model": bot.openai_model or "gpt-4o-mini",
+                    "api_key": api_key,
+                    "model": bot.model or "gpt-4o-mini",
                     "system_prompt": bot.system_prompt,
                     "temperature": bot.temperature if bot.temperature is not None else 0.7,
                     "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
@@ -261,7 +280,7 @@ async def create_bot(
 ):
     """Create a new bot profile."""
     # Encrypt API key
-    encrypted_key = encrypt_string(bot_data.openai_api_key)
+    encrypted_key = encrypt_string(bot_data.api_key)
 
     # Encrypt proxy credentials if provided
     encrypted_proxy_username = encrypt_string(bot_data.proxy_username) if bot_data.proxy_username else None
@@ -271,8 +290,8 @@ async def create_bot(
         user_id=current_user.id,
         name=bot_data.name,
         ai_provider=bot_data.ai_provider,
-        openai_api_key_encrypted=encrypted_key,
-        openai_model=bot_data.openai_model,
+        api_key_encrypted=encrypted_key,
+        model=bot_data.model,
         system_prompt=bot_data.system_prompt,
         temperature=bot_data.temperature,
         max_tokens=bot_data.max_tokens,
@@ -284,6 +303,7 @@ async def create_bot(
         response_delay_max=bot_data.response_delay_max,
         group_chat_enabled=bot_data.group_chat_enabled,
         respond_to_all_in_group=bot_data.respond_to_all_in_group,
+        ending_detection_enabled=bot_data.ending_detection_enabled,
         headless=bot_data.headless,
         # Proxy settings
         proxy_enabled=bot_data.proxy_enabled,
@@ -326,10 +346,10 @@ async def update_bot(
         bot.name = bot_data.name
     if bot_data.ai_provider is not None:
         bot.ai_provider = bot_data.ai_provider
-    if bot_data.openai_api_key is not None:
-        bot.openai_api_key_encrypted = encrypt_string(bot_data.openai_api_key)
-    if bot_data.openai_model is not None:
-        bot.openai_model = bot_data.openai_model
+    if bot_data.api_key is not None:
+        bot.api_key_encrypted = encrypt_string(bot_data.api_key)
+    if bot_data.model is not None:
+        bot.model = bot_data.model
     if bot_data.system_prompt is not None:
         bot.system_prompt = bot_data.system_prompt
     if bot_data.temperature is not None:
@@ -352,6 +372,8 @@ async def update_bot(
         bot.group_chat_enabled = bot_data.group_chat_enabled
     if bot_data.respond_to_all_in_group is not None:
         bot.respond_to_all_in_group = bot_data.respond_to_all_in_group
+    if bot_data.ending_detection_enabled is not None:
+        bot.ending_detection_enabled = bot_data.ending_detection_enabled
     if bot_data.headless is not None:
         bot.headless = bot_data.headless
     # Proxy settings
@@ -438,8 +460,8 @@ async def start_bot(
         # Prepare config
         config = {
             "ai_provider": bot.ai_provider or "openai",
-            "openai_api_key_encrypted": bot.openai_api_key_encrypted,
-            "openai_model": bot.openai_model,
+            "api_key_encrypted": bot.api_key_encrypted,
+            "model": bot.model,
             "system_prompt": bot.system_prompt,
             "temperature": bot.temperature if bot.temperature is not None else 0.7,
             "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
@@ -451,6 +473,7 @@ async def start_bot(
             "response_delay_max": bot.response_delay_max,
             "group_chat_enabled": bot.group_chat_enabled,
             "respond_to_all_in_group": bot.respond_to_all_in_group,
+            "ending_detection_enabled": bot.ending_detection_enabled if bot.ending_detection_enabled is not None else False,
             "headless": bot.headless if bot.headless is not None else False,
             "browser_timezone": bot.browser_timezone or 'UTC',
             # Proxy settings
@@ -946,3 +969,191 @@ async def websocket_qr(
                 pass
     finally:
         db.close()
+
+
+# ============== Bot Contacts and Groups for Schedule Content ==============
+# NOTE: Static routes (/all/contacts, /all/groups) MUST be defined BEFORE
+# dynamic routes (/{bot_id}/contacts, /{bot_id}/groups) to avoid route conflicts
+
+@router.get("/all/contacts")
+async def get_all_bots_contacts(
+    bot_ids: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get contacts from user's bots. Optionally filter by specific bot IDs (comma-separated)."""
+    # Get all user's bots
+    user_bot_ids = db.query(BotProfile.id).filter(
+        BotProfile.user_id == current_user.id
+    ).all()
+    user_bot_ids = [b[0] for b in user_bot_ids]
+
+    if not user_bot_ids:
+        return {"contacts": [], "total": 0}
+
+    # If specific bot_ids provided, filter to only those (that user owns)
+    if bot_ids:
+        try:
+            requested_ids = [int(bid.strip()) for bid in bot_ids.split(',') if bid.strip()]
+            # Only include bot IDs that the user actually owns
+            filter_bot_ids = [bid for bid in requested_ids if bid in user_bot_ids]
+        except ValueError:
+            filter_bot_ids = user_bot_ids
+    else:
+        filter_bot_ids = user_bot_ids
+
+    if not filter_bot_ids:
+        return {"contacts": [], "total": 0}
+
+    # Get all non-group conversations from selected bots
+    conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(filter_bot_ids),
+        Conversation.is_group == False,
+        Conversation.phone.isnot(None),
+        Conversation.phone != ""
+    ).all()
+
+    contacts = []
+    seen_phones = set()
+    for conv in conversations:
+        if conv.phone not in seen_phones:
+            seen_phones.add(conv.phone)
+            contacts.append({
+                "phone": conv.phone,
+                "display_name": conv.chat_name or conv.phone,
+                "profile_pic": conv.profile_pic,
+                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+                "bot_id": conv.bot_profile_id
+            })
+
+    # Sort by last_message_at (most recent first)
+    contacts.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
+
+    return {"contacts": contacts, "total": len(contacts)}
+
+
+@router.get("/all/groups")
+async def get_all_bots_groups(
+    bot_ids: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get groups from user's bots. Optionally filter by specific bot IDs (comma-separated)."""
+    # Get all user's bots
+    user_bot_ids = db.query(BotProfile.id).filter(
+        BotProfile.user_id == current_user.id
+    ).all()
+    user_bot_ids = [b[0] for b in user_bot_ids]
+
+    if not user_bot_ids:
+        return {"groups": [], "total": 0}
+
+    # If specific bot_ids provided, filter to only those (that user owns)
+    if bot_ids:
+        try:
+            requested_ids = [int(bid.strip()) for bid in bot_ids.split(',') if bid.strip()]
+            # Only include bot IDs that the user actually owns
+            filter_bot_ids = [bid for bid in requested_ids if bid in user_bot_ids]
+        except ValueError:
+            filter_bot_ids = user_bot_ids
+    else:
+        filter_bot_ids = user_bot_ids
+
+    if not filter_bot_ids:
+        return {"groups": [], "total": 0}
+
+    # Get all group conversations from selected bots
+    conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(filter_bot_ids),
+        Conversation.is_group == True,
+        Conversation.chat_id.isnot(None)
+    ).all()
+
+    groups = []
+    seen_ids = set()
+    for conv in conversations:
+        if conv.chat_id not in seen_ids:
+            seen_ids.add(conv.chat_id)
+            groups.append({
+                "chat_id": conv.chat_id,
+                "name": conv.chat_name or conv.chat_id,
+                "profile_pic": conv.profile_pic,
+                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+                "bot_id": conv.bot_profile_id
+            })
+
+    # Sort by last_message_at (most recent first)
+    groups.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
+
+    return {"groups": groups, "total": len(groups)}
+
+
+# Dynamic routes with bot_id parameter (must come AFTER static /all/* routes)
+
+@router.get("/{bot_id}/contacts")
+async def get_bot_contacts(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all contacts (non-group conversations) for a bot."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    # Get all non-group conversations for this bot
+    conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id == bot_id,
+        Conversation.is_group == False,
+        Conversation.phone.isnot(None),
+        Conversation.phone != ""
+    ).all()
+
+    contacts = []
+    seen_phones = set()
+    for conv in conversations:
+        if conv.phone not in seen_phones:
+            seen_phones.add(conv.phone)
+            contacts.append({
+                "phone": conv.phone,
+                "display_name": conv.chat_name or conv.phone,
+                "profile_pic": conv.profile_pic,
+                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None
+            })
+
+    # Sort by last_message_at (most recent first)
+    contacts.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
+
+    return {"contacts": contacts, "total": len(contacts)}
+
+
+@router.get("/{bot_id}/groups")
+async def get_bot_groups(
+    bot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all groups for a bot."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    # Get all group conversations for this bot
+    conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id == bot_id,
+        Conversation.is_group == True,
+        Conversation.chat_id.isnot(None)
+    ).all()
+
+    groups = []
+    seen_ids = set()
+    for conv in conversations:
+        if conv.chat_id not in seen_ids:
+            seen_ids.add(conv.chat_id)
+            groups.append({
+                "chat_id": conv.chat_id,
+                "name": conv.chat_name or conv.chat_id,
+                "profile_pic": conv.profile_pic,
+                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None
+            })
+
+    # Sort by last_message_at (most recent first)
+    groups.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
+
+    return {"groups": groups, "total": len(groups)}

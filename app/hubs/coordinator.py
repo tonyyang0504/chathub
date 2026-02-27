@@ -5,6 +5,8 @@ Hub Coordinator - Orchestrates AI agents for multi-bot coordination
 import json
 import logging
 import random
+import hashlib
+import threading
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
@@ -20,6 +22,1138 @@ from app.database import (
 )
 from app.auth.utils import decrypt_string
 from app.tools.monitoring import ToolMonitor
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def _get_group_name_from_db(db: Session, chat_id: str) -> Optional[str]:
+    """
+    Look up the actual group name from the Conversation table in database.
+
+    Returns the chat_name if found, or None if not found.
+    """
+    try:
+        # Query Conversation table for the chat_name
+        conversation = db.query(Conversation).filter(
+            Conversation.chat_id == chat_id
+        ).first()
+        if conversation and conversation.chat_name:
+            return conversation.chat_name
+    except Exception as e:
+        logger.debug(f"Failed to get group name from database: {e}")
+    return None
+
+
+# =============================================================================
+# ROUTING CACHE - Prevents duplicate AI calls when multiple bots process
+# the same message. Cache TTL is short (10 seconds) since all bots process
+# messages almost simultaneously.
+# =============================================================================
+
+class RoutingCache:
+    """
+    Thread-safe cache for classifier and router results with pending lock mechanism.
+
+    When a message arrives in a hub-managed group with 3 bots:
+    - Bot 1 processes first: marks as PENDING, runs classifier + router, caches results
+    - Bot 2 processes: sees PENDING, WAITS for Bot 1 to finish, uses cached results
+    - Bot 3 processes: sees PENDING, WAITS for Bot 1 to finish, uses cached results
+
+    This reduces AI calls from 6 (3 classifier + 3 router) to 2 (1 classifier + 1 router),
+    even when all bots process the message simultaneously.
+
+    OPTIMIZATION: Combined waiting - Bot 2 waits ONCE for both classifier AND router
+    to complete, rather than waking up after each step. This reduces context switches.
+    """
+
+    def __init__(self, ttl_seconds: int = 10, wait_timeout: float = 10.0):
+        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._pending_classifier: Dict[str, threading.Event] = {}
+        self._pending_router: Dict[str, threading.Event] = {}
+        self._pending_full: Dict[str, threading.Event] = {}  # Combined classifier+router
+        self._lock = threading.Lock()
+        self._ttl = ttl_seconds
+        self._wait_timeout = wait_timeout
+
+    def _make_key(self, hub_id: int, chat_id: str, message_content: str) -> str:
+        """Create a unique cache key for this message."""
+        content_hash = hashlib.md5(message_content.encode()).hexdigest()[:16]
+        return f"hub:{hub_id}:chat:{chat_id}:msg:{content_hash}"
+
+    def _cleanup_expired(self):
+        """Remove expired entries (called within lock)."""
+        now = datetime.utcnow()
+        expired_keys = [
+            key for key, entry in self._cache.items()
+            if (now - entry.get('timestamp', now)).total_seconds() > self._ttl
+        ]
+        for key in expired_keys:
+            del self._cache[key]
+            # Also clean up any stale pending entries
+            self._pending_classifier.pop(key, None)
+            self._pending_router.pop(key, None)
+            self._pending_full.pop(key, None)
+
+    def get_classifier_result(self, hub_id: int, chat_id: str, message_content: str) -> Optional[Dict]:
+        """
+        Get cached classifier result, waiting if another bot is computing.
+
+        Returns:
+            - Dict: Cached result (cache hit or waited for result)
+            - None: Cache miss AND this bot should compute (marked as pending)
+        """
+        key = self._make_key(hub_id, chat_id, message_content)
+        event_to_wait = None
+
+        with self._lock:
+            self._cleanup_expired()
+
+            # Check if result is already cached
+            entry = self._cache.get(key)
+            if entry and 'classifier' in entry:
+                logger.debug(f"Cache HIT: classifier for hub {hub_id}, chat {chat_id}")
+                return entry['classifier']
+
+            # Check if another bot is already computing
+            if key in self._pending_classifier:
+                event_to_wait = self._pending_classifier[key]
+                logger.debug(f"Cache WAIT: classifier for hub {hub_id}, chat {chat_id} (another bot computing)")
+            else:
+                # We're the first - mark as pending
+                self._pending_classifier[key] = threading.Event()
+                logger.debug(f"Cache MISS: classifier for hub {hub_id}, chat {chat_id} (will compute)")
+                return None
+
+        # Wait outside the lock
+        if event_to_wait:
+            event_to_wait.wait(timeout=self._wait_timeout)
+            # Check cache again after waiting
+            with self._lock:
+                entry = self._cache.get(key)
+                if entry and 'classifier' in entry:
+                    logger.debug(f"Cache HIT (after wait): classifier for hub {hub_id}, chat {chat_id}")
+                    return entry['classifier']
+
+                # Timeout - try to become the new computing bot
+                if key not in self._pending_classifier:
+                    # Previous bot finished but no result (error?) - we'll compute
+                    self._pending_classifier[key] = threading.Event()
+                    logger.debug(f"Cache TIMEOUT (will compute): classifier for hub {hub_id}, chat {chat_id}")
+                    return None
+                else:
+                    # Another bot is still pending or took over - skip to avoid duplicate
+                    logger.debug(f"Cache TIMEOUT (skip): classifier for hub {hub_id}, chat {chat_id}")
+                    return {'category': 'general', 'urgency': 'normal', 'timeout_fallback': True}
+
+        return None
+
+    def set_classifier_result(self, hub_id: int, chat_id: str, message_content: str, result: Dict):
+        """Cache classifier result and signal waiting bots."""
+        key = self._make_key(hub_id, chat_id, message_content)
+        with self._lock:
+            if key not in self._cache:
+                self._cache[key] = {'timestamp': datetime.utcnow()}
+            self._cache[key]['classifier'] = result
+
+            # Signal waiting bots that result is ready
+            if key in self._pending_classifier:
+                self._pending_classifier[key].set()
+                del self._pending_classifier[key]
+
+            logger.debug(f"Cache SET: classifier for hub {hub_id}, chat {chat_id}")
+
+    def get_router_result(self, hub_id: int, chat_id: str, message_content: str, bot_id: int) -> Optional[Dict]:
+        """
+        Get cached router result, waiting if another bot is computing.
+
+        Returns adjusted result for the specific bot_id (should_respond flag).
+        """
+        key = self._make_key(hub_id, chat_id, message_content)
+        event_to_wait = None
+
+        with self._lock:
+            self._cleanup_expired()
+
+            # Check if result is already cached
+            entry = self._cache.get(key)
+            if entry and 'router' in entry:
+                result = self._adjust_router_result_for_bot(entry['router'], bot_id, hub_id, chat_id)
+                return result
+
+            # Check if another bot is already computing
+            if key in self._pending_router:
+                event_to_wait = self._pending_router[key]
+                logger.debug(f"Cache WAIT: router for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+            else:
+                # We're the first - mark as pending
+                self._pending_router[key] = threading.Event()
+                logger.debug(f"Cache MISS: router for hub {hub_id}, chat {chat_id}, bot {bot_id} (will compute)")
+                return None
+
+        # Wait outside the lock
+        if event_to_wait:
+            event_to_wait.wait(timeout=self._wait_timeout)
+            # Check cache again after waiting
+            with self._lock:
+                entry = self._cache.get(key)
+                if entry and 'router' in entry:
+                    logger.debug(f"Cache HIT (after wait): router for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                    return self._adjust_router_result_for_bot(entry['router'], bot_id, hub_id, chat_id)
+
+                # Timeout - try to become the new computing bot
+                if key not in self._pending_router:
+                    # Previous bot finished but no result (error?) - we'll compute
+                    self._pending_router[key] = threading.Event()
+                    logger.debug(f"Cache TIMEOUT (will compute): router for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                    return None
+                else:
+                    # Another bot is still pending or took over - this bot should skip
+                    logger.debug(f"Cache TIMEOUT (skip): router for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                    return {
+                        'should_respond': False,
+                        'reason': 'Router timeout - another bot handling',
+                        'timeout_fallback': True
+                    }
+
+        return None
+
+    def _adjust_router_result_for_bot(self, cached_result: Dict, bot_id: int, hub_id: int, chat_id: str) -> Dict:
+        """Adjust cached router result for the specific bot asking."""
+        result = cached_result.copy()
+
+        # Get the original selected bot(s)
+        responding_bots = result.get('responding_bots', [])
+        responding_bot_id = result.get('responding_bot_id')
+
+        # Determine if THIS bot should respond
+        if responding_bot_id is not None:
+            should_respond = (bot_id == responding_bot_id)
+        elif responding_bots:
+            should_respond = bot_id in [rb.get('bot_id') if isinstance(rb, dict) else rb for rb in responding_bots]
+        else:
+            should_respond = False
+
+        # Adjust result for this bot
+        result['should_respond'] = should_respond
+        if not should_respond:
+            result['deferred'] = True
+            result['reason'] = result.get('reason', '') + ' (cached decision)'
+
+        logger.debug(f"Cache HIT: router for hub {hub_id}, chat {chat_id}, bot {bot_id} -> respond={should_respond}")
+        return result
+
+    def set_router_result(self, hub_id: int, chat_id: str, message_content: str, result: Dict):
+        """Cache router result and signal waiting bots."""
+        key = self._make_key(hub_id, chat_id, message_content)
+        with self._lock:
+            if key not in self._cache:
+                self._cache[key] = {'timestamp': datetime.utcnow()}
+            self._cache[key]['router'] = result
+
+            # Signal waiting bots that result is ready (individual router wait)
+            if key in self._pending_router:
+                self._pending_router[key].set()
+                del self._pending_router[key]
+
+            # Also signal the combined wait (classifier+router complete)
+            # Router is always last, so when router is set, full chain is complete
+            if key in self._pending_full:
+                self._pending_full[key].set()
+                del self._pending_full[key]
+
+            logger.debug(f"Cache SET: router for hub {hub_id}, chat {chat_id}")
+
+    def get_full_routing_result(
+        self,
+        hub_id: int,
+        chat_id: str,
+        message_content: str,
+        bot_id: int
+    ) -> tuple:
+        """
+        Get both classifier and router results with a SINGLE wait.
+
+        This is an optimization over separate get_classifier_result + get_router_result
+        calls. Instead of waking up after classifier and waiting again for router,
+        bots wait ONCE for both to complete.
+
+        Returns:
+            - (classifier_dict, router_dict): Both cached (hit or waited)
+            - (None, None): Cache miss - this bot should compute both
+        """
+        key = self._make_key(hub_id, chat_id, message_content)
+        event_to_wait = None
+
+        with self._lock:
+            self._cleanup_expired()
+
+            entry = self._cache.get(key)
+            # Check if BOTH classifier AND router are cached
+            if entry and 'classifier' in entry and 'router' in entry:
+                classifier = entry['classifier']
+                router = self._adjust_router_result_for_bot(entry['router'], bot_id, hub_id, chat_id)
+                logger.debug(f"Cache HIT: full routing for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                return classifier, router
+
+            # Check if another bot is computing the full chain
+            if key in self._pending_full:
+                event_to_wait = self._pending_full[key]
+                logger.debug(f"Cache WAIT: full routing for hub {hub_id}, chat {chat_id}, bot {bot_id} (another bot computing)")
+            else:
+                # We're the first - mark as pending for full chain
+                self._pending_full[key] = threading.Event()
+                logger.debug(f"Cache MISS: full routing for hub {hub_id}, chat {chat_id}, bot {bot_id} (will compute)")
+                return None, None
+
+        # Wait outside the lock for the full chain to complete
+        if event_to_wait:
+            event_to_wait.wait(timeout=self._wait_timeout)
+            # Check cache again after waiting
+            with self._lock:
+                entry = self._cache.get(key)
+                if entry and 'classifier' in entry and 'router' in entry:
+                    classifier = entry['classifier']
+                    router = self._adjust_router_result_for_bot(entry['router'], bot_id, hub_id, chat_id)
+                    logger.debug(f"Cache HIT (after wait): full routing for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                    return classifier, router
+
+                # Timeout - try to become the new computing bot
+                if key not in self._pending_full:
+                    # Previous bot finished but no result (error?) - we'll compute
+                    self._pending_full[key] = threading.Event()
+                    logger.debug(f"Cache TIMEOUT (will compute): full routing for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                    return None, None
+                else:
+                    # Another bot is still pending or took over - return fallback
+                    logger.debug(f"Cache TIMEOUT (skip): full routing for hub {hub_id}, chat {chat_id}, bot {bot_id}")
+                    # Return fallback values - general classification and skip response
+                    fallback_classifier = {'category': 'general', 'urgency': 'normal', 'timeout_fallback': True}
+                    fallback_router = {
+                        'should_respond': False,
+                        'reason': 'Full routing timeout - another bot handling',
+                        'timeout_fallback': True
+                    }
+                    return fallback_classifier, fallback_router
+
+        return None, None
+
+
+# Global cache instance
+_routing_cache = RoutingCache(ttl_seconds=10)
+
+
+# =============================================================================
+# HUB MESSAGE PROCESSOR - Centralized processing for group management hubs
+# Runs AI calls ONCE per message, distributes decisions to all bots.
+# =============================================================================
+
+class HubMessageProcessor:
+    """
+    Centralized message processor for group management hubs.
+
+    Instead of each bot running AI calls independently (with caching to avoid
+    duplicates), this processor runs ALL AI calls ONCE and stores decisions
+    for all bots.
+
+    Flow:
+    1. First bot to receive message triggers processing
+    2. Processor runs: ending detection → classifier → router
+    3. Decisions for ALL bots are stored
+    4. Other bots just look up their pre-computed decision
+
+    This is cleaner than the caching approach because:
+    - No race conditions with pending locks
+    - No multiple wait/wake cycles
+    - Clear separation: AI runs once, bots just query decisions
+    """
+
+    def __init__(self, ttl_seconds: int = 15, wait_timeout: float = 12.0):
+        self._decisions: Dict[str, Dict[str, Any]] = {}  # message_key -> {timestamp, bot_decisions}
+        self._processing: Dict[str, threading.Event] = {}  # message_key -> event
+        self._lock = threading.Lock()
+        self._ttl = ttl_seconds
+        self._wait_timeout = wait_timeout
+
+    def _make_key(self, hub_id: int, chat_id: str, message_content: str, sender_id: str) -> str:
+        """Create unique key for this message."""
+        content_hash = hashlib.md5(message_content.encode()).hexdigest()[:16]
+        sender_hash = sender_id[-8:] if sender_id else "unknown"
+        return f"hubmsg:{hub_id}:{chat_id}:{sender_hash}:{content_hash}"
+
+    def _cleanup_expired(self):
+        """Remove expired entries (called within lock)."""
+        now = datetime.utcnow()
+        expired = [
+            key for key, entry in self._decisions.items()
+            if (now - entry.get('timestamp', now)).total_seconds() > self._ttl
+        ]
+        for key in expired:
+            del self._decisions[key]
+            self._processing.pop(key, None)
+
+    def get_bot_decision(
+        self,
+        hub_id: int,
+        bot_id: int,
+        chat_id: str,
+        message_content: str,
+        sender_id: str,
+        sender_name: Optional[str] = None,
+        sender_phone: Optional[str] = None,
+        is_group: bool = True,
+        whatsapp_message_id: Optional[str] = None,
+        conversation_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Get the routing decision for a specific bot.
+
+        If the message hasn't been processed yet, this bot triggers processing.
+        If another bot is processing, this bot waits for the result.
+
+        Args:
+            hub_id: The hub ID
+            bot_id: The bot requesting the decision
+            chat_id: The chat/group ID
+            message_content: The message text
+            sender_id: Unique sender identifier
+            sender_name: Sender's display name
+            sender_phone: Sender's phone number
+            is_group: Whether this is a group chat
+            whatsapp_message_id: WhatsApp message ID for bot detection
+            conversation_id: Database conversation ID for ending detection
+
+        Returns:
+            Dict with:
+            - should_respond: bool
+            - reason: str
+            - skip_ending_check: bool (True, already done)
+            - classification: optional classifier result
+            - routing_context: optional context for response
+            - delay_ms: optional response delay
+            - process_steps: list of decision steps
+        """
+        message_key = self._make_key(hub_id, chat_id, message_content, sender_id or "")
+        event_to_wait = None
+
+        with self._lock:
+            self._cleanup_expired()
+
+            # Check if decision already exists
+            if message_key in self._decisions:
+                decisions = self._decisions[message_key].get('bot_decisions', {})
+                if bot_id in decisions:
+                    logger.debug(f"HubMessageProcessor: Decision HIT for bot {bot_id} in hub {hub_id}")
+                    decision = decisions[bot_id].copy()
+                    decision['from_cache'] = True
+                    return decision
+
+            # Check if another bot is processing
+            if message_key in self._processing:
+                event_to_wait = self._processing[message_key]
+                logger.debug(f"HubMessageProcessor: Bot {bot_id} waiting for processing in hub {hub_id}")
+            else:
+                # We're the first - mark as processing and do the work
+                self._processing[message_key] = threading.Event()
+                logger.info(f"HubMessageProcessor: Bot {bot_id} processing message for hub {hub_id}")
+
+        # If we need to wait, do it outside the lock
+        if event_to_wait:
+            event_to_wait.wait(timeout=self._wait_timeout)
+            # Check for result after waiting
+            with self._lock:
+                if message_key in self._decisions:
+                    decisions = self._decisions[message_key].get('bot_decisions', {})
+                    if bot_id in decisions:
+                        logger.debug(f"HubMessageProcessor: Decision HIT (after wait) for bot {bot_id}")
+                        decision = decisions[bot_id].copy()
+                        decision['from_cache'] = True
+                        return decision
+
+                # Timeout or no result - try to become processor
+                if message_key not in self._processing:
+                    self._processing[message_key] = threading.Event()
+                    logger.debug(f"HubMessageProcessor: Bot {bot_id} taking over processing after timeout")
+                else:
+                    # Another bot took over - return default
+                    logger.debug(f"HubMessageProcessor: Bot {bot_id} timeout, returning default")
+                    return {
+                        'should_respond': False,
+                        'reason': 'Processing timeout - another bot handling',
+                        'skip_ending_check': True,
+                        'timeout_fallback': True
+                    }
+
+        # This bot is the processor - run all AI calls
+        return self._process_message(
+            message_key=message_key,
+            hub_id=hub_id,
+            requesting_bot_id=bot_id,
+            chat_id=chat_id,
+            message_content=message_content,
+            sender_id=sender_id,
+            sender_name=sender_name,
+            sender_phone=sender_phone,
+            is_group=is_group,
+            whatsapp_message_id=whatsapp_message_id,
+            conversation_id=conversation_id
+        )
+
+    def _process_message(
+        self,
+        message_key: str,
+        hub_id: int,
+        requesting_bot_id: int,
+        chat_id: str,
+        message_content: str,
+        sender_id: str,
+        sender_name: Optional[str],
+        sender_phone: Optional[str],
+        is_group: bool,
+        whatsapp_message_id: Optional[str],
+        conversation_id: Optional[int]
+    ) -> Dict[str, Any]:
+        """
+        Process the message and generate decisions for ALL bots in the hub.
+
+        This runs:
+        1. Ending detection (should any bot respond?)
+        2. Classifier (what category is this message?)
+        3. Router (which bot should respond?)
+
+        Then stores decisions for all bots so they can look them up.
+        """
+        try:
+            with get_db_session() as db:
+                hub = db.query(Hub).filter(Hub.id == hub_id).first()
+                if not hub:
+                    return self._finalize_processing(message_key, requesting_bot_id, {
+                        requesting_bot_id: {
+                            'should_respond': True,
+                            'reason': 'Hub not found',
+                            'skip_ending_check': True
+                        }
+                    })
+
+                # Get all active bots in this hub
+                bot_ids = [
+                    m.bot_profile_id for m in hub.bot_memberships
+                    if m.is_active
+                ]
+
+                if not bot_ids:
+                    return self._finalize_processing(message_key, requesting_bot_id, {
+                        requesting_bot_id: {
+                            'should_respond': True,
+                            'reason': 'No active bots in hub',
+                            'skip_ending_check': True
+                        }
+                    })
+
+                # Get bot names for display
+                all_bots = db.query(BotProfile).filter(BotProfile.id.in_(bot_ids)).all()
+                all_bot_names = [bot.name for bot in all_bots]
+                bot_phones = {bot.id: bot.whatsapp_phone for bot in all_bots if bot.whatsapp_phone}
+
+                # Format bot names with truncation (max 40 chars)
+                bot_names_str = ", ".join(all_bot_names)
+                if len(bot_names_str) > 40:
+                    bot_names_display = bot_names_str[:37] + "..."
+                else:
+                    bot_names_display = bot_names_str
+
+                process_steps = [f"Message received in hub '{hub.name}' with {len(bot_ids)} bots: [{bot_names_display}]"]
+
+                # =============================================================
+                # STEP 0: BOT-TO-BOT DETECTION (check if message is from a bot)
+                # =============================================================
+                is_bot_to_bot = False
+                detected_bot_name = None
+                detection_method = None
+
+                # Method 1: Check by WhatsApp Message ID (if message was sent by a bot)
+                # Check against ALL bots in the system, not just hub members
+                if whatsapp_message_id:
+                    existing_bot_msg = db.query(Message, Conversation, BotProfile).join(
+                        Conversation, Message.conversation_id == Conversation.id
+                    ).join(
+                        BotProfile, Conversation.bot_profile_id == BotProfile.id
+                    ).filter(
+                        Message.whatsapp_message_id == whatsapp_message_id,
+                        Message.role == 'assistant'
+                    ).first()
+
+                    if existing_bot_msg:
+                        msg, conv, bot = existing_bot_msg
+                        is_bot_to_bot = True
+                        detected_bot_name = bot.name
+                        detection_method = "message_id"
+
+                # Method 2: Check by phone number (against hub bots first, then ALL system bots)
+                if not is_bot_to_bot and sender_phone:
+                    sender_normalized = sender_phone.replace('+', '').replace(' ', '').replace('-', '')
+
+                    # First check against hub member bots
+                    for bot_id_check, bot_phone in bot_phones.items():
+                        bot_phone_normalized = bot_phone.replace('+', '').replace(' ', '').replace('-', '')
+                        if sender_normalized in bot_phone_normalized or bot_phone_normalized in sender_normalized:
+                            bot = db.query(BotProfile).filter(BotProfile.id == bot_id_check).first()
+                            is_bot_to_bot = True
+                            detected_bot_name = bot.name if bot else f"Bot {bot_id_check}"
+                            detection_method = "phone"
+                            break
+
+                    # If not found, check against ALL bots in the system (not just hub members)
+                    if not is_bot_to_bot:
+                        all_system_bots = db.query(BotProfile).filter(
+                            BotProfile.whatsapp_phone.isnot(None),
+                            BotProfile.whatsapp_phone != ''
+                        ).all()
+
+                        for system_bot in all_system_bots:
+                            if system_bot.id in bot_ids:
+                                continue  # Already checked
+                            bot_phone_normalized = system_bot.whatsapp_phone.replace('+', '').replace(' ', '').replace('-', '')
+                            if sender_normalized in bot_phone_normalized or bot_phone_normalized in sender_normalized:
+                                is_bot_to_bot = True
+                                detected_bot_name = system_bot.name
+                                detection_method = "phone_system"  # Mark as detected from system-wide search
+                                break
+
+                # Method 3: Check by message content (matches recent bot responses from ALL bots)
+                if not is_bot_to_bot and message_content:
+                    # Check if message matches any recent bot response from ANY bot in the system
+                    cutoff_time = datetime.utcnow() - timedelta(minutes=5)
+                    message_normalized = message_content[:100].lower().strip()
+
+                    recent_bot_msgs = db.query(Message, Conversation, BotProfile).join(
+                        Conversation, Message.conversation_id == Conversation.id
+                    ).join(
+                        BotProfile, Conversation.bot_profile_id == BotProfile.id
+                    ).filter(
+                        Message.role == 'assistant',
+                        Message.timestamp >= cutoff_time
+                    ).order_by(Message.timestamp.desc()).limit(100).all()
+
+                    for msg, conv, bot in recent_bot_msgs:
+                        if msg.content:
+                            stored_normalized = msg.content[:100].lower().strip()
+                            if message_normalized == stored_normalized:
+                                is_bot_to_bot = True
+                                detected_bot_name = bot.name
+                                detection_method = "content"
+                                break
+                            # Partial match for substantial messages
+                            min_len = min(len(message_normalized), len(stored_normalized))
+                            if min_len > 20 and message_normalized[:min_len] == stored_normalized[:min_len]:
+                                is_bot_to_bot = True
+                                detected_bot_name = bot.name
+                                detection_method = "content"
+                                break
+
+                # If bot-to-bot detected, log and return early
+                if is_bot_to_bot:
+                    # Get bot-to-bot limit info from hub
+                    bot_limit = hub.bot_conversation_limit if hub.bot_conversation_limit is not None else 0
+                    bot_interval = hub.bot_conversation_interval or 'hour'
+                    if bot_limit == 0:
+                        limit_desc = "bot-to-bot disabled"
+                    elif bot_limit == -1:
+                        limit_desc = "bot-to-bot unlimited"
+                    else:
+                        limit_desc = f"bot-to-bot limit: {bot_limit}/{bot_interval}"
+
+                    process_steps.append(f"→ Bot-to-Bot Detection: BLOCKED (method: {detection_method}, sender: {detected_bot_name})")
+                    process_steps.append(f"→ Bot-to-Bot Limit: {limit_desc}")
+                    process_steps.append(f"→ Final: NOT RESPONDED (bot message blocked)")
+
+                    bot_decisions = {
+                        bid: {
+                            'should_respond': False,
+                            'reason': f"Bot message from {detected_bot_name} (detected by {detection_method})",
+                            'skip_ending_check': True,
+                            'process_steps': process_steps.copy()
+                        }
+                        for bid in bot_ids
+                    }
+
+                    # Log bot-to-bot blocked activity
+                    try:
+                        # Look up actual group name from database
+                        group_name = _get_group_name_from_db(db, chat_id)
+
+                        execution = ToolMonitor.log_execution(
+                            db=db,
+                            tool_type='group_management',
+                            operation='bot_to_bot_blocked',
+                            hub_id=hub_id,
+                            input_data={
+                                'message': message_content[:200],
+                                'sender_name': detected_bot_name or sender_name or 'Unknown',
+                                'sender_phone': sender_phone or sender_id,
+                                'chat_id': chat_id,
+                                'group_name': group_name,
+                                'is_group': is_group,
+                                'bot_id': requesting_bot_id,
+                                'bot_name': detected_bot_name or 'Bot',
+                                'hub_name': hub.name,
+                                'all_bot_names': all_bot_names,
+                                'bot_count': len(bot_ids),
+                                'is_bot_message': True,
+                                'detected_bot': detected_bot_name,
+                                'detection_method': detection_method
+                            },
+                            output_data={
+                                'should_respond': False,
+                                'reason': f"Bot message from {detected_bot_name} blocked",
+                                'bot_to_bot_blocked': True,
+                                'bot_to_bot_limit': limit_desc,
+                                'detected_bot': detected_bot_name,
+                                'detection_method': detection_method,
+                                'process_steps': process_steps
+                            },
+                            status='success',
+                            triggered_by='agent',
+                            related_entity_type='bot',
+                            related_entity_id=requesting_bot_id
+                        )
+                    except Exception as log_err:
+                        logger.debug(f"Failed to log bot-to-bot blocked activity: {log_err}")
+
+                    return self._finalize_processing(message_key, requesting_bot_id, bot_decisions)
+
+                process_steps.append("→ Bot-to-Bot Detection: ✓ User message")
+
+                # =============================================================
+                # STEP 1: ENDING DETECTION (run once for all bots)
+                # =============================================================
+                ending_result = self._check_ending_detection(
+                    db=db,
+                    hub=hub,
+                    chat_id=chat_id,
+                    message_content=message_content,
+                    sender_id=sender_id,
+                    sender_name=sender_name,
+                    conversation_id=conversation_id,
+                    bot_ids=bot_ids
+                )
+
+                if ending_result.get('should_skip'):
+                    # All bots should skip - conversation is ending
+                    process_steps.append(f"→ Ending Detection: SKIP ({ending_result.get('reason', 'farewell detected')})")
+                    process_steps.append("→ Final: ALL BOTS SKIP")
+
+                    bot_decisions = {
+                        bot_id: {
+                            'should_respond': False,
+                            'reason': f"Conversation ending: {ending_result.get('reason')}",
+                            'skip_ending_check': True,
+                            'process_steps': process_steps.copy()
+                        }
+                        for bot_id in bot_ids
+                    }
+
+                    # Log ending detection activity
+                    try:
+                        # Get bot name for display (use requesting bot)
+                        requesting_bot = db.query(BotProfile).filter(BotProfile.id == requesting_bot_id).first()
+                        requesting_bot_name = requesting_bot.name if requesting_bot else f"Bot {requesting_bot_id}"
+
+                        # Look up actual group name from database
+                        group_name = _get_group_name_from_db(db, chat_id)
+
+                        ToolMonitor.log_execution(
+                            db=db,
+                            tool_type='group_management',
+                            operation='ending_detection',
+                            hub_id=hub_id,
+                            input_data={
+                                'message': message_content[:200],
+                                'sender_name': sender_name or 'Unknown',
+                                'sender_phone': sender_phone or sender_id,
+                                'chat_id': chat_id,
+                                'group_name': group_name,
+                                'is_group': True,
+                                'bot_id': requesting_bot_id,
+                                'bot_name': requesting_bot_name,
+                                'hub_name': hub.name,
+                                'all_bot_names': all_bot_names,
+                                'bot_count': len(bot_ids)
+                            },
+                            output_data={
+                                'should_respond': False,
+                                'reason': ending_result.get('reason', 'farewell detected'),
+                                'ending_reason': ending_result.get('reason', 'farewell detected'),
+                                'delay_ms': 0,
+                                'process_steps': process_steps
+                            },
+                            status='success',
+                            triggered_by='agent',
+                            related_entity_type='bot',
+                            related_entity_id=requesting_bot_id
+                        )
+                    except Exception as log_err:
+                        logger.debug(f"Failed to log ending detection activity: {log_err}")
+
+                    return self._finalize_processing(message_key, requesting_bot_id, bot_decisions)
+
+                # Handle ending detection step display
+                if ending_result.get('skipped'):
+                    process_steps.append("→ Ending Detection: skipped (no AI provider)")
+                else:
+                    process_steps.append(f"→ Ending Detection: RESPOND ({ending_result.get('reason', 'not a farewell')})")
+
+                # =============================================================
+                # STEP 2: CLASSIFIER + ROUTER (using HubCoordinator)
+                # =============================================================
+                coordinator = HubCoordinator(hub, db)
+
+                # Get contact if we have phone
+                contact = None
+                if sender_phone:
+                    contact = coordinator._get_or_create_contact(sender_phone, sender_name)
+
+                # Run classifier
+                classification = None
+                if 'classifier' in coordinator.agents:
+                    classification = coordinator._run_classifier(message_content, contact, is_group)
+                    if classification:
+                        category = classification.get('category', 'unknown')
+                        urgency = classification.get('urgency', 'unknown')
+                        expertise = classification.get('suggested_expertise', [])
+                        expertise_str = ", ".join(expertise) if expertise else "none"
+                        process_steps.append(f"→ Classifier: category={category}, urgency={urgency}, expertise=[{expertise_str}]")
+                    else:
+                        process_steps.append("→ Classifier: Failed")
+                        classification = {'category': 'general', 'urgency': 'normal'}
+
+                # Run router to decide which bot(s) should respond
+                routing_result = None
+                selected_bot_ids = []
+
+                if 'router' in coordinator.agents and classification:
+                    # Use the first bot to get routing decision (will apply to all)
+                    routing_result = coordinator._run_router(
+                        requesting_bot_id=bot_ids[0],  # Use first bot for routing context
+                        classification=classification,
+                        is_group=is_group,
+                        chat_id=chat_id,
+                        sender_phone=sender_phone,
+                        sender_name=sender_name,
+                        message_content=message_content
+                    )
+
+                    # Extract which bot(s) should respond
+                    responding_bot_id = routing_result.get('responding_bot_id')
+                    responding_bots = routing_result.get('responding_bots', [])
+
+                    if responding_bot_id == -1:
+                        # Router says no bot should respond (ending detected by router)
+                        process_steps.append("→ Router: No bot should respond")
+                        selected_bot_ids = []
+                    elif responding_bot_id is not None and responding_bot_id > 0:
+                        selected_bot_ids = [responding_bot_id]
+                    elif responding_bots:
+                        selected_bot_ids = [
+                            rb.get('bot_id') if isinstance(rb, dict) else rb
+                            for rb in responding_bots
+                        ]
+
+                    # Get bot names for logging
+                    selected_names = []
+                    for bid in selected_bot_ids:
+                        bot = db.query(BotProfile).filter(BotProfile.id == bid).first()
+                        selected_names.append(bot.name if bot else f"Bot {bid}")
+
+                    # Get router reason
+                    router_reason = routing_result.get('reason', '') if routing_result else ''
+
+                    if selected_names:
+                        reason_str = f" - {router_reason}" if router_reason else ""
+                        process_steps.append(f"→ Router: Selected [{', '.join(selected_names)}]{reason_str}")
+                    else:
+                        reason_str = f" ({router_reason})" if router_reason else ""
+                        process_steps.append(f"→ Router: No bot selected{reason_str}")
+                else:
+                    # No router - use simple rules (first available bot)
+                    selected_bot_ids = [bot_ids[0]] if bot_ids else []
+                    process_steps.append(f"→ Simple Routing: First bot selected")
+
+                # =============================================================
+                # STEP 3: Generate decisions for ALL bots
+                # =============================================================
+                bot_decisions = {}
+                for bot_id in bot_ids:
+                    should_respond = bot_id in selected_bot_ids
+
+                    # Get delay for this bot if multiple responding
+                    delay_ms = 0
+                    if should_respond and len(selected_bot_ids) > 1:
+                        # Stagger responses
+                        position = selected_bot_ids.index(bot_id)
+                        delay_ms = position * random.randint(1000, 3000)
+
+                    bot = db.query(BotProfile).filter(BotProfile.id == bot_id).first()
+                    bot_name = bot.name if bot else f"Bot {bot_id}"
+
+                    steps_for_bot = process_steps.copy()
+                    if should_respond:
+                        steps_for_bot.append(f"→ Final: {bot_name} RESPONDS" + (f" (delay: {delay_ms}ms)" if delay_ms else ""))
+                    else:
+                        steps_for_bot.append(f"→ Final: {bot_name} SKIPS (not selected)")
+
+                    bot_decisions[bot_id] = {
+                        'should_respond': should_respond,
+                        'reason': routing_result.get('reason', 'hub routing') if routing_result else 'simple routing',
+                        'skip_ending_check': True,  # Already checked
+                        'classification': classification,
+                        'routing_context': routing_result.get('routing_context') if routing_result else None,
+                        'coordination_hint': routing_result.get('coordination_hint', '') if routing_result else '',
+                        'delay_ms': delay_ms,
+                        'deferred': not should_respond,
+                        'process_steps': steps_for_bot
+                    }
+
+                # =============================================================
+                # STEP 4: Log activity for group_management tool
+                # =============================================================
+                try:
+                    # Get names of selected bots and first responding bot info
+                    responding_names = []
+                    first_responding_bot_name = None
+                    first_responding_bot_id = None
+                    for bid in selected_bot_ids:
+                        bot = db.query(BotProfile).filter(BotProfile.id == bid).first()
+                        if bot:
+                            responding_names.append(bot.name)
+                            if first_responding_bot_name is None:
+                                first_responding_bot_name = bot.name
+                                first_responding_bot_id = bot.id
+
+                    # Determine if any bot should respond
+                    any_should_respond = len(selected_bot_ids) > 0
+
+                    # Add final step to process_steps for logging
+                    if any_should_respond:
+                        if len(responding_names) == 1:
+                            process_steps.append(f"→ Final: {responding_names[0]} RESPONDS")
+                        else:
+                            process_steps.append(f"→ Final: {len(responding_names)} bots RESPOND [{', '.join(responding_names)}]")
+                    else:
+                        reason = routing_result.get('reason', 'no bot selected') if routing_result else 'no bot selected'
+                        process_steps.append(f"→ Final: NO RESPONSE ({reason})")
+
+                    # Get router reason
+                    router_reason = ''
+                    if routing_result:
+                        router_reason = routing_result.get('reason', '')
+                        if not router_reason and routing_result.get('responding_bot_id'):
+                            router_reason = f"Selected bot {first_responding_bot_name or routing_result.get('responding_bot_id')}"
+
+                    # Look up actual group name from database
+                    group_name = _get_group_name_from_db(db, chat_id)
+
+                    execution = ToolMonitor.log_execution(
+                        db=db,
+                        tool_type='group_management',
+                        operation='message_routing',
+                        hub_id=hub_id,
+                        input_data={
+                            'message': message_content[:200],
+                            'sender_name': sender_name or 'Unknown',
+                            'sender_phone': sender_phone or sender_id,
+                            'chat_id': chat_id,
+                            'group_name': group_name,
+                            'is_group': is_group,
+                            'bot_id': first_responding_bot_id or requesting_bot_id,
+                            'bot_name': first_responding_bot_name or 'None',
+                            'hub_name': hub.name,
+                            'all_bot_names': all_bot_names,
+                            'bot_count': len(bot_ids)
+                        },
+                        output_data={
+                            'should_respond': any_should_respond,
+                            'reason': routing_result.get('reason') if routing_result else 'simple routing',
+                            'router_reason': router_reason,
+                            'ending_reason': None if ending_result and ending_result.get('skipped') else (ending_result.get('reason') if ending_result else None),
+                            'delay_ms': 0,
+                            'process_steps': process_steps,
+                            'classification': classification,
+                            'selected_bots': responding_names
+                        },
+                        status='success',
+                        triggered_by='agent',
+                        related_entity_type='bot',
+                        related_entity_id=first_responding_bot_id or requesting_bot_id,
+                        tokens_used=routing_result.get('tokens_used', 0) if routing_result else 0
+                    )
+
+                    # Add execution_id to bot decisions for response tracking
+                    execution_id = execution.id if execution else None
+                    if execution_id:
+                        logger.info(f"HubMessageProcessor: Adding execution_id {execution_id} to {len(bot_decisions)} bot decisions")
+                        for bid in bot_decisions:
+                            bot_decisions[bid]['execution_id'] = execution_id
+                    else:
+                        logger.warning(f"HubMessageProcessor: No execution_id returned from logging")
+                except Exception as log_err:
+                    logger.warning(f"HubMessageProcessor: Failed to log group_management activity: {log_err}")
+
+                return self._finalize_processing(message_key, requesting_bot_id, bot_decisions)
+
+        except Exception as e:
+            logger.error(f"HubMessageProcessor: Error processing message: {e}", exc_info=True)
+            # On error, let the requesting bot respond and signal others to skip
+            return self._finalize_processing(message_key, requesting_bot_id, {
+                requesting_bot_id: {
+                    'should_respond': True,
+                    'reason': f'Processing error: {str(e)}',
+                    'skip_ending_check': True,
+                    'error': True
+                }
+            })
+
+    def _check_ending_detection(
+        self,
+        db: Session,
+        hub: Hub,
+        chat_id: str,
+        message_content: str,
+        sender_id: str,
+        sender_name: Optional[str],
+        conversation_id: Optional[int],
+        bot_ids: List[int]
+    ) -> Dict[str, Any]:
+        """
+        Check if the conversation is ending (farewell detection).
+
+        Uses HUB-AWARE conversation-level detection that checks if ANY bot
+        in the hub has said goodbye, not just one specific bot.
+
+        Returns:
+            Dict with 'should_skip' and 'reason'
+        """
+        try:
+            # Find the first bot with ending_detection_enabled=True AND has an API key
+            from app.ai.providers import get_ai_provider
+
+            bot_with_ending = db.query(BotProfile).filter(
+                BotProfile.id.in_(bot_ids),
+                BotProfile.ending_detection_enabled == True,
+                BotProfile.api_key_encrypted.isnot(None),
+                BotProfile.api_key_encrypted != ''
+            ).first()
+
+            use_ai = False
+            ai_provider = None
+
+            if bot_with_ending:
+                # Use the bot's API key for AI ending detection
+                try:
+                    decrypted_key = decrypt_string(bot_with_ending.api_key_encrypted)
+                    if decrypted_key:
+                        ai_provider = get_ai_provider(
+                            provider=bot_with_ending.ai_provider or 'openai',
+                            api_key=decrypted_key,
+                            model=bot_with_ending.model or 'gpt-4o-mini'
+                        )
+                        use_ai = True
+                        logger.debug(f"HubMessageProcessor: Using bot '{bot_with_ending.name}' API key for ending detection")
+                except Exception as e:
+                    logger.debug(f"HubMessageProcessor: Failed to get bot API key: {e}")
+
+            if not use_ai:
+                # No bot with ending detection + API key - use pattern matching only
+                logger.debug(f"HubMessageProcessor: No bot with ending detection + API key, using pattern matching")
+
+            # Use the HUB-AWARE ending detector (checks ANY bot said goodbye)
+            from app.conversations.ending_detector import check_hub_conversation_ending
+
+            should_skip, reason = check_hub_conversation_ending(
+                ai_provider=ai_provider,
+                hub_id=hub.id,
+                chat_id=chat_id,
+                message_content=message_content,
+                sender_id=sender_id,
+                sender_name=sender_name,
+                use_ai=use_ai
+            )
+
+            return {'should_skip': should_skip, 'reason': reason}
+
+        except Exception as e:
+            logger.error(f"HubMessageProcessor: Ending detection error: {e}")
+            return {'should_skip': False, 'reason': f'error: {str(e)}'}
+
+    def _finalize_processing(
+        self,
+        message_key: str,
+        requesting_bot_id: int,
+        bot_decisions: Dict[int, Dict]
+    ) -> Dict[str, Any]:
+        """Store decisions and signal waiting bots."""
+        with self._lock:
+            self._decisions[message_key] = {
+                'timestamp': datetime.utcnow(),
+                'bot_decisions': bot_decisions
+            }
+
+            # Signal any waiting bots
+            if message_key in self._processing:
+                self._processing[message_key].set()
+                del self._processing[message_key]
+
+        # Return the decision for the requesting bot
+        if requesting_bot_id in bot_decisions:
+            return bot_decisions[requesting_bot_id]
+        else:
+            # Bot not in hub? Let it respond
+            return {
+                'should_respond': True,
+                'reason': 'Bot not found in hub decisions',
+                'skip_ending_check': True
+            }
+
+
+# Global processor instance
+_hub_message_processor = HubMessageProcessor(ttl_seconds=15, wait_timeout=12.0)
+
+
+def get_hub_message_decision(
+    hub_id: int,
+    bot_id: int,
+    chat_id: str,
+    message_content: str,
+    sender_id: str,
+    sender_name: Optional[str] = None,
+    sender_phone: Optional[str] = None,
+    is_group: bool = True,
+    whatsapp_message_id: Optional[str] = None,
+    conversation_id: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Get the hub routing decision for a bot.
+
+    This is the main entry point for the centralized hub message processor.
+    Call this instead of separate ending detection + hub routing for
+    group management hubs.
+
+    Returns:
+        Dict with should_respond, reason, skip_ending_check, etc.
+    """
+    return _hub_message_processor.get_bot_decision(
+        hub_id=hub_id,
+        bot_id=bot_id,
+        chat_id=chat_id,
+        message_content=message_content,
+        sender_id=sender_id,
+        sender_name=sender_name,
+        sender_phone=sender_phone,
+        is_group=is_group,
+        whatsapp_message_id=whatsapp_message_id,
+        conversation_id=conversation_id
+    )
 
 
 class HubCoordinator:
@@ -595,47 +1729,143 @@ class HubCoordinator:
         if sender_phone:
             contact = self._get_or_create_contact(sender_phone, sender_name)
 
-        # Run classifier if available
+        # =================================================================
+        # COMBINED CLASSIFIER + ROUTER CACHE (Single Wait Optimization)
+        # When both classifier and router are configured, wait for BOTH
+        # to complete in a single wait, reducing context switches.
+        # =================================================================
         classification = None
-        if 'classifier' in self.agents:
-            classification = self._run_classifier(message_content, contact, is_group)
+        cache_chat_id = chat_id or "unknown"
+
+        if 'classifier' in self.agents and 'router' in self.agents:
+            # Use combined wait for both classifier and router
+            cached_classification, cached_routing = _routing_cache.get_full_routing_result(
+                self.hub_id, cache_chat_id, message_content, bot_id
+            )
+
+            if cached_classification is not None and cached_routing is not None:
+                # Cache HIT - both classifier and router results are available
+                classification = cached_classification
+                routing = cached_routing
+
+                # Log classifier result
+                category = classification.get('category', 'unknown')
+                urgency = classification.get('urgency', 'unknown')
+                expertise = classification.get('suggested_expertise', [])
+                expertise_str = ", ".join(expertise) if expertise else "none"
+                process_steps.append(f"→ Classifier (cached): category={category}, urgency={urgency}, expertise=[{expertise_str}]")
+                process_steps.append("→ Router (cached): Using cached routing decision")
+
+                # Process routing result
+                routing["process_steps"] = process_steps
+                responding_bots = routing.get("responding_bots", [])
+
+                # Convert bot IDs to names for display
+                responding_bot_names = []
+                for rb_id in responding_bots:
+                    rb = self.db.query(BotProfile).filter(BotProfile.id == rb_id).first()
+                    responding_bot_names.append(rb.name if rb else f"Bot {rb_id}")
+
+                # Post-process reason to replace any bot IDs with names
+                router_reason = self._replace_bot_ids_in_reason(routing.get('reason', 'router decision'))
+
+                if routing.get("should_respond"):
+                    delay_ms = routing.get("delay_ms", 0)
+                    delay_s = delay_ms / 1000 if delay_ms else 0
+                    if responding_bot_names:
+                        bots_str = ", ".join(responding_bot_names)
+                        process_steps.append(f"→ Router Result: Selected [{bots_str}], {bot_display} responding" + (f" (delay: {delay_s}s)" if delay_s else ""))
+                    process_steps.append(f"→ Final: RESPONDED ({router_reason})")
+                else:
+                    if responding_bot_names:
+                        bots_str = ", ".join(responding_bot_names)
+                        process_steps.append(f"→ Router Result: Selected [{bots_str}], {bot_display} NOT selected")
+                    process_steps.append(f"→ Final: NOT RESPONDED ({router_reason})")
+                return routing
+
+            else:
+                # Cache MISS - this bot computes both classifier and router
+                # Run classifier
+                classification = self._run_classifier(message_content, contact, is_group)
+                if classification:
+                    _routing_cache.set_classifier_result(
+                        self.hub_id, cache_chat_id, message_content, classification
+                    )
+                    category = classification.get('category', 'unknown')
+                    urgency = classification.get('urgency', 'unknown')
+                    expertise = classification.get('suggested_expertise', [])
+                    expertise_str = ", ".join(expertise) if expertise else "none"
+                    process_steps.append(f"→ Classifier: category={category}, urgency={urgency}, expertise=[{expertise_str}]")
+
+                    # Run router
+                    process_steps.append("→ Router: AI routing decision...")
+                    routing = self._run_router(
+                        bot_id,
+                        classification,
+                        is_group,
+                        chat_id=chat_id,
+                        sender_phone=sender_phone,
+                        sender_name=sender_name,
+                        message_content=message_content
+                    )
+                    # Cache router result (this also signals the combined wait event)
+                    _routing_cache.set_router_result(
+                        self.hub_id, cache_chat_id, message_content, routing
+                    )
+
+                    routing["process_steps"] = process_steps
+                    responding_bots = routing.get("responding_bots", [])
+
+                    # Convert bot IDs to names for display
+                    responding_bot_names = []
+                    for rb_id in responding_bots:
+                        rb = self.db.query(BotProfile).filter(BotProfile.id == rb_id).first()
+                        responding_bot_names.append(rb.name if rb else f"Bot {rb_id}")
+
+                    # Post-process reason to replace any bot IDs with names
+                    router_reason = self._replace_bot_ids_in_reason(routing.get('reason', 'router decision'))
+
+                    if routing.get("should_respond"):
+                        delay_ms = routing.get("delay_ms", 0)
+                        delay_s = delay_ms / 1000 if delay_ms else 0
+                        if responding_bot_names:
+                            bots_str = ", ".join(responding_bot_names)
+                            process_steps.append(f"→ Router Result: Selected [{bots_str}], {bot_display} responding" + (f" (delay: {delay_s}s)" if delay_s else ""))
+                        process_steps.append(f"→ Final: RESPONDED ({router_reason})")
+                    else:
+                        if responding_bot_names:
+                            bots_str = ", ".join(responding_bot_names)
+                            process_steps.append(f"→ Router Result: Selected [{bots_str}], {bot_display} NOT selected")
+                        process_steps.append(f"→ Final: NOT RESPONDED ({router_reason})")
+                    return routing
+                else:
+                    process_steps.append("→ Classifier: ✗ Failed to classify")
+
+        elif 'classifier' in self.agents:
+            # Only classifier configured (no router) - use original flow
+            classification = _routing_cache.get_classifier_result(
+                self.hub_id, cache_chat_id, message_content
+            )
+
             if classification:
                 category = classification.get('category', 'unknown')
                 urgency = classification.get('urgency', 'unknown')
                 expertise = classification.get('suggested_expertise', [])
                 expertise_str = ", ".join(expertise) if expertise else "none"
-                process_steps.append(f"→ Classifier: category={category}, urgency={urgency}, expertise=[{expertise_str}]")
+                process_steps.append(f"→ Classifier (cached): category={category}, urgency={urgency}, expertise=[{expertise_str}]")
             else:
-                process_steps.append("→ Classifier: ✗ Failed to classify")
-
-        # Run router if available
-        if 'router' in self.agents and classification:
-            process_steps.append("→ Router: AI routing decision...")
-            routing = self._run_router(bot_id, classification, is_group)
-            routing["process_steps"] = process_steps
-            responding_bots = routing.get("responding_bots", [])
-
-            # Convert bot IDs to names for display
-            responding_bot_names = []
-            for rb_id in responding_bots:
-                rb = self.db.query(BotProfile).filter(BotProfile.id == rb_id).first()
-                responding_bot_names.append(rb.name if rb else f"Bot {rb_id}")
-
-            # Post-process reason to replace any bot IDs with names
-            router_reason = self._replace_bot_ids_in_reason(routing.get('reason', 'router decision'))
-
-            if routing.get("should_respond"):
-                delay = routing.get("delay_s", 0)
-                if responding_bot_names:
-                    bots_str = ", ".join(responding_bot_names)
-                    process_steps.append(f"→ Router Result: Selected [{bots_str}], {bot_display} responding" + (f" (delay: {delay}s)" if delay else ""))
-                process_steps.append(f"→ Final: RESPONDED ({router_reason})")
-            else:
-                if responding_bot_names:
-                    bots_str = ", ".join(responding_bot_names)
-                    process_steps.append(f"→ Router Result: Selected [{bots_str}], {bot_display} NOT selected")
-                process_steps.append(f"→ Final: NOT RESPONDED ({router_reason})")
-            return routing
+                classification = self._run_classifier(message_content, contact, is_group)
+                if classification:
+                    _routing_cache.set_classifier_result(
+                        self.hub_id, cache_chat_id, message_content, classification
+                    )
+                    category = classification.get('category', 'unknown')
+                    urgency = classification.get('urgency', 'unknown')
+                    expertise = classification.get('suggested_expertise', [])
+                    expertise_str = ", ".join(expertise) if expertise else "none"
+                    process_steps.append(f"→ Classifier: category={category}, urgency={urgency}, expertise=[{expertise_str}]")
+                else:
+                    process_steps.append("→ Classifier: ✗ Failed to classify")
 
         # Default: use simple rules with classification hints
         process_steps.append("→ Routing: Using simple rules with classification hints")
@@ -857,7 +2087,7 @@ class HubCoordinator:
             "reason": "No suitable bot found for routing"
         }
 
-    def _get_or_create_contact(self, phone: str, display_name: Optional[str] = None) -> Contact:
+    def _get_or_create_contact(self, phone: str, display_name: Optional[str] = None, profile_pic: Optional[str] = None) -> Contact:
         """Get or create a contact for this phone number."""
         contact = self.db.query(Contact).filter(
             Contact.hub_id == self.hub_id,
@@ -869,6 +2099,7 @@ class HubCoordinator:
                 hub_id=self.hub_id,
                 phone=phone,
                 display_name=display_name,
+                profile_pic=profile_pic,
                 first_seen_at=datetime.utcnow()
             )
             self.db.add(contact)
@@ -878,12 +2109,149 @@ class HubCoordinator:
             # Update display_name if we have a new one and the current one is empty
             if display_name and not contact.display_name:
                 contact.display_name = display_name
+            # Update profile_pic if we have a new one and the current one is empty
+            if profile_pic and not contact.profile_pic:
+                contact.profile_pic = profile_pic
 
         # Update last interaction
         contact.last_interaction_at = datetime.utcnow()
         self.db.commit()
 
         return contact
+
+    def _get_conversation_history(
+        self,
+        chat_id: str,
+        sender_phone: Optional[str] = None,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Get recent conversation history for context.
+
+        Returns conversation context including:
+        - Recent messages with sender/bot info
+        - Last responding bot
+        - Conversation depth
+        - Topics discussed
+        """
+        try:
+            # Find conversations in this chat for any bot in the hub
+            bot_ids = list(self.bot_memberships.keys())
+            if not bot_ids:
+                return {"messages": [], "last_responding_bot": None, "depth": 0}
+
+            # Get recent messages from conversations matching this chat
+            conversations = self.db.query(Conversation).filter(
+                Conversation.bot_profile_id.in_(bot_ids),
+                Conversation.chat_id == chat_id
+            ).all()
+
+            if not conversations:
+                # Try matching by chat_name as fallback
+                conversations = self.db.query(Conversation).filter(
+                    Conversation.bot_profile_id.in_(bot_ids),
+                    Conversation.chat_name.contains(chat_id.split('@')[0] if '@' in chat_id else chat_id)
+                ).all()
+
+            if not conversations:
+                return {"messages": [], "last_responding_bot": None, "depth": 0}
+
+            conv_ids = [c.id for c in conversations]
+
+            # Get recent messages
+            messages = self.db.query(Message).filter(
+                Message.conversation_id.in_(conv_ids)
+            ).order_by(Message.timestamp.desc()).limit(limit).all()
+
+            messages = list(reversed(messages))  # Chronological order
+
+            if not messages:
+                return {"messages": [], "last_responding_bot": None, "depth": 0}
+
+            # Format messages for context
+            formatted_messages = []
+            last_responding_bot = None
+            last_responding_bot_id = None
+            user_message_count = 0
+
+            for msg in messages:
+                # Get bot name for assistant messages
+                bot_name = None
+                if msg.role == "assistant":
+                    # Find which bot sent this
+                    conv = self.db.query(Conversation).filter(
+                        Conversation.id == msg.conversation_id
+                    ).first()
+                    if conv:
+                        bot = self.db.query(BotProfile).filter(
+                            BotProfile.id == conv.bot_profile_id
+                        ).first()
+                        if bot:
+                            bot_name = bot.name
+                            last_responding_bot = bot_name
+                            last_responding_bot_id = bot.id
+
+                formatted_messages.append({
+                    "role": msg.role,
+                    "content": msg.content[:200] if msg.content else "",  # Truncate for context
+                    "sender_name": msg.sender_name if msg.role == "user" else None,
+                    "bot_name": bot_name,
+                    "timestamp": msg.timestamp.strftime("%H:%M") if msg.timestamp else None
+                })
+
+                if msg.role == "user":
+                    user_message_count += 1
+
+            # Calculate conversation depth (user messages = exchanges)
+            depth = user_message_count
+
+            # Get last responding bot's expertise
+            last_bot_expertise = []
+            if last_responding_bot_id and last_responding_bot_id in self.bot_memberships:
+                membership = self.bot_memberships[last_responding_bot_id]
+                if membership.expertise:
+                    try:
+                        last_bot_expertise = json.loads(membership.expertise) if isinstance(membership.expertise, str) else membership.expertise
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+            # Calculate time since last message
+            time_gap_minutes = None
+            if messages:
+                last_msg_time = messages[-1].timestamp
+                if last_msg_time:
+                    time_gap = datetime.utcnow() - last_msg_time
+                    time_gap_minutes = int(time_gap.total_seconds() / 60)
+
+            return {
+                "messages": formatted_messages,
+                "last_responding_bot": last_responding_bot,
+                "last_responding_bot_id": last_responding_bot_id,
+                "last_bot_expertise": last_bot_expertise,
+                "depth": depth,
+                "time_gap_minutes": time_gap_minutes
+            }
+
+        except Exception as e:
+            logger.warning(f"Hub {self.hub_id}: Failed to get conversation history: {e}")
+            return {"messages": [], "last_responding_bot": None, "depth": 0}
+
+    def _format_conversation_for_router(self, history: Dict[str, Any]) -> str:
+        """Format conversation history for the router prompt."""
+        if not history.get("messages"):
+            return "No previous conversation in this chat."
+
+        lines = []
+        for msg in history["messages"]:
+            timestamp = msg.get("timestamp", "")
+            if msg["role"] == "user":
+                sender = msg.get("sender_name", "User")
+                lines.append(f"[{timestamp}] {sender}: {msg['content']}")
+            else:
+                bot = msg.get("bot_name", "Bot")
+                lines.append(f"[{timestamp}] {bot} (bot): {msg['content']}")
+
+        return "\n".join(lines)
 
     def _get_ai_provider(self, agent: AIAgent):
         """Get AI provider for an agent, with fallback to hub settings."""
@@ -892,17 +2260,17 @@ class HubCoordinator:
 
             # Get API key (agent-specific or hub default)
             api_key = None
-            if agent.openai_api_key_encrypted:
-                api_key = decrypt_string(agent.openai_api_key_encrypted)
-            elif self.hub.openai_api_key_encrypted:
-                api_key = decrypt_string(self.hub.openai_api_key_encrypted)
+            if agent.api_key_encrypted:
+                api_key = decrypt_string(agent.api_key_encrypted)
+            elif self.hub.api_key_encrypted:
+                api_key = decrypt_string(self.hub.api_key_encrypted)
 
             if not api_key:
                 return None
 
             # Determine provider (agent > hub > default)
             provider_name = agent.ai_provider or self.hub.ai_provider or "openai"
-            model = agent.openai_model or self.hub.openai_model or "gpt-4o-mini"
+            model = agent.model or self.hub.model or "gpt-4o-mini"
 
             return get_ai_provider(
                 provider_name=provider_name,
@@ -914,10 +2282,10 @@ class HubCoordinator:
             # Fallback to OpenAI
             from openai import OpenAI
             api_key = None
-            if agent.openai_api_key_encrypted:
-                api_key = decrypt_string(agent.openai_api_key_encrypted)
-            elif self.hub.openai_api_key_encrypted:
-                api_key = decrypt_string(self.hub.openai_api_key_encrypted)
+            if agent.api_key_encrypted:
+                api_key = decrypt_string(agent.api_key_encrypted)
+            elif self.hub.api_key_encrypted:
+                api_key = decrypt_string(self.hub.api_key_encrypted)
             if api_key:
                 return OpenAI(api_key=api_key)
             return None
@@ -1038,7 +2406,7 @@ Return ONLY valid JSON, no other text."""
             else:
                 # Direct OpenAI client (fallback)
                 response = provider.chat.completions.create(
-                    model=agent.openai_model or "gpt-4o-mini",
+                    model=agent.model or "gpt-4o-mini",
                     messages=messages,
                     temperature=0.3,
                     max_tokens=500,
@@ -1079,7 +2447,11 @@ Return ONLY valid JSON, no other text."""
         self,
         requesting_bot_id: int,
         classification: Dict,
-        is_group: bool
+        is_group: bool,
+        chat_id: Optional[str] = None,
+        sender_phone: Optional[str] = None,
+        sender_name: Optional[str] = None,
+        message_content: Optional[str] = None
     ) -> Dict[str, Any]:
         """Run the router agent to decide which bot should respond."""
         agent = self.agents.get('router')
@@ -1091,6 +2463,11 @@ Return ONLY valid JSON, no other text."""
             provider = self._get_ai_provider(agent)
             if not provider:
                 return {"should_respond": True, "reason": "No API key for router"}
+
+            # Get conversation history for context
+            conversation_history = {}
+            if chat_id:
+                conversation_history = self._get_conversation_history(chat_id, sender_phone, limit=10)
 
             # Get response counts for least-busy routing
             response_counts = self._get_bot_response_counts(hours=1)
@@ -1139,24 +2516,55 @@ Return ONLY valid JSON, no other text."""
 
             # Build dynamic system prompt - ALWAYS use default with dynamic categories
             # Router MUST have access to current topics and expertise for accurate routing
-            system_prompt = f"""You are a response router for a multi-bot WhatsApp system. Based on the message classification and available bots, decide which bot(s) should respond.
+            system_prompt = f"""You are a response router for a multi-bot WhatsApp system. Based on the message classification, conversation history, and available bots, decide which bot(s) should respond.
 
 Available message categories/topics: {categories_str}
 
-Return JSON with EITHER:
-1. Single bot: {{"responding_bot_id": <bot_id>, "reason": "..."}}
-2. Multiple bots: {{"responding_bots": [{{"bot_id": <id>, "order": 1}}, {{"bot_id": <id>, "order": 2}}], "reason": "..."}}
+Return JSON with:
+1. Routing decision (EITHER format):
+   - Single bot: {{"responding_bot_id": <bot_id>, "reason": "...", "coordination_hint": "..."}}
+   - Multiple bots: {{"responding_bots": [{{"bot_id": <id>, "order": 1, "role_hint": "..."}}, ...], "reason": "...", "coordination_hint": "..."}}
+2. Use responding_bot_id: -1 or responding_bots: [] if NO bot should respond.
 
-Use responding_bot_id: -1 or responding_bots: [] if NO bot should respond.
+CONVERSATION ENDING DETECTION (CHECK FIRST - HIGHEST PRIORITY):
+Before routing, check if the conversation has naturally ended:
+
+1. Is the new message a FAREWELL? (bye, goodbye, see you, take care, goodnight, later, ttyl, ciao, gotta go, peace, I'm out, etc.)
+   - Check conversation history: Did a bot ALREADY say goodbye to this sender?
+   - If bot already said goodbye AND new message is farewell → responding_bot_id: -1 (no response needed)
+   - If bot has NOT said goodbye yet → route to the bot that was helping (let them say goodbye)
+
+2. Is the new message a SHORT ACKNOWLEDGMENT after farewell? (ok, thanks, you too, welcome, sure, 👍, etc.)
+   - If there was already a farewell exchange in history → responding_bot_id: -1 (no response needed)
+   - Short acknowledgments after goodbye don't need a response
+
+3. Is the new message a GREETING or QUESTION?
+   - Greetings (hi, hello, hey) → ALWAYS route to a bot (new conversation starting)
+   - Questions (contains ?) → ALWAYS route to a bot
+
+4. Time gap > 60 minutes since last message?
+   - Treat as NEW conversation - route normally, ignore previous farewells
+
+CONVERSATION CONTINUITY GUIDELINES:
+1. If the sender was recently talking to a specific bot, STRONGLY PREFER continuing with that bot
+2. Conversation depth matters: After 3+ exchanges with a bot, maintain continuity unless absolutely necessary to switch
+3. Only switch bots if:
+   - The topic CLEARLY requires specialist expertise the current bot lacks AND is urgent
+   - The current bot is unavailable (not in available bots list)
+   - The user explicitly asks for different help
+4. "Related" questions (e.g., asking about support while discussing pricing) are usually part of the same conversation - continue with the same bot
+5. When switching IS necessary, prefer adding a specialist alongside the current bot rather than replacing
 
 ROUTING RULES:
-1. Match bot expertise to message category when possible (expertise should match one of: {categories_str})
-2. Primary role bots handle general/unmatched queries
-3. Specialist bots should be preferred when their expertise matches
-4. Backup role bots only respond when no other suitable bot is available
-5. When max_responding_bots > 1, select bots that would create natural conversation
-6. Use recent_responses count for load balancing (prefer less busy bots)
-7. In groups, multiple bots can create engaging discussion on topics like brainstorming, debate, etc.
+1. FIRST: Check conversation ending (see above) - return -1 if conversation has ended
+2. SECOND: Check conversation history - prefer the bot who was already helping this sender
+3. If new conversation or switch needed: Match bot expertise to message category
+4. Primary role bots handle general/unmatched queries
+5. Specialist bots should be preferred for new conversations when their expertise matches
+6. Backup role bots only respond when no other suitable bot is available
+7. When max_responding_bots > 1, select bots that would create natural conversation flow
+8. Use recent_responses count for load balancing (prefer less busy bots) - but continuity trumps load balancing
+9. In coordination_hint, provide guidance for how the bot should respond (brief, detailed, handoff, etc.)
 
 Return ONLY valid JSON, no other text."""
 
@@ -1188,18 +2596,50 @@ Return ONLY valid JSON, no other text."""
             # Calculate random delay within range for this response (seconds)
             response_delay = random.randint(delay_min, delay_max) if delay_min < delay_max else delay_min
 
-            # Build user prompt with multi-bot settings
-            user_prompt = f"""Classification: {json.dumps(classification)}
-Available Bots: {json.dumps(bots_info)}
-Requesting Bot ID: {requesting_bot_id}
-Is Group Chat: {is_group}
-Max Responding Bots for "{category}": {max_bots_for_category}
-Response Delay Range: {delay_min}s - {delay_max}s
+            # Format conversation history for prompt
+            history_text = self._format_conversation_for_router(conversation_history)
+            last_bot = conversation_history.get("last_responding_bot")
+            last_bot_id = conversation_history.get("last_responding_bot_id")
+            last_bot_expertise = conversation_history.get("last_bot_expertise", [])
+            conv_depth = conversation_history.get("depth", 0)
+            time_gap = conversation_history.get("time_gap_minutes")
 
-Which bot(s) should respond? Consider:
-- For max_bots > 1, multiple bots CAN respond to create natural conversation
-- Prioritize bots with matching expertise
-- Use least busy (recent_responses) for tie-breaking
+            # Build conversation context summary
+            conv_context = "New conversation (no history)"
+            if conv_depth > 0:
+                time_str = f"{time_gap} minutes ago" if time_gap else "recently"
+                conv_context = f"Ongoing conversation: {conv_depth} exchanges with {last_bot or 'unknown bot'}, last message {time_str}"
+                if last_bot_expertise:
+                    conv_context += f" (expertise: {', '.join(last_bot_expertise)})"
+
+            # Build user prompt with conversation context
+            user_prompt = f"""CONVERSATION HISTORY:
+{history_text}
+
+CONVERSATION CONTEXT:
+- {conv_context}
+- Last responding bot: {last_bot or 'None'} (ID: {last_bot_id or 'N/A'})
+- Conversation depth: {conv_depth} exchanges
+- Time since last message: {time_gap} minutes
+
+CURRENT MESSAGE:
+- Sender: {sender_name or 'Unknown'}
+- Content: "{message_content[:200] if message_content else 'N/A'}"
+- Classification: {json.dumps(classification)}
+
+AVAILABLE BOTS:
+{json.dumps(bots_info, indent=2)}
+
+SETTINGS:
+- Requesting Bot ID: {requesting_bot_id}
+- Is Group Chat: {is_group}
+- Max Responding Bots for "{category}": {max_bots_for_category}
+- Response Delay Range: {delay_min}s - {delay_max}s
+
+DECISION REQUIRED:
+1. Is this a continuation of the ongoing conversation? If yes, prefer the last responding bot ({last_bot or 'N/A'}).
+2. If switching bots is necessary, explain why in the reason.
+3. Provide coordination_hint for how the selected bot(s) should respond.
 
 Which bot(s) should respond?"""
 
@@ -1223,7 +2663,7 @@ Which bot(s) should respond?"""
             else:
                 # Direct OpenAI client (fallback)
                 response = provider.chat.completions.create(
-                    model=agent.openai_model or "gpt-4o-mini",
+                    model=agent.model or "gpt-4o-mini",
                     messages=messages,
                     temperature=0.3,
                     max_tokens=500,
@@ -1298,13 +2738,66 @@ Which bot(s) should respond?"""
             # (used to skip logging redundant "not responded" records)
             deferred_to_other_bot = (not should_respond and len(responding_bots_list) > 0)
 
+            # Convert delay to milliseconds
+            delay_ms = delay_s * 1000
+
+            # Build routing context for the responding bot's prompt
+            routing_context = None
+            if should_respond:
+                # Determine why this bot was selected
+                is_continuation = (
+                    conversation_history.get("last_responding_bot_id") == requesting_bot_id
+                    and conversation_history.get("depth", 0) > 0
+                )
+
+                why_selected = reason
+                if is_continuation:
+                    why_selected = f"Continuing conversation ({conversation_history.get('depth', 0)} exchanges)"
+
+                routing_context = {
+                    "why_selected": why_selected,
+                    "classification": classification,
+                    "is_continuation": is_continuation,
+                    "conversation_depth": conversation_history.get("depth", 0),
+                    "coordination_hint": result.get("coordination_hint", "")
+                }
+
+            # Build other_responders list for coordination
+            other_responders = []
+            if should_respond and len(responding_bots_list) > 1:
+                for bot_info in responding_bots_list:
+                    if bot_info['bot_id'] != requesting_bot_id:
+                        other_bot = self.db.query(BotProfile).filter(
+                            BotProfile.id == bot_info['bot_id']
+                        ).first()
+                        other_bot_name = other_bot.name if other_bot else f"Bot {bot_info['bot_id']}"
+
+                        # Get role hint from result if available
+                        role_hint = ""
+                        if 'responding_bots' in result:
+                            for rb in result.get('responding_bots', []):
+                                if isinstance(rb, dict) and rb.get('bot_id') == bot_info['bot_id']:
+                                    role_hint = rb.get('role_hint', '')
+                                    break
+
+                        other_responders.append({
+                            "bot_id": bot_info['bot_id'],
+                            "bot_name": other_bot_name,
+                            "order": bot_info.get('order', 0),
+                            "role_hint": role_hint
+                        })
+
             return {
                 "should_respond": should_respond,
                 "reason": reason,
-                "delay_s": delay_s,
+                "delay_ms": delay_ms,  # Changed from delay_s to delay_ms
                 "classification": classification,
                 "responding_bots": [b['bot_id'] for b in responding_bots_list],
-                "deferred": deferred_to_other_bot
+                "deferred": deferred_to_other_bot,
+                # New fields for bot prompt enhancement
+                "routing_context": routing_context,
+                "other_responders": other_responders,
+                "coordination_hint": result.get("coordination_hint", "")
             }
 
         except Exception as e:
@@ -1317,6 +2810,254 @@ Which bot(s) should respond?"""
             if membership:
                 return self._simple_routing(requesting_bot_id, membership, is_group, classification)
             return {"should_respond": False, "reason": f"Router error: {e}"}
+
+    def _run_analyzer(
+        self,
+        contact: Contact,
+        messages: List[Dict],
+        bot_names: Optional[List[str]] = None
+    ) -> Optional[Dict]:
+        """
+        Run the analyzer agent on a contact to generate insights.
+
+        Args:
+            contact: The Contact to analyze
+            messages: List of message dicts with role/content/timestamp
+            bot_names: Optional list of bot names the contact interacted with
+
+        Returns:
+            Analysis result with tags, engagement_score, predicted_intent, etc.
+        """
+        agent = self.agents.get('analyzer')
+        if not agent:
+            return None
+
+        try:
+            # Get AI provider
+            provider = self._get_ai_provider(agent)
+            if not provider:
+                print(f"Hub {self.hub_id}: No API key for analyzer")
+                return None
+
+            # Get existing tags
+            existing_tags = self.db.query(ContactTag).filter(
+                ContactTag.contact_id == contact.id
+            ).all()
+            existing_tag_names = [t.tag for t in existing_tags]
+
+            # Build input data
+            input_data = {
+                "contact": {
+                    "phone": contact.phone,
+                    "display_name": contact.display_name,
+                    "existing_tags": existing_tag_names,
+                    "engagement_score": contact.engagement_score,
+                    "last_interaction_at": contact.last_interaction_at.isoformat() if contact.last_interaction_at else None
+                },
+                "messages": messages,
+                "context": {
+                    "hub_name": self.hub.name,
+                    "bot_names": bot_names or []
+                }
+            }
+
+            # Format messages for prompt
+            message_history = "\n".join([
+                f"[{m.get('timestamp', '')}] {m['role'].upper()}: {m['content']}"
+                for m in messages[-50:]  # Last 50 messages
+            ])
+
+            # Build system prompt (use custom if available)
+            system_prompt = agent.system_prompt or """You are a contact analyzer AI. Analyze conversation history to build a comprehensive contact profile.
+
+Return a JSON object with:
+{
+    "tags": [{"tag": "tag_name", "confidence": 0.85, "value": null}],
+    "engagement_score": 75,
+    "predicted_intent": "buyer",
+    "sentiment": "positive",
+    "urgency": "medium",
+    "follow_up_needed": true,
+    "follow_up_reason": "Reason for follow-up",
+    "description": "Brief profile summary",
+    "key_topics": ["topic1", "topic2"]
+}
+
+Return ONLY valid JSON."""
+
+            # Append additional instructions if provided
+            if agent.additional_instructions:
+                system_prompt += f"\n\nAdditional Instructions:\n{agent.additional_instructions}"
+
+            user_message = f"""Analyze this contact's conversation history and return your analysis as JSON:
+
+Phone: {contact.phone}
+Name: {contact.display_name or 'Unknown'}
+Existing Tags: {', '.join(existing_tag_names) if existing_tag_names else 'None'}
+Current Engagement Score: {contact.engagement_score}
+
+Conversation History:
+{message_history if message_history else 'No messages available'}
+
+Provide a comprehensive analysis in JSON format."""
+
+            messages_for_ai = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ]
+
+            # Call AI provider
+            if hasattr(provider, 'chat_completion'):
+                response = provider.chat_completion(
+                    messages=messages_for_ai,
+                    temperature=0.3,
+                    max_tokens=1000,
+                    json_mode=True
+                )
+                result = json.loads(response.content)
+                tokens_used = response.usage.get("total_tokens", 0)
+            else:
+                # Fallback to direct OpenAI client
+                response = provider.chat.completions.create(
+                    model=agent.model or "gpt-4o-mini",
+                    messages=messages_for_ai,
+                    temperature=0.3,
+                    max_tokens=1000,
+                    response_format={"type": "json_object"}
+                )
+                result = json.loads(response.choices[0].message.content)
+                tokens_used = response.usage.total_tokens if response.usage else 0
+
+            # Log execution
+            self._log_agent_execution(
+                agent.id,
+                "analysis",
+                {"contact_phone": contact.phone, "message_count": len(messages)},
+                result,
+                tokens_used
+            )
+
+            # Update agent last run
+            agent.last_run_at = datetime.utcnow()
+            self.db.commit()
+
+            return result
+
+        except Exception as e:
+            print(f"Hub {self.hub_id}: Analyzer error: {e}")
+            import traceback
+            traceback.print_exc()
+            self._log_agent_execution(
+                agent.id,
+                "analysis",
+                {"contact_phone": contact.phone},
+                {"error": str(e)},
+                0,
+                status="error",
+                error_message=str(e)
+            )
+            return None
+
+    def analyze_contact(self, contact_id: int) -> Optional[Dict]:
+        """
+        Analyze a specific contact and update their profile.
+
+        This is a public method that can be called to analyze a contact
+        on demand (e.g., from a scheduled task or API endpoint).
+
+        Args:
+            contact_id: The ID of the contact to analyze
+
+        Returns:
+            Analysis result if successful, None otherwise
+        """
+        contact = self.db.query(Contact).filter(
+            Contact.id == contact_id,
+            Contact.hub_id == self.hub_id
+        ).first()
+
+        if not contact:
+            return None
+
+        # Get conversation history for this contact
+        conversations = self.db.query(Conversation).filter(
+            Conversation.phone == contact.phone
+        ).all()
+
+        # Collect messages
+        messages = []
+        bot_names = set()
+        for conv in conversations:
+            if conv.bot_profile:
+                bot_names.add(conv.bot_profile.name)
+
+            conv_messages = self.db.query(Message).filter(
+                Message.conversation_id == conv.id
+            ).order_by(Message.timestamp.asc()).limit(100).all()
+
+            for msg in conv_messages:
+                messages.append({
+                    "role": msg.role or "user",
+                    "content": msg.content or "",
+                    "timestamp": msg.timestamp.isoformat() if msg.timestamp else None
+                })
+
+        # Run analyzer
+        result = self._run_analyzer(contact, messages, list(bot_names))
+
+        if not result or result.get("error"):
+            return result
+
+        # Update contact with analysis results
+        if result.get("description"):
+            desc = result["description"]
+            # Handle if description is a dict
+            if isinstance(desc, dict):
+                desc = desc.get("text") or desc.get("summary") or str(desc)
+            contact.description = str(desc) if desc else None
+
+        if result.get("predicted_intent"):
+            intent = result["predicted_intent"]
+            # Handle if predicted_intent is a dict (e.g., {'intent': '...', 'likelihood_score': 0.75})
+            if isinstance(intent, dict):
+                intent = intent.get("intent") or intent.get("type") or intent.get("value") or list(intent.values())[0]
+            contact.predicted_intent = str(intent) if intent else None
+
+        if result.get("engagement_score") is not None:
+            score = result["engagement_score"]
+            # Handle if score is a dict
+            if isinstance(score, dict):
+                score = score.get("score") or score.get("value") or 50
+            if score > 1:
+                score = score / 100.0
+            contact.engagement_score = min(1.0, max(0.0, float(score)))
+
+        contact.updated_at = datetime.utcnow()
+
+        # Add new tags
+        if result.get("tags"):
+            for tag_data in result["tags"]:
+                tag_name = tag_data.get("tag") if isinstance(tag_data, dict) else str(tag_data)
+                if not tag_name:
+                    continue
+
+                existing = self.db.query(ContactTag).filter(
+                    ContactTag.contact_id == contact_id,
+                    ContactTag.tag == tag_name
+                ).first()
+
+                if not existing:
+                    new_tag = ContactTag(
+                        contact_id=contact_id,
+                        tag=tag_name,
+                        value=tag_data.get("value") if isinstance(tag_data, dict) else None,
+                        confidence=tag_data.get("confidence", 1.0) if isinstance(tag_data, dict) else 1.0,
+                        source="ai_analyzer"
+                    )
+                    self.db.add(new_tag)
+
+        self.db.commit()
+        return result
 
     def _log_agent_execution(
         self,
@@ -1372,6 +3113,9 @@ def get_hub_for_bot(bot_id: int, db: Session) -> Optional[Hub]:
     Get the active hub that a bot belongs to.
 
     Returns None if bot is not in any active hub.
+
+    DEPRECATED: Use get_hub_for_bot_and_group() instead for accurate hub matching
+    when a bot belongs to multiple hubs managing different groups.
     """
     membership = db.query(HubBotMembership).filter(
         HubBotMembership.bot_profile_id == bot_id,
@@ -1387,6 +3131,68 @@ def get_hub_for_bot(bot_id: int, db: Session) -> Optional[Hub]:
     ).first()
 
     return hub
+
+
+def get_hub_for_bot_and_group(bot_id: int, chat_id: str, db: Session) -> Optional[Hub]:
+    """
+    Get the hub that manages this specific bot AND group combination.
+
+    This function handles the case where a bot belongs to multiple hubs,
+    each managing different groups. It finds the correct hub based on
+    which hub has this specific group in its selected_groups.
+
+    Args:
+        bot_id: The bot profile ID
+        chat_id: The chat/group ID the message came from
+        db: Database session
+
+    Returns:
+        The Hub that manages this bot+group combination, or None if not found.
+    """
+    # Step 1: Find ALL hubs this bot belongs to
+    memberships = db.query(HubBotMembership).filter(
+        HubBotMembership.bot_profile_id == bot_id,
+        HubBotMembership.is_active == True
+    ).all()
+
+    if not memberships:
+        return None
+
+    # Step 2: For each hub, check if this group is in its selected_groups
+    for membership in memberships:
+        hub = db.query(Hub).filter(
+            Hub.id == membership.hub_id,
+            Hub.is_active == True
+        ).first()
+
+        if not hub:
+            continue
+
+        # Only process group_management hubs for message routing
+        if hub.task_type != 'group_management':
+            continue
+
+        # Parse selected groups
+        selected_group_ids = set()
+        if hub.selected_groups:
+            try:
+                selected_groups = json.loads(hub.selected_groups)
+                for group in selected_groups:
+                    if isinstance(group, dict) and group.get('chat_id'):
+                        selected_group_ids.add(group['chat_id'])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        # If no groups selected, hub manages all groups for this bot
+        if not selected_group_ids:
+            return hub
+
+        # Check if this chat_id is in the hub's selected groups
+        if chat_id in selected_group_ids:
+            return hub
+
+    # No matching hub found - return None (bot will use standard response)
+    return None
 
 
 def check_hub_routing(
@@ -1420,32 +3226,29 @@ def check_hub_routing(
 
     try:
         with get_db_session() as db:
-            hub = get_hub_for_bot(bot_id, db)
+            # For group messages, find the hub that manages this specific bot+group combination
+            # This handles bots that belong to multiple hubs managing different groups
+            if is_group:
+                hub = get_hub_for_bot_and_group(bot_id, chat_id, db)
+            else:
+                # For private messages, use the old function (first hub found)
+                hub = get_hub_for_bot(bot_id, db)
 
             if not hub:
-                # Bot not in any hub, respond normally
+                # Bot not in any hub (or no hub manages this group), respond normally
                 return {
                     "should_respond": True,
-                    "reason": "Bot not in any hub"
+                    "reason": "Bot not in any hub for this group"
                 }
 
             coordinator = HubCoordinator(hub, db)
 
-            # For group_management hubs, only process messages from selected groups
-            if hub.task_type == 'group_management':
-                # If not a group message, skip hub coordination (respond normally)
-                if not is_group:
-                    return {
-                        "should_respond": True,
-                        "reason": "Private message - not managed by group_management hub"
-                    }
-
-                # Check if this group is in the selected groups
-                if not coordinator.is_chat_in_selected_groups(chat_id):
-                    return {
-                        "should_respond": True,
-                        "reason": "Group not in hub's selected groups - responding normally"
-                    }
+            # For group_management hubs with private messages, skip hub coordination
+            if hub.task_type == 'group_management' and not is_group:
+                return {
+                    "should_respond": True,
+                    "reason": "Private message - not managed by group_management hub"
+                }
 
             result = coordinator.should_bot_respond(
                 bot_id=bot_id,

@@ -2,13 +2,18 @@
 Tools Routes - Aggregates all tool page routes and APIs
 """
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.database import get_db, ToolExecution, Hub, ScheduledContent, HubBotMembership, Contact, ContactTag, AIAgent
+# Thread pool for running blocking AI operations
+ai_executor = ThreadPoolExecutor(max_workers=4)
+
+from app.database import get_db, ToolExecution, Hub, ScheduledContent, HubBotMembership, Contact, ContactTag, AIAgent, ConversationScript, ScriptExecution
 from app.auth.utils import get_current_user_optional
 from app.auth.ownership import get_user_hub_ids
 from sqlalchemy import func
@@ -349,36 +354,40 @@ async def get_contact_analyzer_stats(
             Contact.hub_id.in_(hub_ids)
         ).scalar() or 0
 
-        # Count contacts analyzed (those with description or predicted_intent)
-        contacts_analyzed = db.query(func.count(Contact.id)).filter(
+        # Count total tags across all contacts
+        contact_ids = db.query(Contact.id).filter(
+            Contact.hub_id.in_(hub_ids)
+        ).all()
+        contact_ids = [c[0] for c in contact_ids]
+
+        total_tags = 0
+        if contact_ids:
+            total_tags = db.query(func.count(ContactTag.id)).filter(
+                ContactTag.contact_id.in_(contact_ids)
+            ).scalar() or 0
+
+        # Count contacts needing follow-up (low engagement or no recent activity)
+        from datetime import datetime, timedelta
+        stale_date = datetime.utcnow() - timedelta(days=7)
+        total_followups = db.query(func.count(Contact.id)).filter(
             Contact.hub_id.in_(hub_ids),
-            (Contact.description.isnot(None)) | (Contact.predicted_intent.isnot(None))
+            (
+                (Contact.engagement_score < 0.3) |
+                (Contact.last_interaction_at < stale_date) |
+                (Contact.last_interaction_at.is_(None))
+            )
         ).scalar() or 0
 
-        # Count contacts with tags (using subquery)
-        from sqlalchemy import exists
-        contacts_tagged = db.query(func.count(Contact.id)).filter(
-            Contact.hub_id.in_(hub_ids),
-            exists().where(ContactTag.contact_id == Contact.id)
-        ).scalar() or 0
-
-        # Get execution stats
-        executions = db.query(func.count(ToolExecution.id)).filter(
-            ToolExecution.hub_id.in_(hub_ids),
-            ToolExecution.tool_type == "contact_analyzer"
-        ).scalar() or 0
     else:
         total_contacts = 0
-        contacts_analyzed = 0
-        contacts_tagged = 0
-        executions = 0
+        total_tags = 0
+        total_followups = 0
 
     return {
         "total_instances": total_instances,
         "total_contacts": total_contacts,
-        "contacts_analyzed": contacts_analyzed,
-        "contacts_tagged": contacts_tagged,
-        "total_executions": executions
+        "total_tags": total_tags,
+        "total_followups": total_followups
     }
 
 
@@ -434,6 +443,121 @@ async def get_message_routing_stats(
         "total_routed": total_routed,
         "success_rate": success_rate
     }
+
+
+@router.get("/api/scripted-conversations/stats")
+async def get_scripted_conversations_stats(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Get statistics for scripted conversations across all hub instances."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Count hub instances of type 'scripted_conversations'
+    total_instances = db.query(func.count(Hub.id)).filter(
+        Hub.user_id == user.id,
+        Hub.task_type == "scripted_conversations"
+    ).scalar() or 0
+
+    # Get hub IDs for this user
+    hub_ids = db.query(Hub.id).filter(Hub.user_id == user.id).all()
+    hub_ids = [h[0] for h in hub_ids]
+
+    if hub_ids:
+        # Count total scripts
+        total_scripts = db.query(func.count(ConversationScript.id)).filter(
+            ConversationScript.hub_id.in_(hub_ids)
+        ).scalar() or 0
+
+        # Count completed scripts
+        total_completed = db.query(func.count(ConversationScript.id)).filter(
+            ConversationScript.hub_id.in_(hub_ids),
+            ConversationScript.status == "completed"
+        ).scalar() or 0
+
+        # Count scheduled scripts
+        total_scheduled = db.query(func.count(ConversationScript.id)).filter(
+            ConversationScript.hub_id.in_(hub_ids),
+            ConversationScript.status == "scheduled"
+        ).scalar() or 0
+
+        # Count failed scripts
+        total_failed = db.query(func.count(ConversationScript.id)).filter(
+            ConversationScript.hub_id.in_(hub_ids),
+            ConversationScript.status == "failed"
+        ).scalar() or 0
+    else:
+        total_scripts = 0
+        total_completed = 0
+        total_scheduled = 0
+        total_failed = 0
+
+    return {
+        "total_instances": total_instances,
+        "total_scripts": total_scripts,
+        "total_completed": total_completed,
+        "total_scheduled": total_scheduled,
+        "total_failed": total_failed
+    }
+
+
+@router.get("/api/scripted-conversations/executions")
+async def get_scripted_conversations_executions(
+    request: Request,
+    hub_id: Optional[int] = None,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    """Get script execution history."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    query = db.query(ScriptExecution).join(ConversationScript)
+
+    if hub_id:
+        if hub_id not in user_hub_ids:
+            raise HTTPException(status_code=404, detail="Hub not found")
+        query = query.filter(ConversationScript.hub_id == hub_id)
+    else:
+        if user_hub_ids:
+            query = query.filter(ConversationScript.hub_id.in_(user_hub_ids))
+
+    executions = query.order_by(ScriptExecution.started_at.desc()).limit(limit).all()
+
+    result = []
+    for e in executions:
+        # Calculate execution time if both timestamps exist
+        execution_time_ms = None
+        if e.started_at and e.completed_at:
+            delta = e.completed_at - e.started_at
+            execution_time_ms = int(delta.total_seconds() * 1000)
+
+        # Get hub name from the script's hub
+        hub_name = None
+        if e.script and e.script.hub:
+            hub_name = e.script.hub.name
+
+        result.append({
+            "id": e.id,
+            "script_id": e.script_id,
+            "script_name": e.script.name if e.script else None,
+            "hub_name": hub_name,
+            "started_at": e.started_at.isoformat() if e.started_at else None,
+            "completed_at": e.completed_at.isoformat() if e.completed_at else None,
+            "status": e.status,
+            "messages_sent": e.messages_sent,
+            "messages_failed": e.messages_failed,
+            "error_message": e.error_message,
+            "execution_time_ms": execution_time_ms
+        })
+
+    return {"executions": result}
 
 
 @router.get("/api/content-generator/stats")
@@ -500,16 +624,16 @@ async def get_content_generator_stats(
 # ============================================================================
 
 def get_user_api_key(user, db):
-    """Get OpenAI API key from user's hubs."""
+    """Get API key from user's hubs."""
     from app.auth.utils import decrypt_string
 
     hub = db.query(Hub).filter(
         Hub.user_id == user.id,
-        Hub.openai_api_key_encrypted.isnot(None)
+        Hub.api_key_encrypted.isnot(None)
     ).first()
 
-    if hub and hub.openai_api_key_encrypted:
-        return decrypt_string(hub.openai_api_key_encrypted)
+    if hub and hub.api_key_encrypted:
+        return decrypt_string(hub.api_key_encrypted)
     return None
 
 
@@ -549,19 +673,28 @@ async def simulate_content_generator(
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
 
+        # Reasoning models (GPT-5, o1, o3) need more tokens as they use tokens for internal reasoning
+        is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
+        max_tokens = 4000 if is_reasoning_model else 300
+
         system_prompt = f"""You are a professional content writer for WhatsApp messages.
 Generate a {content_type} message with a {tone} tone about the given topic.
 Keep it concise (under 200 words), suitable for WhatsApp, and engaging.
 Use appropriate emojis if the tone is friendly or casual.
 Do not include subject lines or greetings like "Subject:" - just the message body."""
 
-        ai_response = provider.chat_completion(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Generate a {content_type} message about: {topic}"}
-            ],
-            max_tokens=300,
-            temperature=0.7
+        # Run blocking AI call in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        ai_response = await loop.run_in_executor(
+            ai_executor,
+            lambda: provider.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Generate a {content_type} message about: {topic}"}
+                ],
+                max_tokens=max_tokens,
+                temperature=0.7
+            )
         )
 
         generated_content = ai_response.content.strip()
@@ -612,6 +745,10 @@ async def simulate_contact_analyzer(
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
 
+        # Reasoning models (GPT-5, o1, o3) need more tokens as they use tokens for internal reasoning
+        is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
+        max_tokens = 4000 if is_reasoning_model else 200
+
         system_prompt = """You are a contact analyzer AI. Analyze the given message and return a JSON object with:
 {
     "intent": "inquiry|purchase|support|feedback|general",
@@ -623,33 +760,59 @@ async def simulate_contact_analyzer(
 }
 Only return valid JSON, no other text."""
 
-        ai_response = provider.chat_completion(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Analyze this message: {message}"}
-            ],
-            max_tokens=200,
-            temperature=0.3
+        # Run blocking AI call in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        ai_response = await loop.run_in_executor(
+            ai_executor,
+            lambda: provider.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Analyze this message: {message}"}
+                ],
+                max_tokens=max_tokens,
+                temperature=0.3
+            )
         )
 
         result_text = ai_response.content.strip()
         # Try to parse JSON from response
         try:
-            # Remove markdown code blocks if present
-            if result_text.startswith("```"):
-                result_text = result_text.split("```")[1]
-                if result_text.startswith("json"):
-                    result_text = result_text[4:]
             analysis = json.loads(result_text)
         except:
-            analysis = {
-                "intent": "general",
-                "sentiment": "neutral",
-                "urgency": "low",
-                "engagement_score": 50,
-                "tags": ["unclassified"],
-                "summary": result_text[:100]
-            }
+            analysis = None
+            # Handle markdown code blocks
+            if "```" in result_text:
+                parts = result_text.split("```")
+                for part in parts:
+                    part = part.strip()
+                    if part.startswith("json"):
+                        part = part[4:].strip()
+                    if part.startswith("{"):
+                        try:
+                            analysis = json.loads(part)
+                            break
+                        except:
+                            continue
+            # Handle reasoning models that output text before JSON
+            elif "{" in result_text and "}" in result_text:
+                start = result_text.find("{")
+                end = result_text.rfind("}") + 1
+                if start < end:
+                    try:
+                        analysis = json.loads(result_text[start:end])
+                    except:
+                        pass
+
+            # Fallback if all parsing failed
+            if analysis is None:
+                analysis = {
+                    "intent": "general",
+                    "sentiment": "neutral",
+                    "urgency": "low",
+                    "engagement_score": 50,
+                    "tags": ["unclassified"],
+                    "summary": result_text[:100]
+                }
 
         return {
             "success": True,
@@ -730,34 +893,79 @@ Only return valid JSON, no other text."""
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
 
-        ai_response = provider.chat_completion(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Route this message: {message}"}
-            ],
-            max_tokens=300,
-            temperature=0.3
+        # Reasoning models (GPT-5, o1, o3) need more tokens as they use tokens for internal reasoning
+        is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
+        max_tokens = 4000 if is_reasoning_model else 300
+
+        # Run blocking AI call in thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        ai_response = await loop.run_in_executor(
+            ai_executor,
+            lambda: provider.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Route this message: {message}"}
+                ],
+                max_tokens=max_tokens,
+                temperature=0.3
+            )
         )
         response_text = ai_response.content
 
-        result_text = response_text.strip()
+        # Debug logging for troubleshooting model responses
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Message routing - Model: {ai_model}, Response length: {len(response_text) if response_text else 0}")
+        logger.info(f"Message routing - Raw response: {response_text[:500] if response_text else 'EMPTY'}")
+
+        result_text = response_text.strip() if response_text else ""
         try:
-            if result_text.startswith("```"):
-                result_text = result_text.split("```")[1]
-                if result_text.startswith("json"):
-                    result_text = result_text[4:]
+            # Try direct JSON parse first
             routing = json.loads(result_text)
         except:
-            routing = {
-                "category": "general",
-                "urgency": "low",
-                "sentiment": "neutral",
-                "suggested_expertise": ["general"],
-                "assigned_bot": available_bots[0] if available_bots else "General Bot",
-                "confidence": 0.5,
-                "reason": "Could not classify message",
-                "bot_scores": {"Sales Bot": 0.3, "Support Bot": 0.3, "General Bot": 0.4}
-            }
+            # Handle markdown code blocks
+            if "```" in result_text:
+                parts = result_text.split("```")
+                for part in parts:
+                    part = part.strip()
+                    if part.startswith("json"):
+                        part = part[4:].strip()
+                    if part.startswith("{"):
+                        try:
+                            routing = json.loads(part)
+                            break
+                        except:
+                            continue
+                else:
+                    routing = None
+            # Handle reasoning models that output text before JSON
+            elif "{" in result_text and "}" in result_text:
+                # Extract JSON object from mixed content
+                start = result_text.find("{")
+                end = result_text.rfind("}") + 1
+                if start < end:
+                    try:
+                        routing = json.loads(result_text[start:end])
+                    except:
+                        routing = None
+                else:
+                    routing = None
+            else:
+                routing = None
+
+            # Fallback if all parsing attempts failed
+            if routing is None:
+                logger.warning(f"Message routing - JSON parsing failed for model {ai_model}. Response was: {result_text[:300]}")
+                routing = {
+                    "category": "general",
+                    "urgency": "low",
+                    "sentiment": "neutral",
+                    "suggested_expertise": ["general"],
+                    "assigned_bot": available_bots[0] if available_bots else "General Bot",
+                    "confidence": 0.5,
+                    "reason": "Could not classify message",
+                    "bot_scores": {"Sales Bot": 0.3, "Support Bot": 0.3, "General Bot": 0.4}
+                }
 
         # Ensure all fields exist
         if "sentiment" not in routing:
@@ -984,5 +1192,30 @@ async def message_routing_page(
             "user": user,
             "hub_id": hub_id,
             "page_title": "Message Routing"
+        }
+    )
+
+
+@router.get("/scripted-conversations", response_class=HTMLResponse)
+async def scripted_conversations_page(
+    request: Request,
+    hub_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Scripted Conversations tool page - Multi-bot conversation scripts."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "error": "Please log in to access this page"}
+        )
+
+    return templates.TemplateResponse(
+        "dashboard/tools/scripted_conversations.html",
+        {
+            "request": request,
+            "user": user,
+            "hub_id": hub_id,
+            "page_title": "Scripted Conversations"
         }
     )

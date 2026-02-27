@@ -303,13 +303,14 @@
                                         <a class="dropdown-item" href="#" data-value="google">Google (Gemini)</a>
                                         <a class="dropdown-item" href="#" data-value="deepseek">DeepSeek</a>
                                         <a class="dropdown-item" href="#" data-value="qwen">Qwen</a>
+                                        <a class="dropdown-item" href="#" data-value="grok">xAI (Grok)</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Model</label>
-                            <input type="hidden" name="openai_model" id="createModelValue" value="gpt-4o-mini">
+                            <input type="hidden" name="model" id="createModelValue" value="gpt-4o-mini">
                             <div class="dropdown model-dropdown">
                                 <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="createModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     GPT-4o Mini (Default)
@@ -322,7 +323,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">API Key *</label>
-                            <input type="password" class="form-control" name="openai_api_key" required placeholder="sk-...">
+                            <input type="password" class="form-control" name="api_key" required placeholder="sk-...">
                             <small class="text-muted" id="createApiKeyHelp">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
                         </div>
                         <div class="col-12">
@@ -381,6 +382,13 @@
                                 <input class="form-check-input" type="checkbox" name="group_chat_enabled" id="groupChatEnabled" checked>
                                 <label class="form-check-label" for="groupChatEnabled">Enable Group Chats</label>
                             </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="ending_detection_enabled" id="endingDetectionEnabled">
+                                <label class="form-check-label" for="endingDetectionEnabled">AI Ending Detection</label>
+                            </div>
+                            <small class="text-muted ms-2">(Use AI to detect farewells)</small>
                         </div>
                         <div class="col-md-6 d-flex align-items-center">
                             <div class="form-check form-switch">
@@ -476,13 +484,14 @@
                                         <a class="dropdown-item" href="#" data-value="google">Google (Gemini)</a>
                                         <a class="dropdown-item" href="#" data-value="deepseek">DeepSeek</a>
                                         <a class="dropdown-item" href="#" data-value="qwen">Qwen</a>
+                                        <a class="dropdown-item" href="#" data-value="grok">xAI (Grok)</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Model</label>
-                            <input type="hidden" name="openai_model" id="editModelValue" value="gpt-4o-mini">
+                            <input type="hidden" name="model" id="editModelValue" value="gpt-4o-mini">
                             <div class="dropdown model-dropdown">
                                 <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="editModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     GPT-4o Mini (Default)
@@ -495,8 +504,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">API Key</label>
-                            <input type="password" class="form-control" name="openai_api_key" id="editApiKey" placeholder="Leave empty to keep current">
-                            <small class="text-muted" id="editApiKeyHelp"></small>
+                            <input type="password" class="form-control" name="api_key" id="editApiKey" placeholder="Enter API key">
                         </div>
                         <div class="col-12">
                             <label class="form-label">System Prompt</label>
@@ -554,6 +562,13 @@
                                 <input class="form-check-input" type="checkbox" name="group_chat_enabled" id="editGroupChat" checked>
                                 <label class="form-check-label" for="editGroupChat">Enable Group Chats</label>
                             </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="ending_detection_enabled" id="editEndingDetection">
+                                <label class="form-check-label" for="editEndingDetection">AI Ending Detection</label>
+                            </div>
+                            <small class="text-muted ms-2">(Use AI to detect farewells)</small>
                         </div>
                         <div class="col-md-6 d-flex align-items-center">
                             <div class="form-check form-switch">
@@ -688,7 +703,7 @@
                                     </div>
                                 ` : ''}
                                 <p class="text-muted small mb-2">
-                                    <i class="bi bi-cpu me-1"></i> ${(PROVIDER_LABELS[bot.ai_provider] || bot.ai_provider || 'OpenAI')} / ${bot.openai_model}
+                                    <i class="bi bi-cpu me-1"></i> ${(PROVIDER_LABELS[bot.ai_provider] || bot.ai_provider || 'OpenAI')} / ${bot.model}
                                 </p>
                                 <p class="text-muted small mb-2">
                                     <i class="bi bi-chat-dots me-1"></i> ${bot.conversation_count} conversations
@@ -776,8 +791,8 @@
         const data = {
             name: form.name.value,
             ai_provider: form.ai_provider.value,
-            openai_api_key: form.openai_api_key.value,
-            openai_model: form.openai_model.value,
+            api_key: form.api_key.value,
+            model: form.model.value,
             system_prompt: form.system_prompt.value,
             temperature: parseFloat(form.temperature.value),
             max_tokens: parseInt(form.max_tokens.value),
@@ -788,6 +803,7 @@
             response_delay_min: parseInt(form.response_delay_min.value),
             response_delay_max: parseInt(form.response_delay_max.value),
             group_chat_enabled: form.group_chat_enabled.checked,
+            ending_detection_enabled: form.ending_detection_enabled.checked,
             headless: form.headless.checked,
             // Proxy settings
             proxy_enabled: form.proxy_enabled.checked,
@@ -1508,7 +1524,14 @@
             const provider = bot.ai_provider || 'openai';
             setProviderDropdownValue('editProviderDropdown', provider);
             updateModelDropdown('edit', provider);
-            setModelDropdownValue('editModelDropdown', bot.openai_model);
+            setModelDropdownValue('editModelDropdown', bot.model);
+            // Show masked API key in input placeholder
+            const apiKeyInput = document.getElementById('editApiKey');
+            if (bot.api_key_masked) {
+                apiKeyInput.placeholder = bot.api_key_masked;
+            } else {
+                apiKeyInput.placeholder = 'Enter API key';
+            }
             document.getElementById('editPrompt').value = bot.system_prompt;
             document.getElementById('editTemperature').value = bot.temperature ?? 0.7;
             document.getElementById('editMaxTokens').value = bot.max_tokens ?? 1000;
@@ -1519,6 +1542,7 @@
             document.getElementById('editDelayMin').value = bot.response_delay_min;
             document.getElementById('editDelayMax').value = bot.response_delay_max;
             document.getElementById('editGroupChat').checked = bot.group_chat_enabled;
+            document.getElementById('editEndingDetection').checked = bot.ending_detection_enabled === true;
             document.getElementById('editHeadless').checked = bot.headless;
             // Proxy settings
             document.getElementById('editProxyEnabled').checked = bot.proxy_enabled || false;
@@ -1541,7 +1565,7 @@
         const data = {
             name: form.name.value,
             ai_provider: form.ai_provider.value,
-            openai_model: form.openai_model.value,
+            model: form.model.value,
             system_prompt: form.system_prompt.value,
             temperature: parseFloat(form.temperature.value),
             max_tokens: parseInt(form.max_tokens.value),
@@ -1552,14 +1576,15 @@
             response_delay_min: parseInt(form.response_delay_min.value),
             response_delay_max: parseInt(form.response_delay_max.value),
             group_chat_enabled: form.group_chat_enabled.checked,
+            ending_detection_enabled: form.ending_detection_enabled.checked,
             headless: form.headless.checked,
             // Proxy settings
             proxy_enabled: form.proxy_enabled.checked,
             proxy_url: form.proxy_url.value || null
         };
 
-        if (form.openai_api_key.value) {
-            data.openai_api_key = form.openai_api_key.value;
+        if (form.api_key.value) {
+            data.api_key = form.api_key.value;
         }
 
         // Only include proxy credentials if provided (to avoid overwriting)
@@ -1655,18 +1680,15 @@
             apiKeyPlaceholder: 'sk-...',
             groups: [
                 { header: 'GPT-5.2 Series (Latest)', models: [
-                    { value: 'gpt-5.2', label: 'GPT-5.2 Thinking' },
-                    { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
-                    { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
-                    { value: 'gpt-5.2-mini', label: 'GPT-5.2 Mini' },
+                    { value: 'gpt-5.2', label: 'GPT-5.2' },
                 ]},
                 { header: 'GPT-5.1 Series', models: [
                     { value: 'gpt-5.1', label: 'GPT-5.1' },
-                    { value: 'gpt-5.1-mini', label: 'GPT-5.1 Mini' },
                 ]},
                 { header: 'GPT-5 Series', models: [
                     { value: 'gpt-5', label: 'GPT-5' },
                     { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                    { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
                 ]},
                 { header: 'GPT-4.1 Series', models: [
                     { value: 'gpt-4.1', label: 'GPT-4.1' },
@@ -1845,7 +1867,7 @@
         // Update API key placeholder
         const form = listEl.closest('form');
         if (form) {
-            const apiKeyInput = form.querySelector('input[name="openai_api_key"]');
+            const apiKeyInput = form.querySelector('input[name="api_key"]');
             if (apiKeyInput) {
                 apiKeyInput.placeholder = provider.apiKeyPlaceholder;
             }

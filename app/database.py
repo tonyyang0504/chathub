@@ -74,9 +74,9 @@ class BotProfile(Base):
     # AI Provider Settings
     ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
 
-    # OpenAI Settings (API key encrypted - used for any provider)
-    openai_api_key_encrypted = Column(Text, nullable=False)
-    openai_model = Column(String(50), default="gpt-4o-mini")
+    # API Settings (API key encrypted - used for any provider)
+    api_key_encrypted = Column(Text, nullable=False)
+    model = Column(String(50), default="gpt-4o-mini")
     system_prompt = Column(Text, default="You are a helpful assistant. Do not use markdown formatting like asterisks (*), underscores (_), or other special characters for emphasis. Write plain text only.")
     temperature = Column(Float, default=0.7)  # AI creativity (0.0-2.0)
     max_tokens = Column(Integer, default=1000)  # Max response length
@@ -91,6 +91,7 @@ class BotProfile(Base):
     response_delay_max = Column(Integer, default=8)
     group_chat_enabled = Column(Boolean, default=True)
     respond_to_all_in_group = Column(Boolean, default=False)
+    ending_detection_enabled = Column(Boolean, default=False)  # Enable AI-based ending detection (False = pattern matching only)
     headless = Column(Boolean, default=False)  # Run browser in headless mode
 
     # Proxy Settings
@@ -237,8 +238,8 @@ class Hub(Base):
 
     # AI Provider Settings
     ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
-    openai_api_key_encrypted = Column(Text)  # Default API key for hub agents (used for any provider)
-    openai_model = Column(String(50), default="gpt-4o-mini")
+    api_key_encrypted = Column(Text)  # Default API key for hub agents (used for any provider)
+    model = Column(String(50), default="gpt-4o-mini")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -346,8 +347,8 @@ class AIAgent(Base):
 
     # AI Provider Settings
     ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
-    openai_api_key_encrypted = Column(Text)  # Override hub default if set (used for any provider)
-    openai_model = Column(String(50), default="gpt-4o-mini")
+    api_key_encrypted = Column(Text)  # Override hub default if set (used for any provider)
+    model = Column(String(50), default="gpt-4o-mini")
     system_prompt = Column(Text)  # Custom system prompt (for generator, analyzer, followup agents)
     additional_instructions = Column(Text)  # Extra instructions appended to default prompt (for classifier, router)
     config = Column(Text)  # JSON: agent-specific settings
@@ -388,6 +389,17 @@ class Contact(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # AI Analysis fields
+    sentiment = Column(String(50))  # positive, neutral, negative
+    urgency = Column(String(50))  # low, medium, high
+    follow_up_needed = Column(Boolean, default=False)
+    follow_up_reason = Column(Text)
+    key_topics = Column(Text)  # JSON array of topics
+
+    # Analysis queue fields
+    analysis_status = Column(String(20))  # pending, analyzing, completed, failed, cancelled
+    analysis_queued_at = Column(DateTime)  # When queued for analysis
+
     # Relationships
     hub = relationship("Hub", back_populates="contacts")
     tags = relationship("ContactTag", back_populates="contact", cascade="all, delete-orphan")
@@ -415,7 +427,10 @@ class ScheduledContent(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False, index=True)
-    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=True)  # NULL = unassigned
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=True)  # Legacy: single bot
+    # Multi-bot support
+    bot_profile_ids = Column(Text, nullable=True)  # JSON array of bot IDs: [1, 2, 3]
+    bot_send_mode = Column(String(20), default="any")  # 'any', 'selected', 'all'
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)  # NULL = broadcast
     content = Column(Text, nullable=False)
     content_type = Column(String(50), default="message")  # 'message', 'followup', 'promo'
@@ -424,6 +439,14 @@ class ScheduledContent(Base):
     sent_at = Column(DateTime)
     status = Column(String(50), default="pending", index=True)  # 'pending', 'assigned', 'sent', 'failed', 'cancelled'
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Schedule type: 'immediate', 'exact', 'relative', 'recurring'
+    schedule_type = Column(String(20), default="immediate")
+    # Recurring schedule fields
+    recurring_frequency = Column(String(20), nullable=True)  # 'daily', 'weekly', 'monthly'
+    recurring_time = Column(String(10), nullable=True)  # '09:00' format
+    recurring_start_date = Column(DateTime, nullable=True)
+    recurring_end_date = Column(DateTime, nullable=True)
 
     # Recipient type: 'broadcast' (all contacts), 'all_groups', 'contacts' (selected), 'groups' (selected)
     recipient_type = Column(String(20), default="broadcast")
@@ -435,6 +458,13 @@ class ScheduledContent(Base):
     contact_ids = Column(Text, nullable=True)
     # JSON array of group objects for multi-select: [{"id": "123@g.us", "name": "Group 1"}, ...]
     group_ids = Column(Text, nullable=True)
+
+    # Rate limiting settings to avoid WhatsApp spam detection
+    sending_speed_mode = Column(String(20), default="auto")  # 'auto', 'custom', 'fast'
+    delay_min = Column(Integer, default=5)  # Minimum seconds between messages
+    delay_max = Column(Integer, default=15)  # Maximum seconds between messages
+    batch_size = Column(Integer, default=20)  # Messages per batch before pause
+    batch_pause = Column(Integer, default=180)  # Seconds to pause between batches
 
     # Relationships
     hub = relationship("Hub", back_populates="scheduled_contents")
@@ -466,7 +496,7 @@ class MessageRouting(Base):
     __tablename__ = "message_routings"
 
     id = Column(Integer, primary_key=True, index=True)
-    hub_id = Column(Integer, ForeignKey("hubs.id"), nullable=False)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False)
     message_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=True)
     classification = Column(Text)  # JSON: classifier result
@@ -478,6 +508,88 @@ class MessageRouting(Base):
     hub = relationship("Hub", backref="message_routings")
     message = relationship("Message", backref="routings")
     contact = relationship("Contact", backref="message_routings")
+
+
+# ============== Scripted Conversations Models ==============
+
+class ConversationScript(Base):
+    """Conversation Script - Pre-planned scripted conversations for groups."""
+    __tablename__ = "conversation_scripts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+
+    # Target groups (JSON array like scheduled content)
+    group_ids = Column(Text)  # [{"id": "xxx@g.us", "name": "Group 1"}, ...]
+
+    # Schedule settings (same pattern as scheduled content)
+    schedule_type = Column(String(50), default="immediate")  # immediate, exact, relative, recurring
+    scheduled_for = Column(DateTime, nullable=True)
+    recurring_frequency = Column(String(50))  # daily, weekly
+    recurring_time = Column(String(10))  # "09:00"
+    recurring_days = Column(Text)  # JSON: ["mon", "wed", "fri"]
+    recurring_start_date = Column(DateTime)
+    recurring_end_date = Column(DateTime)
+
+    status = Column(String(50), default="draft", index=True)  # draft, scheduled, running, completed, cancelled
+    last_run_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Rate limiting settings for multi-group execution
+    sending_speed_mode = Column(String(20), default="auto")  # 'auto', 'custom', 'fast'
+    stagger_delay_min = Column(Integer, default=None)  # Custom min seconds between group starts
+    stagger_delay_max = Column(Integer, default=None)  # Custom max seconds between group starts
+
+    # Relationships
+    hub = relationship("Hub", backref="conversation_scripts")
+    messages = relationship("ScriptMessage", back_populates="script", cascade="all, delete-orphan", order_by="ScriptMessage.sequence_order")
+    executions = relationship("ScriptExecution", back_populates="script", cascade="all, delete-orphan")
+
+
+class ScriptMessage(Base):
+    """Script Message - Individual messages in a conversation script."""
+    __tablename__ = "script_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    script_id = Column(Integer, ForeignKey("conversation_scripts.id", ondelete="CASCADE"), nullable=False, index=True)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=False)
+
+    # Time settings (both options)
+    time_type = Column(String(20), default="relative")  # "absolute" or "relative"
+    absolute_time = Column(String(10))  # "13:01" for absolute time
+    delay_seconds = Column(Integer, default=0)  # seconds after script start for relative
+
+    content = Column(Text, nullable=False)
+    sequence_order = Column(Integer, default=0)  # for ordering messages
+
+    status = Column(String(50), default="pending")  # pending, sent, failed, skipped
+    sent_at = Column(DateTime)
+    error_message = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    script = relationship("ConversationScript", back_populates="messages")
+    bot_profile = relationship("BotProfile", backref="script_messages")
+
+
+class ScriptExecution(Base):
+    """Script Execution - Track each run of a script (especially for recurring)."""
+    __tablename__ = "script_executions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    script_id = Column(Integer, ForeignKey("conversation_scripts.id", ondelete="CASCADE"), nullable=False, index=True)
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime)
+    status = Column(String(50), default="running")  # running, completed, failed, cancelled
+    messages_sent = Column(Integer, default=0)
+    messages_failed = Column(Integer, default=0)
+    error_message = Column(Text)
+
+    # Relationships
+    script = relationship("ConversationScript", back_populates="executions")
 
 
 class ToolExecution(Base):
@@ -679,6 +791,15 @@ def run_migrations():
                 except Exception as e:
                     print(f"Could not add presence_penalty column: {e}")
 
+            # Add ending_detection_enabled column if not exists
+            if 'ending_detection_enabled' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN ending_detection_enabled BOOLEAN DEFAULT 0'))
+                    conn.commit()
+                    print("Added ending_detection_enabled column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add ending_detection_enabled column: {e}")
+
         # Check if scheduled_contents table exists
         if 'scheduled_contents' in existing_tables:
             existing_columns = [col['name'] for col in inspector.get_columns('scheduled_contents')]
@@ -727,6 +848,24 @@ def run_migrations():
                     print("Added group_ids column to scheduled_contents table")
                 except Exception as e:
                     print(f"Could not add group_ids column: {e}")
+
+            # Add bot_profile_ids column if not exists (JSON array for multi-bot)
+            if 'bot_profile_ids' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE scheduled_contents ADD COLUMN bot_profile_ids TEXT'))
+                    conn.commit()
+                    print("Added bot_profile_ids column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add bot_profile_ids column: {e}")
+
+            # Add bot_send_mode column if not exists ('any', 'all', 'selected')
+            if 'bot_send_mode' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE scheduled_contents ADD COLUMN bot_send_mode VARCHAR(20) DEFAULT 'any'"))
+                    conn.commit()
+                    print("Added bot_send_mode column to scheduled_contents table")
+                except Exception as e:
+                    print(f"Could not add bot_send_mode column: {e}")
 
         # Check if ai_agents table exists and add new columns
         if 'ai_agents' in existing_tables:
@@ -855,6 +994,158 @@ def run_migrations():
                     print("Added ai_provider column to bot_profiles table")
                 except Exception as e:
                     print(f"Could not add ai_provider column to bot_profiles: {e}")
+
+        # ============== Rename openai_* columns to generic names ==============
+        # These fields are used for ALL AI providers, not just OpenAI
+        tables_to_migrate = ['bot_profiles', 'hubs', 'ai_agents']
+        for table in tables_to_migrate:
+            if table in existing_tables:
+                columns = [col['name'] for col in inspector.get_columns(table)]
+
+                # Rename openai_api_key_encrypted -> api_key_encrypted
+                if 'openai_api_key_encrypted' in columns and 'api_key_encrypted' not in columns:
+                    try:
+                        conn.execute(text(f"ALTER TABLE {table} RENAME COLUMN openai_api_key_encrypted TO api_key_encrypted"))
+                        conn.commit()
+                        print(f"Renamed openai_api_key_encrypted to api_key_encrypted in {table}")
+                    except Exception as e:
+                        print(f"Could not rename openai_api_key_encrypted in {table}: {e}")
+
+                # Rename openai_model -> model
+                if 'openai_model' in columns and 'model' not in columns:
+                    try:
+                        conn.execute(text(f"ALTER TABLE {table} RENAME COLUMN openai_model TO model"))
+                        conn.commit()
+                        print(f"Renamed openai_model to model in {table}")
+                    except Exception as e:
+                        print(f"Could not rename openai_model in {table}: {e}")
+
+        # ============== Create Scripted Conversations tables ==============
+
+        # Create conversation_scripts table if not exists
+        if 'conversation_scripts' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE conversation_scripts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        hub_id INTEGER NOT NULL REFERENCES hubs(id) ON DELETE CASCADE,
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        group_ids TEXT,
+                        schedule_type VARCHAR(50) DEFAULT 'immediate',
+                        scheduled_for DATETIME,
+                        recurring_frequency VARCHAR(50),
+                        recurring_time VARCHAR(10),
+                        recurring_days TEXT,
+                        recurring_start_date DATETIME,
+                        recurring_end_date DATETIME,
+                        status VARCHAR(50) DEFAULT 'draft',
+                        last_run_at DATETIME,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+                conn.execute(text('CREATE INDEX ix_conversation_scripts_hub_id ON conversation_scripts(hub_id)'))
+                conn.execute(text('CREATE INDEX ix_conversation_scripts_status ON conversation_scripts(status)'))
+                conn.commit()
+                print("Created conversation_scripts table")
+            except Exception as e:
+                print(f"Could not create conversation_scripts table: {e}")
+
+        # Create script_messages table if not exists
+        if 'script_messages' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE script_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        script_id INTEGER NOT NULL REFERENCES conversation_scripts(id) ON DELETE CASCADE,
+                        bot_profile_id INTEGER NOT NULL REFERENCES bot_profiles(id),
+                        time_type VARCHAR(20) DEFAULT 'relative',
+                        absolute_time VARCHAR(10),
+                        delay_seconds INTEGER DEFAULT 0,
+                        content TEXT NOT NULL,
+                        sequence_order INTEGER DEFAULT 0,
+                        status VARCHAR(50) DEFAULT 'pending',
+                        sent_at DATETIME,
+                        error_message TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+                conn.execute(text('CREATE INDEX ix_script_messages_script_id ON script_messages(script_id)'))
+                conn.commit()
+                print("Created script_messages table")
+            except Exception as e:
+                print(f"Could not create script_messages table: {e}")
+
+        # Create script_executions table if not exists
+        if 'script_executions' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE script_executions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        script_id INTEGER NOT NULL REFERENCES conversation_scripts(id) ON DELETE CASCADE,
+                        started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        completed_at DATETIME,
+                        status VARCHAR(50) DEFAULT 'running',
+                        messages_sent INTEGER DEFAULT 0,
+                        messages_failed INTEGER DEFAULT 0,
+                        error_message TEXT
+                    )
+                '''))
+                conn.execute(text('CREATE INDEX ix_script_executions_script_id ON script_executions(script_id)'))
+                conn.commit()
+                print("Created script_executions table")
+            except Exception as e:
+                print(f"Could not create script_executions table: {e}")
+
+        # ============== Add AI analysis fields to contacts table ==============
+        if 'contacts' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('contacts')]
+
+            # Add sentiment column if not exists
+            if 'sentiment' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN sentiment VARCHAR(50)'))
+                    conn.commit()
+                    print("Added sentiment column to contacts table")
+                except Exception as e:
+                    print(f"Could not add sentiment column: {e}")
+
+            # Add urgency column if not exists
+            if 'urgency' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN urgency VARCHAR(50)'))
+                    conn.commit()
+                    print("Added urgency column to contacts table")
+                except Exception as e:
+                    print(f"Could not add urgency column: {e}")
+
+            # Add follow_up_needed column if not exists
+            if 'follow_up_needed' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN follow_up_needed BOOLEAN DEFAULT 0'))
+                    conn.commit()
+                    print("Added follow_up_needed column to contacts table")
+                except Exception as e:
+                    print(f"Could not add follow_up_needed column: {e}")
+
+            # Add follow_up_reason column if not exists
+            if 'follow_up_reason' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN follow_up_reason TEXT'))
+                    conn.commit()
+                    print("Added follow_up_reason column to contacts table")
+                except Exception as e:
+                    print(f"Could not add follow_up_reason column: {e}")
+
+            # Add key_topics column if not exists
+            if 'key_topics' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN key_topics TEXT'))
+                    conn.commit()
+                    print("Added key_topics column to contacts table")
+                except Exception as e:
+                    print(f"Could not add key_topics column: {e}")
 
 
 # Run migrations on import

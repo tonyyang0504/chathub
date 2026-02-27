@@ -3,18 +3,28 @@ Hub Routes - API endpoints for Hubs management
 """
 
 import json
+import logging
+import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+# Thread pool for running blocking AI operations
+ai_executor = ThreadPoolExecutor(max_workers=4)
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
 
 from app.database import (
     get_db, User, BotProfile, Hub, HubBotMembership, AIAgent,
-    Contact, ContactTag, ScheduledContent, AgentExecution, Conversation,
-    HubMessageTopic
+    Contact, ContactTag, ScheduledContent, AgentExecution, Conversation, Message,
+    HubMessageTopic, ConversationScript, MessageRouting, ScriptMessage, ScriptExecution
 )
 from app.auth.utils import get_current_user, encrypt_string, decrypt_string
+from app.tools.monitoring import ToolMonitor
 from app.hubs.models import (
     HubCreate, HubUpdate, HubResponse, HubDetailResponse, HubBotInfo, HubAgentInfo,
     BotMembershipCreate, BotMembershipUpdate, BotMembershipResponse,
@@ -23,10 +33,28 @@ from app.hubs.models import (
     TagCreate, TagUpdate,
     ScheduledContentCreate, ScheduledContentUpdate, ScheduledContentResponse,
     AgentExecutionResponse, MultiResponseRule, SelectedGroup,
-    MessageTopicCreate, MessageTopicUpdate, MessageTopicResponse
+    MessageTopicCreate, MessageTopicUpdate, MessageTopicResponse,
+    GenerateContentRequest
 )
 
 router = APIRouter(tags=["Hubs"])
+
+
+def mask_api_key(encrypted_key: str) -> Optional[str]:
+    """
+    Decrypt and mask API key for display.
+    Shows first 8 and last 4 characters: sk-proj-...gasA
+    """
+    if not encrypted_key:
+        return None
+    try:
+        decrypted = decrypt_string(encrypted_key)
+        if not decrypted or len(decrypted) < 12:
+            return None
+        # Show first 8 chars and last 4 chars
+        return f"{decrypted[:8]}...{decrypted[-4:]}"
+    except Exception:
+        return None
 
 
 def build_recipient_summary(recipient_type: str, contact_ids: list, group_ids: list, db: Session, hub_id: int) -> str:
@@ -34,39 +62,11 @@ def build_recipient_summary(recipient_type: str, contact_ids: list, group_ids: l
     recipient_type = recipient_type or "broadcast"
 
     if recipient_type == "broadcast_all":
-        # Count both contacts and groups
-        contact_count = db.query(func.count(Contact.id)).filter(Contact.hub_id == hub_id).scalar() or 0
-        from app.database import HubBotMembership, Conversation
-        bot_ids = db.query(HubBotMembership.bot_profile_id).filter(
-            HubBotMembership.hub_id == hub_id,
-            HubBotMembership.is_active == True
-        ).all()
-        bot_ids = [b[0] for b in bot_ids]
-        group_count = 0
-        if bot_ids:
-            group_count = db.query(func.count(distinct(Conversation.chat_id))).filter(
-                Conversation.bot_profile_id.in_(bot_ids),
-                Conversation.is_group == True
-            ).scalar() or 0
-        return f"All ({contact_count} contacts + {group_count} groups)"
+        return "All Contacts + Groups"
     elif recipient_type == "broadcast":
-        count = db.query(func.count(Contact.id)).filter(Contact.hub_id == hub_id).scalar() or 0
-        return f"All contacts ({count})"
+        return "All Contacts"
     elif recipient_type == "all_groups":
-        # Count groups from hub bots
-        from app.database import HubBotMembership, Conversation
-        bot_ids = db.query(HubBotMembership.bot_profile_id).filter(
-            HubBotMembership.hub_id == hub_id,
-            HubBotMembership.is_active == True
-        ).all()
-        bot_ids = [b[0] for b in bot_ids]
-        if bot_ids:
-            count = db.query(func.count(distinct(Conversation.chat_id))).filter(
-                Conversation.bot_profile_id.in_(bot_ids),
-                Conversation.is_group == True
-            ).scalar() or 0
-            return f"All groups ({count})"
-        return "All groups (0)"
+        return "All Groups"
     elif recipient_type == "contacts" and contact_ids:
         if len(contact_ids) == 1:
             contact = db.query(Contact).filter(Contact.id == contact_ids[0]).first()
@@ -116,6 +116,10 @@ async def list_hubs(
             ScheduledContent.hub_id == hub.id
         ).scalar() or 0
 
+        script_count = db.query(func.count(ConversationScript.id)).filter(
+            ConversationScript.hub_id == hub.id
+        ).scalar() or 0
+
         # Parse multi_response_rules from JSON
         multi_rules = None
         if hub.multi_response_rules:
@@ -139,7 +143,9 @@ async def list_hubs(
             name=hub.name,
             description=hub.description,
             task_type=hub.task_type,
-            openai_model=hub.openai_model,
+            ai_provider=hub.ai_provider or "openai",
+            api_key_masked=mask_api_key(hub.api_key_encrypted),
+            model=hub.model,
             is_active=hub.is_active,
             created_at=hub.created_at,
             updated_at=hub.updated_at,
@@ -147,6 +153,7 @@ async def list_hubs(
             agent_count=agent_count,
             contact_count=contact_count,
             content_count=content_count,
+            script_count=script_count,
             selected_groups=selected_groups,
             max_responding_bots=hub.max_responding_bots or 1,
             response_delay_min=hub.response_delay_min or 1,
@@ -168,8 +175,8 @@ async def create_hub(
     """Create a new hub."""
     # Encrypt API key if provided
     encrypted_key = None
-    if hub_data.openai_api_key:
-        encrypted_key = encrypt_string(hub_data.openai_api_key)
+    if hub_data.api_key:
+        encrypted_key = encrypt_string(hub_data.api_key)
 
     # Serialize multi_response_rules to JSON
     multi_rules_json = None
@@ -185,8 +192,9 @@ async def create_hub(
         name=hub_data.name,
         description=hub_data.description,
         task_type=hub_data.task_type,
-        openai_api_key_encrypted=encrypted_key,
-        openai_model=hub_data.openai_model,
+        ai_provider=hub_data.ai_provider,
+        api_key_encrypted=encrypted_key,
+        model=hub_data.model,
         selected_groups=selected_groups_json,
         max_responding_bots=hub_data.max_responding_bots,
         response_delay_min=hub_data.response_delay_min,
@@ -205,7 +213,9 @@ async def create_hub(
         name=hub.name,
         description=hub.description,
         task_type=hub.task_type,
-        openai_model=hub.openai_model,
+        ai_provider=hub.ai_provider or "openai",
+        api_key_masked=mask_api_key(hub.api_key_encrypted),
+        model=hub.model,
         is_active=hub.is_active,
         created_at=hub.created_at,
         updated_at=hub.updated_at,
@@ -213,6 +223,7 @@ async def create_hub(
         agent_count=0,
         contact_count=0,
         content_count=0,
+        script_count=0,
         selected_groups=hub_data.selected_groups,
         max_responding_bots=hub.max_responding_bots or 1,
         response_delay_min=hub.response_delay_min or 1,
@@ -305,6 +316,10 @@ async def get_hub(
         ScheduledContent.hub_id == hub_id
     ).scalar() or 0
 
+    script_count = db.query(func.count(ConversationScript.id)).filter(
+        ConversationScript.hub_id == hub_id
+    ).scalar() or 0
+
     # Parse multi_response_rules from JSON
     multi_rules = None
     if hub.multi_response_rules:
@@ -328,7 +343,9 @@ async def get_hub(
         name=hub.name,
         description=hub.description,
         task_type=hub.task_type,
-        openai_model=hub.openai_model,
+        ai_provider=hub.ai_provider or "openai",
+        api_key_masked=mask_api_key(hub.api_key_encrypted),
+        model=hub.model,
         is_active=hub.is_active,
         created_at=hub.created_at,
         updated_at=hub.updated_at,
@@ -336,6 +353,7 @@ async def get_hub(
         agent_count=len(agents),
         contact_count=contact_count,
         content_count=content_count,
+        script_count=script_count,
         selected_groups=selected_groups,
         max_responding_bots=hub.max_responding_bots or 1,
         response_delay_min=hub.response_delay_min or 1,
@@ -370,10 +388,12 @@ async def update_hub(
         hub.description = hub_data.description
     if hub_data.task_type is not None:
         hub.task_type = hub_data.task_type
-    if hub_data.openai_api_key is not None:
-        hub.openai_api_key_encrypted = encrypt_string(hub_data.openai_api_key)
-    if hub_data.openai_model is not None:
-        hub.openai_model = hub_data.openai_model
+    if hub_data.ai_provider is not None:
+        hub.ai_provider = hub_data.ai_provider
+    if hub_data.api_key is not None:
+        hub.api_key_encrypted = encrypt_string(hub_data.api_key)
+    if hub_data.model is not None:
+        hub.model = hub_data.model
     if hub_data.is_active is not None:
         hub.is_active = hub_data.is_active
     # Multi-bot response settings
@@ -415,6 +435,10 @@ async def update_hub(
         ScheduledContent.hub_id == hub.id
     ).scalar() or 0
 
+    script_count = db.query(func.count(ConversationScript.id)).filter(
+        ConversationScript.hub_id == hub.id
+    ).scalar() or 0
+
     # Parse multi_response_rules from JSON
     multi_rules = None
     if hub.multi_response_rules:
@@ -438,7 +462,9 @@ async def update_hub(
         name=hub.name,
         description=hub.description,
         task_type=hub.task_type,
-        openai_model=hub.openai_model,
+        ai_provider=hub.ai_provider or "openai",
+        api_key_masked=mask_api_key(hub.api_key_encrypted),
+        model=hub.model,
         is_active=hub.is_active,
         created_at=hub.created_at,
         updated_at=hub.updated_at,
@@ -446,6 +472,7 @@ async def update_hub(
         agent_count=agent_count,
         contact_count=contact_count,
         content_count=content_count,
+        script_count=script_count,
         selected_groups=selected_groups,
         max_responding_bots=hub.max_responding_bots or 1,
         response_delay_min=hub.response_delay_min or 1,
@@ -470,6 +497,27 @@ async def delete_hub(
 
     if not hub:
         raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Manually delete all related records (SQLite doesn't enforce CASCADE by default)
+    # Delete script-related records first (child tables)
+    script_ids = [s.id for s in db.query(ConversationScript.id).filter(ConversationScript.hub_id == hub_id).all()]
+    if script_ids:
+        db.query(ScriptMessage).filter(ScriptMessage.script_id.in_(script_ids)).delete(synchronize_session=False)
+        db.query(ScriptExecution).filter(ScriptExecution.script_id.in_(script_ids)).delete(synchronize_session=False)
+        db.query(ConversationScript).filter(ConversationScript.hub_id == hub_id).delete(synchronize_session=False)
+
+    # Delete agent executions before agents
+    agent_ids = [a.id for a in db.query(AIAgent.id).filter(AIAgent.hub_id == hub_id).all()]
+    if agent_ids:
+        db.query(AgentExecution).filter(AgentExecution.agent_id.in_(agent_ids)).delete(synchronize_session=False)
+
+    # Delete other hub-related records
+    db.query(MessageRouting).filter(MessageRouting.hub_id == hub_id).delete(synchronize_session=False)
+    db.query(HubMessageTopic).filter(HubMessageTopic.hub_id == hub_id).delete(synchronize_session=False)
+    db.query(ScheduledContent).filter(ScheduledContent.hub_id == hub_id).delete(synchronize_session=False)
+    db.query(Contact).filter(Contact.hub_id == hub_id).delete(synchronize_session=False)
+    db.query(AIAgent).filter(AIAgent.hub_id == hub_id).delete(synchronize_session=False)
+    db.query(HubBotMembership).filter(HubBotMembership.hub_id == hub_id).delete(synchronize_session=False)
 
     db.delete(hub)
     db.commit()
@@ -774,7 +822,8 @@ async def list_agents(
             agent_type=a.agent_type,
             description=a.description,
             ai_provider=a.ai_provider or "openai",
-            openai_model=a.openai_model,
+            api_key_masked=mask_api_key(a.api_key_encrypted),
+            model=a.model,
             is_active=a.is_active,
             last_run_at=a.last_run_at,
             created_at=a.created_at
@@ -809,8 +858,8 @@ async def create_agent(
 
     # Encrypt API key if provided
     encrypted_key = None
-    if data.openai_api_key:
-        encrypted_key = encrypt_string(data.openai_api_key)
+    if data.api_key:
+        encrypted_key = encrypt_string(data.api_key)
 
     agent = AIAgent(
         hub_id=hub_id,
@@ -818,8 +867,8 @@ async def create_agent(
         agent_type=data.agent_type,
         description=data.description,
         ai_provider=data.ai_provider,
-        openai_api_key_encrypted=encrypted_key,
-        openai_model=data.openai_model,
+        api_key_encrypted=encrypted_key,
+        model=data.model,
         system_prompt=data.system_prompt,
         additional_instructions=data.additional_instructions,
         config=json.dumps(data.config) if data.config else None
@@ -836,7 +885,8 @@ async def create_agent(
         agent_type=agent.agent_type,
         description=agent.description,
         ai_provider=agent.ai_provider,
-        openai_model=agent.openai_model,
+        api_key_masked=mask_api_key(agent.api_key_encrypted),
+        model=agent.model,
         is_active=agent.is_active,
         last_run_at=agent.last_run_at,
         created_at=agent.created_at
@@ -872,7 +922,8 @@ async def get_agent(
         agent_type=agent.agent_type,
         description=agent.description,
         ai_provider=agent.ai_provider or "openai",
-        openai_model=agent.openai_model,
+        api_key_masked=mask_api_key(agent.api_key_encrypted),
+        model=agent.model,
         is_active=agent.is_active,
         last_run_at=agent.last_run_at,
         created_at=agent.created_at,
@@ -904,10 +955,10 @@ async def update_agent(
         agent.description = data.description
     if data.ai_provider is not None:
         agent.ai_provider = data.ai_provider
-    if data.openai_api_key is not None:
-        agent.openai_api_key_encrypted = encrypt_string(data.openai_api_key)
-    if data.openai_model is not None:
-        agent.openai_model = data.openai_model
+    if data.api_key is not None:
+        agent.api_key_encrypted = encrypt_string(data.api_key)
+    if data.model is not None:
+        agent.model = data.model
     if data.system_prompt is not None:
         agent.system_prompt = data.system_prompt
     if data.additional_instructions is not None:
@@ -927,7 +978,8 @@ async def update_agent(
         agent_type=agent.agent_type,
         description=agent.description,
         ai_provider=agent.ai_provider or "openai",
-        openai_model=agent.openai_model,
+        api_key_masked=mask_api_key(agent.api_key_encrypted),
+        model=agent.model,
         is_active=agent.is_active,
         last_run_at=agent.last_run_at,
         created_at=agent.created_at
@@ -957,17 +1009,19 @@ async def delete_agent(
 
 # ============== Contacts ==============
 
-@router.get("/{hub_id}/contacts", response_model=List[ContactListResponse])
+@router.get("/{hub_id}/contacts")
 async def list_contacts(
     hub_id: int,
     search: Optional[str] = None,
     tag: Optional[str] = None,
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List contacts in a hub."""
+    """List contacts in a hub with pagination, filtered by bots assigned to the hub."""
+    from app.database import Conversation, HubBotMembership
+
     hub = db.query(Hub).filter(
         Hub.id == hub_id,
         Hub.user_id == current_user.id
@@ -976,7 +1030,62 @@ async def list_contacts(
     if not hub:
         raise HTTPException(status_code=404, detail="Hub not found")
 
-    query = db.query(Contact).filter(Contact.hub_id == hub_id)
+    # Get bot profile IDs that are members of this hub
+    bot_memberships = db.query(HubBotMembership).filter(
+        HubBotMembership.hub_id == hub_id,
+        HubBotMembership.is_active == True
+    ).all()
+    bot_profile_ids = [m.bot_profile_id for m in bot_memberships]
+
+    # If no bots in hub, return empty result
+    if not bot_profile_ids:
+        return {"items": [], "total": 0, "page": page, "page_size": page_size, "total_pages": 0}
+
+    # Get bot names for lookup
+    bot_profiles = db.query(BotProfile).filter(BotProfile.id.in_(bot_profile_ids)).all()
+    bot_names = {b.id: b.name for b in bot_profiles}
+
+    # Get all bot phone numbers to exclude (bots shouldn't appear as contacts)
+    all_bots_with_phones = db.query(BotProfile).filter(
+        BotProfile.whatsapp_phone.isnot(None),
+        BotProfile.whatsapp_phone != ''
+    ).all()
+    bot_phone_set = set()
+    for bot in all_bots_with_phones:
+        # Normalize phone number (remove +, spaces, dashes)
+        normalized = ''.join(c for c in bot.whatsapp_phone if c.isdigit())
+        if normalized:
+            bot_phone_set.add(normalized)
+            # Also add with + prefix variations
+            bot_phone_set.add(f"+{normalized}")
+
+    # Get phone numbers and all their associated bots from conversations
+    phone_to_bots = {}
+    convs = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_profile_ids),
+        Conversation.is_group == False,
+        Conversation.phone.isnot(None),
+        Conversation.phone != ""
+    ).all()
+    for conv in convs:
+        # Skip if this phone belongs to a bot
+        normalized_phone = ''.join(c for c in conv.phone if c.isdigit())
+        if normalized_phone in bot_phone_set:
+            continue
+        # Skip invalid phone numbers (less than 5 digits)
+        if len(normalized_phone) < 5:
+            continue
+        if conv.phone not in phone_to_bots:
+            phone_to_bots[conv.phone] = set()
+        phone_to_bots[conv.phone].add(conv.bot_profile_id)
+
+    valid_phone_set = set(phone_to_bots.keys())
+
+    # Filter contacts by hub and valid phones
+    query = db.query(Contact).filter(
+        Contact.hub_id == hub_id,
+        Contact.phone.in_(valid_phone_set)
+    )
 
     if search:
         query = query.filter(
@@ -987,34 +1096,61 @@ async def list_contacts(
     if tag:
         query = query.join(ContactTag).filter(ContactTag.tag == tag)
 
-    contacts = query.order_by(Contact.last_interaction_at.desc().nullslast()).offset(offset).limit(limit).all()
+    # Get total count
+    total = query.count()
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    contacts = query.order_by(Contact.last_interaction_at.desc().nullslast()).offset(offset).limit(page_size).all()
 
     result = []
     for c in contacts:
-        tag_count = db.query(func.count(ContactTag.id)).filter(
+        # Get tags for this contact
+        tags = db.query(ContactTag).filter(
             ContactTag.contact_id == c.id
-        ).scalar() or 0
+        ).all()
 
-        result.append(ContactListResponse(
-            id=c.id,
-            phone=c.phone,
-            display_name=c.display_name,
-            profile_pic=c.profile_pic,
-            engagement_score=c.engagement_score,
-            last_interaction_at=c.last_interaction_at,
-            tag_count=tag_count
-        ))
+        # Get all bot names for this contact
+        bot_ids = phone_to_bots.get(c.phone, set())
+        contact_bot_names = [bot_names[bid] for bid in bot_ids if bid in bot_names]
+        bot_name = ", ".join(contact_bot_names) if contact_bot_names else None
 
-    return result
+        result.append({
+            "id": c.id,
+            "phone": c.phone,
+            "display_name": c.display_name,
+            "profile_pic": c.profile_pic,
+            "description": c.description,
+            "predicted_intent": c.predicted_intent,
+            "engagement_score": c.engagement_score,
+            "last_interaction_at": c.last_interaction_at.isoformat() if c.last_interaction_at else None,
+            "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else None,
+            "tag_count": len(tags),
+            "tags": [
+                {
+                    "id": t.id,
+                    "tag": t.tag,
+                    "value": t.value,
+                    "confidence": t.confidence,
+                    "source": t.source
+                }
+                for t in tags[:5]  # Limit to first 5 tags for list view
+            ],
+            "bot_name": bot_name,
+            "analysis_status": c.analysis_status
+        })
+
+    return {"items": result, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
-@router.get("/contacts/{contact_id}", response_model=ContactResponse)
+@router.get("/contacts/{contact_id}")
 async def get_contact(
     contact_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get contact details with tags."""
+    """Get contact details with tags and bot info."""
     contact = db.query(Contact).join(Hub).filter(
         Contact.id == contact_id,
         Hub.user_id == current_user.id
@@ -1025,30 +1161,206 @@ async def get_contact(
 
     tags = db.query(ContactTag).filter(ContactTag.contact_id == contact_id).all()
 
-    return ContactResponse(
-        id=contact.id,
-        hub_id=contact.hub_id,
-        phone=contact.phone,
-        display_name=contact.display_name,
-        profile_pic=contact.profile_pic,
-        description=contact.description,
-        predicted_intent=contact.predicted_intent,
-        engagement_score=contact.engagement_score,
-        last_interaction_at=contact.last_interaction_at,
-        first_seen_at=contact.first_seen_at,
-        created_at=contact.created_at,
-        tags=[
-            ContactTagInfo(
-                id=t.id,
-                tag=t.tag,
-                value=t.value,
-                confidence=t.confidence,
-                source=t.source,
-                created_at=t.created_at
-            )
+    # Get bot info for this contact
+    hub = db.query(Hub).filter(Hub.id == contact.hub_id).first()
+    hub_bot_ids = [hb.bot_profile_id for hb in hub.bot_memberships if hb.is_active]
+
+    bot_names = []
+    if hub_bot_ids:
+        bot_ids = set()
+
+        # Find private conversations with this contact's phone
+        private_convs = db.query(Conversation).filter(
+            Conversation.bot_profile_id.in_(hub_bot_ids),
+            Conversation.phone == contact.phone,
+            Conversation.is_group == False
+        ).all()
+        bot_ids.update(c.bot_profile_id for c in private_convs)
+
+        # Also find bots from group messages where this contact is the sender
+        group_convs = db.query(Conversation).filter(
+            Conversation.bot_profile_id.in_(hub_bot_ids),
+            Conversation.is_group == True
+        ).all()
+        if group_convs:
+            group_conv_ids = [c.id for c in group_convs]
+            group_msgs = db.query(Message).filter(
+                Message.conversation_id.in_(group_conv_ids),
+                Message.sender_phone == contact.phone
+            ).all()
+            for msg in group_msgs:
+                conv = next((c for c in group_convs if c.id == msg.conversation_id), None)
+                if conv:
+                    bot_ids.add(conv.bot_profile_id)
+
+        # Get bot names
+        if bot_ids:
+            bots = db.query(BotProfile).filter(BotProfile.id.in_(bot_ids)).all()
+            bot_names = [b.name for b in bots]
+
+    return {
+        "id": contact.id,
+        "hub_id": contact.hub_id,
+        "phone": contact.phone,
+        "display_name": contact.display_name,
+        "profile_pic": contact.profile_pic,
+        "description": contact.description,
+        "predicted_intent": contact.predicted_intent,
+        "engagement_score": contact.engagement_score,
+        "last_interaction_at": contact.last_interaction_at.isoformat() if contact.last_interaction_at else None,
+        "first_seen_at": contact.first_seen_at.isoformat() if contact.first_seen_at else None,
+        "created_at": contact.created_at.isoformat() if contact.created_at else None,
+        "bot_names": bot_names,
+        "tags": [
+            {
+                "id": t.id,
+                "tag": t.tag,
+                "value": t.value,
+                "confidence": t.confidence,
+                "source": t.source,
+                "created_at": t.created_at.isoformat() if t.created_at else None
+            }
             for t in tags
-        ]
-    )
+        ],
+        # AI Analysis fields
+        "sentiment": contact.sentiment,
+        "urgency": contact.urgency,
+        "follow_up_needed": contact.follow_up_needed or False,
+        "follow_up_reason": contact.follow_up_reason,
+        "key_topics": json.loads(contact.key_topics) if contact.key_topics else None,
+        # Analysis queue fields
+        "analysis_status": contact.analysis_status
+    }
+
+
+@router.get("/contacts/{contact_id}/messages")
+async def get_contact_messages(
+    contact_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get contact message statistics and recent messages."""
+    from sqlalchemy import func, case
+
+    # Verify contact belongs to user
+    contact = db.query(Contact).join(Hub).filter(
+        Contact.id == contact_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Get hub's bot profile IDs
+    hub = db.query(Hub).filter(Hub.id == contact.hub_id).first()
+    hub_bot_ids = [hb.bot_profile_id for hb in hub.bot_memberships if hb.is_active]
+
+    if not hub_bot_ids:
+        return {
+            "statistics": {
+                "total_messages": 0,
+                "messages_received": 0,
+                "messages_sent": 0,
+                "first_message_at": None,
+                "last_message_at": None,
+                "conversations_count": 0
+            },
+            "recent_messages": []
+        }
+
+    # Find conversations with this contact (private chats)
+    private_conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(hub_bot_ids),
+        Conversation.phone == contact.phone,
+        Conversation.is_group == False
+    ).all()
+
+    private_conv_ids = [c.id for c in private_conversations]
+
+    # Find messages from this contact in group chats
+    group_conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(hub_bot_ids),
+        Conversation.is_group == True
+    ).all()
+
+    group_conv_ids = [c.id for c in group_conversations]
+
+    # Get all messages from private conversations
+    private_messages = []
+    if private_conv_ids:
+        private_messages = db.query(Message).filter(
+            Message.conversation_id.in_(private_conv_ids)
+        ).all()
+
+    # Get messages from group chats where this contact is sender
+    group_messages = []
+    if group_conv_ids:
+        group_messages = db.query(Message).filter(
+            Message.conversation_id.in_(group_conv_ids),
+            Message.sender_phone == contact.phone
+        ).all()
+
+    # Combine and calculate statistics
+    all_messages = private_messages + group_messages
+
+    if not all_messages:
+        return {
+            "statistics": {
+                "total_messages": 0,
+                "messages_received": 0,
+                "messages_sent": 0,
+                "first_message_at": None,
+                "last_message_at": None,
+                "conversations_count": len(private_conv_ids)
+            },
+            "recent_messages": []
+        }
+
+    # Calculate statistics
+    messages_received = sum(1 for m in all_messages if m.role == "user")
+    messages_sent = sum(1 for m in all_messages if m.role == "assistant")
+
+    timestamps = [m.timestamp for m in all_messages if m.timestamp]
+    first_message_at = min(timestamps) if timestamps else None
+    last_message_at = max(timestamps) if timestamps else None
+
+    # Get recent messages (last 10, sorted by timestamp)
+    sorted_messages = sorted(all_messages, key=lambda m: m.timestamp or datetime.min, reverse=True)[:10]
+
+    # Build bot name lookup
+    bot_name_map = {}
+    if hub_bot_ids:
+        bots = db.query(BotProfile).filter(BotProfile.id.in_(hub_bot_ids)).all()
+        bot_name_map = {b.id: b.name for b in bots}
+
+    recent_messages = []
+    for msg in sorted_messages:
+        # Get conversation info for context
+        conv = db.query(Conversation).filter(Conversation.id == msg.conversation_id).first()
+        bot_name = bot_name_map.get(conv.bot_profile_id) if conv else None
+        recent_messages.append({
+            "id": msg.id,
+            "role": msg.role,
+            "content": msg.content[:500] if msg.content else "",  # Truncate long messages
+            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
+            "sender_name": msg.sender_name,
+            "bot_name": bot_name,
+            "conversation_name": conv.chat_name if conv else None,
+            "is_group": conv.is_group if conv else False,
+            "has_attachment": bool(msg.file_url)
+        })
+
+    return {
+        "statistics": {
+            "total_messages": len(all_messages),
+            "messages_received": messages_received,
+            "messages_sent": messages_sent,
+            "first_message_at": first_message_at.isoformat() if first_message_at else None,
+            "last_message_at": last_message_at.isoformat() if last_message_at else None,
+            "conversations_count": len(private_conv_ids)
+        },
+        "recent_messages": recent_messages
+    }
 
 
 @router.post("/{hub_id}/contacts", response_model=ContactResponse)
@@ -1100,7 +1412,13 @@ async def create_contact(
         last_interaction_at=contact.last_interaction_at,
         first_seen_at=contact.first_seen_at,
         created_at=contact.created_at,
-        tags=[]
+        tags=[],
+        sentiment=contact.sentiment,
+        urgency=contact.urgency,
+        follow_up_needed=contact.follow_up_needed or False,
+        follow_up_reason=contact.follow_up_reason,
+        key_topics=json.loads(contact.key_topics) if contact.key_topics else None,
+        analysis_status=contact.analysis_status
     )
 
 
@@ -1161,7 +1479,13 @@ async def update_contact(
                 created_at=t.created_at
             )
             for t in tags
-        ]
+        ],
+        sentiment=contact.sentiment,
+        urgency=contact.urgency,
+        follow_up_needed=contact.follow_up_needed or False,
+        follow_up_reason=contact.follow_up_reason,
+        key_topics=json.loads(contact.key_topics) if contact.key_topics else None,
+        analysis_status=contact.analysis_status
     )
 
 
@@ -1184,6 +1508,827 @@ async def delete_contact(
     db.commit()
 
     return {"message": "Contact deleted successfully"}
+
+
+@router.post("/contacts/{contact_id}/analyze")
+async def analyze_contact(
+    contact_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Analyze a contact using AI to generate tags, engagement score, and predictions.
+
+    This endpoint:
+    1. Fetches the contact's conversation history
+    2. Runs the analyzer agent to generate insights
+    3. Updates the contact with new tags and scores
+    """
+    from app.hubs.agents.analyzer import AnalyzerAgent
+    from app.auth.utils import decrypt_string
+
+    # Get the contact with hub verification
+    contact = db.query(Contact).join(Hub).filter(
+        Contact.id == contact_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    hub = contact.hub
+
+    # Check if hub has an analyzer agent
+    analyzer_agent = db.query(AIAgent).filter(
+        AIAgent.hub_id == hub.id,
+        AIAgent.agent_type == "analyzer",
+        AIAgent.is_active == True
+    ).first()
+
+    # Get API key (from agent or hub)
+    api_key = None
+    if analyzer_agent and analyzer_agent.api_key_encrypted:
+        api_key = decrypt_string(analyzer_agent.api_key_encrypted)
+    elif hub.api_key_encrypted:
+        api_key = decrypt_string(hub.api_key_encrypted)
+
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="No API key configured. Please configure an API key in the hub settings or create an analyzer agent."
+        )
+
+    # Get conversation history for this contact
+    # Find conversations where chat_id matches the contact's phone
+    conversations = db.query(Conversation).filter(
+        Conversation.phone == contact.phone
+    ).all()
+
+    # Collect messages from all conversations
+    messages = []
+    bot_names = set()
+    found_profile_pic = None
+    for conv in conversations:
+        # Get bot name
+        if conv.bot_profile:
+            bot_names.add(conv.bot_profile.name)
+
+        # Try to get profile_pic from conversation if contact doesn't have one
+        if not contact.profile_pic and not found_profile_pic and conv.profile_pic:
+            found_profile_pic = conv.profile_pic
+
+        # Get messages for this conversation
+        conv_messages = db.query(Message).filter(
+            Message.conversation_id == conv.id
+        ).order_by(Message.timestamp.asc()).limit(100).all()
+
+        for msg in conv_messages:
+            messages.append({
+                "role": msg.role or "user",
+                "content": msg.content or "",
+                "timestamp": msg.timestamp.isoformat() if msg.timestamp else None
+            })
+            # Also try to get profile_pic from message sender_profile_pic (for user messages)
+            if not contact.profile_pic and not found_profile_pic and msg.role == "user" and msg.sender_profile_pic:
+                found_profile_pic = msg.sender_profile_pic
+
+    # Update contact's profile_pic if we found one and contact doesn't have one
+    if found_profile_pic and not contact.profile_pic:
+        contact.profile_pic = found_profile_pic
+        db.commit()
+
+    # Get existing tags
+    existing_tags = db.query(ContactTag).filter(
+        ContactTag.contact_id == contact_id
+    ).all()
+    existing_tag_names = [t.tag for t in existing_tags]
+
+    # Prepare input data for analyzer
+    input_data = {
+        "contact": {
+            "phone": contact.phone,
+            "display_name": contact.display_name,
+            "existing_tags": existing_tag_names,
+            "engagement_score": contact.engagement_score,
+            "last_interaction_at": contact.last_interaction_at.isoformat() if contact.last_interaction_at else None
+        },
+        "messages": messages,
+        "context": {
+            "hub_name": hub.name,
+            "bot_names": list(bot_names)
+        }
+    }
+
+    # Track execution time
+    start_time = time.time()
+
+    # Create analyzer agent instance
+    try:
+        if analyzer_agent:
+            agent = AnalyzerAgent(
+                agent=analyzer_agent,
+                hub_api_key=hub.api_key_encrypted,
+                hub_ai_provider=hub.ai_provider
+            )
+        else:
+            # Create a minimal agent-like object for direct analysis
+            from app.ai import get_ai_provider
+            provider = get_ai_provider(
+                provider_name=hub.ai_provider or "openai",
+                api_key=api_key,
+                model=hub.model or "gpt-4o-mini"
+            )
+
+            # Run analysis directly with improved prompt
+            system_prompt = """You are a contact analyzer AI. Analyze conversation history to build a comprehensive contact profile.
+
+IMPORTANT: You MUST include ALL fields in your response.
+
+Your analysis should include:
+1. **Tags**: Generate 2-5 relevant tags based on interests, behaviors, topics discussed. Examples: "interested_in_product", "price_conscious", "tech_savvy", "quick_responder", "new_customer", "returning_customer", "support_seeker", "business_inquiry"
+2. **Engagement Score**: 0-100 based on message frequency, response patterns, and interaction quality
+3. **Predicted Intent**: Choose the most appropriate from: buyer, browser, support_seeker, information_seeker, price_checker, partner, complaint, feedback, general_inquiry, returning_customer
+4. **Sentiment**: Overall sentiment (positive, neutral, negative)
+5. **Urgency**: How urgent is follow-up needed (low, medium, high)
+6. **Follow-up Needed**: Whether this contact needs follow-up and why
+7. **Description**: A brief profile summary
+8. **Key Topics**: Main topics discussed
+
+Return a JSON object with this EXACT structure:
+{
+    "tags": [
+        {"tag": "interested_in_product", "confidence": 0.85, "value": null},
+        {"tag": "new_inquiry", "confidence": 0.9, "value": null}
+    ],
+    "engagement_score": 75,
+    "predicted_intent": "information_seeker",
+    "sentiment": "positive",
+    "urgency": "medium",
+    "follow_up_needed": true,
+    "follow_up_reason": "Reason for follow-up",
+    "description": "Brief profile summary",
+    "key_topics": ["topic1", "topic2"]
+}
+
+CRITICAL: Choose predicted_intent from the list provided. The "tags" array MUST contain at least 2 relevant tags.
+Return ONLY valid JSON."""
+
+            # Format messages for prompt
+            message_history = "\n".join([
+                f"[{m.get('timestamp', '')}] {m['role'].upper()}: {m['content']}"
+                for m in messages[-50:]  # Last 50 messages
+            ])
+
+            user_message = f"""Analyze this contact's conversation history and return your analysis as JSON:
+
+Phone: {contact.phone}
+Name: {contact.display_name or 'Unknown'}
+Existing Tags: {', '.join(existing_tag_names) if existing_tag_names else 'None'}
+
+Conversation History:
+{message_history if message_history else 'No messages available'}
+
+Provide a comprehensive analysis in JSON format."""
+
+            # Run blocking AI call in thread pool to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            ai_response = await loop.run_in_executor(
+                ai_executor,
+                lambda: provider.chat_completion(
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.3,
+                    json_mode=True
+                )
+            )
+
+            result = json.loads(ai_response.content)
+            result["tokens_used"] = ai_response.usage.get("total_tokens", 0)
+
+    except Exception as e:
+        logger.error(f"Failed to create analyzer: {e}")
+        # Log error to ToolMonitor
+        execution_time_ms = int((time.time() - start_time) * 1000)
+        ToolMonitor.log_execution(
+            db=db,
+            tool_type="contact_analyzer",
+            operation="analyze_contact",
+            hub_id=hub.id,
+            input_data={
+                "contact_id": contact_id,
+                "contact_phone": contact.phone,
+                "contact_name": contact.display_name
+            },
+            status="error",
+            error_message=str(e),
+            execution_time_ms=execution_time_ms,
+            triggered_by="user",
+            related_entity_type="contact",
+            related_entity_id=contact_id,
+            user_id=current_user.id
+        )
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+    # Run the analysis if using agent
+    if analyzer_agent:
+        try:
+            # Run blocking AI call in thread pool to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                ai_executor,
+                lambda: agent.run(input_data, trigger_type="manual")
+            )
+        except Exception as e:
+            logger.error(f"Analysis failed: {e}")
+            # Log error to ToolMonitor
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            ToolMonitor.log_execution(
+                db=db,
+                tool_type="contact_analyzer",
+                operation="analyze_contact",
+                hub_id=hub.id,
+                input_data={
+                    "contact_id": contact_id,
+                    "contact_phone": contact.phone,
+                    "contact_name": contact.display_name,
+                    "message_count": len(messages)
+                },
+                status="error",
+                error_message=str(e),
+                execution_time_ms=execution_time_ms,
+                triggered_by="user",
+                related_entity_type="contact",
+                related_entity_id=contact_id,
+                user_id=current_user.id
+            )
+            raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+    # Check for errors
+    if result.get("error"):
+        # Log error to ToolMonitor
+        execution_time_ms = int((time.time() - start_time) * 1000)
+        ToolMonitor.log_execution(
+            db=db,
+            tool_type="contact_analyzer",
+            operation="analyze_contact",
+            hub_id=hub.id,
+            input_data={
+                "contact_id": contact_id,
+                "contact_phone": contact.phone,
+                "contact_name": contact.display_name,
+                "message_count": len(messages)
+            },
+            status="error",
+            error_message=result["error"],
+            execution_time_ms=execution_time_ms,
+            tokens_used=result.get("tokens_used", 0),
+            triggered_by="user",
+            related_entity_type="contact",
+            related_entity_id=contact_id,
+            user_id=current_user.id
+        )
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    # Log what the AI returned for debugging
+    logger.info(f"Contact analyzer result for {contact.phone}: "
+                f"description={result.get('description')!r}, "
+                f"key_topics={result.get('key_topics')!r}, "
+                f"follow_up_needed={result.get('follow_up_needed')!r}, "
+                f"follow_up_reason={result.get('follow_up_reason')!r}")
+
+    # Update contact with analysis results
+    if result.get("description"):
+        desc = result["description"]
+        # Handle if description is a dict
+        if isinstance(desc, dict):
+            desc = desc.get("text") or desc.get("summary") or str(desc)
+        contact.description = str(desc) if desc else None
+
+    if result.get("predicted_intent"):
+        intent = result["predicted_intent"]
+        # Handle if predicted_intent is a dict (e.g., {'intent': '...', 'likelihood_score': 0.75})
+        if isinstance(intent, dict):
+            intent = intent.get("intent") or intent.get("type") or intent.get("value") or list(intent.values())[0]
+        contact.predicted_intent = str(intent) if intent else None
+
+    if result.get("engagement_score") is not None:
+        # Normalize to 0-1 range for storage
+        score = result["engagement_score"]
+        # Handle if score is a dict
+        if isinstance(score, dict):
+            score = score.get("score") or score.get("value") or 50
+        if score > 1:
+            score = score / 100.0
+        contact.engagement_score = min(1.0, max(0.0, float(score)))
+
+    # Save new AI analysis fields
+    if result.get("sentiment"):
+        sentiment = result["sentiment"]
+        if isinstance(sentiment, dict):
+            sentiment = sentiment.get("value") or sentiment.get("sentiment") or str(sentiment)
+        contact.sentiment = str(sentiment) if sentiment else None
+
+    if result.get("urgency"):
+        urgency = result["urgency"]
+        if isinstance(urgency, dict):
+            urgency = urgency.get("value") or urgency.get("level") or str(urgency)
+        contact.urgency = str(urgency) if urgency else None
+
+    # Save follow-up info - handle bool, string, or other types
+    follow_up = result.get("follow_up_needed", False)
+    if isinstance(follow_up, bool):
+        contact.follow_up_needed = follow_up
+    elif isinstance(follow_up, str):
+        contact.follow_up_needed = follow_up.lower() in ("true", "yes", "1")
+    else:
+        contact.follow_up_needed = bool(follow_up)
+
+    if result.get("follow_up_reason"):
+        reason = result["follow_up_reason"]
+        if isinstance(reason, dict):
+            reason = reason.get("reason") or reason.get("text") or str(reason)
+        contact.follow_up_reason = str(reason) if reason else None
+
+    # Save key topics as JSON
+    if result.get("key_topics"):
+        topics = result["key_topics"]
+        if isinstance(topics, list):
+            # Ensure all items are strings
+            topics = [str(t) if not isinstance(t, str) else t for t in topics]
+            contact.key_topics = json.dumps(topics)
+        elif isinstance(topics, str):
+            contact.key_topics = topics
+
+    contact.updated_at = datetime.utcnow()
+    # Also update last_interaction_at since analysis counts as an interaction
+    contact.last_interaction_at = datetime.utcnow()
+
+    # Replace AI-generated tags (keep manually added tags)
+    # First, delete existing AI-generated tags for this contact
+    deleted_count = db.query(ContactTag).filter(
+        ContactTag.contact_id == contact_id,
+        ContactTag.source == "ai_analyzer"
+    ).delete()
+    logger.info(f"Contact analyzer: deleted {deleted_count} previous AI-generated tags for contact {contact_id}")
+
+    # Add new tags from analysis
+    new_tags_added = 0
+    if result.get("tags"):
+        for tag_data in result["tags"]:
+            tag_name = tag_data.get("tag") if isinstance(tag_data, dict) else str(tag_data)
+            if not tag_name:
+                continue
+
+            # Check if this exact tag already exists (could be manually added)
+            existing = db.query(ContactTag).filter(
+                ContactTag.contact_id == contact_id,
+                ContactTag.tag == tag_name
+            ).first()
+
+            if not existing:
+                new_tag = ContactTag(
+                    contact_id=contact_id,
+                    tag=tag_name,
+                    value=tag_data.get("value") if isinstance(tag_data, dict) else None,
+                    confidence=tag_data.get("confidence", 1.0) if isinstance(tag_data, dict) else 1.0,
+                    source="ai_analyzer"
+                )
+                db.add(new_tag)
+                new_tags_added += 1
+
+    db.commit()
+    db.refresh(contact)
+
+    # Log the execution to ToolMonitor
+    execution_time_ms = int((time.time() - start_time) * 1000)
+
+    # Extract tag names for logging
+    result_tags = result.get("tags", [])
+    logger.info(f"Contact analyzer: raw result keys={list(result.keys())}, tags type={type(result_tags)}, tags count={len(result_tags) if result_tags else 0}")
+    if result_tags:
+        logger.info(f"Contact analyzer: first tag sample={result_tags[0] if result_tags else 'none'}")
+
+    tag_names = []
+    for tag_data in result_tags[:10]:  # Limit to 10 tags
+        if isinstance(tag_data, dict):
+            tag_name = tag_data.get("tag") or tag_data.get("name") or ""
+            if tag_name:
+                tag_names.append(str(tag_name))
+        elif isinstance(tag_data, str) and tag_data:
+            tag_names.append(tag_data)
+
+    logger.info(f"Contact analyzer for {contact.phone}: result_tags count={len(result_tags)}, extracted tag_names={tag_names}")
+
+    ToolMonitor.log_execution(
+        db=db,
+        tool_type="contact_analyzer",
+        operation="analyze_contact",
+        hub_id=hub.id,
+        input_data={
+            "contact_id": contact_id,
+            "contact_phone": contact.phone,
+            "contact_name": contact.display_name,
+            "contact_profile_pic": contact.profile_pic,
+            "message_count": len(messages),
+            "bot_names": list(bot_names)
+        },
+        output_data={
+            "predicted_intent": result.get("predicted_intent"),
+            "sentiment": result.get("sentiment"),
+            "urgency": result.get("urgency"),
+            "engagement_score": result.get("engagement_score"),
+            "tags": tag_names,
+            "tags_count": len(result_tags),
+            "new_tags_added": new_tags_added,
+            "follow_up_needed": result.get("follow_up_needed"),
+            "follow_up_reason": result.get("follow_up_reason"),
+            "key_topics": result.get("key_topics", []),
+            "description": result.get("description")
+        },
+        status="success",
+        execution_time_ms=execution_time_ms,
+        tokens_used=result.get("tokens_used", 0),
+        triggered_by="user",
+        related_entity_type="contact",
+        related_entity_id=contact_id,
+        user_id=current_user.id
+    )
+
+    # Get updated tags
+    tags = db.query(ContactTag).filter(ContactTag.contact_id == contact_id).all()
+
+    return {
+        "success": True,
+        "contact": ContactResponse(
+            id=contact.id,
+            hub_id=contact.hub_id,
+            phone=contact.phone,
+            display_name=contact.display_name,
+            profile_pic=contact.profile_pic,
+            description=contact.description,
+            predicted_intent=contact.predicted_intent,
+            engagement_score=contact.engagement_score,
+            last_interaction_at=contact.last_interaction_at,
+            first_seen_at=contact.first_seen_at,
+            created_at=contact.created_at,
+            tags=[
+                ContactTagInfo(
+                    id=t.id,
+                    tag=t.tag,
+                    value=t.value,
+                    confidence=t.confidence,
+                    source=t.source,
+                    created_at=t.created_at
+                )
+                for t in tags
+            ],
+            sentiment=contact.sentiment,
+            urgency=contact.urgency,
+            follow_up_needed=contact.follow_up_needed or False,
+            follow_up_reason=contact.follow_up_reason,
+            key_topics=json.loads(contact.key_topics) if contact.key_topics else None,
+            analysis_status=contact.analysis_status
+        ),
+        "analysis": {
+            "predicted_intent": result.get("predicted_intent"),
+            "sentiment": result.get("sentiment"),
+            "urgency": result.get("urgency"),
+            "follow_up_needed": result.get("follow_up_needed"),
+            "follow_up_reason": result.get("follow_up_reason"),
+            "key_topics": result.get("key_topics", []),
+            "new_tags_added": new_tags_added,
+            "tokens_used": result.get("tokens_used", 0)
+        }
+    }
+
+
+@router.post("/{hub_id}/contacts/analyze-all")
+async def analyze_all_contacts(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Queue all contacts in a hub for AI analysis.
+    Returns immediately with the count of queued contacts.
+    """
+    from app.hubs.analysis_scheduler import contact_analysis_scheduler
+
+    # Verify hub ownership
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Queue all contacts
+    queued_count = contact_analysis_scheduler.queue_contacts(db, hub_id)
+
+    # Get current queue status
+    status = contact_analysis_scheduler.get_queue_status(db, hub_id)
+
+    return {
+        "message": f"Queued {queued_count} contacts for analysis",
+        "queued_count": queued_count,
+        "queue_status": status
+    }
+
+
+@router.post("/contacts/{contact_id}/queue-analysis")
+async def queue_contact_analysis(
+    contact_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Queue a single contact for AI analysis.
+    Returns immediately - analysis will be processed in background.
+    """
+    from app.hubs.analysis_scheduler import contact_analysis_scheduler
+
+    # Verify contact and hub ownership
+    contact = db.query(Contact).join(Hub).filter(
+        Contact.id == contact_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Queue the contact
+    success = contact_analysis_scheduler.queue_contact(db, contact_id)
+
+    if not success:
+        return {
+            "message": "Contact already queued or analyzing",
+            "queued": False,
+            "analysis_status": contact.analysis_status
+        }
+
+    return {
+        "message": "Contact queued for analysis",
+        "queued": True,
+        "analysis_status": "pending"
+    }
+
+
+@router.post("/contacts/{contact_id}/cancel-analysis")
+async def cancel_contact_analysis(
+    contact_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Cancel a pending or running contact analysis."""
+    from app.hubs.analysis_scheduler import contact_analysis_scheduler
+
+    # Verify contact and hub ownership
+    contact = db.query(Contact).join(Hub).filter(
+        Contact.id == contact_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    previous_status = contact.analysis_status
+
+    if previous_status not in ("pending", "analyzing"):
+        return {
+            "message": f"Contact is not pending or analyzing (status: {previous_status})",
+            "cancelled": False
+        }
+
+    # Cancel the analysis
+    contact_analysis_scheduler.cancel_contact(contact_id)
+
+    # Update status immediately for pending contacts
+    if previous_status == "pending":
+        contact.analysis_status = "cancelled"
+        db.commit()
+
+    return {
+        "message": "Analysis cancelled",
+        "cancelled": True,
+        "previous_status": previous_status
+    }
+
+
+@router.post("/{hub_id}/contacts/cancel-all-analysis")
+async def cancel_all_contact_analysis(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Cancel all pending contact analyses for a hub."""
+    from app.hubs.analysis_scheduler import contact_analysis_scheduler
+
+    # Verify hub ownership
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Cancel all pending
+    cancelled_count = contact_analysis_scheduler.cancel_all_pending(db, hub_id)
+
+    return {
+        "message": f"Cancelled {cancelled_count} pending analyses",
+        "cancelled_count": cancelled_count
+    }
+
+
+@router.get("/{hub_id}/contacts/analysis-status")
+async def get_contact_analysis_status(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current analysis queue status for a hub."""
+    from app.hubs.analysis_scheduler import contact_analysis_scheduler
+
+    # Verify hub ownership
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    status = contact_analysis_scheduler.get_queue_status(db, hub_id)
+
+    # Also get completed and failed counts
+    completed = db.query(Contact).filter(
+        Contact.hub_id == hub_id,
+        Contact.analysis_status == "completed"
+    ).count()
+
+    failed = db.query(Contact).filter(
+        Contact.hub_id == hub_id,
+        Contact.analysis_status == "failed"
+    ).count()
+
+    cancelled = db.query(Contact).filter(
+        Contact.hub_id == hub_id,
+        Contact.analysis_status == "cancelled"
+    ).count()
+
+    total = db.query(Contact).filter(Contact.hub_id == hub_id).count()
+
+    return {
+        **status,
+        "completed": completed,
+        "failed": failed,
+        "cancelled": cancelled,
+        "total_contacts": total
+    }
+
+
+@router.post("/{hub_id}/sync-contacts")
+async def sync_contacts_from_conversations(
+    hub_id: int,
+    include_group_participants: bool = True,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Sync contacts from bot conversations to the hub.
+
+    For Contact Analyzer hubs, this also extracts participants from group messages.
+    """
+    from app.database import Conversation, HubBotMembership
+
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Get all bot profile IDs that are members of this hub
+    bot_memberships = db.query(HubBotMembership).filter(
+        HubBotMembership.hub_id == hub_id,
+        HubBotMembership.is_active == True
+    ).all()
+
+    bot_profile_ids = [m.bot_profile_id for m in bot_memberships]
+
+    if not bot_profile_ids:
+        return {
+            "message": "No bots in hub. Please add bots to the hub first.",
+            "synced": 0,
+            "skipped": 0,
+            "total_found": 0
+        }
+
+    unique_contacts = {}
+
+    # 1. Get contacts from private (non-group) conversations
+    private_conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_profile_ids),
+        Conversation.is_group == False,
+        Conversation.phone.isnot(None),
+        Conversation.phone != ""
+    ).all()
+
+    for conv in private_conversations:
+        phone = conv.phone.strip()
+        if phone and phone not in unique_contacts:
+            unique_contacts[phone] = {
+                "phone": phone,
+                "display_name": conv.chat_name,
+                "profile_pic": conv.profile_pic,
+                "source": "private_chat"
+            }
+
+    # 2. For Contact Analyzer hubs, also extract contacts from group messages
+    if include_group_participants and hub.task_type == "contact_analyzer":
+        # Get all group conversations for these bots
+        group_conversations = db.query(Conversation).filter(
+            Conversation.bot_profile_id.in_(bot_profile_ids),
+            Conversation.is_group == True
+        ).all()
+
+        group_conv_ids = [conv.id for conv in group_conversations]
+
+        if group_conv_ids:
+            # Get unique senders from group messages (role='user' means incoming message)
+            group_messages = db.query(Message).filter(
+                Message.conversation_id.in_(group_conv_ids),
+                Message.role == "user",
+                Message.sender_phone.isnot(None),
+                Message.sender_phone != ""
+            ).all()
+
+            for msg in group_messages:
+                phone = msg.sender_phone.strip()
+                if phone and phone not in unique_contacts:
+                    unique_contacts[phone] = {
+                        "phone": phone,
+                        "display_name": msg.sender_name,
+                        "profile_pic": msg.sender_profile_pic,
+                        "source": "group_chat"
+                    }
+                # Update profile_pic if we have one and the existing entry doesn't
+                elif phone and msg.sender_profile_pic and not unique_contacts[phone].get("profile_pic"):
+                    unique_contacts[phone]["profile_pic"] = msg.sender_profile_pic
+
+    # Get existing contacts with their data
+    existing_contacts = {
+        c.phone: c for c in db.query(Contact).filter(
+            Contact.hub_id == hub_id
+        ).all()
+    }
+
+    # Create new contacts and update existing ones with missing profile_pics
+    synced = 0
+    skipped = 0
+    updated = 0
+    for phone, data in unique_contacts.items():
+        if phone in existing_contacts:
+            # Update profile_pic for existing contact if missing
+            existing_contact = existing_contacts[phone]
+            if not existing_contact.profile_pic and data.get("profile_pic"):
+                existing_contact.profile_pic = data["profile_pic"]
+                updated += 1
+            skipped += 1
+            continue
+
+        contact = Contact(
+            hub_id=hub_id,
+            phone=data["phone"],
+            display_name=data["display_name"],
+            profile_pic=data.get("profile_pic"),
+            first_seen_at=datetime.utcnow()
+        )
+        db.add(contact)
+        synced += 1
+
+    db.commit()
+
+    # Build message
+    msg_parts = []
+    if synced:
+        msg_parts.append(f"synced {synced} new contacts")
+    if updated:
+        msg_parts.append(f"updated {updated} contact profile pictures")
+    message = ", ".join(msg_parts).capitalize() if msg_parts else "No changes made"
+
+    return {
+        "message": message,
+        "synced": synced,
+        "updated": updated,
+        "skipped": skipped,
+        "total_found": len(unique_contacts)
+    }
 
 
 # ============== Contact Tags ==============
@@ -1284,8 +2429,32 @@ async def list_scheduled_content(
 
     result = []
     for c in contents:
+        # Parse bot_profile_ids JSON
+        bot_profile_ids_list = None
+        try:
+            if c.bot_profile_ids:
+                bot_profile_ids_list = json.loads(c.bot_profile_ids)
+        except:
+            pass
+
+        bot_send_mode = c.bot_send_mode or "any"
+
+        # Determine bot_name based on send mode
         bot_name = None
-        if c.bot_profile_id:
+        if bot_send_mode == "all":
+            bot_name = "All Bots"
+        elif bot_send_mode == "any":
+            bot_name = "Any Available Bot"
+        elif bot_profile_ids_list and len(bot_profile_ids_list) > 0:
+            # Multiple selected bots
+            bot_names = []
+            for bid in bot_profile_ids_list:
+                bot = db.query(BotProfile).filter(BotProfile.id == bid).first()
+                if bot:
+                    bot_names.append(bot.name)
+            bot_name = ", ".join(bot_names) if bot_names else None
+        elif c.bot_profile_id:
+            # Legacy single bot
             bot = db.query(BotProfile).filter(BotProfile.id == c.bot_profile_id).first()
             bot_name = bot.name if bot else None
 
@@ -1318,6 +2487,8 @@ async def list_scheduled_content(
             id=c.id,
             hub_id=hub_id,
             bot_profile_id=c.bot_profile_id,
+            bot_profile_ids=bot_profile_ids_list,
+            bot_send_mode=bot_send_mode,
             bot_name=bot_name,
             contact_id=c.contact_id,
             contact_name=contact_name,
@@ -1357,16 +2528,20 @@ async def create_scheduled_content(
 
     # Handle empty strings as None
     bot_profile_id = data.bot_profile_id if data.bot_profile_id else None
+    bot_profile_ids = data.bot_profile_ids if data.bot_profile_ids else None
+    bot_send_mode = data.bot_send_mode or "any"
     recipient_type = data.recipient_type or "broadcast"
 
     # Debug logging
     import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"Creating scheduled content: recipient_type={recipient_type}, contact_ids={data.contact_ids}, group_ids={data.group_ids}, bot_profile_id={bot_profile_id}")
+    logger.info(f"Creating scheduled content: recipient_type={recipient_type}, contact_ids={data.contact_ids}, group_ids={data.group_ids}, bot_profile_ids={bot_profile_ids}, bot_send_mode={bot_send_mode}")
 
     content = ScheduledContent(
         hub_id=hub_id,
         bot_profile_id=bot_profile_id,
+        bot_profile_ids=json.dumps(bot_profile_ids) if bot_profile_ids else None,
+        bot_send_mode=bot_send_mode,
         contact_id=data.contact_id,
         content=data.content,
         content_type=data.content_type,
@@ -1376,7 +2551,13 @@ async def create_scheduled_content(
         group_id=data.group_id,
         group_name=data.group_name,
         contact_ids=json.dumps(data.contact_ids) if data.contact_ids else None,
-        group_ids=json.dumps(data.group_ids) if data.group_ids else None
+        group_ids=json.dumps(data.group_ids) if data.group_ids else None,
+        # Rate limiting settings
+        sending_speed_mode=data.sending_speed_mode or "auto",
+        delay_min=data.delay_min,
+        delay_max=data.delay_max,
+        batch_size=data.batch_size,
+        batch_pause=data.batch_pause
     )
 
     db.add(content)
@@ -1384,13 +2565,31 @@ async def create_scheduled_content(
     db.refresh(content)
 
     # Build recipient summary
-    recipient_summary = build_recipient_summary(data.recipient_type, data.contact_ids, data.group_ids, db, hub_id)
+    recipient_summary = build_recipient_summary(
+        data.recipient_type, data.contact_ids, data.group_ids, db, hub_id
+    )
+
+    # Build bot name(s) for display
+    bot_name = None
+    if bot_send_mode == "all":
+        bot_name = "All Bots"
+    elif bot_send_mode == "any":
+        bot_name = "Any Available Bot"
+    elif bot_profile_ids:
+        bot_names_list = []
+        for bid in bot_profile_ids:
+            bot = db.query(BotProfile).filter(BotProfile.id == bid).first()
+            if bot:
+                bot_names_list.append(bot.name)
+        bot_name = ", ".join(bot_names_list) if bot_names_list else None
 
     return ScheduledContentResponse(
         id=content.id,
         hub_id=hub_id,
         bot_profile_id=content.bot_profile_id,
-        bot_name=None,
+        bot_profile_ids=bot_profile_ids,
+        bot_send_mode=bot_send_mode,
+        bot_name=bot_name,
         contact_id=content.contact_id,
         contact_name=None,
         content=content.content,
@@ -1405,7 +2604,13 @@ async def create_scheduled_content(
         group_name=content.group_name,
         contact_ids=data.contact_ids,
         group_ids=data.group_ids,
-        recipient_summary=recipient_summary
+        recipient_summary=recipient_summary,
+        # Rate limiting settings
+        sending_speed_mode=content.sending_speed_mode or "auto",
+        delay_min=content.delay_min,
+        delay_max=content.delay_max,
+        batch_size=content.batch_size,
+        batch_pause=content.batch_pause
     )
 
 
@@ -1433,6 +2638,10 @@ async def update_scheduled_content(
         content.topic = data.topic
     if data.bot_profile_id is not None:
         content.bot_profile_id = data.bot_profile_id
+    if data.bot_profile_ids is not None:
+        content.bot_profile_ids = json.dumps(data.bot_profile_ids) if data.bot_profile_ids else None
+    if data.bot_send_mode is not None:
+        content.bot_send_mode = data.bot_send_mode
     if data.contact_id is not None:
         content.contact_id = data.contact_id
     if data.scheduled_for is not None:
@@ -1453,8 +2662,30 @@ async def update_scheduled_content(
     db.commit()
     db.refresh(content)
 
+    # Parse bot_profile_ids from JSON
+    bot_profile_ids_list = None
+    try:
+        if content.bot_profile_ids:
+            bot_profile_ids_list = json.loads(content.bot_profile_ids)
+    except:
+        pass
+
+    bot_send_mode = content.bot_send_mode or "any"
+
+    # Build bot name(s) for display
     bot_name = None
-    if content.bot_profile_id:
+    if bot_send_mode == "all":
+        bot_name = "All Bots"
+    elif bot_send_mode == "any":
+        bot_name = "Any Available Bot"
+    elif bot_profile_ids_list:
+        bot_names_list = []
+        for bid in bot_profile_ids_list:
+            bot = db.query(BotProfile).filter(BotProfile.id == bid).first()
+            if bot:
+                bot_names_list.append(bot.name)
+        bot_name = ", ".join(bot_names_list) if bot_names_list else None
+    elif content.bot_profile_id:
         bot = db.query(BotProfile).filter(BotProfile.id == content.bot_profile_id).first()
         bot_name = bot.name if bot else None
 
@@ -1486,6 +2717,8 @@ async def update_scheduled_content(
         id=content.id,
         hub_id=content.hub_id,
         bot_profile_id=content.bot_profile_id,
+        bot_profile_ids=bot_profile_ids_list,
+        bot_send_mode=bot_send_mode,
         bot_name=bot_name,
         contact_id=content.contact_id,
         contact_name=contact_name,
@@ -1503,6 +2736,164 @@ async def update_scheduled_content(
         group_ids=group_ids_list,
         recipient_summary=recipient_summary
     )
+
+
+@router.post("/scheduled-content/{content_id}/cancel")
+async def cancel_scheduled_content(
+    content_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Cancel a pending, scheduled, or sending content."""
+    content = db.query(ScheduledContent).join(Hub).filter(
+        ScheduledContent.id == content_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    # Only allow cancelling if not already sent or cancelled
+    if content.status in ["sent", "cancelled"]:
+        raise HTTPException(status_code=400, detail=f"Cannot cancel content with status '{content.status}'")
+
+    previous_status = content.status
+    content.status = "cancelled"
+    db.commit()
+
+    # If it was sending, try to stop the active task
+    if previous_status == "sending":
+        from app.hubs.scheduler import content_scheduler
+        content_scheduler.cancel_content(content_id)
+
+    return {"message": "Content cancelled", "previous_status": previous_status}
+
+
+@router.post("/{hub_id}/content/bulk", response_model=List[ScheduledContentResponse])
+async def bulk_create_scheduled_content(
+    hub_id: int,
+    items: List[ScheduledContentCreate],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Bulk create scheduled content items."""
+    logger.debug(f"Bulk create content request for hub {hub_id}: {len(items)} items")
+
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    created_items = []
+    try:
+        for idx, data in enumerate(items):
+            bot_profile_id = data.bot_profile_id if data.bot_profile_id else None
+            bot_profile_ids = data.bot_profile_ids if data.bot_profile_ids else None
+            bot_send_mode = data.bot_send_mode or "any"
+            recipient_type = data.recipient_type or "broadcast"
+
+            # Handle recurring schedule
+            schedule_type = data.schedule_type if hasattr(data, 'schedule_type') else "immediate"
+            recurring_frequency = None
+            recurring_time = None
+            recurring_start_date = None
+            recurring_end_date = None
+
+            if data.recurring:
+                schedule_type = "recurring"
+                recurring_frequency = data.recurring.frequency
+                recurring_time = data.recurring.time
+                if data.recurring.start_date:
+                    try:
+                        recurring_start_date = datetime.fromisoformat(data.recurring.start_date)
+                    except:
+                        pass
+                if data.recurring.end_date:
+                    try:
+                        recurring_end_date = datetime.fromisoformat(data.recurring.end_date)
+                    except:
+                        pass
+
+            content = ScheduledContent(
+                hub_id=hub_id,
+                bot_profile_id=bot_profile_id,
+                bot_profile_ids=json.dumps(bot_profile_ids) if bot_profile_ids else None,
+                bot_send_mode=bot_send_mode,
+                contact_id=data.contact_id,
+                content=data.content,
+                content_type=data.content_type,
+                topic=data.topic,
+                scheduled_for=data.scheduled_for,
+                schedule_type=schedule_type,
+                recurring_frequency=recurring_frequency,
+                recurring_time=recurring_time,
+                recurring_start_date=recurring_start_date,
+                recurring_end_date=recurring_end_date,
+                recipient_type=recipient_type,
+                group_id=data.group_id,
+                group_name=data.group_name,
+                contact_ids=json.dumps(data.contact_ids) if data.contact_ids else None,
+                group_ids=json.dumps(data.group_ids) if data.group_ids else None
+            )
+            db.add(content)
+            db.flush()
+
+            # Build recipient summary
+            recipient_summary = build_recipient_summary(
+                data.recipient_type, data.contact_ids, data.group_ids, db, hub_id
+            )
+
+            # Build bot name(s) for display
+            bot_name = None
+            if bot_send_mode == "all":
+                bot_name = "All Bots"
+            elif bot_send_mode == "any":
+                bot_name = "Any Available Bot"
+            elif bot_profile_ids:
+                bot_names_list = []
+                for bid in bot_profile_ids:
+                    bot = db.query(BotProfile).filter(BotProfile.id == bid).first()
+                    if bot:
+                        bot_names_list.append(bot.name)
+                bot_name = ", ".join(bot_names_list) if bot_names_list else None
+
+            created_items.append(ScheduledContentResponse(
+                id=content.id,
+                hub_id=hub_id,
+                bot_profile_id=content.bot_profile_id,
+                bot_profile_ids=bot_profile_ids,
+                bot_send_mode=bot_send_mode,
+                bot_name=bot_name,
+                contact_id=content.contact_id,
+                contact_name=None,
+                content=content.content,
+                content_type=content.content_type,
+                topic=content.topic,
+                scheduled_for=content.scheduled_for,
+                sent_at=content.sent_at,
+                status=content.status,
+                created_at=content.created_at,
+                recipient_type=content.recipient_type or "broadcast",
+                group_id=content.group_id,
+                group_name=content.group_name,
+                contact_ids=data.contact_ids,
+                group_ids=data.group_ids,
+                recipient_summary=recipient_summary
+            ))
+
+        db.commit()
+        logger.info(f"Bulk created {len(created_items)} content items for hub {hub_id}")
+
+        return created_items
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error bulk creating content for hub {hub_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating content: {str(e)}")
 
 
 @router.delete("/{hub_id}/content/all")
@@ -1761,8 +3152,6 @@ async def get_bots_by_groups(
     return result
 
 
-# ============== Groups (for scheduled content) ==============
-
 @router.get("/{hub_id}/groups")
 async def list_hub_groups(
     hub_id: int,
@@ -1797,6 +3186,12 @@ async def list_hub_groups(
         Conversation.is_group == True
     ).order_by(Conversation.last_message_at.desc().nullslast()).all()
 
+    # Get bot names for display
+    bot_names_map = {}
+    if all_bot_ids:
+        bots = db.query(BotProfile.id, BotProfile.name).filter(BotProfile.id.in_(all_bot_ids)).all()
+        bot_names_map = {b.id: b.name for b in bots}
+
     # Group by chat_id and collect all bot_ids for each group
     groups_map = {}
     for g in groups:
@@ -1807,11 +3202,320 @@ async def list_hub_groups(
                 "profile_pic": g.profile_pic,
                 "message_count": g.message_count,
                 "last_message_at": g.last_message_at.isoformat() if g.last_message_at else None,
-                "bot_ids": []
+                "bot_ids": [],
+                "bot_names": []
             }
         groups_map[g.chat_id]["bot_ids"].append(g.bot_profile_id)
 
+    # Add bot names to each group
+    for group in groups_map.values():
+        group["bot_names"] = [bot_names_map.get(bid, f"Bot {bid}") for bid in group["bot_ids"]]
+        # Format bot_name string (show first 2 names, then "+N" if more)
+        if len(group["bot_names"]) <= 2:
+            group["bot_name"] = ", ".join(group["bot_names"])
+        else:
+            group["bot_name"] = ", ".join(group["bot_names"][:2]) + f" +{len(group['bot_names']) - 2}"
+
     return list(groups_map.values())
+
+
+@router.get("/{hub_id}/all-contacts")
+async def list_all_user_contacts(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all private conversation contacts from ALL user's bots.
+
+    Returns contacts from all private (non-group) bot conversations owned by the user.
+    Each contact includes list of bot_ids that have conversations with that contact.
+    """
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Get ALL bot IDs owned by this user
+    all_bot_ids = db.query(BotProfile.id).filter(
+        BotProfile.user_id == current_user.id
+    ).all()
+    all_bot_ids = [b[0] for b in all_bot_ids]
+
+    if not all_bot_ids:
+        return []
+
+    # Get bot phone numbers to exclude them from contacts
+    bot_phones = db.query(BotProfile.whatsapp_phone).filter(
+        BotProfile.id.in_(all_bot_ids),
+        BotProfile.whatsapp_phone.isnot(None)
+    ).all()
+    bot_phone_set = set()
+    for (phone,) in bot_phones:
+        if phone:
+            normalized = ''.join(c for c in phone if c.isdigit())
+            if normalized:
+                bot_phone_set.add(normalized)
+
+    # Get private conversations from ALL user's bots
+    conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(all_bot_ids),
+        Conversation.is_group == False,
+        Conversation.phone.isnot(None),
+        Conversation.phone != ""
+    ).order_by(Conversation.last_message_at.desc().nullslast()).all()
+
+    # Group by phone and collect all bot_ids for each contact
+    contacts_map = {}
+    for conv in conversations:
+        # Skip if this phone belongs to a bot
+        normalized_phone = ''.join(c for c in conv.phone if c.isdigit())
+        if normalized_phone in bot_phone_set or len(normalized_phone) < 5:
+            continue
+
+        if conv.phone not in contacts_map:
+            contacts_map[conv.phone] = {
+                "id": conv.phone,  # Use phone as ID for selection
+                "phone": conv.phone,
+                "display_name": conv.chat_name or conv.phone,
+                "profile_pic": conv.profile_pic,
+                "message_count": conv.message_count,
+                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+                "bot_ids": [],
+                "bot_names": []
+            }
+        contacts_map[conv.phone]["bot_ids"].append(conv.bot_profile_id)
+
+    # Get bot names for display
+    bot_names_map = {}
+    if all_bot_ids:
+        bots = db.query(BotProfile.id, BotProfile.name).filter(BotProfile.id.in_(all_bot_ids)).all()
+        bot_names_map = {b.id: b.name for b in bots}
+
+    for contact in contacts_map.values():
+        contact["bot_names"] = [bot_names_map.get(bid, f"Bot {bid}") for bid in contact["bot_ids"]]
+        contact["bot_name"] = ", ".join(contact["bot_names"][:2])  # Show first 2 bot names
+        if len(contact["bot_names"]) > 2:
+            contact["bot_name"] += f" +{len(contact['bot_names']) - 2}"
+
+    return list(contacts_map.values())
+
+
+@router.get("/{hub_id}/groups-paginated")
+async def list_hub_groups_paginated(
+    hub_id: int,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    all_user_bots: bool = Query(False, description="If true, fetch groups from all user's bots instead of just hub bots"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List WhatsApp groups for the hub with pagination (for scheduled content)."""
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Get bot IDs - either from hub membership or all user's bots
+    if all_user_bots:
+        # Get ALL bot IDs owned by this user (for scripted_conversations)
+        bot_ids = db.query(BotProfile.id).filter(
+            BotProfile.user_id == current_user.id
+        ).all()
+        bot_ids = [b[0] for b in bot_ids]
+    else:
+        # Get bot IDs that are members of this hub
+        bot_ids = db.query(HubBotMembership.bot_profile_id).filter(
+            HubBotMembership.hub_id == hub_id,
+            HubBotMembership.is_active == True
+        ).all()
+        bot_ids = [b[0] for b in bot_ids]
+
+    if not bot_ids:
+        return {"items": [], "total": 0, "page": page, "page_size": page_size, "total_pages": 0}
+
+    # Get bot names for all bots
+    bot_profiles = db.query(BotProfile).filter(BotProfile.id.in_(bot_ids)).all()
+    bot_names = {b.id: b.name for b in bot_profiles}
+
+    # Parse current selected_groups (skip for all_user_bots mode)
+    selected_groups = []
+    selected_chat_ids = set()
+    if not all_user_bots and hub.selected_groups:
+        try:
+            selected_groups = json.loads(hub.selected_groups) if isinstance(hub.selected_groups, str) else hub.selected_groups
+            selected_chat_ids = {g.get('chat_id') for g in selected_groups if g.get('chat_id')}
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Build query for groups from bot conversations
+    query = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_ids),
+        Conversation.is_group == True
+    )
+
+    # Only filter by selected groups if not in all_user_bots mode
+    if not all_user_bots and selected_chat_ids:
+        query = query.filter(Conversation.chat_id.in_(selected_chat_ids))
+
+    groups = query.order_by(Conversation.last_message_at.desc().nullslast()).all()
+
+    # Get conversation IDs for member count query
+    conversation_ids = [g.id for g in groups]
+
+    # Query distinct sender count per conversation (member count)
+    member_counts = {}
+    if conversation_ids:
+        member_query = db.query(
+            Message.conversation_id,
+            func.count(distinct(Message.sender_id))
+        ).filter(
+            Message.conversation_id.in_(conversation_ids),
+            Message.sender_id.isnot(None)
+        ).group_by(Message.conversation_id).all()
+
+        member_counts = {conv_id: count for conv_id, count in member_query}
+
+    # Group by chat_id
+    groups_map = {}
+    for g in groups:
+        if g.chat_id not in groups_map:
+            groups_map[g.chat_id] = {
+                "chat_id": g.chat_id,
+                "name": g.chat_name or g.chat_id,
+                "profile_pic": g.profile_pic,
+                "message_count": g.message_count,
+                "member_count": member_counts.get(g.id, 0),
+                "last_message_at": g.last_message_at.isoformat() if g.last_message_at else None,
+                "bot_ids": [],
+                "bot_names": []
+            }
+        groups_map[g.chat_id]["bot_ids"].append(g.bot_profile_id)
+        if g.bot_profile_id in bot_names:
+            bot_name = bot_names[g.bot_profile_id]
+            if bot_name not in groups_map[g.chat_id]["bot_names"]:
+                groups_map[g.chat_id]["bot_names"].append(bot_name)
+
+    # Build result list
+    all_groups = []
+    for group in groups_map.values():
+        group["bot_name"] = ", ".join(group["bot_names"]) if group["bot_names"] else None
+        all_groups.append(group)
+
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        all_groups = [g for g in all_groups if search_lower in g["name"].lower() or search_lower in g["chat_id"].lower()]
+
+    # Calculate pagination
+    total = len(all_groups)
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    paginated_groups = all_groups[offset:offset + page_size]
+
+    return {"items": paginated_groups, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
+
+
+@router.delete("/{hub_id}/groups")
+async def delete_hub_group(
+    hub_id: int,
+    chat_id: str = Query(..., description="The chat ID of the group to remove"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Remove a group from the hub's selected groups list."""
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Parse current selected_groups
+    selected_groups = []
+    if hub.selected_groups:
+        try:
+            selected_groups = json.loads(hub.selected_groups) if isinstance(hub.selected_groups, str) else hub.selected_groups
+        except (json.JSONDecodeError, TypeError):
+            selected_groups = []
+
+    # Remove the group
+    original_count = len(selected_groups)
+    selected_groups = [g for g in selected_groups if g.get('chat_id') != chat_id]
+
+    if len(selected_groups) == original_count:
+        raise HTTPException(status_code=404, detail="Group not found in hub")
+
+    # Save updated list
+    hub.selected_groups = json.dumps(selected_groups)
+    db.commit()
+
+    return {"message": "Group removed successfully", "remaining_count": len(selected_groups)}
+
+
+@router.post("/{hub_id}/sync-groups")
+async def sync_hub_groups(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Sync groups from bot conversations to the hub's selected groups list."""
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # For group_management hubs, use all user's bots; otherwise use hub members
+    if hub.task_type == 'group_management':
+        # Get ALL bot IDs owned by this user
+        bot_ids = db.query(BotProfile.id).filter(
+            BotProfile.user_id == current_user.id
+        ).all()
+        bot_ids = [b[0] for b in bot_ids]
+    else:
+        # Get bot IDs that are members of this hub
+        bot_ids = db.query(HubBotMembership.bot_profile_id).filter(
+            HubBotMembership.hub_id == hub_id,
+            HubBotMembership.is_active == True
+        ).all()
+        bot_ids = [b[0] for b in bot_ids]
+
+    if not bot_ids:
+        return {"synced": 0, "total": 0, "message": "No bots available"}
+
+    # Get all groups from bot conversations
+    groups = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_ids),
+        Conversation.is_group == True
+    ).order_by(Conversation.last_message_at.desc().nullslast()).all()
+
+    # Build unique groups list by chat_id
+    groups_map = {}
+    for g in groups:
+        if g.chat_id not in groups_map:
+            groups_map[g.chat_id] = {
+                "chat_id": g.chat_id,
+                "name": g.chat_name or g.chat_id
+            }
+
+    # Update hub's selected_groups
+    new_groups = list(groups_map.values())
+    hub.selected_groups = json.dumps(new_groups)
+    db.commit()
+
+    return {"synced": len(new_groups), "total": len(new_groups), "message": f"Synced {len(new_groups)} groups"}
 
 
 # ============== Message Topics ==============
@@ -2100,3 +3804,142 @@ async def upload_topics(
             for t in all_topics
         ]
     }
+
+
+# ============== AI Content Generation ==============
+
+@router.post("/{hub_id}/generate-content")
+async def generate_ai_content(
+    hub_id: int,
+    request: GenerateContentRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Generate content using the hub's Content Generator agent."""
+    # Get hub and verify ownership
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Find Content Generator agent in the hub
+    generator_agent = db.query(AIAgent).filter(
+        AIAgent.hub_id == hub_id,
+        AIAgent.agent_type == "generator",
+        AIAgent.is_active == True
+    ).first()
+
+    if not generator_agent:
+        raise HTTPException(
+            status_code=400,
+            detail="No Content Generator agent found. Please create a Content Generator agent in the Agents tab first."
+        )
+
+    # Check if agent has API key configured
+    if not generator_agent.api_key_encrypted:
+        raise HTTPException(
+            status_code=400,
+            detail="Content Generator agent has no API key configured. Please edit the agent and add your API key."
+        )
+
+    try:
+        # Get AI provider from agent settings
+        from app.ai.providers import get_ai_provider
+
+        api_key = decrypt_string(generator_agent.api_key_encrypted)
+        provider = get_ai_provider(
+            provider_name=generator_agent.ai_provider or "openai",
+            api_key=api_key,
+            model=generator_agent.model or "gpt-4o-mini"
+        )
+
+        # Build the prompt - use agent's system prompt if available
+        content_type_descriptions = {
+            "message": "a general message",
+            "followup": "a follow-up message to continue a conversation",
+            "promo": "a promotional message for marketing purposes"
+        }
+        content_desc = content_type_descriptions.get(request.content_type, "a message")
+
+        # Build system prompt - always use the structured format for options
+        base_prompt = f"""You are a professional content writer creating WhatsApp messages.
+Generate exactly 3 different variations of {content_desc} based on the user's instructions.
+
+Guidelines:
+- Each message should be concise and engaging (under 500 characters each)
+- Use a friendly, conversational tone
+- Use WhatsApp formatting: *bold* for emphasis, _italic_ for subtle emphasis
+- Emojis are welcome but use sparingly
+- Each message must be ready to send WITHOUT any modifications
+- Do NOT include placeholder text like [link], [name], [Your Venue], etc. - write complete, ready-to-send messages
+- Do NOT include audience segment labels or headers
+- Provide variety in tone: one professional, one casual, one creative
+
+CRITICAL: Return ONLY a valid JSON array with exactly 3 message strings. No other text, no explanations, no markdown.
+Example format: ["First message here", "Second message here", "Third message here"]"""
+
+        # Add agent's custom instructions if available
+        if generator_agent.system_prompt:
+            base_prompt += f"\n\nAdditional context: {generator_agent.system_prompt}"
+
+        if request.topic:
+            base_prompt += f"\n\nTopic/context: {request.topic}"
+
+        system_prompt = base_prompt
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.prompt}
+        ]
+
+        # Generate content - run in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            ai_executor,
+            lambda: provider.chat_completion(
+                messages=messages,
+                temperature=0.8,
+                max_tokens=1500
+            )
+        )
+
+        # Parse the response - try to extract JSON array
+        content = response.content.strip()
+        options = []
+
+        try:
+            # Try to parse as JSON array
+            import json
+            # Find JSON array in response (in case there's extra text)
+            start_idx = content.find('[')
+            end_idx = content.rfind(']') + 1
+            if start_idx != -1 and end_idx > start_idx:
+                json_str = content[start_idx:end_idx]
+                options = json.loads(json_str)
+                if not isinstance(options, list):
+                    options = [content]
+            else:
+                options = [content]
+        except (json.JSONDecodeError, ValueError):
+            # If parsing fails, return as single option
+            options = [content]
+
+        # Ensure we have at least one option
+        if not options:
+            options = [content]
+
+        return {
+            "options": options,
+            "tokens_used": response.usage.get("total_tokens", 0),
+            "agent_name": generator_agent.name
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating AI content: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate content: {str(e)}"
+        )

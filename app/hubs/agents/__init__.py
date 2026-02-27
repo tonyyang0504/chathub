@@ -11,5 +11,6 @@ This package contains AI agents for hub coordination:
 """
 
 from app.hubs.agents.base import BaseAgent
+from app.hubs.agents.analyzer import AnalyzerAgent, create_analyzer_agent
 
-__all__ = ["BaseAgent"]
+__all__ = ["BaseAgent", "AnalyzerAgent", "create_analyzer_agent"]

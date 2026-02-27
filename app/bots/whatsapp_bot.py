@@ -231,8 +231,11 @@ async def send_whatsapp_message(bot_profile_id: int, chat_id: str, chat_name: st
 
     logger.info(f"send_whatsapp_message: Queued message for {chat_name}: {message[:50]}...")
 
-    # Wait for result (with timeout)
-    if result_event.wait(timeout=30):
+    # Wait for result (with timeout) - run in thread pool to avoid blocking event loop
+    # This keeps WhatsApp operations sequential while allowing FastAPI to handle other requests
+    wait_result = await asyncio.to_thread(result_event.wait, timeout=30)
+
+    if wait_result:
         if result_holder['success']:
             logger.info(f"send_whatsapp_message: Successfully sent to {chat_name}")
             return True
@@ -279,8 +282,10 @@ async def send_whatsapp_file(bot_profile_id: int, chat_id: str, file_path: str, 
 
     logger.info(f"send_whatsapp_file: Queued file for chat {chat_name} ({chat_id}): {file_path}")
 
-    # Wait for result (with timeout - longer for files)
-    if result_event.wait(timeout=60):
+    # Wait for result (with timeout - longer for files) - run in thread pool to avoid blocking event loop
+    wait_result = await asyncio.to_thread(result_event.wait, timeout=60)
+
+    if wait_result:
         if result_holder['success']:
             logger.info(f"send_whatsapp_file: Successfully sent file to {chat_id}")
             return True
@@ -307,64 +312,140 @@ def _process_outgoing_files(page, bot_profile_id: int):
             break
 
         try:
-            logger.info(f"Bot {bot_profile_id}: === PROCESSING FILE ===")
-            logger.info(f"Bot {bot_profile_id}: Chat name: {chat_name}")
-            logger.info(f"Bot {bot_profile_id}: Chat ID: {chat_id}")
-            logger.info(f"Bot {bot_profile_id}: File path: {file_path}")
-            logger.info(f"Bot {bot_profile_id}: File exists: {os.path.exists(file_path)}")
-            logger.info(f"Bot {bot_profile_id}: File type: {file_type}")
-            logger.info(f"Bot {bot_profile_id}: Caption: {caption}")
+            logger.info(f"Bot {bot_profile_id}: Sending file to {chat_name} ({chat_id})")
 
-            # First, click on the chat to make sure it's selected
-            # Use the same approach as _process_outgoing_messages - find by title
+            # Extract phone number from chat_id for reliable identification
+            phone_number = None
+            is_group = '@g.us' in chat_id
+            if chat_id and '@' in chat_id:
+                phone_part = chat_id.split('@')[0]
+                if phone_part.isdigit() or (phone_part and not is_group):
+                    phone_number = phone_part
+
             chat_found = False
+            chat_elem = None
 
-            # Try clicking on chat in sidebar by title (like _process_outgoing_messages does)
-            if chat_name:
-                title_selector = f'[title="{chat_name}"]'
-                chat_elem = page.query_selector(title_selector)
-
-                if not chat_elem:
-                    # Try partial match
-                    chat_elem = page.query_selector(f'span[title*="{chat_name}"]')
-
+            # Method 1: For contacts, try to find by phone number first
+            if phone_number and not is_group:
+                chat_elem = page.query_selector(f'[title="{phone_number}"]') or \
+                           page.query_selector(f'span[title*="{phone_number}"]')
                 if chat_elem:
-                    logger.info(f"Bot {bot_profile_id}: Found chat by title: {chat_name}")
                     chat_elem.click()
                     time.sleep(0.5)
                     chat_found = True
 
-            # Fallback: Try by data-id if title match failed
+            # Method 2: Try by chat name
+            if not chat_found and chat_name:
+                chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
+                           page.query_selector(f'span[title*="{chat_name}"]')
+                if chat_elem:
+                    chat_elem.click()
+                    time.sleep(0.5)
+                    chat_found = True
+
+            # Method 3: Try by data-id
             if not chat_found and '@' in chat_id:
                 chat_elem = page.query_selector(f'[data-id="{chat_id}"]')
                 if chat_elem:
-                    logger.info(f"Bot {bot_profile_id}: Found chat by data-id: {chat_id}")
                     chat_elem.click()
                     time.sleep(0.5)
                     chat_found = True
 
-            # Last resort: Search for the chat
+            # Method 4: Search for the chat
             if not chat_found:
-                logger.info(f"Bot {bot_profile_id}: Trying search for chat...")
                 search_box = page.query_selector('[data-testid="chat-list-search"]') or \
                             page.query_selector('div[contenteditable="true"][data-tab="3"]')
                 if search_box:
                     search_box.click()
-                    time.sleep(0.2)
-                    # Use chat_name for search if available, otherwise extract from chat_id
-                    search_term = chat_name if chat_name else (chat_id.split('@')[0] if '@' in chat_id else chat_id)
-                    logger.info(f"Bot {bot_profile_id}: Searching for: {search_term}")
+                    time.sleep(0.3)
+                    search_term = phone_number if (phone_number and not is_group) else (chat_name if chat_name else chat_id.split('@')[0])
                     search_box.fill(search_term)
-                    time.sleep(1)
+                    time.sleep(1.5)
 
-                    # Click first search result
-                    first_result = page.query_selector('[data-testid="cell-frame-container"]') or \
-                                  page.query_selector('[data-testid="chat-list"] [role="listitem"]')
-                    if first_result:
-                        first_result.click()
-                        time.sleep(0.5)
-                        chat_found = True
-                        logger.info(f"Bot {bot_profile_id}: Found chat via search")
+                    # For contacts: iterate through results and find correct one
+                    if phone_number and not is_group:
+                        # First try by chat name
+                        if chat_name:
+                            chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
+                                       page.query_selector(f'span[title*="{chat_name}"]')
+                            if chat_elem:
+                                chat_elem.click()
+                                time.sleep(0.5)
+                                chat_found = True
+
+                        # Iterate through results and verify
+                        if not chat_found:
+                            selectors_to_try = [
+                                '[role="row"]',
+                                '[data-testid="cell-frame-container"]',
+                                '#pane-side [role="listitem"]',
+                            ]
+
+                            all_results = []
+                            for selector in selectors_to_try:
+                                all_results = page.query_selector_all(selector)
+                                if all_results:
+                                    break
+
+                            for result in all_results[:10]:
+                                try:
+                                    result_text = result.inner_text() if hasattr(result, 'inner_text') else ''
+
+                                    # Stop at "Groups in common" section
+                                    if 'Groups in common' in result_text:
+                                        break
+
+                                    # Skip section headers
+                                    if result_text.strip() in ['Chats', 'Messages', 'Groups', 'Contacts']:
+                                        continue
+
+                                    result.click()
+                                    time.sleep(0.8)
+
+                                    # Check if this is a group chat
+                                    is_group_chat = False
+
+                                    if page.query_selector('[data-testid="conversation-header"] [data-icon="group"]') or \
+                                       page.query_selector('header [data-icon="group"]'):
+                                        is_group_chat = True
+
+                                    if not is_group_chat:
+                                        header_subtitle = page.query_selector('header span[title*=","]')
+                                        if header_subtitle:
+                                            subtitle = header_subtitle.get_attribute('title') or ''
+                                            if ',' in subtitle and 'last seen' not in subtitle.lower():
+                                                is_group_chat = True
+
+                                    if not is_group_chat and '@g.us' in (page.url or ''):
+                                        is_group_chat = True
+
+                                    if is_group_chat:
+                                        page.keyboard.press('Escape')
+                                        time.sleep(0.5)
+                                        search_box = page.query_selector('[data-testid="chat-list-search"]')
+                                        if search_box:
+                                            search_box.click()
+                                            time.sleep(0.3)
+                                        continue
+
+                                    # Verify we're in a chat
+                                    input_box = page.query_selector('[data-testid="conversation-compose-box-input"]') or \
+                                               page.query_selector('footer [contenteditable="true"]')
+                                    if input_box:
+                                        chat_found = True
+                                        break
+
+                                except:
+                                    continue
+
+                    # For groups: try by name
+                    if not chat_found and is_group and chat_name:
+                        chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
+                                   page.query_selector(f'span[title*="{chat_name}"]')
+                        if chat_elem:
+                            chat_elem.click()
+                            time.sleep(0.5)
+                            chat_found = True
 
                     # Clear search
                     clear_btn = page.query_selector('[data-testid="x-alt"]')
@@ -374,12 +455,10 @@ def _process_outgoing_files(page, bot_profile_id: int):
 
             if not chat_found:
                 logger.error(f"Bot {bot_profile_id}: Could not find chat {chat_name} ({chat_id})")
-                result_holder['error'] = f"Could not find chat {chat_name}"
+                result_holder['error'] = f"Could not find chat {chat_name} ({chat_id})"
                 result_holder['success'] = False
                 result_event.set()
                 continue
-
-            logger.info(f"Bot {bot_profile_id}: Chat found, looking for attach button")
 
             # Click attach button
             attach_btn = page.query_selector('[data-testid="attach-btn"]') or \
@@ -394,24 +473,17 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 result_event.set()
                 continue
 
-            logger.info(f"Bot {bot_profile_id}: Clicking attach button")
             attach_btn.click()
-            time.sleep(1.0)  # Wait for menu to fully appear
+            time.sleep(1.0)
 
             # Determine which option to click based on file type
             is_media = file_type.startswith('image/') or file_type.startswith('video/')
-            logger.info(f"Bot {bot_profile_id}: File type: {file_type}, is_media: {is_media}")
-
-            # WhatsApp Web's attach menu doesn't expose file inputs in DOM
-            # We need to use Playwright's file_chooser API to intercept the native dialog
-            # when clicking the menu item
 
             menu_item = None
             menu_item_selector = None
 
             if is_media:
                 # Find Photos & Videos menu item
-                logger.info(f"Bot {bot_profile_id}: Looking for Photos & Videos menu item...")
                 photos_menu_selectors = [
                     'li:has-text("Photos & Videos")',
                     'li:has-text("Photos")',
@@ -425,14 +497,12 @@ def _process_outgoing_files(page, bot_profile_id: int):
                         menu_item = page.query_selector(selector)
                         if menu_item:
                             menu_item_selector = selector
-                            logger.info(f"Bot {bot_profile_id}: Found Photos menu item with selector: {selector}")
                             break
                     except Exception as e:
                         logger.debug(f"Bot {bot_profile_id}: Selector {selector} failed: {e}")
                         continue
             else:
                 # Find Document menu item
-                logger.info(f"Bot {bot_profile_id}: Looking for Document menu item...")
                 doc_menu_selectors = [
                     'li:has-text("Document")',
                     '[data-testid="mi-attach-document"]',
@@ -445,10 +515,8 @@ def _process_outgoing_files(page, bot_profile_id: int):
                         menu_item = page.query_selector(selector)
                         if menu_item:
                             menu_item_selector = selector
-                            logger.info(f"Bot {bot_profile_id}: Found Document menu item with selector: {selector}")
                             break
-                    except Exception as e:
-                        logger.debug(f"Bot {bot_profile_id}: Selector {selector} failed: {e}")
+                    except:
                         continue
 
             if not menu_item:
@@ -459,31 +527,21 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 page.keyboard.press('Escape')
                 continue
 
-            # Use Playwright's file_chooser to handle the native file dialog
-            logger.info(f"Bot {bot_profile_id}: Using file_chooser API to upload file...")
-
             try:
                 # Set up file chooser listener and click menu item
                 with page.expect_file_chooser(timeout=10000) as fc_info:
                     menu_item.click()
 
                 file_chooser = fc_info.value
-                logger.info(f"Bot {bot_profile_id}: File chooser intercepted, setting file: {file_path}")
                 file_chooser.set_files(file_path)
-                logger.info(f"Bot {bot_profile_id}: File set via file_chooser")
 
             except Exception as fc_error:
                 logger.error(f"Bot {bot_profile_id}: File chooser failed: {fc_error}")
                 # Fallback: try to find and use input directly
-                logger.info(f"Bot {bot_profile_id}: Trying fallback method...")
-
-                # Look for any file input that appeared after clicking menu
                 time.sleep(0.5)
                 all_inputs = page.query_selector_all('input[type="file"]')
                 if all_inputs:
-                    # Use the last one (most likely the one just activated)
                     media_input = all_inputs[-1]
-                    logger.info(f"Bot {bot_profile_id}: Found {len(all_inputs)} inputs, using last one")
                     media_input.set_input_files(file_path)
                 else:
                     logger.error(f"Bot {bot_profile_id}: No file input found for fallback")
@@ -492,8 +550,6 @@ def _process_outgoing_files(page, bot_profile_id: int):
                     result_event.set()
                     page.keyboard.press('Escape')
                     continue
-
-            logger.info(f"Bot {bot_profile_id}: File set, waiting for preview...")
             time.sleep(2.5)  # Wait for file to load/preview
 
             # Verify we're in the media editor (preview screen)
@@ -502,38 +558,25 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 '[data-testid="image-preview"]',
                 '[data-testid="media-canvas"]',
                 '[data-testid="media-editor-popup"]',
-                '.media-editor-container',
-                '[data-testid="media-state-controls"]',
-                # Document preview
                 '[data-testid="doc-preview"]',
-                '.document-thumb',
             ]
             preview_visible = None
             for sel in preview_selectors:
                 preview_visible = page.query_selector(sel)
                 if preview_visible:
-                    logger.info(f"Bot {bot_profile_id}: Preview screen visible via selector: {sel}")
                     break
 
             if not preview_visible:
-                logger.warning(f"Bot {bot_profile_id}: Preview screen not detected - file may not have loaded properly!")
-                # Try waiting a bit more
                 time.sleep(1.5)
 
-            # Add caption if provided (for both media and documents)
+            # Add caption if provided
             if caption:
-                logger.info(f"Bot {bot_profile_id}: Adding caption: {caption[:50]}...")
-
-                # Different caption inputs for media vs documents
                 caption_selectors = [
-                    # Media caption inputs
                     '[data-testid="media-caption-input-container"] [contenteditable="true"]',
                     'div[data-testid="caption-input"] [contenteditable="true"]',
                     '[data-testid="media-editor"] [contenteditable="true"]',
-                    # Document caption inputs
                     '[data-testid="document-caption"] [contenteditable="true"]',
                     '[data-testid="doc-preview"] [contenteditable="true"]',
-                    # Generic caption area
                     '.copyable-area [contenteditable="true"]',
                     '[aria-placeholder*="caption" i] ',
                     '[aria-placeholder*="Add a caption" i]',
@@ -544,7 +587,6 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 for selector in caption_selectors:
                     caption_input = page.query_selector(selector)
                     if caption_input:
-                        logger.info(f"Bot {bot_profile_id}: Found caption input with selector: {selector}")
                         break
 
                 if caption_input:
@@ -552,15 +594,9 @@ def _process_outgoing_files(page, bot_profile_id: int):
                     time.sleep(0.2)
                     caption_input.fill(caption)
                     time.sleep(0.3)
-                    logger.info(f"Bot {bot_profile_id}: Caption added")
                 else:
-                    logger.warning(f"Bot {bot_profile_id}: Caption input not found, trying to type directly...")
-                    # Fallback: try typing the caption directly
                     page.keyboard.type(caption)
                     time.sleep(0.3)
-
-            # Click send button - try multiple approaches
-            logger.info(f"Bot {bot_profile_id}: Looking for send button")
 
             send_btn = None
             send_selectors = [
@@ -569,14 +605,12 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 'span[data-icon="send"]',
                 '[aria-label="Send"]',
                 'button[aria-label="Send"]',
-                # Media editor specific send button
                 '[data-testid="media-editor"] [data-testid="send"]',
             ]
 
             for selector in send_selectors:
                 send_btn = page.query_selector(selector)
                 if send_btn:
-                    logger.info(f"Bot {bot_profile_id}: Found send button with selector: {selector}")
                     break
 
             if not send_btn:
@@ -587,30 +621,21 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 page.keyboard.press('Escape')
                 continue
 
-            # Click send and verify it worked
-            logger.info(f"Bot {bot_profile_id}: Clicking send button")
             send_btn.click()
             time.sleep(0.5)
-
-            # Try pressing Enter as backup
             page.keyboard.press('Enter')
+            time.sleep(3)
 
-            logger.info(f"Bot {bot_profile_id}: Waiting for upload to complete...")
-            time.sleep(3)  # Wait longer for upload
-
-            # Verify the preview screen closed (indicates send was successful)
+            # Verify the preview screen closed
             preview_still_visible = page.query_selector('[data-testid="media-editor"]')
             if preview_still_visible:
-                logger.warning(f"Bot {bot_profile_id}: Preview still visible, trying Enter key again")
                 page.keyboard.press('Enter')
                 time.sleep(2)
 
-            logger.info(f"Bot {bot_profile_id}: === FILE SENT SUCCESSFULLY ===")
             logger.info(f"Bot {bot_profile_id}: Successfully sent file to {chat_id}")
             result_holder['success'] = True
             result_event.set()
 
-            # Click away from chat to enable unread detection
             try:
                 page.keyboard.press('Escape')
                 time.sleep(0.3)
@@ -618,8 +643,7 @@ def _process_outgoing_files(page, bot_profile_id: int):
                 pass
 
         except Exception as e:
-            logger.error(f"Bot {bot_profile_id}: === FILE SEND ERROR ===")
-            logger.error(f"Bot {bot_profile_id}: Error sending file: {e}", exc_info=True)
+            logger.error(f"Bot {bot_profile_id}: Error sending file: {e}")
             result_holder['error'] = str(e)
             result_holder['success'] = False
             result_event.set()
@@ -643,26 +667,31 @@ def _process_outgoing_messages(page, bot_profile_id: int):
         try:
             logger.info(f"Bot {bot_profile_id}: Processing outgoing message for {chat_name} (chat_id: {chat_id})")
 
-            # Method 1: Click on the chat in the sidebar by title
-            title_selector = f'[title="{chat_name}"]'
-            chat_elem = page.query_selector(title_selector)
+            # Extract phone number from chat_id for reliable identification
+            phone_number = None
+            is_group = '@g.us' in chat_id
+            if chat_id and '@' in chat_id:
+                phone_part = chat_id.split('@')[0]
+                if phone_part.isdigit() or (phone_part and not is_group):
+                    phone_number = phone_part
 
-            if not chat_elem:
-                # Try partial match
-                chat_elem = page.query_selector(f'span[title*="{chat_name}"]')
+            chat_elem = None
 
-            # Method 2: If not found by name, use search to find the chat
+            # Method 1: For contacts, try to find by phone number first
+            if phone_number and not is_group:
+                chat_elem = page.query_selector(f'[title="{phone_number}"]') or \
+                           page.query_selector(f'span[title*="{phone_number}"]')
+
+            # Method 2: Try by chat name (for groups or if phone not found)
+            if not chat_elem and chat_name:
+                chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
+                           page.query_selector(f'span[title*="{chat_name}"]')
+
+            # Method 3: Use search to find the chat
             if not chat_elem:
-                logger.info(f"Bot {bot_profile_id}: Chat not found in sidebar, trying search...")
                 try:
-                    # Extract phone from chat_id for search (e.g., "971524906816@c.us" -> "971524906816")
-                    search_term = chat_name
-                    if chat_id and '@' in chat_id:
-                        phone_part = chat_id.split('@')[0]
-                        if phone_part.isdigit():
-                            search_term = phone_part
+                    search_term = phone_number if (phone_number and not is_group) else chat_name
 
-                    # Click on search box
                     search_box = page.query_selector('[data-testid="chat-list-search"]') or \
                                  page.query_selector('[contenteditable="true"][data-tab="3"]') or \
                                  page.query_selector('[aria-label*="Search"]')
@@ -671,20 +700,103 @@ def _process_outgoing_messages(page, bot_profile_id: int):
                         search_box.click()
                         time.sleep(0.3)
                         search_box.fill(search_term)
-                        time.sleep(1)  # Wait for search results
+                        time.sleep(1.5)
 
-                        # Look for the chat in search results
-                        chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
-                                   page.query_selector(f'span[title*="{chat_name}"]') or \
-                                   page.query_selector(f'[title*="{search_term}"]')
+                        # For contacts: iterate through search results and find the correct one
+                        if phone_number and not is_group:
+                            # First try by chat name if we have it
+                            if chat_name:
+                                chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
+                                           page.query_selector(f'span[title*="{chat_name}"]')
 
-                        if not chat_elem and search_term != chat_name:
-                            # Try finding by phone number in title
-                            chat_elem = page.query_selector(f'span[title*="{search_term}"]')
+                            # If not found by name, iterate through search results
+                            if not chat_elem:
+                                selectors_to_try = [
+                                    '[role="row"]',
+                                    '[data-testid="cell-frame-container"]',
+                                    '#pane-side [role="listitem"]',
+                                ]
 
-                        # Clear search after finding
-                        if chat_elem:
-                            logger.info(f"Bot {bot_profile_id}: Found chat via search")
+                                all_results = []
+                                for selector in selectors_to_try:
+                                    try:
+                                        all_results = page.query_selector_all(selector)
+                                        if all_results:
+                                            break
+                                    except:
+                                        pass
+
+                                # Try each result and verify it's a contact (not a group)
+                                for idx, result in enumerate(all_results[:10]):
+                                    try:
+                                        result_text = ""
+                                        try:
+                                            result_text = result.inner_text()
+                                        except:
+                                            pass
+
+                                        # Stop at "Groups in common" section
+                                        if 'Groups in common' in result_text:
+                                            break
+
+                                        # Skip section headers
+                                        if result_text.strip() in ['Chats', 'Messages', 'Groups', 'Contacts']:
+                                            continue
+
+                                        result.click()
+                                        time.sleep(0.8)
+
+                                        # Check if this is a group chat
+                                        is_group_chat = False
+
+                                        # Check for group icon
+                                        if page.query_selector('[data-testid="conversation-header"] [data-icon="group"]') or \
+                                           page.query_selector('header [data-icon="group"]'):
+                                            is_group_chat = True
+
+                                        # Check header for multiple participants (groups show "Name1, Name2, You")
+                                        if not is_group_chat:
+                                            header_subtitle = page.query_selector('header span[title*=","]')
+                                            if header_subtitle:
+                                                subtitle_text = header_subtitle.get_attribute('title') or ''
+                                                if ',' in subtitle_text and 'last seen' not in subtitle_text.lower():
+                                                    is_group_chat = True
+
+                                        # Check URL for group indicator
+                                        if not is_group_chat:
+                                            try:
+                                                if '@g.us' in (page.url or ''):
+                                                    is_group_chat = True
+                                            except:
+                                                pass
+
+                                        if is_group_chat:
+                                            page.keyboard.press('Escape')
+                                            time.sleep(0.5)
+                                            search_box = page.query_selector('[data-testid="chat-list-search"]')
+                                            if search_box:
+                                                search_box.click()
+                                                time.sleep(0.3)
+                                            continue
+
+                                        # Verify we're in a chat
+                                        input_box = page.query_selector('[data-testid="conversation-compose-box-input"]') or \
+                                                   page.query_selector('footer [contenteditable="true"]')
+                                        if input_box:
+                                            chat_elem = result
+                                            break
+                                        else:
+                                            page.keyboard.press('Escape')
+                                            time.sleep(0.3)
+
+                                    except:
+                                        continue
+
+                        # For groups: try by name
+                        if not chat_elem and is_group:
+                            chat_elem = page.query_selector(f'[title="{chat_name}"]') or \
+                                       page.query_selector(f'span[title*="{chat_name}"]')
+
                 except Exception as search_err:
                     logger.warning(f"Bot {bot_profile_id}: Search failed: {search_err}")
 
@@ -1862,14 +1974,14 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
         logger.info(f"Bot {bot_profile_id}: Starting...")
 
         # Handle both decrypted (from auto-recovery) and encrypted (from routes) API key
-        if 'openai_api_key' in config:
-            api_key = config['openai_api_key']
+        if 'api_key' in config:
+            api_key = config['api_key']
         else:
-            api_key = decrypt_string(config['openai_api_key_encrypted'])
+            api_key = decrypt_string(config['api_key_encrypted'])
         ai_provider = get_ai_provider(
             config.get('ai_provider', 'openai'),
             api_key,
-            model=config.get('openai_model')
+            model=config.get('model')
         )
 
         print(f"Bot {bot_profile_id}: AI provider ({config.get('ai_provider', 'openai')}) initialized, launching browser...", flush=True)
@@ -6760,14 +6872,15 @@ def _process_message_sync(page, ai_provider, config, bot_profile_id, chat_name, 
                 sender_phone_clean = phone_match.group(1)
 
         # Parse the WhatsApp timestamp to get the actual message time
-        # Get bot's timezone offset for conversion
+        # Get bot's timezone offset for conversion and ending detection setting
         msg_timestamp = None
-        if whatsapp_timestamp:
-            timezone_offset = None
-            bot_profile = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
-            if bot_profile:
+        ending_detection_enabled = False  # Default to disabled
+        bot_profile = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+        if bot_profile:
+            ending_detection_enabled = bot_profile.ending_detection_enabled if bot_profile.ending_detection_enabled is not None else False
+            if whatsapp_timestamp:
                 timezone_offset = bot_profile.whatsapp_timezone_offset
-            msg_timestamp = _parse_whatsapp_timestamp(whatsapp_timestamp, None, timezone_offset)
+                msg_timestamp = _parse_whatsapp_timestamp(whatsapp_timestamp, None, timezone_offset)
 
         # Create message with file info if available (skip if already synced)
         user_msg = None
@@ -7016,7 +7129,149 @@ CONVERSATION ENDING GUIDELINES:
     except Exception as ws_err:
         logger.warning(f"Bot {bot_profile_id}: Could not broadcast user message: {ws_err}", exc_info=True)
 
-    # Skip AI response if this is not the last message in a batch (for multiple incoming messages)
+    # ==========================================================================
+    # CENTRALIZED HUB PROCESSING (for group_management hubs)
+    # For group messages in a group_management hub, use the centralized processor
+    # which runs ALL AI calls (ending detection + classifier + router) ONCE
+    # and distributes decisions to all bots.
+    # ==========================================================================
+    hub_decision = None
+    hub_execution_id = None
+    routing_context = None
+    other_responders = []
+    coordination_hint = ''
+    use_centralized_processor = False
+
+    if is_group:
+        try:
+            from app.hubs.coordinator import get_hub_message_decision, get_hub_for_bot_and_group, update_hub_execution_response
+            from app.database import ActivityLog
+            import re
+
+            # Check if this bot is in a group_management hub for this specific group
+            # This handles bots that belong to multiple hubs managing different groups
+            with get_db_session() as db:
+                chat_id_to_check = chat_data_id or chat_name
+                hub = get_hub_for_bot_and_group(bot_profile_id, chat_id_to_check, db)
+                logger.debug(f"Bot {bot_profile_id}: Hub check for group {chat_id_to_check} - hub={hub.id if hub else None}")
+                if hub:
+                    # Hub found that manages this bot+group combination
+                    use_centralized_processor = True
+
+                    # Extract sender phone
+                    sender_phone = None
+                    sender_display_name = sender
+                    if sender_whatsapp_id and '@c.us' in sender_whatsapp_id:
+                        phone_match = re.search(r'(\d{8,15})@c\.us', sender_whatsapp_id)
+                        if phone_match:
+                            sender_phone = phone_match.group(1)
+
+                    # Get centralized decision (runs ALL AI calls once)
+                    hub_decision = get_hub_message_decision(
+                        hub_id=hub.id,
+                        bot_id=bot_profile_id,
+                        chat_id=chat_data_id or chat_name,
+                        message_content=message,
+                        sender_id=clean_sender_id,
+                        sender_name=sender_display_name,
+                        sender_phone=sender_phone,
+                        is_group=True,
+                        whatsapp_message_id=whatsapp_message_id,
+                        conversation_id=conversation_db_id
+                    )
+
+                    logger.info(f"Bot {bot_profile_id}: Centralized hub decision: should_respond={hub_decision.get('should_respond')}, reason={hub_decision.get('reason')}")
+
+                    # Capture execution_id for response logging
+                    hub_execution_id = hub_decision.get('execution_id')
+                    if hub_execution_id:
+                        logger.debug(f"Bot {bot_profile_id}: Hub execution ID: {hub_execution_id}")
+
+                    if not hub_decision.get('should_respond', True):
+                        # Hub says don't respond - could be ending detection OR routing
+                        logger.info(f"Bot {bot_profile_id}: Hub processor says NOT to respond - {hub_decision.get('reason')}")
+                        with get_db_session() as db2:
+                            conversation = db2.query(Conversation).filter(
+                                Conversation.bot_profile_id == bot_profile_id,
+                                Conversation.chat_name == chat_name
+                            ).first()
+                            if conversation:
+                                conversation.message_count = (conversation.message_count or 0) + 1
+                                conversation.last_message_at = datetime.utcnow()
+
+                            # Log activity
+                            log = ActivityLog(
+                                bot_profile_id=bot_profile_id,
+                                action="hub_routing_skip",
+                                details=f"Skipped response to '{chat_name}' - {hub_decision.get('reason')}"
+                            )
+                            db2.add(log)
+                        return
+
+                    # Extract routing context for response enhancement
+                    routing_context = hub_decision.get('routing_context')
+                    coordination_hint = hub_decision.get('coordination_hint', '')
+
+                    # Apply delay if specified
+                    delay_ms = hub_decision.get('delay_ms', 0)
+                    if delay_ms > 0:
+                        logger.info(f"Bot {bot_profile_id}: Hub processor specified delay of {delay_ms}ms")
+                        time.sleep(delay_ms / 1000.0)
+
+        except ImportError as ie:
+            logger.debug(f"Bot {bot_profile_id}: Hub processor not available: {ie}")
+            use_centralized_processor = False
+        except Exception as hub_proc_err:
+            logger.warning(f"Bot {bot_profile_id}: Centralized hub processing failed: {hub_proc_err}, falling back to standard flow")
+            use_centralized_processor = False
+            hub_decision = None
+
+    # ==========================================================================
+    # STANDARD FLOW (for non-hub messages or if centralized processor not used)
+    # ==========================================================================
+    if not use_centralized_processor:
+        # [1] Check if conversation is naturally ending (BEFORE bot-to-bot detection)
+        # This prevents endless farewell loops like "Bye!" -> "Bye!" -> "Take care!" -> "You too!"
+        try:
+            from app.conversations.ending_detector import should_skip_for_conversation_ending
+            from app.database import ActivityLog
+
+            if should_skip_for_conversation_ending(
+                ai_provider=ai_provider,
+                conversation_id=conversation_db_id,
+                message_content=message,
+                bot_profile_id=bot_profile_id,
+                is_group=is_group,
+                sender_name=sender if is_group else None,
+                sender_id=clean_sender_id,
+                chat_id=chat_data_id,  # For caching across bots
+                use_ai=ending_detection_enabled  # Use AI only if bot setting enabled
+            ):
+                logger.info(f"Bot {bot_profile_id}: Conversation ending detected for {chat_name}, skipping AI response")
+                # Update message count and log activity (no AI response)
+                with get_db_session() as db:
+                    conversation = db.query(Conversation).filter(
+                        Conversation.bot_profile_id == bot_profile_id,
+                        Conversation.chat_name == chat_name
+                    ).first()
+                    if conversation:
+                        conversation.message_count = (conversation.message_count or 0) + 1
+                        conversation.last_message_at = datetime.utcnow()
+
+                    # Log to activity for visibility in dashboard
+                    log = ActivityLog(
+                        bot_profile_id=bot_profile_id,
+                        action="conversation_ending_detected",
+                        details=f"Skipped response to '{chat_name}' - conversation naturally ending"
+                    )
+                    db.add(log)
+                return
+        except ImportError:
+            logger.debug(f"Bot {bot_profile_id}: Conversation ending detector not available")
+        except Exception as ending_err:
+            logger.warning(f"Bot {bot_profile_id}: Conversation ending check failed: {ending_err}, proceeding with response")
+
+    # [2] Skip AI response if this is not the last message in a batch (for multiple incoming messages)
     if skip_ai_response:
         logger.info(f"Bot {bot_profile_id}: Skipping AI response for {chat_name} (not last message in batch)")
         return
@@ -7035,88 +7290,98 @@ CONVERSATION ENDING GUIDELINES:
                 conversation.last_message_at = datetime.utcnow()
         return
 
-    # Check hub routing - if bot is in a hub, let the hub decide if this bot should respond
-    hub_execution_id = None  # Track for response logging
-    try:
-        from app.hubs.coordinator import check_hub_routing, update_hub_execution_response
-        import re
+    # Check hub routing (for non-group_management hubs or fallback)
+    # Skip if we already have a decision from centralized processor
+    if not use_centralized_processor:
+        try:
+            from app.hubs.coordinator import check_hub_routing, update_hub_execution_response
+            import re
 
-        # Extract sender phone for hub contact tracking
-        sender_phone = None
-        sender_display_name = sender  # The display name from message extraction
+            # Extract sender phone for hub contact tracking
+            sender_phone = None
+            sender_display_name = sender  # The display name from message extraction
 
-        if is_group and sender_whatsapp_id:
-            # Group chat - extract phone from sender's WhatsApp ID
-            # ONLY use @c.us format (contains actual phone), NOT @lid format
-            if '@c.us' in sender_whatsapp_id:
-                phone_match = re.search(r'(\d{8,15})@c\.us', sender_whatsapp_id)
-                if phone_match:
-                    sender_phone = phone_match.group(1)
-        else:
-            # Private chat - look up the conversation to get the correct phone
-            # The conversation.phone field has the properly extracted phone number
-            with get_db_session() as db:
-                conv = db.query(Conversation).filter(
-                    Conversation.bot_profile_id == bot_profile_id,
-                    Conversation.chat_name == chat_name
-                ).first()
-                if conv:
-                    if conv.phone:
-                        sender_phone = conv.phone
-                    # Use display_name or chat_name for the contact name
-                    if not sender_display_name:
-                        sender_display_name = conv.display_name or conv.chat_name
+            if is_group and sender_whatsapp_id:
+                # Group chat - extract phone from sender's WhatsApp ID
+                # ONLY use @c.us format (contains actual phone), NOT @lid format
+                if '@c.us' in sender_whatsapp_id:
+                    phone_match = re.search(r'(\d{8,15})@c\.us', sender_whatsapp_id)
+                    if phone_match:
+                        sender_phone = phone_match.group(1)
+            else:
+                # Private chat - look up the conversation to get the correct phone
+                # The conversation.phone field has the properly extracted phone number
+                with get_db_session() as db:
+                    conv = db.query(Conversation).filter(
+                        Conversation.bot_profile_id == bot_profile_id,
+                        Conversation.chat_name == chat_name
+                    ).first()
+                    if conv:
+                        if conv.phone:
+                            sender_phone = conv.phone
+                        # Use display_name or chat_name for the contact name
+                        if not sender_display_name:
+                            sender_display_name = conv.display_name or conv.chat_name
 
-            # Fallback: try to extract from @c.us format chat_data_id (not @lid)
-            if not sender_phone and chat_data_id and '@c.us' in chat_data_id:
-                phone_match = re.search(r'(\d{8,15})@c\.us', chat_data_id)
-                if phone_match:
-                    sender_phone = phone_match.group(1)
+                # Fallback: try to extract from @c.us format chat_data_id (not @lid)
+                if not sender_phone and chat_data_id and '@c.us' in chat_data_id:
+                    phone_match = re.search(r'(\d{8,15})@c\.us', chat_data_id)
+                    if phone_match:
+                        sender_phone = phone_match.group(1)
 
-        # For private chats, use chat_name as display name if still not set
-        if not is_group and not sender_display_name:
-            sender_display_name = chat_name
+            # For private chats, use chat_name as display name if still not set
+            if not is_group and not sender_display_name:
+                sender_display_name = chat_name
 
-        if not sender_phone:
-            logger.debug(f"Bot {bot_profile_id}: Could not extract phone for hub contact (is_group={is_group}, chat_data_id={chat_data_id})")
+            if not sender_phone:
+                logger.debug(f"Bot {bot_profile_id}: Could not extract phone for hub contact (is_group={is_group}, chat_data_id={chat_data_id})")
 
-        hub_decision = check_hub_routing(
-            bot_id=bot_profile_id,
-            message_content=message,
-            sender_phone=sender_phone,  # Can be None - coordinator will handle
-            sender_name=sender_display_name,  # Pass name separately
-            chat_id=chat_data_id or chat_name,
-            is_group=is_group,
-            whatsapp_message_id=whatsapp_message_id  # For bot-to-bot detection by message ID
-        )
+            hub_decision = check_hub_routing(
+                bot_id=bot_profile_id,
+                message_content=message,
+                sender_phone=sender_phone,  # Can be None - coordinator will handle
+                sender_name=sender_display_name,  # Pass name separately
+                chat_id=chat_data_id or chat_name,
+                is_group=is_group,
+                whatsapp_message_id=whatsapp_message_id  # For bot-to-bot detection by message ID
+            )
 
-        # Store execution_id for response logging
-        hub_execution_id = hub_decision.get('execution_id')
+            # Store execution_id for response logging
+            hub_execution_id = hub_decision.get('execution_id')
 
-        if not hub_decision.get('should_respond', True):
-            logger.info(f"Bot {bot_profile_id}: Hub routing says NOT to respond - reason: {hub_decision.get('reason')}")
-            # Update message count only (no AI response)
-            with get_db_session() as db:
-                conversation = db.query(Conversation).filter(
-                    Conversation.bot_profile_id == bot_profile_id,
-                    Conversation.chat_name == chat_name
-                ).first()
-                if conversation:
-                    conversation.message_count = (conversation.message_count or 0) + 1
-                    conversation.last_message_at = datetime.utcnow()
-            return
-        else:
-            logger.info(f"Bot {bot_profile_id}: Hub routing says OK to respond - reason: {hub_decision.get('reason')}")
+            if not hub_decision.get('should_respond', True):
+                logger.info(f"Bot {bot_profile_id}: Hub routing says NOT to respond - reason: {hub_decision.get('reason')}")
+                # Update message count only (no AI response)
+                with get_db_session() as db:
+                    conversation = db.query(Conversation).filter(
+                        Conversation.bot_profile_id == bot_profile_id,
+                        Conversation.chat_name == chat_name
+                    ).first()
+                    if conversation:
+                        conversation.message_count = (conversation.message_count or 0) + 1
+                        conversation.last_message_at = datetime.utcnow()
+                return
+            else:
+                logger.info(f"Bot {bot_profile_id}: Hub routing says OK to respond - reason: {hub_decision.get('reason')}")
 
-            # Apply delay if specified by hub router
-            delay_ms = hub_decision.get('delay_ms', 0)
-            if delay_ms > 0:
-                logger.info(f"Bot {bot_profile_id}: Hub router specified delay of {delay_ms}ms")
-                time.sleep(delay_ms / 1000.0)
-    except ImportError:
-        logger.debug(f"Bot {bot_profile_id}: Hub module not available, proceeding with normal response")
-    except Exception as hub_err:
-        logger.warning(f"Bot {bot_profile_id}: Hub routing check failed: {hub_err}, proceeding with normal response")
+                # Apply delay if specified by hub router
+                delay_ms = hub_decision.get('delay_ms', 0)
+                if delay_ms > 0:
+                    logger.info(f"Bot {bot_profile_id}: Hub router specified delay of {delay_ms}ms")
+                    time.sleep(delay_ms / 1000.0)
+
+                # Extract routing context
+                routing_context = hub_decision.get('routing_context')
+                other_responders = hub_decision.get('other_responders', [])
+                coordination_hint = hub_decision.get('coordination_hint', '')
+
+        except ImportError:
+            logger.debug(f"Bot {bot_profile_id}: Hub module not available, proceeding with normal response")
+        except Exception as hub_err:
+            logger.warning(f"Bot {bot_profile_id}: Hub routing check failed: {hub_err}, proceeding with normal response")
+
+    if routing_context:
+        logger.info(f"Bot {bot_profile_id}: Routing context available - {routing_context.get('why_selected', 'unknown')}")
 
     logger.info(f"Bot {bot_profile_id}: AI enabled for {chat_name}, generating response...")
 
@@ -7172,6 +7437,10 @@ CONVERSATION ENDING GUIDELINES:
 - Look at the conversation history: if the last 2-3 exchanges are just short pleasantries (thanks, bye, take care), the conversation is OVER - do not respond"""
 
             full_system_prompt = base_prompt + natural_style + closing_instructions
+
+            # Note: Routing context is injected later, just before the AI call,
+            # to handle both code paths (with and without needs_history_sync)
+
             messages = [
                 {"role": "system", "content": full_system_prompt}
             ]
@@ -7273,13 +7542,48 @@ CONVERSATION ENDING GUIDELINES:
             else:
                 logger.info(f"  [{i}] {role}: {str(content)[:80]}...")
 
+        # Inject routing context into system prompt if available (for hub-managed group conversations)
+        # This handles both code paths (with and without needs_history_sync)
+        if routing_context and messages and len(messages) > 0:
+            original_system_prompt = messages[0].get('content', '')
+
+            hub_context = f"""
+
+HUB COORDINATION CONTEXT:
+- Why you're responding: {routing_context.get('why_selected', 'Selected to respond')}
+- Topic category: {routing_context.get('classification', {}).get('category', 'general')}
+- Conversation depth: {routing_context.get('conversation_depth', 0)} previous exchanges"""
+
+            if routing_context.get('is_continuation'):
+                hub_context += """
+- This is a CONTINUATION of your conversation with this person - maintain the natural flow"""
+
+            if routing_context.get('coordination_hint'):
+                hub_context += f"""
+- Coordination guidance: {routing_context.get('coordination_hint')}"""
+
+            # Add multi-bot coordination if applicable
+            if other_responders:
+                other_names = ", ".join([r.get('bot_name', 'Another bot') for r in other_responders])
+                hub_context += f"""
+
+MULTI-BOT COORDINATION:
+- Other bots also responding: {other_names}
+- Keep your response focused and avoid redundancy"""
+                if coordination_hint:
+                    hub_context += f"""
+- Your role: {coordination_hint}"""
+
+            messages[0]['content'] = original_system_prompt + hub_context
+            logger.info(f"Bot {bot_profile_id}: Injected hub routing context into system prompt")
+
         # Use tool-enabled AI response for real-time queries (weather, news, etc.)
         from app.bots.web_search import process_ai_response_with_tools
 
         reply = process_ai_response_with_tools(
             ai_provider=ai_provider,
             messages=messages,
-            model=config.get('openai_model', 'gpt-4o-mini'),
+            model=config.get('model', 'gpt-4o-mini'),
             max_tokens=config.get('max_tokens', 1000),
             temperature=config.get('temperature', 0.7),
             top_p=config.get('top_p', 1.0),
@@ -7297,10 +7601,16 @@ CONVERSATION ENDING GUIDELINES:
         # Log response to hub execution if tracking
         if hub_execution_id:
             try:
-                update_hub_execution_response(hub_execution_id, reply)
-                logger.debug(f"Bot {bot_profile_id}: Logged response to hub execution {hub_execution_id}")
+                logger.info(f"Bot {bot_profile_id}: Updating hub execution {hub_execution_id} with response: {reply[:50]}...")
+                success = update_hub_execution_response(hub_execution_id, reply)
+                if success:
+                    logger.info(f"Bot {bot_profile_id}: Successfully logged response to hub execution {hub_execution_id}")
+                else:
+                    logger.warning(f"Bot {bot_profile_id}: update_hub_execution_response returned False for execution {hub_execution_id}")
             except Exception as log_err:
                 logger.warning(f"Bot {bot_profile_id}: Failed to log hub execution response: {log_err}")
+        else:
+            logger.debug(f"Bot {bot_profile_id}: No hub_execution_id available for response logging")
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
         reply = "Sorry, I encountered an error. Please try again."
@@ -8285,14 +8595,24 @@ def _run_full_history_sync(page, instance, bot_profile_id, notify_status):
     except Exception:
         pass
 
-    # Scroll sidebar to load all conversations
+    # Scroll sidebar to load all conversations (increased iterations for large contact lists)
     try:
-        for _ in range(10):
+        prev_height = 0
+        for scroll_i in range(25):  # Increased from 10 to 25 for larger contact lists
             page.evaluate('''() => {
                 const sidePanel = document.querySelector('#pane-side');
                 if (sidePanel) sidePanel.scrollTop = sidePanel.scrollHeight;
             }''')
-            time.sleep(0.5)
+            time.sleep(0.4)
+            # Check if we've reached the bottom
+            current_height = page.evaluate('''() => {
+                const sidePanel = document.querySelector('#pane-side');
+                return sidePanel ? sidePanel.scrollHeight : 0;
+            }''')
+            if current_height == prev_height and scroll_i > 5:
+                logger.info(f"Bot {bot_profile_id}: Sidebar fully loaded after {scroll_i + 1} scrolls")
+                break
+            prev_height = current_height
         # Scroll back to top
         page.evaluate('''() => {
             const sidePanel = document.querySelector('#pane-side');
@@ -8366,12 +8686,16 @@ def _run_full_history_sync(page, instance, bot_profile_id, notify_status):
             if (!chatName || processedNames.has(chatName)) continue;
             processedNames.add(chatName);
 
-            // Extract data-id with multiple methods
+            // Extract data-id with multiple methods (enhanced for WhatsApp Business)
             let fullDataId = null;
+
+            // Method 1: Direct data-id on row
             let dataId = row.getAttribute('data-id');
             if (dataId && (dataId.includes('@c.us') || dataId.includes('@g.us'))) {
                 fullDataId = dataId;
             }
+
+            // Method 2: Immediate child with data-id
             if (!fullDataId) {
                 const rowChild = row.querySelector(':scope > div[data-id]');
                 if (rowChild) {
@@ -8379,12 +8703,16 @@ def _run_full_history_sync(page, instance, bot_profile_id, notify_status):
                     if (id && (id.includes('@c.us') || id.includes('@g.us'))) fullDataId = id;
                 }
             }
+
+            // Method 3: Any child of row
             if (!fullDataId) {
                 for (const child of row.children) {
                     const id = child.getAttribute('data-id');
                     if (id && (id.includes('@c.us') || id.includes('@g.us'))) { fullDataId = id; break; }
                 }
             }
+
+            // Method 4: Any descendant with data-id
             if (!fullDataId) {
                 const dataIdElements = row.querySelectorAll('[data-id]');
                 for (const elem of dataIdElements) {
@@ -8393,14 +8721,42 @@ def _run_full_history_sync(page, instance, bot_profile_id, notify_status):
                 }
             }
 
+            // Method 5: WhatsApp Business - check parent/ancestor for data-id
+            if (!fullDataId) {
+                let parent = row.parentElement;
+                for (let i = 0; i < 3 && parent; i++) {
+                    const id = parent.getAttribute('data-id');
+                    if (id && (id.includes('@c.us') || id.includes('@g.us'))) { fullDataId = id; break; }
+                    parent = parent.parentElement;
+                }
+            }
+
+            // Method 6: Look for aria-selected row or focused chat link
+            if (!fullDataId) {
+                const chatLink = row.querySelector('a[href*="chat"]');
+                if (chatLink) {
+                    const href = chatLink.getAttribute('href');
+                    const match = href && href.match(/chat\\/([^/]+@[cg]\\.us)/);
+                    if (match) fullDataId = match[1];
+                }
+            }
+
             // Group detection: data-id suffix is source of truth
             let isGroup = false;
             if (fullDataId) {
                 isGroup = fullDataId.includes('@g.us');
             } else {
+                // Enhanced fallback for group detection (WhatsApp Business uses different icons)
                 const avatarArea = row.querySelector('[data-testid="cell-frame-primary"]') || row;
                 isGroup = avatarArea.querySelector('[data-icon="default-group"]') !== null ||
-                         avatarArea.querySelector('[data-testid="default-group"]') !== null;
+                         avatarArea.querySelector('[data-testid="default-group"]') !== null ||
+                         avatarArea.querySelector('[data-icon="group"]') !== null ||
+                         avatarArea.querySelector('span[data-icon*="group"]') !== null ||
+                         // Check for multiple participants indicator (groups have multiple avatars or participant count)
+                         row.querySelector('[data-testid="group-icon"]') !== null ||
+                         // WhatsApp Business may use different attribute
+                         row.querySelector('[aria-label*="group"]') !== null ||
+                         row.querySelector('[aria-label*="Group"]') !== null;
             }
 
             conversations.push({
@@ -8412,12 +8768,26 @@ def _run_full_history_sync(page, instance, bot_profile_id, notify_status):
         return conversations;
     }''')
 
-    print(f"Bot {bot_profile_id}: History sync - found {len(sidebar_data)} conversations in sidebar", flush=True)
-    logger.info(f"Bot {bot_profile_id}: History sync - found {len(sidebar_data)} conversations in sidebar")
+    # Count groups and contacts
+    group_count = sum(1 for c in sidebar_data if c.get('isGroup'))
+    contact_count = len(sidebar_data) - group_count
+    print(f"Bot {bot_profile_id}: History sync - found {len(sidebar_data)} conversations ({group_count} groups, {contact_count} contacts)", flush=True)
+    logger.info(f"Bot {bot_profile_id}: History sync - found {len(sidebar_data)} conversations ({group_count} groups, {contact_count} contacts)")
 
     # Debug: log first few discovered conversations
     for i, conv in enumerate(sidebar_data[:5]):
         print(f"Bot {bot_profile_id}: History sync sidebar[{i}]: name='{conv.get('name')}', dataId='{conv.get('fullDataId')}', isGroup={conv.get('isGroup')}", flush=True)
+
+    # Log any groups found
+    groups_found = [c for c in sidebar_data if c.get('isGroup')]
+    if groups_found:
+        for g in groups_found[:10]:  # Log up to 10 groups
+            print(f"Bot {bot_profile_id}: History sync found group: '{g.get('name')}' (dataId={g.get('fullDataId')})", flush=True)
+            logger.info(f"Bot {bot_profile_id}: History sync found group: '{g.get('name')}' (dataId={g.get('fullDataId')})")
+    else:
+        print(f"Bot {bot_profile_id}: History sync - WARNING: No groups detected in sidebar!", flush=True)
+        logger.warning(f"Bot {bot_profile_id}: History sync - No groups detected in sidebar. Check if groups are visible or if selectors need updating.")
+
     if not sidebar_data:
         print(f"Bot {bot_profile_id}: History sync - NO conversations found in sidebar! Check WhatsApp selectors.", flush=True)
 
@@ -10342,9 +10712,11 @@ def _quick_sync_conversations(page, bot_profile_id, notify_status):
         // Wait a bit for DOM to stabilize
         await new Promise(r => setTimeout(r, 500));
 
-        // Use ONLY [role="listitem"] which are the actual chat row containers in WhatsApp
-        // This avoids matching nested elements or overlapping selectors
-        const chatRows = document.querySelectorAll('#pane-side [role="listitem"]');
+        // Use broader selector set for compatibility with both WhatsApp Personal and Business
+        // listitem (Personal), row (Business), cell-frame-container (fallback)
+        const chatRows = document.querySelectorAll(
+            '#pane-side [role="listitem"], #pane-side [role="row"], [data-testid="cell-frame-container"]'
+        );
 
         for (const row of chatRows) {
             // Check for unread message indicator - ONLY process if has unread
@@ -10431,12 +10803,27 @@ def _quick_sync_conversations(page, bot_profile_id, notify_status):
                 }
             }
 
+            // Method 5: WhatsApp Business - check parent/ancestor for data-id
+            if (!fullDataId) {
+                let parent = row.parentElement;
+                for (let i = 0; i < 3 && parent; i++) {
+                    const id = parent.getAttribute('data-id');
+                    if (id && (id.includes('@c.us') || id.includes('@g.us'))) { fullDataId = id; break; }
+                    parent = parent.parentElement;
+                }
+            }
+
             // Check if group based on ICON presence (visual indicator)
-            // Look for group icon in the avatar area
+            // Look for group icon in the avatar area - enhanced for WhatsApp Business
             const avatarArea = row.querySelector('[data-testid="cell-frame-primary"]') || row;
             const hasGroupIcon = avatarArea.querySelector('[data-icon="default-group"]') !== null ||
                                 avatarArea.querySelector('[data-testid="default-group"]') !== null ||
-                                avatarArea.querySelector('span[data-icon="default-group"]') !== null;
+                                avatarArea.querySelector('span[data-icon="default-group"]') !== null ||
+                                avatarArea.querySelector('[data-icon="group"]') !== null ||
+                                avatarArea.querySelector('span[data-icon*="group"]') !== null ||
+                                row.querySelector('[data-testid="group-icon"]') !== null ||
+                                row.querySelector('[aria-label*="group"]') !== null ||
+                                row.querySelector('[aria-label*="Group"]') !== null;
 
             // IMPORTANT: Group detection - @g.us means group, @c.us means private
             // Priority: data-id suffix is the SOURCE OF TRUTH
@@ -11265,14 +11652,14 @@ async def _run_whatsapp_bot_async(instance, config, bot_profile_id, notify_statu
         logger.info(f"Bot {bot_profile_id}: Starting...")
 
         # Handle both decrypted (from auto-recovery) and encrypted (from routes) API key
-        if 'openai_api_key' in config:
-            api_key = config['openai_api_key']
+        if 'api_key' in config:
+            api_key = config['api_key']
         else:
-            api_key = decrypt_string(config['openai_api_key_encrypted'])
+            api_key = decrypt_string(config['api_key_encrypted'])
         ai_provider = get_ai_provider(
             config.get('ai_provider', 'openai'),
             api_key,
-            model=config.get('openai_model')
+            model=config.get('model')
         )
 
         notify_status({"status": "launching", "message": "Launching browser..."})

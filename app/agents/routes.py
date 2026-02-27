@@ -130,7 +130,7 @@ async def list_agents(
                 "agent_type": a.agent_type,
                 "hub_id": a.hub_id,
                 "hub_name": a.hub.name if a.hub else None,
-                "model": a.openai_model,
+                "model": a.model,
                 "is_active": a.is_active,
                 "is_global": a.is_global,
                 "status": a.status or "idle",
@@ -184,7 +184,7 @@ async def get_agent(
         "hub_name": agent.hub.name if agent.hub else None,
         "system_prompt": agent.system_prompt,
         "additional_instructions": agent.additional_instructions,
-        "model": agent.openai_model,
+        "model": agent.model,
         "config": config,
         "is_active": agent.is_active,
         "is_global": agent.is_global,
@@ -241,7 +241,7 @@ async def create_agent(
         agent_type=agent_data.agent_type,
         system_prompt=agent_data.system_prompt,
         additional_instructions=agent_data.additional_instructions,
-        openai_model=agent_data.model,
+        model=agent_data.model,
         config=json.dumps(config_data),
         is_active=True,
         is_global=agent_data.is_global,
@@ -301,8 +301,7 @@ async def update_agent(
 
     for key, value in update_dict.items():
         if key == "model":
-            # Map 'model' to 'openai_model'
-            agent.openai_model = value
+            agent.model = value
         elif key == "temperature":
             config_updates["temperature"] = value
         elif key == "max_tokens":
@@ -444,18 +443,18 @@ async def test_agent(
     api_key = None
 
     # Try agent's own API key first
-    if agent.openai_api_key_encrypted:
-        api_key = decrypt_string(agent.openai_api_key_encrypted)
+    if agent.api_key_encrypted:
+        api_key = decrypt_string(agent.api_key_encrypted)
 
     # Try hub's API key if agent belongs to a hub
     if not api_key and agent.hub_id:
         hub = db.query(Hub).filter(Hub.id == agent.hub_id).first()
-        if hub and hub.openai_api_key_encrypted:
-            api_key = decrypt_string(hub.openai_api_key_encrypted)
+        if hub and hub.api_key_encrypted:
+            api_key = decrypt_string(hub.api_key_encrypted)
 
     # Try user's default API key
-    if not api_key and user.openai_api_key_encrypted:
-        api_key = decrypt_string(user.openai_api_key_encrypted)
+    if not api_key and hasattr(user, 'api_key_encrypted') and user.api_key_encrypted:
+        api_key = decrypt_string(user.api_key_encrypted)
 
     if not api_key:
         raise HTTPException(
@@ -471,7 +470,7 @@ async def test_agent(
         system_prompt = f"You are {agent.name}. {agent.additional_instructions}"
 
     # Get model and config
-    model = agent.openai_model or "gpt-4o-mini"
+    model = agent.model or "gpt-4o-mini"
     config = json.loads(agent.config) if agent.config else {}
     temperature = config.get('temperature', 0.7)
     max_tokens = config.get('max_tokens', 1000)

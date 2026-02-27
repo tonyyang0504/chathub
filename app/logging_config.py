@@ -271,17 +271,6 @@ def setup_logging() -> None:
         app_handler.setFormatter(console_formatter)
     root_logger.addHandler(app_handler)
 
-    # Backward compatibility: also write to legacy bot.log location
-    legacy_log = LOGS_BASE_DIR / 'bot.log'
-    legacy_handler = DailyRotatingFileHandler(
-        str(legacy_log),
-        max_bytes=max_bytes,
-        backup_count=backup_count
-    )
-    legacy_handler.setLevel(log_level)
-    legacy_handler.setFormatter(console_formatter)
-    root_logger.addHandler(legacy_handler)
-
     # Run cleanup on startup
     try:
         deleted = cleanup_old_logs()

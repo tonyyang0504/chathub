@@ -244,6 +244,66 @@
     font-weight: 500;
 }
 
+/* Model Dropdown (AI Provider/Model) */
+.model-dropdown {
+    position: relative;
+    width: 100%;
+}
+.model-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+.model-dropdown-btn::after {
+    margin-left: auto;
+}
+.model-dropdown-btn:hover, .model-dropdown-btn:focus {
+    border-color: #f093fb;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.model-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.model-dropdown-menu-inner {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.model-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.model-dropdown-menu .dropdown-header {
+    color: var(--bs-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 8px 16px 4px;
+}
+.model-dropdown-menu .dropdown-item:hover {
+    background: rgba(240, 147, 251, 0.1);
+    color: #f093fb;
+}
+.model-dropdown-menu .dropdown-item.selected {
+    font-weight: 500;
+}
+
 /* Simulation textarea styling */
 .simulation-textarea {
     border-radius: 12px;
@@ -285,6 +345,207 @@
 .simulation-textarea::-webkit-resizer {
     background: transparent;
     border: none;
+}
+
+/* Activity Log Enhanced Styles */
+.activity-contact-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.activity-avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.activity-avatar-placeholder.avatar-color-1 { background: linear-gradient(135deg, #25D366 0%, #1ebe5d 100%); }
+.activity-avatar-placeholder.avatar-color-2 { background: linear-gradient(135deg, #53bdeb 0%, #3a9fd1 100%); }
+.activity-avatar-placeholder.avatar-color-3 { background: linear-gradient(135deg, #e542a3 0%, #c9358a 100%); }
+.activity-avatar-placeholder.avatar-color-4 { background: linear-gradient(135deg, #ff7b5a 0%, #e5634a 100%); }
+.activity-avatar-placeholder.avatar-color-5 { background: linear-gradient(135deg, #9c7cff 0%, #7c5ce0 100%); }
+.activity-avatar-placeholder.avatar-color-6 { background: linear-gradient(135deg, #00a884 0%, #008f70 100%); }
+.activity-avatar-placeholder.avatar-color-7 { background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%); }
+.activity-avatar-placeholder.avatar-color-8 { background: linear-gradient(135deg, #ab47bc 0%, #8e24aa 100%); }
+
+.activity-avatar-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bs-light);
+}
+
+/* Cell with popover for activity */
+.cell-with-popover {
+    position: relative;
+    display: inline-block;
+}
+
+.cell-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.cell-badge {
+    display: inline-block;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 12px;
+    background: var(--bs-light);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-dark);
+}
+
+.cell-badge.badge-primary {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: #64b5f6;
+    color: #1565c0;
+}
+
+.cell-badge.badge-intent {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+    border-color: #f48fb1;
+    color: #c2185b;
+    max-width: 150px;
+}
+
+.cell-badge.badge-tag {
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-color: #4dd0e1;
+    color: #00838f;
+}
+
+.cell-badge.badge-more {
+    background: var(--bs-secondary);
+    border-color: var(--bs-secondary);
+    color: white;
+    cursor: default;
+    border-radius: 12px;
+}
+
+.cell-popover {
+    display: none;
+    position: absolute;
+    left: 0;
+    z-index: 1000;
+    min-width: 120px;
+    max-width: 250px;
+    padding: 8px;
+    background: white;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.cell-popover.popover-below {
+    top: 100%;
+    margin-top: 4px;
+}
+
+.cell-popover.popover-above {
+    bottom: 100%;
+    margin-bottom: 4px;
+}
+
+.cell-with-popover:hover .cell-popover {
+    display: flex;
+}
+
+.cell-popover .cell-badge {
+    max-width: none;
+    white-space: normal;
+}
+
+/* Engagement progress bar */
+.engagement-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.engagement-bar {
+    width: 40px;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.engagement-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f093fb, #f5576c);
+    border-radius: 3px;
+}
+
+.engagement-value {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--bs-dark);
+    min-width: 28px;
+}
+
+/* Override activity log item for enhanced layout */
+.activity-log .activity-log-item {
+    display: flex !important;
+    padding: 0.75rem 1rem;
+}
+
+.activity-log .activity-log-item:hover {
+    background-color: rgba(240, 147, 251, 0.05);
+}
+
+/* Sentiment badges */
+.badge-sentiment-positive {
+    background: rgba(25, 135, 84, 0.15) !important;
+    color: var(--bs-success) !important;
+    border-color: rgba(25, 135, 84, 0.3) !important;
+}
+
+.badge-sentiment-negative {
+    background: rgba(220, 53, 69, 0.15) !important;
+    color: var(--bs-danger) !important;
+    border-color: rgba(220, 53, 69, 0.3) !important;
+}
+
+.badge-sentiment-neutral {
+    background: rgba(108, 117, 125, 0.15) !important;
+    color: var(--bs-secondary) !important;
+    border-color: rgba(108, 117, 125, 0.3) !important;
+}
+
+/* Urgency badges */
+.badge-urgency-high {
+    background: rgba(220, 53, 69, 0.15) !important;
+    color: var(--bs-danger) !important;
+    border-color: rgba(220, 53, 69, 0.3) !important;
+}
+
+.badge-urgency-medium {
+    background: rgba(255, 193, 7, 0.15) !important;
+    color: var(--bs-warning) !important;
+    border-color: rgba(255, 193, 7, 0.3) !important;
+}
+
+.badge-urgency-low {
+    background: rgba(108, 117, 125, 0.15) !important;
+    color: var(--bs-secondary) !important;
+    border-color: rgba(108, 117, 125, 0.3) !important;
 }
 </style>
 {% endblock %}
@@ -413,28 +674,31 @@ Can you tell me about enterprise features?</textarea>
                     <div class="col-md-6">
                         <label class="form-label">AI Provider</label>
                         <input type="hidden" id="simProviderValue" value="openai">
-                        <div class="dropdown instance-dropdown" style="max-width: none;">
-                            <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="simProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="dropdown model-dropdown">
+                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 OpenAI
                             </button>
-                            <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="simProviderDropdown">
-                                <a class="dropdown-item sim-provider-item selected" href="#" data-value="openai">OpenAI</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="simProviderDropdown">
+                                <div class="model-dropdown-menu-inner">
+                                    <a class="dropdown-item sim-provider-item selected" href="#" data-value="openai">OpenAI</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="grok">xAI (Grok)</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Model</label>
                         <input type="hidden" id="simModelValue" value="gpt-4o-mini">
-                        <div class="dropdown instance-dropdown" style="max-width: none;">
-                            <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="simModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="dropdown model-dropdown">
+                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 GPT-4o Mini
                             </button>
-                            <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="simModelDropdown">
-                                <div id="simModelList">
+                            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="simModelDropdown">
+                                <div class="model-dropdown-menu-inner" id="simModelList">
                                 </div>
                             </div>
                         </div>
@@ -540,17 +804,25 @@ const SIM_PROVIDER_MODELS = {
         apiKeyPlaceholder: 'sk-...',
         groups: [
             { header: 'GPT-5.2 Series (Latest)', models: [
-                { value: 'gpt-5.2', label: 'GPT-5.2 Thinking' },
-                { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
-                { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            ]},
+            { header: 'GPT-5.1 Series', models: [
+                { value: 'gpt-5.1', label: 'GPT-5.1' },
             ]},
             { header: 'GPT-5 Series', models: [
                 { value: 'gpt-5', label: 'GPT-5' },
                 { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
             ]},
             { header: 'GPT-4 Series', models: [
                 { value: 'gpt-4o', label: 'GPT-4o' },
                 { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
             ]},
         ]
     },
@@ -567,6 +839,11 @@ const SIM_PROVIDER_MODELS = {
                 { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
                 { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
                 { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-1-20250414', label: 'Claude Opus 4.1' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
             ]},
             { header: 'Claude 3.5 Series (Legacy)', models: [
                 { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
@@ -588,6 +865,14 @@ const SIM_PROVIDER_MODELS = {
                 { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
                 { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
             ]},
+            { header: 'Gemini 2.0 Series (Retiring Mar 2026)', models: [
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+            ]},
+            { header: 'Gemini 1.5 Series (Legacy)', models: [
+                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            ]},
         ]
     },
     deepseek: {
@@ -602,6 +887,9 @@ const SIM_PROVIDER_MODELS = {
             { header: 'DeepSeek Reasoning', models: [
                 { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
             ]},
+            { header: 'DeepSeek V3', models: [
+                { value: 'deepseek-v3', label: 'DeepSeek V3' },
+            ]},
         ]
     },
     qwen: {
@@ -613,10 +901,12 @@ const SIM_PROVIDER_MODELS = {
             { header: 'Qwen3 Series (Latest)', models: [
                 { value: 'qwen3-max-thinking', label: 'Qwen3 Max Thinking' },
                 { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-plus', label: 'Qwen3 Plus' },
                 { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
             ]},
             { header: 'Qwen2.5 Series', models: [
                 { value: 'qwen-max', label: 'Qwen Max' },
+                { value: 'qwen-plus', label: 'Qwen Plus' },
                 { value: 'qwen-turbo', label: 'Qwen Turbo' },
             ]},
         ]
@@ -634,6 +924,10 @@ const SIM_PROVIDER_MODELS = {
             ]},
             { header: 'Grok Code', models: [
                 { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+            { header: 'Grok 3 Series', models: [
+                { value: 'grok-3', label: 'Grok 3' },
+                { value: 'grok-3-fast', label: 'Grok 3 Fast' },
             ]},
         ]
     }
@@ -664,8 +958,8 @@ function updateSimModelDropdown(providerName) {
     listEl.querySelectorAll('.sim-model-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.instance-dropdown');
-            const dropBtn = dropdown.querySelector('.instance-dropdown-btn');
+            const dropdown = this.closest('.model-dropdown');
+            const dropBtn = dropdown.querySelector('.model-dropdown-btn');
             dropBtn.textContent = this.textContent;
             hiddenInput.value = this.getAttribute('data-value');
             dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
@@ -690,8 +984,8 @@ function setupSimProviderDropdown() {
     document.querySelectorAll('.sim-provider-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.instance-dropdown');
-            const btn = dropdown.querySelector('.instance-dropdown-btn');
+            const dropdown = this.closest('.model-dropdown');
+            const btn = dropdown.querySelector('.model-dropdown-btn');
             const hiddenInput = document.getElementById('simProviderValue');
             const value = this.getAttribute('data-value');
 
@@ -828,6 +1122,163 @@ function renderInstances() {
     }
 }
 
+// Helper: Format tag name (snake_case to Title Case)
+function formatTagName(tag) {
+    if (!tag) return '';
+    return tag.replace(/[_-]/g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+}
+
+// Helper: Escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Helper: Format technical error messages to user-friendly text
+function formatErrorMessage(error) {
+    if (!error) return '';
+
+    const technicalErrors = [
+        { pattern: /Page\..*Target.*closed/i, message: 'Browser session ended' },
+        { pattern: /Target.*closed/i, message: 'Browser session ended' },
+        { pattern: /browser has been closed/i, message: 'Browser closed' },
+        { pattern: /context has been closed/i, message: 'Browser session ended' },
+        { pattern: /Timeout \d+ms exceeded/i, message: 'Operation timed out' },
+        { pattern: /TimeoutError/i, message: 'Operation timed out' },
+        { pattern: /net::ERR_/i, message: 'Network error' },
+        { pattern: /Authentication timeout/i, message: 'QR code scan timed out' },
+        { pattern: /playwright/i, message: 'Browser error' }
+    ];
+
+    for (const { pattern, message } of technicalErrors) {
+        if (pattern.test(error)) {
+            return message;
+        }
+    }
+    return escapeHtml(error);
+}
+
+// Helper: Format datetime to user's local timezone
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    // Append 'Z' to indicate UTC if not already present
+    const utcDateStr = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-', 10)
+        ? dateStr
+        : dateStr + 'Z';
+    return new Date(utcDateStr).toLocaleString();
+}
+
+// Helper: Get avatar color class based on name/phone
+function getAvatarColorClass(name) {
+    if (!name) return '';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorNum = (Math.abs(hash) % 8) + 1;
+    return `avatar-color-${colorNum}`;
+}
+
+// Render Bot badges with popover
+function renderActivityBotCell(botNames) {
+    if (!botNames || botNames.length === 0) return '<span class="text-muted small">-</span>';
+
+    const maxVisible = 1;
+    const visibleBots = botNames.slice(0, maxVisible);
+    const hiddenCount = botNames.length - maxVisible;
+    const needsPopover = botNames.length > maxVisible || botNames.some(b => b.length > 10);
+
+    let html = '<div class="cell-with-popover"><div class="cell-badges">';
+    visibleBots.forEach(bot => {
+        html += `<span class="cell-badge badge-primary" title="${escapeHtml(bot)}">${escapeHtml(bot)}</span>`;
+    });
+    if (hiddenCount > 0) {
+        html += `<span class="cell-badge badge-more">+${hiddenCount}</span>`;
+    }
+    html += '</div>';
+
+    if (needsPopover) {
+        html += '<div class="cell-popover popover-below">';
+        botNames.forEach(bot => {
+            html += `<span class="cell-badge badge-primary">${escapeHtml(bot)}</span>`;
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+// Render Intent badge with popover
+function renderActivityIntentCell(intent) {
+    if (!intent) return '<span class="text-muted small">-</span>';
+
+    const formatted = formatTagName(intent);
+    const needsPopover = formatted.length > 12;
+
+    let html = '<div class="cell-with-popover"><div class="cell-badges">';
+    html += `<span class="cell-badge badge-intent" title="${escapeHtml(formatted)}">${escapeHtml(formatted)}</span>`;
+    html += '</div>';
+
+    if (needsPopover) {
+        html += '<div class="cell-popover popover-below">';
+        html += `<span class="cell-badge badge-intent">${escapeHtml(formatted)}</span>`;
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+// Render Tags with popover
+function renderActivityTagsCell(tags) {
+    if (!tags || tags.length === 0) return '<span class="text-muted small">-</span>';
+
+    const maxVisible = 2;
+    const visibleTags = tags.slice(0, maxVisible);
+    const hiddenCount = tags.length - maxVisible;
+    const needsPopover = tags.length > maxVisible || tags.some(t => formatTagName(t).length > 10);
+
+    let html = '<div class="cell-with-popover"><div class="cell-badges">';
+    visibleTags.forEach(tag => {
+        const name = formatTagName(tag);
+        html += `<span class="cell-badge badge-tag" title="${escapeHtml(name)}">${escapeHtml(name)}</span>`;
+    });
+    if (hiddenCount > 0) {
+        html += `<span class="cell-badge badge-more">+${hiddenCount}</span>`;
+    }
+    html += '</div>';
+
+    if (needsPopover) {
+        html += '<div class="cell-popover popover-below">';
+        tags.forEach(tag => {
+            const name = formatTagName(tag);
+            html += `<span class="cell-badge badge-tag">${escapeHtml(name)}</span>`;
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+// Render Engagement mini bar
+function renderEngagementMini(score) {
+    if (score === null || score === undefined) return '<span class="text-muted small">-</span>';
+
+    // Normalize score to percentage (handle 0-1 or 0-100 range)
+    let pct = score;
+    if (score <= 1) pct = Math.round(score * 100);
+    pct = Math.min(100, Math.max(0, pct));
+
+    return `<div class="engagement-mini">
+        <div class="engagement-bar"><div class="engagement-fill" style="width: ${pct}%"></div></div>
+        <span class="engagement-value">${pct}%</span>
+    </div>`;
+}
+
 async function loadActivity() {
     try {
         const filterInput = document.getElementById('activityInstanceValue');
@@ -847,12 +1298,172 @@ async function loadActivity() {
 
         let html = '';
         data.executions.forEach(exec => {
-            const time = new Date(exec.created_at).toLocaleString();
+            const time = formatDateTime(exec.created_at);
             const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
-            html += `<div class="activity-log-item"><div class="log-time">${time}</div><div class="log-content">${exec.operation}</div><div class="log-status"><span class="${statusClass}">${exec.status}</span></div></div>`;
+
+            // Parse input/output data
+            const inputData = exec.input_data ? (typeof exec.input_data === 'string' ? JSON.parse(exec.input_data) : exec.input_data) : {};
+            const outputData = exec.output_data ? (typeof exec.output_data === 'string' ? JSON.parse(exec.output_data) : exec.output_data) : {};
+
+            // Debug logging
+            console.log('Activity execution:', exec.id, 'inputData:', inputData, 'outputData:', outputData);
+
+            // Contact info
+            const contactName = inputData.contact_name || inputData.contact_phone || 'Unknown';
+            const contactPhone = inputData.contact_phone || '';
+            const profilePic = inputData.contact_profile_pic;
+            const botNames = inputData.bot_names || [];
+
+            // Build avatar
+            const avatarColorClass = getAvatarColorClass(contactName || contactPhone);
+            const avatarInitial = (contactName || contactPhone || '?').charAt(0).toUpperCase();
+            let avatarHtml = '';
+            if (profilePic) {
+                // Add onerror to fallback to placeholder if image fails (e.g., expired WhatsApp CDN URL)
+                avatarHtml = `<div class="activity-contact-avatar">
+                    <img src="${escapeHtml(profilePic)}" class="activity-avatar-img" alt=""
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="activity-avatar-placeholder ${avatarColorClass}" style="display:none;"><i class="bi bi-person-fill"></i></div>
+                </div>`;
+            } else {
+                avatarHtml = `<div class="activity-contact-avatar"><div class="activity-avatar-placeholder ${avatarColorClass}"><i class="bi bi-person-fill"></i></div></div>`;
+            }
+
+            // Build result columns for success
+            let botCell = '<span class="text-muted small">-</span>';
+            let intentCell = '<span class="text-muted small">-</span>';
+            let engagementCell = '<span class="text-muted small">-</span>';
+            let tagsCell = '<span class="text-muted small">-</span>';
+            let sentimentCell = '<span class="text-muted small">-</span>';
+            let urgencyCell = '<span class="text-muted small">-</span>';
+
+            if (exec.status === 'success' && outputData) {
+                botCell = renderActivityBotCell(botNames);
+                intentCell = renderActivityIntentCell(outputData.predicted_intent);
+                engagementCell = renderEngagementMini(outputData.engagement_score);
+                tagsCell = renderActivityTagsCell(outputData.tags);
+
+                // Sentiment badge
+                if (outputData.sentiment) {
+                    const sentimentClass = outputData.sentiment === 'positive' ? 'badge-sentiment-positive' :
+                                          outputData.sentiment === 'negative' ? 'badge-sentiment-negative' : 'badge-sentiment-neutral';
+                    sentimentCell = `<span class="cell-badge ${sentimentClass}">${escapeHtml(outputData.sentiment)}</span>`;
+                }
+
+                // Urgency badge
+                if (outputData.urgency) {
+                    const urgencyClass = outputData.urgency === 'high' ? 'badge-urgency-high' :
+                                        outputData.urgency === 'medium' ? 'badge-urgency-medium' : 'badge-urgency-low';
+                    urgencyCell = `<span class="cell-badge ${urgencyClass}">${escapeHtml(outputData.urgency)}</span>`;
+                }
+            }
+
+            // Follow-up badge with reason tooltip
+            let followUpBadge = '';
+            if (outputData.follow_up_needed) {
+                const reason = outputData.follow_up_reason ? `title="${escapeHtml(outputData.follow_up_reason)}"` : '';
+                followUpBadge = `<span class="badge bg-warning-subtle text-warning ms-2" ${reason} style="cursor: help;">
+                    <i class="bi bi-bell-fill me-1"></i>Follow-up
+                </span>`;
+            }
+
+            // Key topics display
+            let keyTopicsHtml = '';
+            if (outputData.key_topics && outputData.key_topics.length > 0) {
+                const topicsDisplay = outputData.key_topics.slice(0, 3).map(t => escapeHtml(t)).join(', ');
+                const hasMore = outputData.key_topics.length > 3 ? ` +${outputData.key_topics.length - 3}` : '';
+                keyTopicsHtml = `<div class="mt-1 small text-muted"><i class="bi bi-chat-dots me-1"></i>Topics: ${topicsDisplay}${hasMore}</div>`;
+            }
+
+            // Error display
+            let errorHtml = '';
+            if (exec.status === 'error') {
+                errorHtml = `<div class="text-danger small mt-1">${formatErrorMessage(exec.error_message) || 'Analysis failed'}</div>`;
+            }
+
+            // Metrics
+            let metrics = '';
+            if (exec.execution_time_ms) {
+                const timeStr = exec.execution_time_ms >= 1000
+                    ? (exec.execution_time_ms / 1000).toFixed(1) + 's'
+                    : exec.execution_time_ms + 'ms';
+                metrics += `<span class="text-muted small me-2"><i class="bi bi-clock me-1"></i>${timeStr}</span>`;
+            }
+            if (exec.tokens_used) {
+                metrics += `<span class="text-muted small"><i class="bi bi-lightning me-1"></i>${exec.tokens_used} tokens</span>`;
+            }
+
+            html += `
+                <div class="activity-log-item d-flex align-items-center gap-3 py-2 px-3">
+                    ${avatarHtml}
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <strong class="text-truncate" style="max-width: 180px;">${escapeHtml(contactName)}</strong>
+                            ${followUpBadge}
+                            <span class="text-muted small ms-auto">${time}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div class="d-flex align-items-center gap-1" title="Bot">
+                                <i class="bi bi-robot text-muted" style="font-size: 0.75rem;"></i>
+                                ${botCell}
+                            </div>
+                            <div class="d-flex align-items-center gap-1" title="Intent">
+                                <i class="bi bi-bullseye text-muted" style="font-size: 0.75rem;"></i>
+                                ${intentCell}
+                            </div>
+                            <div class="d-flex align-items-center gap-1" title="Sentiment">
+                                <i class="bi bi-emoji-smile text-muted" style="font-size: 0.75rem;"></i>
+                                ${sentimentCell}
+                            </div>
+                            <div class="d-flex align-items-center gap-1" title="Urgency">
+                                <i class="bi bi-exclamation-triangle text-muted" style="font-size: 0.75rem;"></i>
+                                ${urgencyCell}
+                            </div>
+                            <div class="d-flex align-items-center gap-1" title="Engagement">
+                                <i class="bi bi-graph-up text-muted" style="font-size: 0.75rem;"></i>
+                                ${engagementCell}
+                            </div>
+                            <div class="d-flex align-items-center gap-1" title="Tags">
+                                <i class="bi bi-tags text-muted" style="font-size: 0.75rem;"></i>
+                                ${tagsCell}
+                            </div>
+                        </div>
+                        ${keyTopicsHtml}
+                        ${errorHtml}
+                        <div class="mt-1 d-flex align-items-center justify-content-between">
+                            <div>${metrics}</div>
+                            <span class="${statusClass} small">${exec.status}</span>
+                        </div>
+                    </div>
+                </div>`;
         });
         container.innerHTML = html;
+
+        // Initialize popover positioning
+        initActivityPopoverPositioning();
     } catch (error) { console.error('Error loading activity:', error); }
+}
+
+// Position popover above or below based on available space
+function initActivityPopoverPositioning() {
+    document.querySelectorAll('.activity-log .cell-with-popover').forEach(cell => {
+        cell.addEventListener('mouseenter', function() {
+            const popover = this.querySelector('.cell-popover');
+            if (!popover) return;
+
+            const cellRect = this.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - cellRect.bottom;
+            const popoverHeight = 80;
+
+            popover.classList.remove('popover-below', 'popover-above');
+            if (spaceBelow >= popoverHeight) {
+                popover.classList.add('popover-below');
+            } else {
+                popover.classList.add('popover-above');
+            }
+        });
+    });
 }
 
 function createHubInstance() {
@@ -911,7 +1522,8 @@ async function runSimulation() {
         const tagsHtml = analysis.tags.map(tag => {
             const cls = tag.toLowerCase().includes('interest') || tag.toLowerCase().includes('buyer') ? 'high' :
                         tag.toLowerCase().includes('lead') ? 'medium' : '';
-            return `<span class="profile-tag ${cls}">${tag}</span>`;
+            const formattedTag = tag.replace(/[_-]/g, ' ').toLowerCase();
+            return `<span class="profile-tag ${cls}">${formattedTag}</span>`;
         }).join('');
 
         document.getElementById('profileTags').innerHTML = tagsHtml;

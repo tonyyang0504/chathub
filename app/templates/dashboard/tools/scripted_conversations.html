@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Scheduled Content - ChatHub{% endblock %}
+{% block title %}Scripted Conversations - ChatHub{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/tools.css">
 <style>
 .tool-hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #5e60ce 0%, #6930c3 100%);
     color: white;
     padding: 3rem 2rem;
     border-radius: 16px;
@@ -47,7 +47,7 @@
     left: 10%;
     right: 10%;
     height: 2px;
-    background: linear-gradient(90deg, #667eea, #764ba2);
+    background: linear-gradient(90deg, #5e60ce, #6930c3);
     z-index: 0;
 }
 
@@ -63,14 +63,14 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: #667eea;
+    background: #5e60ce;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
     margin: 0 auto 1rem;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px rgba(94, 96, 206, 0.3);
 }
 
 .workflow-step h5 {
@@ -106,7 +106,7 @@
 .stat-card .stat-value {
     font-size: 2.5rem;
     font-weight: 700;
-    color: var(--primary-color);
+    color: #5e60ce;
 }
 
 .stat-card .stat-label {
@@ -136,19 +136,19 @@
 }
 
 .instance-card:hover {
-    border-color: #667eea;
+    border-color: #5e60ce;
     transform: translateY(-2px);
 }
 
 /* Theme outline button */
 .btn-outline-theme {
-    color: #667eea;
-    border-color: #667eea;
+    color: #5e60ce;
+    border-color: #5e60ce;
     background: transparent;
 }
 .btn-outline-theme:hover, .btn-outline-theme:focus {
-    background: #667eea;
-    border-color: #667eea;
+    background: #5e60ce;
+    border-color: #5e60ce;
     color: white;
 }
 
@@ -206,13 +206,28 @@
 }
 
 .message-bubble {
-    background: #dcf8c6;
     border-radius: 10px;
     padding: 10px 15px;
     margin: 10px 0;
-    max-width: 80%;
-    margin-left: auto;
+    max-width: 85%;
     font-size: 0.9rem;
+}
+
+.message-bubble.outgoing {
+    background: #dcf8c6;
+    margin-left: auto;
+}
+
+.message-bubble.incoming {
+    background: #f0f0f0;
+    margin-right: auto;
+}
+
+.message-sender {
+    font-size: 0.75rem;
+    color: #5e60ce;
+    font-weight: 600;
+    margin-bottom: 3px;
 }
 
 .message-time {
@@ -261,7 +276,7 @@
     margin-left: auto;
 }
 .model-dropdown-btn:hover, .model-dropdown-btn:focus {
-    border-color: #667eea;
+    border-color: #5e60ce;
     background: var(--bs-body-bg);
     color: var(--text-color);
     box-shadow: none;
@@ -292,8 +307,8 @@
     padding: 8px 16px 4px;
 }
 .model-dropdown-menu .dropdown-item:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    background: rgba(94, 96, 206, 0.1);
+    color: #5e60ce;
 }
 .model-dropdown-menu .dropdown-item.selected {
     font-weight: 500;
@@ -301,14 +316,14 @@
 
 /* Theme button styling */
 .btn-theme {
-    background: #667eea;
+    background: #5e60ce;
     border: none;
     color: white;
 }
 .btn-theme:hover, .btn-theme:focus {
-    background: #5a6fd6;
+    background: #4b4db3;
     color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(94, 96, 206, 0.4);
 }
 
 /* Instance Filter Dropdown */
@@ -352,7 +367,7 @@
     margin-left: auto;
 }
 .instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
-    border-color: #667eea;
+    border-color: #5e60ce;
     background: var(--bs-body-bg);
     color: var(--text-color);
     box-shadow: none;
@@ -373,12 +388,12 @@
     transition: all 0.15s;
 }
 .instance-dropdown-menu .dropdown-item:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    background: rgba(94, 96, 206, 0.1);
+    color: #5e60ce;
 }
 .instance-dropdown-menu .dropdown-item.selected {
-    background: rgba(102, 126, 234, 0.15);
-    color: #667eea;
+    background: rgba(94, 96, 206, 0.15);
+    color: #5e60ce;
     font-weight: 500;
 }
 
@@ -390,39 +405,9 @@
     overflow-y: auto;
 }
 .simulation-textarea:focus {
-    border-color: #667eea;
+    border-color: #5e60ce;
     box-shadow: none;
     outline: none;
-}
-.simulation-textarea::-webkit-scrollbar {
-    width: 8px;
-}
-.simulation-textarea::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 0 12px 12px 0;
-    margin: 4px 0;
-}
-.simulation-textarea::-webkit-scrollbar-thumb {
-    background: var(--bs-border-color);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-}
-.simulation-textarea::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-secondary);
-    border: 2px solid transparent;
-    background-clip: padding-box;
-}
-.simulation-textarea {
-    scrollbar-width: thin;
-    scrollbar-color: var(--bs-border-color) transparent;
-}
-.simulation-textarea::-webkit-scrollbar-corner {
-    background: transparent;
-}
-.simulation-textarea::-webkit-resizer {
-    background: transparent;
-    border: none;
 }
 
 /* Activity Log Enhanced Styles */
@@ -434,7 +419,7 @@
     border-bottom: none;
 }
 .activity-log .activity-log-item:hover {
-    background-color: rgba(102, 126, 234, 0.05);
+    background-color: rgba(94, 96, 206, 0.05);
 }
 .activity-icon {
     width: 32px;
@@ -452,15 +437,15 @@
     <div class="tool-hero">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <h1><i class="bi bi-calendar-event me-3"></i>Scheduled Content</h1>
-                <p>Automate your WhatsApp messaging with scheduled broadcasts, follow-ups, and promotional content.
-                   Set it once and let the system handle the delivery at the perfect time.</p>
+                <h1><i class="bi bi-chat-square-text me-3"></i>Scripted Conversations</h1>
+                <p>Create and schedule multi-bot conversations in WhatsApp groups.
+                   Orchestrate realistic discussions with multiple bots, each sending messages at specific times.</p>
                 <button class="btn btn-light btn-lg mt-3" onclick="createHubInstance()">
                     <i class="bi bi-plus-lg me-2"></i>Create Hub Instance
                 </button>
             </div>
             <div class="col-lg-4 text-center d-none d-lg-block">
-                <i class="bi bi-calendar-check" style="font-size: 8rem; opacity: 0.3;"></i>
+                <i class="bi bi-chat-left-text" style="font-size: 8rem; opacity: 0.3;"></i>
             </div>
         </div>
     </div>
@@ -474,19 +459,19 @@
             <div class="stat-label">Hub Instances</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-envelope"></i></div>
-            <div class="stat-value" id="totalScheduled">0</div>
-            <div class="stat-label">Total Scheduled</div>
+            <div class="stat-icon"><i class="bi bi-file-text"></i></div>
+            <div class="stat-value" id="totalScripts">0</div>
+            <div class="stat-label">Total Scripts</div>
         </div>
         <div class="stat-card success">
             <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-            <div class="stat-value" id="totalSent">0</div>
-            <div class="stat-label">Successfully Sent</div>
+            <div class="stat-value" id="totalCompleted">0</div>
+            <div class="stat-label">Completed</div>
         </div>
         <div class="stat-card warning">
             <div class="stat-icon"><i class="bi bi-clock"></i></div>
-            <div class="stat-value" id="totalPending">0</div>
-            <div class="stat-label">Pending</div>
+            <div class="stat-value" id="totalScheduled">0</div>
+            <div class="stat-label">Scheduled</div>
         </div>
         <div class="stat-card danger">
             <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
@@ -500,24 +485,24 @@
         <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
         <div class="workflow-steps">
             <div class="workflow-step">
-                <div class="workflow-step-icon"><i class="bi bi-pencil-square"></i></div>
-                <h5>1. Create Content</h5>
-                <p>Write your message and choose the content type (message, follow-up, promo)</p>
+                <div class="workflow-step-icon"><i class="bi bi-file-earmark-plus"></i></div>
+                <h5>1. Create Script</h5>
+                <p>Name your script and select target WhatsApp groups</p>
             </div>
             <div class="workflow-step">
-                <div class="workflow-step-icon"><i class="bi bi-people"></i></div>
-                <h5>2. Select Recipients</h5>
-                <p>Choose contacts, groups, or broadcast to all hub members</p>
+                <div class="workflow-step-icon"><i class="bi bi-chat-dots"></i></div>
+                <h5>2. Add Messages</h5>
+                <p>Add messages from different bots with timing controls</p>
             </div>
             <div class="workflow-step">
-                <div class="workflow-step-icon"><i class="bi bi-clock"></i></div>
+                <div class="workflow-step-icon"><i class="bi bi-clock-history"></i></div>
                 <h5>3. Set Schedule</h5>
-                <p>Send immediately, at a specific time, or set up recurring delivery</p>
+                <p>Schedule for a specific time or set up recurring runs</p>
             </div>
             <div class="workflow-step">
-                <div class="workflow-step-icon"><i class="bi bi-robot"></i></div>
-                <h5>4. Auto-Deliver</h5>
-                <p>The system sends your content through the assigned bot at the scheduled time</p>
+                <div class="workflow-step-icon"><i class="bi bi-play-circle"></i></div>
+                <h5>4. Execute</h5>
+                <p>The system sends messages through each bot at the scheduled times</p>
             </div>
         </div>
     </div>
@@ -563,79 +548,64 @@
     <div class="simulation-section">
         <div class="row">
             <div class="col-lg-6">
-                <h3><i class="bi bi-play-circle me-2"></i>Try It First</h3>
-                <p class="text-muted">See how scheduled content works before creating a hub instance.
-                   Enter a sample message and preview how it will appear.</p>
+                <h3><i class="bi bi-play-circle me-2"></i>Preview Conversation</h3>
+                <p class="text-muted">See how a scripted conversation flows with multiple bots.
+                   The messages appear in sequence as they would in a real WhatsApp group.</p>
 
                 <div class="mb-3">
-                    <label class="form-label">Sample Message</label>
-                    <textarea class="form-control simulation-textarea" id="simulationMessage" rows="3"
-                              placeholder="Type your message here...">Hello! This is a scheduled message from our team. Don't miss our special offer this week!</textarea>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <label class="form-label">Content Type</label>
-                        <input type="hidden" id="simulationTypeValue" value="message">
-                        <div class="dropdown model-dropdown">
-                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simulationTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                Message
-                            </button>
-                            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="simulationTypeDropdown">
-                                <div class="model-dropdown-menu-inner">
-                                    <a class="dropdown-item sim-type-item selected" href="#" data-value="message">Message</a>
-                                    <a class="dropdown-item sim-type-item" href="#" data-value="followup">Follow-up</a>
-                                    <a class="dropdown-item sim-type-item" href="#" data-value="promo">Promotional</a>
-                                </div>
-                            </div>
+                    <label class="form-label">Sample Conversation Script</label>
+                    <div class="bg-white rounded p-3 border">
+                        <div class="mb-2 pb-2 border-bottom">
+                            <span class="badge bg-primary me-2">Bot 1</span>
+                            <small class="text-muted">0s delay</small>
+                            <p class="mb-0 mt-1">Good morning everyone! Ready for today's discussion?</p>
                         </div>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label">Schedule</label>
-                        <input type="hidden" id="simulationScheduleValue" value="immediate">
-                        <div class="dropdown model-dropdown">
-                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simulationScheduleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                Send Immediately
-                            </button>
-                            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="simulationScheduleDropdown">
-                                <div class="model-dropdown-menu-inner">
-                                    <a class="dropdown-item sim-schedule-item selected" href="#" data-value="immediate">Send Immediately</a>
-                                    <a class="dropdown-item sim-schedule-item" href="#" data-value="exact">Exact Date & Time</a>
-                                    <a class="dropdown-item sim-schedule-item" href="#" data-value="relative">Relative Time</a>
-                                    <a class="dropdown-item sim-schedule-item" href="#" data-value="recurring">Recurring</a>
-                                </div>
-                            </div>
+                        <div class="mb-2 pb-2 border-bottom">
+                            <span class="badge bg-success me-2">Bot 2</span>
+                            <small class="text-muted">30s delay</small>
+                            <p class="mb-0 mt-1">Good morning! Yes, I've been looking forward to this.</p>
+                        </div>
+                        <div class="mb-2 pb-2 border-bottom">
+                            <span class="badge bg-warning text-dark me-2">Bot 3</span>
+                            <small class="text-muted">60s delay</small>
+                            <p class="mb-0 mt-1">Hi all! Let's get started.</p>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary me-2">Bot 1</span>
+                            <small class="text-muted">120s delay</small>
+                            <p class="mb-0 mt-1">Great! Here's the topic for today...</p>
                         </div>
                     </div>
                 </div>
 
                 <button class="btn btn-theme" onclick="runSimulation()">
-                    <i class="bi bi-play me-2"></i>Preview Message
+                    <i class="bi bi-play me-2"></i>Play Simulation
                 </button>
 
                 <hr class="my-4">
 
                 <h5>Key Features</h5>
                 <ul class="feature-list">
-                    <li><i class="bi bi-check-circle-fill"></i> Schedule messages for specific dates and times</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Set up recurring broadcasts (daily, weekly, monthly)</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Target specific contacts or broadcast to all</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Track delivery status and success rates</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Use AI to generate content suggestions</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Multiple bots in a single conversation flow</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Precise timing with relative or absolute schedules</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Target multiple WhatsApp groups at once</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Set up recurring scripts (daily, weekly)</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Track execution history and message status</li>
                 </ul>
             </div>
             <div class="col-lg-6">
                 <div class="simulation-preview">
-                    <h5 class="text-center mb-3">Message Preview</h5>
+                    <h5 class="text-center mb-3">WhatsApp Group Preview</h5>
                     <div class="phone-mockup">
-                        <div class="phone-screen">
+                        <div class="phone-screen" id="simulationPreview">
                             <div class="text-center text-muted py-3" style="font-size: 0.8rem;">
-                                WhatsApp Preview
+                                Marketing Team Group
                             </div>
-                            <div id="simulationPreview">
-                                <div class="message-bubble">
-                                    <div id="previewContent">Hello! This is a scheduled message from our team. Don't miss our special offer this week!</div>
-                                    <div class="message-time" id="previewTime">Scheduled for: Now</div>
+                            <div id="simulationMessages">
+                                <!-- Messages will appear here during simulation -->
+                                <div class="text-center text-muted py-5">
+                                    <i class="bi bi-play-circle" style="font-size: 3rem;"></i>
+                                    <p class="mt-2">Click "Play Simulation" to see the conversation</p>
                                 </div>
                             </div>
                         </div>
@@ -648,7 +618,7 @@
     <!-- Recent Activity -->
     <div class="tool-card">
         <div class="tool-card-header">
-            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <h5><i class="bi bi-activity me-2"></i>Recent Executions</h5>
             <div class="d-flex align-items-center gap-2">
                 <input type="hidden" id="activityInstanceValue" value="">
                 <div class="dropdown instance-dropdown">
@@ -719,63 +689,34 @@ function formatDateTime(dateStr) {
     return new Date(utcDateStr).toLocaleString();
 }
 
+// Helper: Calculate duration between two dates
+function formatDuration(startStr, endStr) {
+    if (!startStr || !endStr) return null;
+    const start = new Date(startStr.endsWith('Z') ? startStr : startStr + 'Z');
+    const end = new Date(endStr.endsWith('Z') ? endStr : endStr + 'Z');
+    const durationMs = end - start;
+    if (durationMs < 0) return null;
+    if (durationMs < 1000) return durationMs + 'ms';
+    if (durationMs < 60000) return (durationMs / 1000).toFixed(1) + 's';
+    return Math.floor(durationMs / 60000) + 'm ' + Math.floor((durationMs % 60000) / 1000) + 's';
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadInstances();
     loadActivity();
-
-    // Update simulation preview on input change
-    document.getElementById('simulationMessage').addEventListener('input', updatePreview);
-
-    // Content Type dropdown handler
-    document.querySelectorAll('.sim-type-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const dropdown = this.closest('.model-dropdown');
-            const btn = dropdown.querySelector('.model-dropdown-btn');
-            const hiddenInput = document.getElementById('simulationTypeValue');
-
-            btn.textContent = this.textContent;
-            hiddenInput.value = this.getAttribute('data-value');
-
-            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
-            this.classList.add('selected');
-
-            bootstrap.Dropdown.getInstance(btn)?.hide();
-            updatePreview();
-        });
-    });
-
-    // Schedule dropdown handler
-    document.querySelectorAll('.sim-schedule-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const dropdown = this.closest('.model-dropdown');
-            const btn = dropdown.querySelector('.model-dropdown-btn');
-            const hiddenInput = document.getElementById('simulationScheduleValue');
-
-            btn.textContent = this.textContent;
-            hiddenInput.value = this.getAttribute('data-value');
-
-            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
-            this.classList.add('selected');
-
-            bootstrap.Dropdown.getInstance(btn)?.hide();
-            updatePreview();
-        });
-    });
 });
 
 async function loadStats() {
     try {
-        const response = await fetch('/tools/api/scheduled-content/stats');
+        const response = await fetch('/tools/api/scripted-conversations/stats');
         const stats = await response.json();
 
         document.getElementById('totalInstances').textContent = stats.total_instances || 0;
+        document.getElementById('totalScripts').textContent = stats.total_scripts || 0;
+        document.getElementById('totalCompleted').textContent = stats.total_completed || 0;
         document.getElementById('totalScheduled').textContent = stats.total_scheduled || 0;
-        document.getElementById('totalSent').textContent = stats.total_sent || 0;
-        document.getElementById('totalPending').textContent = stats.total_pending || 0;
         document.getElementById('totalFailed').textContent = stats.total_failed || 0;
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -786,7 +727,7 @@ let allInstances = [];
 
 async function loadInstances() {
     try {
-        const response = await fetch('/api/hubs?task_type=scheduled_content');
+        const response = await fetch('/api/hubs?task_type=scripted_conversations');
         allInstances = await response.json();
 
         // Populate hub filter dropdown
@@ -864,7 +805,7 @@ function renderInstances() {
         container.innerHTML = `
             <div class="text-center py-4">
                 <i class="bi bi-inbox display-4 text-muted"></i>
-                <p class="text-muted mt-2">No scheduled content hub instances yet</p>
+                <p class="text-muted mt-2">No scripted conversations hub instances yet</p>
                 <button class="btn btn-primary" onclick="createHubInstance()">
                     <i class="bi bi-plus-lg me-2"></i>Create Your First Instance
                 </button>
@@ -896,7 +837,8 @@ function renderInstances() {
                 <p class="text-muted small mb-2">${hub.description || 'No description'}</p>
                 <div class="instance-stats">
                     <span><i class="bi bi-robot me-1"></i>${hub.bot_count} bots</span>
-                    <span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span>
+                    <span><i class="bi bi-file-text me-1"></i>${hub.script_count || 0} scripts</span>
+                    <span><i class="bi bi-chat-dots me-1"></i>${(hub.selected_groups || []).length} groups</span>
                 </div>
                 <div class="mt-2">
                     <a href="/dashboard/hubs" class="btn btn-sm btn-theme"
@@ -939,7 +881,7 @@ async function loadActivity() {
     try {
         const hiddenInput = document.getElementById('activityInstanceValue');
         const selectedHubId = hiddenInput ? hiddenInput.value : '';
-        let url = '/tools/api/executions?tool_type=scheduled_content&limit=20';
+        let url = '/tools/api/scripted-conversations/executions?limit=20';
         if (selectedHubId) {
             url += `&hub_id=${selectedHubId}`;
         }
@@ -952,7 +894,7 @@ async function loadActivity() {
             container.innerHTML = `
                 <div class="empty-state py-3">
                     <i class="bi bi-activity" style="font-size: 2rem;"></i>
-                    <p class="mb-0">No recent activity</p>
+                    <p class="mb-0">No recent executions</p>
                 </div>
             `;
             return;
@@ -960,53 +902,74 @@ async function loadActivity() {
 
         let html = '';
         data.executions.forEach(exec => {
-            const time = formatDateTime(exec.created_at);
-            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
-            const statusIcon = exec.status === 'success' ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+            const time = formatDateTime(exec.started_at);
 
-            // Parse input/output data
-            const inputData = exec.input_data ? (typeof exec.input_data === 'string' ? JSON.parse(exec.input_data) : exec.input_data) : {};
-            const outputData = exec.output_data ? (typeof exec.output_data === 'string' ? JSON.parse(exec.output_data) : exec.output_data) : {};
+            // Status styling
+            let statusClass, statusIcon, statusLabel;
+            switch (exec.status) {
+                case 'completed':
+                    statusClass = 'text-success';
+                    statusIcon = 'bi-check-circle-fill';
+                    statusLabel = 'Completed';
+                    break;
+                case 'failed':
+                    statusClass = 'text-danger';
+                    statusIcon = 'bi-x-circle-fill';
+                    statusLabel = 'Failed';
+                    break;
+                case 'running':
+                    statusClass = 'text-primary';
+                    statusIcon = 'bi-arrow-repeat';
+                    statusLabel = 'Running';
+                    break;
+                case 'cancelled':
+                    statusClass = 'text-secondary';
+                    statusIcon = 'bi-slash-circle-fill';
+                    statusLabel = 'Cancelled';
+                    break;
+                default:
+                    statusClass = 'text-warning';
+                    statusIcon = 'bi-hourglass-split';
+                    statusLabel = exec.status || 'Unknown';
+            }
 
-            // Build description
-            const contentType = inputData.content_type || 'message';
-            const recipientType = inputData.recipient_type || 'broadcast';
-            const successCount = outputData.success_count || 0;
-            const contentPreview = inputData.content_preview ? inputData.content_preview.substring(0, 50) + (inputData.content_preview.length > 50 ? '...' : '') : '';
-            const botName = inputData.bot_name || null;
-            const scheduleType = inputData.schedule_type || 'immediate';
-
-            // Format schedule type for display
-            const scheduleLabel = {
-                'immediate': 'Immediate',
-                'exact': 'Scheduled',
-                'relative': 'Relative',
-                'recurring': 'Recurring'
-            }[scheduleType] || scheduleType;
-
-            // Format recipient type for display (matching dropdown options)
-            const recipientLabel = {
-                'broadcast': 'All Contacts',
-                'broadcast_all': 'Broadcast All (Contacts + Groups)',
-                'contacts': 'Select Contacts',
-                'groups': 'Select Groups',
-                'all_groups': 'All Groups',
-                'contact': 'Single Contact',
-                'group': 'Single Group'
-            }[recipientType] || recipientType;
-
-            // Build metrics with sender and schedule type
+            // Build metrics
             let metrics = '';
-            if (botName) {
-                metrics += `<span class="text-muted small me-3"><i class="bi bi-robot me-1"></i>${escapeHtml(botName)}</span>`;
+
+            // Hub name (when viewing all instances)
+            const hubName = exec.hub_name;
+            if (hubName && !selectedHubId) {
+                metrics += `<span class="text-muted small me-3"><i class="bi bi-collection me-1"></i>${escapeHtml(hubName)}</span>`;
             }
-            metrics += `<span class="text-muted small me-3"><i class="bi bi-calendar-event me-1"></i>${scheduleLabel}</span>`;
+
+            // Messages count
+            const sent = exec.messages_sent || 0;
+            const failed = exec.messages_failed || 0;
+            if (sent > 0 || failed > 0) {
+                metrics += `<span class="text-muted small me-3"><i class="bi bi-chat-dots me-1"></i>${sent} sent`;
+                if (failed > 0) {
+                    metrics += `, <span class="text-danger">${failed} failed</span>`;
+                }
+                metrics += `</span>`;
+            }
+
+            // Duration (use API-provided execution_time_ms or calculate from timestamps)
             if (exec.execution_time_ms) {
-                const timeStr = exec.execution_time_ms >= 1000
-                    ? (exec.execution_time_ms / 1000).toFixed(1) + 's'
-                    : exec.execution_time_ms + 'ms';
+                const timeStr = exec.execution_time_ms >= 60000
+                    ? Math.floor(exec.execution_time_ms / 60000) + 'm ' + Math.floor((exec.execution_time_ms % 60000) / 1000) + 's'
+                    : exec.execution_time_ms >= 1000
+                        ? (exec.execution_time_ms / 1000).toFixed(1) + 's'
+                        : exec.execution_time_ms + 'ms';
                 metrics += `<span class="text-muted small"><i class="bi bi-clock me-1"></i>${timeStr}</span>`;
+            } else {
+                const duration = formatDuration(exec.started_at, exec.completed_at);
+                if (duration) {
+                    metrics += `<span class="text-muted small"><i class="bi bi-clock me-1"></i>${duration}</span>`;
+                }
             }
+
+            // Script name (escaped)
+            const scriptName = escapeHtml(exec.script_name || 'Unknown Script');
 
             html += `
                 <div class="activity-log-item d-flex align-items-center gap-3 py-2 px-3">
@@ -1015,17 +978,20 @@ async function loadActivity() {
                     </div>
                     <div class="flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong>${contentType.charAt(0).toUpperCase() + contentType.slice(1)} → ${recipientLabel}</strong>
+                            <strong><i class="bi bi-file-text me-1"></i>${scriptName}</strong>
                             <span class="text-muted small">${time}</span>
                         </div>
                         <div class="small text-muted">
-                            ${exec.status === 'success'
-                                ? `<span class="text-success"><i class="bi bi-check me-1"></i>Sent to ${successCount} recipient(s)</span>`
-                                : `<span class="text-danger"><i class="bi bi-x me-1"></i>${formatErrorMessage(exec.error_message) || 'Failed'}</span>`
+                            ${exec.status === 'completed'
+                                ? `<span class="text-success"><i class="bi bi-check me-1"></i>${statusLabel}</span>`
+                                : exec.status === 'failed'
+                                    ? `<span class="text-danger"><i class="bi bi-x me-1"></i>${formatErrorMessage(exec.error_message) || 'Failed'}</span>`
+                                    : exec.status === 'running'
+                                        ? `<span class="text-primary"><i class="bi bi-arrow-repeat me-1"></i>Running...</span>`
+                                        : `<span class="${statusClass}">${statusLabel}</span>`
                             }
                         </div>
-                        ${contentPreview ? `<div class="small text-muted mt-1" style="font-style: italic;">"${escapeHtml(contentPreview)}"</div>` : ''}
-                        <div class="mt-1">${metrics}</div>
+                        ${metrics ? `<div class="mt-1">${metrics}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -1040,67 +1006,58 @@ async function loadActivity() {
 
 function createHubInstance() {
     // Navigate to hubs page with pre-selected task type
-    localStorage.setItem('createHubTaskType', 'scheduled_content');
+    localStorage.setItem('createHubTaskType', 'scripted_conversations');
     window.location.href = '/dashboard/hubs';
 }
 
-function updatePreview() {
-    const message = document.getElementById('simulationMessage').value;
-    const schedule = document.getElementById('simulationScheduleValue').value;
+// Simulation data
+const simulationMessages = [
+    { sender: 'Sales Bot', color: 'primary', message: 'Good morning everyone! Ready for today\'s discussion?', delay: 0 },
+    { sender: 'Support Bot', color: 'success', message: 'Good morning! Yes, I\'ve been looking forward to this.', delay: 1500 },
+    { sender: 'Marketing Bot', color: 'warning', message: 'Hi all! Let\'s get started.', delay: 3000 },
+    { sender: 'Sales Bot', color: 'primary', message: 'Great! Here\'s the topic for today...', delay: 4500 }
+];
 
-    document.getElementById('previewContent').textContent = message || 'Your message will appear here...';
-
-    let scheduleText = 'Now';
-    if (schedule === 'exact') {
-        scheduleText = 'Specific date & time';
-    } else if (schedule === 'relative') {
-        scheduleText = 'After delay';
-    } else if (schedule === 'recurring') {
-        scheduleText = 'Recurring schedule';
-    }
-
-    document.getElementById('previewTime').textContent = `Scheduled for: ${scheduleText}`;
-}
+let simulationRunning = false;
 
 function runSimulation() {
-    // Animate the message bubble
-    const preview = document.getElementById('simulationPreview');
-    const bubble = preview.querySelector('.message-bubble');
+    if (simulationRunning) return;
+    simulationRunning = true;
 
-    bubble.style.transform = 'scale(0.95)';
-    bubble.style.opacity = '0.5';
+    const container = document.getElementById('simulationMessages');
+    container.innerHTML = '';
 
-    setTimeout(() => {
-        bubble.style.transform = 'scale(1)';
-        bubble.style.opacity = '1';
-        bubble.style.background = '#25D366';
-        bubble.style.color = 'white';
-
+    simulationMessages.forEach((msg, index) => {
         setTimeout(() => {
-            bubble.style.background = '#dcf8c6';
-            bubble.style.color = 'inherit';
-        }, 1000);
-    }, 200);
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble outgoing';
+            bubble.style.opacity = '0';
+            bubble.style.transform = 'translateY(10px)';
+            bubble.innerHTML = `
+                <div class="message-sender text-${msg.color}">${msg.sender}</div>
+                ${msg.message}
+                <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            `;
+            container.appendChild(bubble);
 
-    // Show toast
-    const toast = document.createElement('div');
-    toast.className = 'position-fixed bottom-0 end-0 p-3';
-    toast.style.zIndex = '9999';
-    toast.innerHTML = `
-        <div class="toast show" role="alert">
-            <div class="toast-header">
-                <i class="bi bi-check-circle text-success me-2"></i>
-                <strong class="me-auto">Simulation Complete</strong>
-                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
-            </div>
-            <div class="toast-body">
-                This is how your message would be delivered. Create a hub instance to start scheduling real messages!
-            </div>
-        </div>
-    `;
-    document.body.appendChild(toast);
+            // Animate in
+            setTimeout(() => {
+                bubble.style.transition = 'all 0.3s ease';
+                bubble.style.opacity = '1';
+                bubble.style.transform = 'translateY(0)';
+            }, 50);
 
-    setTimeout(() => toast.remove(), 5000);
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+
+            // Reset when done
+            if (index === simulationMessages.length - 1) {
+                setTimeout(() => {
+                    simulationRunning = false;
+                }, 1000);
+            }
+        }, msg.delay);
+    });
 }
 </script>
 {% endblock %}

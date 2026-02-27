@@ -208,6 +208,20 @@
 .activity-log-item:last-child {
     border-bottom: none;
 }
+.activity-log-item.responded {
+    background-color: rgba(40, 167, 69, 0.05);
+    border-left: 3px solid #28a745;
+}
+.activity-log-item.responded:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+.activity-log-item.not-responded {
+    background-color: rgba(108, 117, 125, 0.05);
+    border-left: 3px solid #6c757d;
+}
+.activity-log-item.not-responded:hover {
+    background-color: rgba(108, 117, 125, 0.1);
+}
 .log-header {
     display: flex;
     justify-content: space-between;
@@ -233,7 +247,8 @@
 }
 .log-meta {
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     margin-top: 0.25rem;
@@ -272,22 +287,38 @@
     color: var(--primary-color);
     margin-bottom: 0.25rem;
 }
-.process-step .step-pass {
+.process-step.step-pass {
     color: #28a745;
 }
-.process-step .step-fail {
+.process-step.step-fail {
     color: #dc3545;
 }
-.process-step .step-info {
+.process-step.step-info {
     color: #17a2b8;
 }
-.process-step .final-respond {
-    color: #28a745;
+.process-step.step-bot-blocked {
+    color: #fd7e14;
+    font-weight: 500;
+}
+.process-step.header {
+    color: var(--primary-color);
     font-weight: 600;
 }
-.process-step .final-not-respond {
-    color: #dc3545;
+.process-step.final-respond {
+    color: #28a745;
     font-weight: 600;
+    padding: 0.5rem;
+    background: rgba(40, 167, 69, 0.1);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+.process-step.final-not-respond {
+    color: #6c757d;
+    font-weight: 600;
+    padding: 0.5rem;
+    background: rgba(108, 117, 125, 0.1);
+    border-radius: 4px;
+    margin-top: 0.5rem;
 }
 
 /* Response Section Styles */
@@ -317,6 +348,26 @@
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+/* Reason Section Styles */
+.reason-section {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.08) 0%, rgba(108, 117, 125, 0.03) 100%);
+    border-left: 3px solid #6c757d;
+    border-radius: 0 8px 8px 0;
+}
+.reason-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+.reason-content {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    line-height: 1.5;
 }
 
 /* Instance Filter Dropdown */
@@ -387,6 +438,66 @@
 .instance-dropdown-menu .dropdown-item.selected {
     background: rgba(17, 153, 142, 0.15);
     color: #11998e;
+    font-weight: 500;
+}
+
+/* Model Dropdown (AI Provider/Model) */
+.model-dropdown {
+    position: relative;
+    width: 100%;
+}
+.model-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+.model-dropdown-btn::after {
+    margin-left: auto;
+}
+.model-dropdown-btn:hover, .model-dropdown-btn:focus {
+    border-color: #11998e;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.model-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.model-dropdown-menu-inner {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.model-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.model-dropdown-menu .dropdown-header {
+    color: var(--bs-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 8px 16px 4px;
+}
+.model-dropdown-menu .dropdown-item:hover {
+    background: rgba(17, 153, 142, 0.1);
+    color: #11998e;
+}
+.model-dropdown-menu .dropdown-item.selected {
     font-weight: 500;
 }
 
@@ -767,6 +878,7 @@
                                 <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
                                 <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
                                 <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                                <a class="dropdown-item sim-provider-item" href="#" data-value="grok">xAI (Grok)</a>
                             </div>
                         </div>
                     </div>
@@ -935,18 +1047,15 @@ const SIM_PROVIDER_MODELS = {
         apiKeyPlaceholder: 'sk-...',
         groups: [
             { header: 'GPT-5.2 Series (Latest)', models: [
-                { value: 'gpt-5.2', label: 'GPT-5.2 Thinking' },
-                { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
-                { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
-                { value: 'gpt-5.2-mini', label: 'GPT-5.2 Mini' },
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
             ]},
             { header: 'GPT-5.1 Series', models: [
                 { value: 'gpt-5.1', label: 'GPT-5.1' },
-                { value: 'gpt-5.1-mini', label: 'GPT-5.1 Mini' },
             ]},
             { header: 'GPT-5 Series', models: [
                 { value: 'gpt-5', label: 'GPT-5' },
                 { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
             ]},
             { header: 'GPT-4.1 Series', models: [
                 { value: 'gpt-4.1', label: 'GPT-4.1' },
@@ -1288,6 +1397,48 @@ function renderInstances() {
     }
 }
 
+// Format ending detection reason to human-readable text
+function formatEndingReason(reason) {
+    const reasonMap = {
+        'quick_check_greeting': 'Greeting detected',
+        'quick_check_question': 'Question detected',
+        'quick_check_farewell_complete': 'Farewell exchange complete',
+        'pattern_check_respond': 'Pattern check passed',
+        'ai_decision_respond': 'AI: Continue conversation',
+        'ai_decision_skip': 'AI: Conversation ending',
+        'hub_conversation_ending': 'Conversation ending',
+        'hub_conversation_continue': 'Continue conversation',
+        'time_gap_new_conversation': 'New conversation (time gap)',
+        'no_conversation_history': 'No conversation history',
+        'insufficient_history': 'Insufficient history',
+        'hub_managed_skip': 'Hub managed',
+        'cached_respond': 'Cached: Continue',
+        'cached_skip': 'Cached: Skip',
+        'no_ai_provider': 'No AI provider configured',
+        'hub_not_found': 'Hub not found',
+        'no_bots_in_hub': 'No bots in hub'
+    };
+    return reasonMap[reason] || reason;
+}
+
+// Format process step content to be more readable
+function formatProcessStep(step) {
+    // Format ending detection reasons in process steps
+    if (step.includes('Ending Detection:')) {
+        // Extract the reason in parentheses
+        const match = step.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+            const formattedReason = formatEndingReason(match[1]);
+            return step.replace(match[1], formattedReason);
+        }
+    }
+    // Format bot-to-bot detection method
+    if (step.includes('method: phone_system')) {
+        return step.replace('method: phone_system', 'method: phone (system-wide)');
+    }
+    return step;
+}
+
 async function loadActivity() {
     try {
         // Get selected instance filter
@@ -1325,7 +1476,17 @@ async function loadActivity() {
 
             const senderName = inputData.sender_name || inputData.sender_phone || 'Unknown';
             const chatType = inputData.is_group ? 'group' : 'private';
-            const groupName = inputData.group_name || (inputData.is_group ? 'Group' : 'Private');
+            const chatIdRaw = inputData.chat_id || '';
+            // Use actual group name if available, otherwise show truncated chat_id
+            let groupName = inputData.group_name;
+            if (!groupName) {
+                if (inputData.is_group && chatIdRaw) {
+                    const shortId = chatIdRaw.replace(/@g\.us$|@s\.whatsapp\.net$/i, '');
+                    groupName = shortId.length > 12 ? shortId.substring(0, 9) + '...' : shortId;
+                } else {
+                    groupName = inputData.is_group ? 'Group' : 'Private';
+                }
+            }
             const botName = inputData.bot_name || `Bot ${inputData.bot_id || '?'}`;
             const hubName = inputData.hub_name || '';
             const message = inputData.message || '';
@@ -1333,24 +1494,53 @@ async function loadActivity() {
             const shouldRespond = outputData.should_respond;
             const processSteps = outputData.process_steps || [];
 
+            // Get all bot names for hover display
+            const allBotNames = inputData.all_bot_names || [];
+            const botCount = inputData.bot_count || allBotNames.length || 1;
+            const allBotNamesStr = allBotNames.join(', ');
+
+            // Format bot names display with truncation
+            let botNamesDisplay = allBotNamesStr;
+            if (botNamesDisplay.length > 30) {
+                botNamesDisplay = botNamesDisplay.substring(0, 27) + '...';
+            }
+
+            // Get reasons for display
+            const endingReason = outputData.ending_reason || '';
+            const routerReason = outputData.router_reason || outputData.reason || '';
+            const selectedBots = outputData.selected_bots || [];
+
+            // Check if this is a bot-to-bot blocked message
+            const isBotToBot = outputData.bot_to_bot_blocked || inputData.is_bot_message || false;
+            const detectedBot = outputData.detected_bot || inputData.detected_bot || '';
+            const detectionMethod = outputData.detection_method || inputData.detection_method || '';
+
             // Build process flow HTML
             let processHtml = '';
             if (processSteps.length > 0) {
                 processSteps.forEach(step => {
                     let stepClass = '';
-                    let stepContent = step;
+                    let stepContent = formatProcessStep(step);  // Format step for readability
 
                     // Color code the steps
                     if (step.includes('✓')) {
                         stepClass = 'step-pass';
                     } else if (step.includes('✗')) {
                         stepClass = 'step-fail';
-                    } else if (step.startsWith('Message Received')) {
+                    } else if (step.startsWith('Message received')) {
                         stepClass = 'header';
-                    } else if (step.includes('Final: RESPONDED')) {
+                    } else if (step.includes('Final:') && (step.includes('RESPONDS') || step.includes('RESPONDED'))) {
                         stepClass = 'final-respond';
-                    } else if (step.includes('Final: NOT RESPONDED')) {
+                    } else if (step.includes('Final:') && (step.includes('SKIPS') || step.includes('NOT RESPOND') || step.includes('NO RESPONSE'))) {
                         stepClass = 'final-not-respond';
+                    } else if (step.includes('Ending Detection: SKIP')) {
+                        stepClass = 'step-fail';
+                    } else if (step.includes('Ending Detection: RESPOND')) {
+                        stepClass = 'step-pass';
+                    } else if (step.includes('Bot-to-Bot Detection: BLOCKED')) {
+                        stepClass = 'step-bot-blocked';
+                    } else if (step.includes('Bot-to-Bot Detection:') && step.includes('User message')) {
+                        stepClass = 'step-pass';
                     }
 
                     processHtml += `<div class="process-step ${stepClass}">${escapeHtml(stepContent)}</div>`;
@@ -1360,15 +1550,18 @@ async function loadActivity() {
                 processHtml = `<div class="process-step step-info">No detailed process flow available</div>`;
             }
 
+            // Determine badge - only Responded or Not Responded based on outcome
             const respondBadge = shouldRespond
                 ? '<span class="badge bg-success">Responded</span>'
                 : '<span class="badge bg-secondary">Not Responded</span>';
 
+            // Determine item class based on response outcome
+            const itemClass = shouldRespond ? 'responded' : 'not-responded';
+
             // Get response message if available
             const responseMessage = outputData.response_message || '';
-            const responsePreview = responseMessage.length > 60 ? responseMessage.substring(0, 60) + '...' : responseMessage;
 
-            // Build response HTML if bot responded
+            // Build response HTML - only show if there's an actual response
             let responseHtml = '';
             if (shouldRespond && responseMessage) {
                 responseHtml = `
@@ -1377,27 +1570,77 @@ async function loadActivity() {
                         <div class="response-content" title="${escapeHtml(responseMessage)}">${escapeHtml(responseMessage)}</div>
                     </div>
                 `;
-            } else if (shouldRespond && !responseMessage) {
-                responseHtml = `
-                    <div class="response-section pending">
-                        <div class="response-label"><i class="bi bi-hourglass-split me-1"></i>Response pending...</div>
-                    </div>
-                `;
             }
 
-            // Only show bot name for responded messages
-            const botNameHtml = shouldRespond ? `<span><i class="bi bi-robot me-1"></i>${escapeHtml(botName)}</span>` : '';
+            // Build reason summary HTML for not responded messages
+            let reasonHtml = '';
+            if (!shouldRespond) {
+                let reason = '';
+                if (isBotToBot) {
+                    // Bot-to-bot block reason with limit info
+                    const botToBoxLimit = outputData.bot_to_bot_limit || 'blocked';
+                    reason = `Bot message from ${detectedBot || 'another bot'} - ${botToBoxLimit}`;
+                } else if (endingReason) {
+                    reason = `Ending detection: ${formatEndingReason(endingReason)}`;
+                } else if (routerReason) {
+                    reason = `Router: ${routerReason}`;
+                }
+                if (reason) {
+                    reasonHtml = `
+                        <div class="reason-section">
+                            <div class="reason-label"><i class="bi bi-info-circle me-1"></i>Reason:</div>
+                            <div class="reason-content">${escapeHtml(reason)}</div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Bot name display - ONLY for responded messages
+            let botNameHtml = '';
+            if (shouldRespond && selectedBots.length > 0) {
+                // Show responding bot(s) with bot ID on hover
+                const selectedBotsStr = selectedBots.join(', ');
+                const selectedBotsDisplay = selectedBotsStr.length > 25 ? selectedBotsStr.substring(0, 22) + '...' : selectedBotsStr;
+                const botId = inputData.bot_id || '';
+                const hoverText = botId ? `Bot ID: ${botId}` : selectedBotsStr;
+                botNameHtml = `<span title="${escapeHtml(hoverText)}"><i class="bi bi-robot me-1"></i>${escapeHtml(selectedBotsDisplay)}</span>`;
+            }
+            // For not responded messages - don't show bot name on left side
+
+            // Sender display with user ID on hover
+            const senderId = inputData.sender_phone || inputData.chat_id || '';
+            let senderDisplayName = senderName;
+            let senderIcon = 'bi-person';
+            if (isBotToBot && detectedBot) {
+                // Bot sender - show bot name with (Bot) indicator
+                senderDisplayName = `${detectedBot} (Bot)`;
+                senderIcon = 'bi-robot';
+            }
+
+            // Group display - show group name with chat_id on hover
+            const chatId = inputData.chat_id || '';
+            // Use actual group name if available, otherwise show truncated chat_id
+            let groupDisplayName = inputData.group_name;
+            if (!groupDisplayName) {
+                if (inputData.is_group && chatId) {
+                    // Truncate chat_id for display (remove @g.us suffix and limit length)
+                    const shortId = chatId.replace(/@g\.us$|@s\.whatsapp\.net$/i, '');
+                    groupDisplayName = shortId.length > 12 ? shortId.substring(0, 9) + '...' : shortId;
+                } else {
+                    groupDisplayName = inputData.is_group ? 'Group' : 'Private';
+                }
+            }
 
             html += `
-                <div class="activity-log-item" onclick="toggleProcessFlow(${index})">
+                <div class="activity-log-item ${itemClass}" onclick="toggleProcessFlow(${index})">
                     <div class="log-header">
                         <div class="log-summary">
                             <div class="log-message" title="${escapeHtml(message)}">
                                 <i class="bi bi-chat-dots me-1"></i>${escapeHtml(msgPreview) || 'No message'}
                             </div>
                             <div class="log-meta">
-                                <span><i class="bi bi-person me-1"></i>${escapeHtml(senderName)}</span>
-                                <span><i class="bi bi-${chatType === 'group' ? 'people' : 'person'} me-1"></i>${escapeHtml(groupName)}</span>
+                                <span title="${escapeHtml(senderId)}"><i class="bi ${senderIcon} me-1"></i>${escapeHtml(senderDisplayName)}</span>
+                                <span title="${escapeHtml(chatId)}"><i class="bi bi-${chatType === 'group' ? 'people' : 'person'} me-1"></i>${escapeHtml(groupDisplayName)}</span>
                                 ${botNameHtml}
                             </div>
                         </div>
@@ -1411,6 +1654,7 @@ async function loadActivity() {
                     </div>
                     <div class="process-flow" id="processFlow${index}">
                         ${processHtml}
+                        ${reasonHtml}
                         ${responseHtml}
                     </div>
                 </div>
@@ -1582,24 +1826,36 @@ async function runSimulation() {
         // Update Step 4 with classification results
         document.getElementById('step4Detail').textContent = 'Classification complete';
         const badges = document.getElementById('step4Badges');
-        const categoryColors = {
-            sales: 'bg-primary', support: 'bg-info', inquiry: 'bg-secondary',
-            feedback: 'bg-warning text-dark', general: 'bg-secondary'
+        // Unified styling: pastel backgrounds with consistent dark text
+        const textColor = '#555';
+        const categoryStyles = {
+            sales: `background: #cfe2ff; color: ${textColor};`,
+            support: `background: #cff4fc; color: ${textColor};`,
+            inquiry: `background: #e9ecef; color: ${textColor};`,
+            feedback: `background: #fff3cd; color: ${textColor};`,
+            general: `background: #e9ecef; color: ${textColor};`
         };
-        const urgencyColors = {
-            low: 'bg-secondary', medium: 'bg-warning text-dark', high: 'bg-orange', critical: 'bg-danger'
+        const urgencyStyles = {
+            low: `background: #e9ecef; color: ${textColor};`,
+            medium: `background: #ffe5b4; color: ${textColor};`,
+            high: `background: #ffcca0; color: ${textColor};`,
+            critical: `background: #f8d7da; color: ${textColor};`
         };
-        const sentimentColors = {
-            positive: 'bg-success', neutral: 'bg-secondary', negative: 'bg-danger'
+        const sentimentStyles = {
+            positive: `background: #d1e7dd; color: ${textColor};`,
+            neutral: `background: #fff3cd; color: ${textColor};`,
+            negative: `background: #f8d7da; color: ${textColor};`
         };
         badges.innerHTML = `
-            <span class="badge ${categoryColors[routing.category] || 'bg-secondary'}">${routing.category}</span>
-            <span class="badge ${urgencyColors[routing.urgency] || 'bg-warning'}">${routing.urgency} priority</span>
-            <span class="badge ${sentimentColors[routing.sentiment] || 'bg-secondary'}">${routing.sentiment}</span>
+            <span class="badge" style="${categoryStyles[routing.category] || `background: #e9ecef; color: ${textColor};`}">${routing.category}</span>
+            <span class="badge" style="${urgencyStyles[routing.urgency] || `background: #ffe5b4; color: ${textColor};`}">${routing.urgency} priority</span>
+            <span class="badge" style="${sentimentStyles[routing.sentiment] || `background: #e9ecef; color: ${textColor};`}">${routing.sentiment}</span>
         `;
         if (routing.suggested_expertise && routing.suggested_expertise.length > 0) {
             routing.suggested_expertise.slice(0, 3).forEach(exp => {
-                badges.innerHTML += `<span class="badge bg-outline-secondary" style="border: 1px solid #666; background: transparent; color: #666;">${exp}</span>`;
+                // Format tag: replace underscores/hyphens with spaces, keep lowercase
+                const formattedExp = exp.replace(/[_-]/g, ' ').toLowerCase();
+                badges.innerHTML += `<span class="badge" style="background: #e9ecef; color: ${textColor};">${formattedExp}</span>`;
             });
         }
         badges.style.display = 'flex';
@@ -1614,6 +1870,32 @@ async function runSimulation() {
         const botScores = routing.bot_scores || {};
         document.getElementById('botScores').style.display = 'flex';
 
+        // Normalize scores to sum to exactly 100% (with rounding adjustment)
+        const totalScore = Object.values(botScores).reduce((sum, score) => sum + score, 0);
+        const normalizedScores = {};
+        const roundedScores = {};
+        let roundedSum = 0;
+        let maxBot = null;
+        let maxScore = -1;
+
+        // First pass: normalize and round
+        for (const [botName, score] of Object.entries(botScores)) {
+            const normalized = totalScore > 0 ? score / totalScore : 0;
+            normalizedScores[botName] = normalized;
+            const rounded = Math.round(normalized * 100);
+            roundedScores[botName] = rounded;
+            roundedSum += rounded;
+            if (normalized > maxScore) {
+                maxScore = normalized;
+                maxBot = botName;
+            }
+        }
+
+        // Adjust largest value to ensure sum is exactly 100%
+        if (maxBot && roundedSum !== 100) {
+            roundedScores[maxBot] += (100 - roundedSum);
+        }
+
         // Update score cards
         const scoreMapping = {
             'Sales Bot': 'scoreBot1',
@@ -1621,12 +1903,12 @@ async function runSimulation() {
             'General Bot': 'scoreBot3'
         };
 
-        for (const [botName, score] of Object.entries(botScores)) {
+        for (const [botName, score] of Object.entries(roundedScores)) {
             const cardId = scoreMapping[botName];
             if (cardId) {
                 const card = document.getElementById(cardId);
                 if (card) {
-                    card.querySelector('.score').textContent = Math.round(score * 100) + '%';
+                    card.querySelector('.score').textContent = score + '%';
                     if (botName === routing.assigned_bot) {
                         card.classList.add('selected');
                     }
@@ -1639,10 +1921,11 @@ async function runSimulation() {
 
         await sleep(500);
 
-        // Step 6: Final Selection
+        // Step 6: Final Selection - use the normalized score of selected bot as confidence
         setStepActive(6);
         await sleep(300);
-        document.getElementById('step6Detail').textContent = `${routing.assigned_bot} selected (${Math.round(routing.confidence * 100)}% confidence)`;
+        const selectedBotScore = roundedScores[routing.assigned_bot] || Math.round(routing.confidence * 100);
+        document.getElementById('step6Detail').textContent = `${routing.assigned_bot} selected (${selectedBotScore}% confidence)`;
         setStepCompleted(6);
 
         await sleep(300);

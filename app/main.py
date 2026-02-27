@@ -32,9 +32,13 @@ from .conversations.routes import router as conversations_router
 from .analytics.routes import router as analytics_router
 from .hubs.routes import router as hubs_router
 from .hubs.scheduler import content_scheduler
+from .hubs.analysis_scheduler import contact_analysis_scheduler
+from .scripts.scheduler import script_scheduler
 from .tools import tools_router
 from .agents import agents_router
+from .scripts.routes import router as scripts_router
 from .metrics import metrics_endpoint
+from .logging_config import setup_logging
 
 # Base directory for consistent path resolution across all OS
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,9 +61,12 @@ async def lifespan(app: FastAPI):
     print("Database tables created.")
 
     # Create directories if they don't exist (use BASE_DIR for cross-OS consistency)
-    (BASE_DIR / "sessions").mkdir(parents=True, exist_ok=True)
     (BASE_DIR / "logs").mkdir(parents=True, exist_ok=True)
     (BASE_DIR / "data" / "sessions").mkdir(parents=True, exist_ok=True)
+
+    # Initialize logging system
+    setup_logging()
+    print("Logging system initialized.")
 
     # Auto-recover bots that were marked as running
     await auto_recover_bots()
@@ -67,10 +74,22 @@ async def lifespan(app: FastAPI):
     # Start the content scheduler
     await content_scheduler.start()
 
+    # Start the script scheduler
+    await script_scheduler.start()
+
+    # Start the contact analysis scheduler
+    await contact_analysis_scheduler.start()
+
     yield
 
     # Shutdown
     print("Shutting down ChatHub...")
+
+    # Stop the contact analysis scheduler
+    await contact_analysis_scheduler.stop()
+
+    # Stop the script scheduler
+    await script_scheduler.stop()
 
     # Stop the content scheduler
     await content_scheduler.stop()
@@ -106,7 +125,7 @@ async def auto_recover_bots():
                 print(f"Auto-recovering bot: {bot.name} (ID: {bot.id})")
 
                 # Decrypt API key
-                api_key = decrypt_string(bot.openai_api_key_encrypted) if bot.openai_api_key_encrypted else None
+                api_key = decrypt_string(bot.api_key_encrypted) if bot.api_key_encrypted else None
 
                 if not api_key:
                     print(f"  Skipping bot {bot.id}: No API key configured")
@@ -119,8 +138,8 @@ async def auto_recover_bots():
                 config = {
                     "bot_profile_id": bot.id,
                     "ai_provider": bot.ai_provider or "openai",
-                    "openai_api_key": api_key,
-                    "openai_model": bot.openai_model or "gpt-4o-mini",
+                    "api_key": api_key,
+                    "model": bot.model or "gpt-4o-mini",
                     "system_prompt": bot.system_prompt,
                     "temperature": bot.temperature if bot.temperature is not None else 0.7,
                     "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
@@ -187,17 +206,9 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
 STATIC_DIR = BASE_DIR / "static"
-UPLOADS_DIR = BASE_DIR / "uploads"
-
-# Create uploads directory if not exists
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-(UPLOADS_DIR / "messages").mkdir(parents=True, exist_ok=True)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-# Mount uploads directory for serving uploaded files (legacy path)
-app.mount("/uploads/messages", StaticFiles(directory=str(UPLOADS_DIR / "messages")), name="uploads_messages")
 
 # Bot media files directory
 BOT_SESSIONS_DIR = BASE_DIR / "data" / "sessions"
@@ -260,6 +271,7 @@ app.include_router(bots_router, prefix="/api/bots", tags=["Bots"])
 app.include_router(conversations_router, prefix="/api/conversations", tags=["Conversations"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
+app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(agents_router, tags=["Agents"])
 

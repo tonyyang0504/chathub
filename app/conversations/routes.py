@@ -31,11 +31,11 @@ logger = logging.getLogger(__name__)
 def _get_openai_client_for_bot(bot_profile: BotProfile):
     """Get an OpenAI client instance for a bot profile."""
     try:
-        if not bot_profile.openai_api_key_encrypted:
-            logger.warning(f"Bot {bot_profile.id} has no OpenAI API key configured")
+        if not bot_profile.api_key_encrypted:
+            logger.warning(f"Bot {bot_profile.id} has no API key configured")
             return None
         # Decrypt the API key
-        api_key = decrypt_string(bot_profile.openai_api_key_encrypted)
+        api_key = decrypt_string(bot_profile.api_key_encrypted)
         return OpenAI(api_key=api_key)
     except Exception as e:
         logger.warning(f"Failed to create OpenAI client for bot {bot_profile.id}: {e}")
@@ -525,7 +525,7 @@ async def clear_messages(
 @router.get("/{conversation_id}/export")
 async def export_conversation(
     conversation_id: int,
-    format: str = Query("json", regex="^(json|txt)$"),
+    format: str = Query("json", pattern="^(json|txt)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

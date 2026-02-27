@@ -392,7 +392,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">OpenAI Model</label>
-                            <input type="hidden" name="openai_model" id="editModelValue" value="gpt-4o-mini">
+                            <input type="hidden" name="model" id="editModelValue" value="gpt-4o-mini">
                             <div class="dropdown model-dropdown">
                                 <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="editModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     GPT-4o Mini (Default)
@@ -400,16 +400,13 @@
                                 <div class="dropdown-menu model-dropdown-menu" aria-labelledby="editModelDropdown">
                                     <div class="model-dropdown-menu-inner">
                                         <h6 class="dropdown-header">GPT-5.2 Series (Latest)</h6>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2 Thinking</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-pro">GPT-5.2 Pro</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-chat-latest">GPT-5.2 Instant</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.2-mini">GPT-5.2 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5.2">GPT-5.2</a>
                                         <h6 class="dropdown-header">GPT-5.1 Series</h6>
                                         <a class="dropdown-item" href="#" data-value="gpt-5.1">GPT-5.1</a>
-                                        <a class="dropdown-item" href="#" data-value="gpt-5.1-mini">GPT-5.1 Mini</a>
                                         <h6 class="dropdown-header">GPT-5 Series</h6>
                                         <a class="dropdown-item" href="#" data-value="gpt-5">GPT-5</a>
                                         <a class="dropdown-item" href="#" data-value="gpt-5-mini">GPT-5 Mini</a>
+                                        <a class="dropdown-item" href="#" data-value="gpt-5-nano">GPT-5 Nano</a>
                                         <h6 class="dropdown-header">GPT-4.1 Series</h6>
                                         <a class="dropdown-item" href="#" data-value="gpt-4.1">GPT-4.1</a>
                                         <a class="dropdown-item" href="#" data-value="gpt-4.1-mini">GPT-4.1 Mini</a>
@@ -424,7 +421,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label">OpenAI API Key</label>
-                            <input type="password" class="form-control" name="openai_api_key" id="editApiKey" placeholder="Leave empty to keep current">
+                            <input type="password" class="form-control" name="api_key" id="editApiKey" placeholder="Leave empty to keep current">
                         </div>
                         <div class="col-12">
                             <label class="form-label">System Prompt</label>
@@ -552,7 +549,7 @@
                             </span>
                             <small class="text-muted">${timeAgo(a.timestamp)}</small>
                         </div>
-                        ${a.details ? `<small class="text-muted">${a.details}</small>` : ''}
+                        ${a.details ? `<small class="text-muted">${formatActivityDetails(a.details)}</small>` : ''}
                     </li>
                 `).join('');
             }
@@ -561,12 +558,88 @@
         }
     }
 
+    function formatActivityDetails(details) {
+        if (!details) return '';
+
+        // Check for Playwright/browser technical errors first (full match patterns)
+        const technicalErrors = [
+            // Playwright page/browser closed errors
+            { pattern: /Page\.query_selector.*Target.*closed/i, message: 'Browser session ended' },
+            { pattern: /Page\..*Target.*closed/i, message: 'Browser session ended' },
+            { pattern: /Target page.*closed/i, message: 'Browser session ended' },
+            { pattern: /Target.*context.*closed/i, message: 'Browser session ended' },
+            { pattern: /browser has been closed/i, message: 'Browser closed' },
+            { pattern: /context has been closed/i, message: 'Browser session ended' },
+            { pattern: /page has been closed/i, message: 'Page closed' },
+            // Timeout errors
+            { pattern: /Timeout \d+ms exceeded/i, message: 'Operation timed out' },
+            { pattern: /TimeoutError/i, message: 'Operation timed out' },
+            { pattern: /Navigation timeout/i, message: 'Page load timed out' },
+            { pattern: /Waiting for.*timeout/i, message: 'Wait timed out' },
+            // Connection errors
+            { pattern: /net::ERR_/i, message: 'Network error' },
+            { pattern: /ERR_CONNECTION_REFUSED/i, message: 'Connection refused' },
+            { pattern: /ERR_CONNECTION_RESET/i, message: 'Connection reset' },
+            { pattern: /ERR_INTERNET_DISCONNECTED/i, message: 'Internet disconnected' },
+            { pattern: /ERR_NAME_NOT_RESOLVED/i, message: 'DNS lookup failed' },
+            // Navigation errors
+            { pattern: /Navigation failed.*net::/i, message: 'Navigation failed' },
+            { pattern: /frame was detached/i, message: 'Page navigated away' },
+            // Authentication
+            { pattern: /Authentication timeout/i, message: 'QR code scan timed out' },
+            // Generic cleanup
+            { pattern: /playwright\._impl/i, message: 'Browser error' },
+            { pattern: /PlaywrightError/i, message: 'Browser error' }
+        ];
+
+        // Check if this is a technical error that needs full replacement
+        for (const { pattern, message } of technicalErrors) {
+            if (pattern.test(details)) {
+                return message;
+            }
+        }
+
+        // Map technical terms to human-readable text (partial replacements)
+        const replacements = {
+            // Ending detection reasons
+            'quick_check_greeting': 'greeting detected',
+            'quick_check_question': 'question detected',
+            'quick_check_farewell_complete': 'farewell exchange complete',
+            'pattern_check_respond': 'pattern matched',
+            'ai_decision_respond': 'AI decided to continue',
+            'ai_decision_skip': 'AI decided conversation ended',
+            'hub_conversation_ending': 'conversation ending',
+            'hub_conversation_continue': 'conversation continuing',
+            'time_gap_new_conversation': 'new conversation after time gap',
+            'no_conversation_history': 'no conversation history',
+            'insufficient_history': 'insufficient history',
+            'cached_respond': 'cached: continue',
+            'cached_skip': 'cached: skip',
+            // Router reasons
+            'hub_managed_skip': 'hub managed',
+            'bot_continuation': 'bot continuation',
+            'no_ai_provider': 'no AI provider configured',
+            'hub_not_found': 'hub not found',
+            'no_bots_in_hub': 'no bots in hub'
+        };
+        let formatted = details;
+        for (const [key, value] of Object.entries(replacements)) {
+            formatted = formatted.replace(new RegExp(key, 'g'), value);
+        }
+        return formatted;
+    }
+
     function getActivityIcon(action) {
         const icons = {
             'bot_started': 'play-circle',
             'bot_stopped': 'stop-circle',
             'message_sent': 'send',
-            'message_received': 'envelope'
+            'message_received': 'envelope',
+            'hub_routing_skip': 'skip-forward',
+            'hub_routing_respond': 'chat-dots',
+            'conversation_ending_detected': 'chat-square-dots',
+            'scheduled_content_sent': 'calendar-check',
+            'agent_execution': 'robot'
         };
         return icons[action] || 'circle';
     }
@@ -576,9 +649,14 @@
             'bot_started': 'Bot started',
             'bot_stopped': 'Bot stopped',
             'message_sent': 'Message sent',
-            'message_received': 'Message received'
+            'message_received': 'Message received',
+            'hub_routing_skip': 'Routing skipped',
+            'hub_routing_respond': 'Routing responded',
+            'conversation_ending_detected': 'Conversation ending',
+            'scheduled_content_sent': 'Scheduled content sent',
+            'agent_execution': 'Agent executed'
         };
-        return labels[action] || action;
+        return labels[action] || action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
     function timeAgo(timestamp) {
@@ -622,7 +700,15 @@
 
             document.getElementById('editBotId').value = bot.id;
             document.getElementById('editName').value = bot.name;
-            setModelDropdownValue('editModelDropdown', bot.openai_model || 'gpt-4o-mini');
+            setModelDropdownValue('editModelDropdown', bot.model || 'gpt-4o-mini');
+            // Show masked API key in placeholder
+            const apiKeyInput = document.getElementById('editApiKey');
+            if (bot.api_key_masked) {
+                apiKeyInput.placeholder = bot.api_key_masked;
+            } else {
+                apiKeyInput.placeholder = 'Enter API key';
+            }
+            apiKeyInput.value = '';  // Clear any previous value
             document.getElementById('editPrompt').value = bot.system_prompt || '';
             document.getElementById('editTemperature').value = bot.temperature ?? 0.7;
             document.getElementById('editMaxTokens').value = bot.max_tokens ?? 1000;
@@ -647,7 +733,7 @@
 
         const data = {
             name: form.name.value,
-            openai_model: document.getElementById('editModelValue').value,
+            model: document.getElementById('editModelValue').value,
             system_prompt: form.system_prompt.value,
             temperature: parseFloat(form.temperature.value),
             max_tokens: parseInt(form.max_tokens.value),
@@ -658,8 +744,8 @@
             headless: form.headless.checked
         };
 
-        if (form.openai_api_key.value) {
-            data.openai_api_key = form.openai_api_key.value;
+        if (form.api_key.value) {
+            data.api_key = form.api_key.value;
         }
 
         try {

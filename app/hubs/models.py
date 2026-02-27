@@ -63,9 +63,10 @@ class MessageTopicResponse(BaseModel):
 class HubCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
-    task_type: str = "group_management"  # group_management, scheduled_content, contact_analyzer, message_routing, content_generator
-    openai_api_key: Optional[str] = None
-    openai_model: str = "gpt-4o-mini"
+    task_type: str = "group_management"  # group_management, scheduled_content, contact_analyzer, message_routing, content_generator, scripted_conversations
+    ai_provider: str = "openai"  # openai, anthropic, google, deepseek, qwen, xai
+    api_key: Optional[str] = None
+    model: str = "gpt-4o-mini"
     # Selected groups for this hub
     selected_groups: Optional[List[SelectedGroup]] = None
     # Multi-bot response settings
@@ -82,8 +83,9 @@ class HubUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     task_type: Optional[str] = None
-    openai_api_key: Optional[str] = None
-    openai_model: Optional[str] = None
+    ai_provider: Optional[str] = None  # openai, anthropic, google, deepseek, qwen, xai
+    api_key: Optional[str] = None
+    model: Optional[str] = None
     is_active: Optional[bool] = None
     # Selected groups for this hub
     selected_groups: Optional[List[SelectedGroup]] = None
@@ -128,7 +130,9 @@ class HubResponse(BaseModel):
     name: str
     description: Optional[str] = None
     task_type: str = "group_management"
-    openai_model: str
+    ai_provider: str = "openai"
+    api_key_masked: Optional[str] = None  # Masked API key for display (e.g., sk-proj-...gasA)
+    model: str
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -136,6 +140,7 @@ class HubResponse(BaseModel):
     agent_count: int = 0
     contact_count: int = 0
     content_count: int = 0
+    script_count: int = 0
     # Selected groups for this hub
     selected_groups: Optional[List[SelectedGroup]] = None
     # Multi-bot response settings
@@ -206,8 +211,8 @@ class AgentCreate(BaseModel):
     agent_type: str  # 'classifier', 'router', 'generator', 'scheduler', 'analyzer', 'followup'
     description: Optional[str] = None
     ai_provider: str = "openai"  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
-    openai_api_key: Optional[str] = None
-    openai_model: str = "gpt-4o-mini"
+    api_key: Optional[str] = None
+    model: str = "gpt-4o-mini"
     system_prompt: Optional[str] = None  # Custom prompt for generator, analyzer, followup
     additional_instructions: Optional[str] = None  # Extra instructions for classifier, router (appended to default)
     config: Optional[dict] = None
@@ -217,8 +222,8 @@ class AgentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     ai_provider: Optional[str] = None  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
-    openai_api_key: Optional[str] = None
-    openai_model: Optional[str] = None
+    api_key: Optional[str] = None
+    model: Optional[str] = None
     system_prompt: Optional[str] = None  # Custom prompt for generator, analyzer, followup
     additional_instructions: Optional[str] = None  # Extra instructions for classifier, router
     config: Optional[dict] = None
@@ -232,7 +237,8 @@ class AgentResponse(BaseModel):
     agent_type: str
     description: Optional[str] = None
     ai_provider: str = "openai"
-    openai_model: str
+    api_key_masked: Optional[str] = None  # Masked API key for display (e.g., sk-proj-...gasA)
+    model: str
     is_active: bool
     last_run_at: Optional[datetime] = None
     created_at: datetime
@@ -284,6 +290,14 @@ class ContactResponse(BaseModel):
     first_seen_at: datetime
     created_at: datetime
     tags: List[ContactTagInfo] = []
+    # AI Analysis fields
+    sentiment: Optional[str] = None
+    urgency: Optional[str] = None
+    follow_up_needed: bool = False
+    follow_up_reason: Optional[str] = None
+    key_topics: Optional[List[str]] = None
+    # Analysis queue fields
+    analysis_status: Optional[str] = None
 
 
 class ContactListResponse(BaseModel):
@@ -294,6 +308,34 @@ class ContactListResponse(BaseModel):
     engagement_score: float
     last_interaction_at: Optional[datetime] = None
     tag_count: int = 0
+    bot_name: Optional[str] = None
+    analysis_status: Optional[str] = None
+
+
+class PaginatedContactsResponse(BaseModel):
+    items: List[ContactListResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class GroupListResponse(BaseModel):
+    chat_id: str
+    name: str
+    profile_pic: Optional[str] = None
+    message_count: int = 0
+    last_message_at: Optional[datetime] = None
+    bot_name: Optional[str] = None
+    bot_ids: List[int] = []
+
+
+class PaginatedGroupsResponse(BaseModel):
+    items: List[GroupListResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 
 # ============== Tag Schemas ==============
@@ -312,18 +354,35 @@ class TagUpdate(BaseModel):
 
 # ============== Scheduled Content Schemas ==============
 
+class RecurringSchedule(BaseModel):
+    frequency: str = "daily"  # 'daily', 'weekly', 'monthly'
+    time: str = "09:00"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+
 class ScheduledContentCreate(BaseModel):
     content: str
     content_type: str = "message"  # 'message', 'followup', 'promo'
     topic: Optional[str] = None
-    bot_profile_id: Optional[int] = None
+    bot_profile_id: Optional[int] = None  # Legacy: single bot
+    bot_profile_ids: Optional[List[int]] = None  # Multi-bot: list of bot IDs
+    bot_send_mode: str = "any"  # 'any', 'selected', 'all'
     contact_id: Optional[int] = None  # Legacy single contact
     scheduled_for: Optional[datetime] = None
-    recipient_type: str = "broadcast"  # 'broadcast', 'all_groups', 'contacts', 'groups'
+    schedule_type: str = "immediate"  # 'immediate', 'exact', 'relative', 'recurring'
+    recurring: Optional[RecurringSchedule] = None  # Recurring schedule settings
+    recipient_type: str = "broadcast"  # 'broadcast', 'all_groups', 'contacts', 'groups', 'broadcast_all'
     group_id: Optional[str] = None  # Legacy single group
     group_name: Optional[str] = None  # Legacy single group name
     contact_ids: Optional[List[int]] = None  # Multi-select contacts
     group_ids: Optional[List[dict]] = None  # Multi-select groups [{"id": "...", "name": "..."}]
+    # Rate limiting settings
+    sending_speed_mode: str = "auto"  # 'auto', 'custom', 'fast'
+    delay_min: Optional[int] = None  # Minimum seconds between messages
+    delay_max: Optional[int] = None  # Maximum seconds between messages
+    batch_size: Optional[int] = None  # Messages per batch
+    batch_pause: Optional[int] = None  # Seconds between batches
 
 
 class ScheduledContentUpdate(BaseModel):
@@ -331,6 +390,8 @@ class ScheduledContentUpdate(BaseModel):
     content_type: Optional[str] = None
     topic: Optional[str] = None
     bot_profile_id: Optional[int] = None
+    bot_profile_ids: Optional[List[int]] = None
+    bot_send_mode: Optional[str] = None
     contact_id: Optional[int] = None
     scheduled_for: Optional[datetime] = None
     status: Optional[str] = None
@@ -339,13 +400,21 @@ class ScheduledContentUpdate(BaseModel):
     group_name: Optional[str] = None
     contact_ids: Optional[List[int]] = None
     group_ids: Optional[List[dict]] = None
+    # Rate limiting settings
+    sending_speed_mode: Optional[str] = None
+    delay_min: Optional[int] = None
+    delay_max: Optional[int] = None
+    batch_size: Optional[int] = None
+    batch_pause: Optional[int] = None
 
 
 class ScheduledContentResponse(BaseModel):
     id: int
     hub_id: int
-    bot_profile_id: Optional[int] = None
-    bot_name: Optional[str] = None
+    bot_profile_id: Optional[int] = None  # Legacy
+    bot_profile_ids: Optional[List[int]] = None  # Multi-bot
+    bot_send_mode: str = "any"
+    bot_name: Optional[str] = None  # Display name(s) of bot(s)
     contact_id: Optional[int] = None
     contact_name: Optional[str] = None
     content: str
@@ -361,6 +430,12 @@ class ScheduledContentResponse(BaseModel):
     contact_ids: Optional[List[int]] = None
     group_ids: Optional[List[dict]] = None
     recipient_summary: Optional[str] = None  # Human-readable summary
+    # Rate limiting settings
+    sending_speed_mode: str = "auto"
+    delay_min: Optional[int] = None
+    delay_max: Optional[int] = None
+    batch_size: Optional[int] = None
+    batch_pause: Optional[int] = None
 
 
 # ============== Agent Execution Schemas ==============
@@ -390,3 +465,12 @@ class MessageRoutingResponse(BaseModel):
     assigned_bots: Optional[List[int]] = None
     routing_reason: Optional[str] = None
     created_at: datetime
+
+
+# ============== AI Content Generation ==============
+
+class GenerateContentRequest(BaseModel):
+    """Request model for AI content generation."""
+    prompt: str
+    topic: Optional[str] = None
+    content_type: str = "message"

@@ -13,8 +13,8 @@ class BotProfileCreate(BaseModel):
     """Schema for creating a bot profile."""
     name: str = Field(..., min_length=1, max_length=255)
     ai_provider: str = "openai"
-    openai_api_key: str = Field(..., min_length=10)
-    openai_model: str = "gpt-4o-mini"
+    api_key: str = Field(..., min_length=10)
+    model: str = "gpt-4o-mini"
 
     @field_validator('ai_provider')
     @classmethod
@@ -34,6 +34,7 @@ class BotProfileCreate(BaseModel):
     response_delay_max: int = Field(default=8, ge=1, le=120)
     group_chat_enabled: bool = True
     respond_to_all_in_group: bool = False
+    ending_detection_enabled: bool = False  # Enable AI-based ending detection
     headless: bool = False  # Run browser in headless mode
     # Proxy Settings
     proxy_enabled: bool = False
@@ -46,8 +47,8 @@ class BotProfileUpdate(BaseModel):
     """Schema for updating a bot profile."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     ai_provider: Optional[str] = None
-    openai_api_key: Optional[str] = Field(None, min_length=10)
-    openai_model: Optional[str] = None
+    api_key: Optional[str] = Field(None, min_length=10)
+    model: Optional[str] = None
 
     @field_validator('ai_provider')
     @classmethod
@@ -67,6 +68,7 @@ class BotProfileUpdate(BaseModel):
     response_delay_max: Optional[int] = Field(None, ge=1, le=120)
     group_chat_enabled: Optional[bool] = None
     respond_to_all_in_group: Optional[bool] = None
+    ending_detection_enabled: Optional[bool] = None
     headless: Optional[bool] = None
     # Proxy Settings
     proxy_enabled: Optional[bool] = None
@@ -80,7 +82,8 @@ class BotProfileResponse(BaseModel):
     id: int
     name: str
     ai_provider: str = "openai"
-    openai_model: str
+    api_key_masked: Optional[str] = None  # Masked API key for display (e.g., sk-proj-...gasA)
+    model: str
     system_prompt: str
     temperature: float = 0.7
     max_tokens: int = 1000
@@ -93,6 +96,7 @@ class BotProfileResponse(BaseModel):
     response_delay_max: int
     group_chat_enabled: bool
     respond_to_all_in_group: bool
+    ending_detection_enabled: bool = False
     headless: bool = False
     # Proxy Settings
     proxy_enabled: bool = False

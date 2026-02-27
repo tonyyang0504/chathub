@@ -41,8 +41,8 @@ class BaseAgent(ABC):
 
         # Get API key (agent-specific or hub default)
         api_key = None
-        if agent.openai_api_key_encrypted:
-            api_key = decrypt_string(agent.openai_api_key_encrypted)
+        if agent.api_key_encrypted:
+            api_key = decrypt_string(agent.api_key_encrypted)
         elif hub_api_key:
             api_key = decrypt_string(hub_api_key)
 
@@ -51,7 +51,7 @@ class BaseAgent(ABC):
 
         # Determine AI provider (agent-specific or hub default or 'openai')
         ai_provider = agent.ai_provider or hub_ai_provider or "openai"
-        self.model = agent.openai_model or "gpt-4o-mini"
+        self.model = agent.model or "gpt-4o-mini"
 
         # Create AI provider instance
         try:

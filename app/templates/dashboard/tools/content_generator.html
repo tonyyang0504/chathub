@@ -300,6 +300,66 @@
     font-weight: 500;
 }
 
+/* Model Dropdown (AI Provider/Model) */
+.model-dropdown {
+    position: relative;
+    width: 100%;
+}
+.model-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+.model-dropdown-btn::after {
+    margin-left: auto;
+}
+.model-dropdown-btn:hover, .model-dropdown-btn:focus {
+    border-color: #fa709a;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.model-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.model-dropdown-menu-inner {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.model-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.model-dropdown-menu .dropdown-header {
+    color: var(--bs-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 8px 16px 4px;
+}
+.model-dropdown-menu .dropdown-item:hover {
+    background: rgba(250, 112, 154, 0.1);
+    color: #fa709a;
+}
+.model-dropdown-menu .dropdown-item.selected {
+    font-weight: 500;
+}
+
 .typing-indicator {
     display: inline-flex;
     gap: 4px;
@@ -552,28 +612,31 @@
                     <div class="col-md-6">
                         <label class="form-label">AI Provider</label>
                         <input type="hidden" id="simProviderValue" value="openai">
-                        <div class="dropdown content-dropdown">
-                            <button class="btn content-dropdown-btn dropdown-toggle" type="button" id="simProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="dropdown model-dropdown">
+                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simProviderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 OpenAI
                             </button>
-                            <div class="dropdown-menu content-dropdown-menu" aria-labelledby="simProviderDropdown">
-                                <a class="dropdown-item sim-provider-item selected" href="#" data-value="openai">OpenAI</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
-                                <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="simProviderDropdown">
+                                <div class="model-dropdown-menu-inner">
+                                    <a class="dropdown-item sim-provider-item selected" href="#" data-value="openai">OpenAI</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="grok">xAI (Grok)</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Model</label>
                         <input type="hidden" id="simModelValue" value="gpt-4o-mini">
-                        <div class="dropdown content-dropdown">
-                            <button class="btn content-dropdown-btn dropdown-toggle" type="button" id="simModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="dropdown model-dropdown">
+                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simModelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 GPT-4o Mini
                             </button>
-                            <div class="dropdown-menu content-dropdown-menu" aria-labelledby="simModelDropdown">
-                                <div id="simModelList">
+                            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="simModelDropdown">
+                                <div class="model-dropdown-menu-inner" id="simModelList">
                                 </div>
                             </div>
                         </div>
@@ -677,17 +740,25 @@ const SIM_PROVIDER_MODELS = {
         apiKeyPlaceholder: 'sk-...',
         groups: [
             { header: 'GPT-5.2 Series (Latest)', models: [
-                { value: 'gpt-5.2', label: 'GPT-5.2 Thinking' },
-                { value: 'gpt-5.2-pro', label: 'GPT-5.2 Pro' },
-                { value: 'gpt-5.2-chat-latest', label: 'GPT-5.2 Instant' },
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            ]},
+            { header: 'GPT-5.1 Series', models: [
+                { value: 'gpt-5.1', label: 'GPT-5.1' },
             ]},
             { header: 'GPT-5 Series', models: [
                 { value: 'gpt-5', label: 'GPT-5' },
                 { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
             ]},
             { header: 'GPT-4 Series', models: [
                 { value: 'gpt-4o', label: 'GPT-4o' },
                 { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
             ]},
         ]
     },
@@ -704,6 +775,11 @@ const SIM_PROVIDER_MODELS = {
                 { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
                 { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
                 { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-1-20250414', label: 'Claude Opus 4.1' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
             ]},
             { header: 'Claude 3.5 Series (Legacy)', models: [
                 { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
@@ -725,6 +801,14 @@ const SIM_PROVIDER_MODELS = {
                 { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
                 { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
             ]},
+            { header: 'Gemini 2.0 Series (Retiring Mar 2026)', models: [
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+            ]},
+            { header: 'Gemini 1.5 Series (Legacy)', models: [
+                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            ]},
         ]
     },
     deepseek: {
@@ -739,6 +823,9 @@ const SIM_PROVIDER_MODELS = {
             { header: 'DeepSeek Reasoning', models: [
                 { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
             ]},
+            { header: 'DeepSeek V3', models: [
+                { value: 'deepseek-v3', label: 'DeepSeek V3' },
+            ]},
         ]
     },
     qwen: {
@@ -750,10 +837,12 @@ const SIM_PROVIDER_MODELS = {
             { header: 'Qwen3 Series (Latest)', models: [
                 { value: 'qwen3-max-thinking', label: 'Qwen3 Max Thinking' },
                 { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-plus', label: 'Qwen3 Plus' },
                 { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
             ]},
             { header: 'Qwen2.5 Series', models: [
                 { value: 'qwen-max', label: 'Qwen Max' },
+                { value: 'qwen-plus', label: 'Qwen Plus' },
                 { value: 'qwen-turbo', label: 'Qwen Turbo' },
             ]},
         ]
@@ -771,6 +860,10 @@ const SIM_PROVIDER_MODELS = {
             ]},
             { header: 'Grok Code', models: [
                 { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+            { header: 'Grok 3 Series', models: [
+                { value: 'grok-3', label: 'Grok 3' },
+                { value: 'grok-3-fast', label: 'Grok 3 Fast' },
             ]},
         ]
     }
@@ -801,8 +894,8 @@ function updateSimModelDropdown(providerName) {
     listEl.querySelectorAll('.sim-model-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.content-dropdown');
-            const dropBtn = dropdown.querySelector('.content-dropdown-btn');
+            const dropdown = this.closest('.model-dropdown');
+            const dropBtn = dropdown.querySelector('.model-dropdown-btn');
             dropBtn.textContent = this.textContent;
             hiddenInput.value = this.getAttribute('data-value');
             dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
@@ -827,8 +920,8 @@ function setupSimProviderDropdown() {
     document.querySelectorAll('.sim-provider-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.content-dropdown');
-            const btn = dropdown.querySelector('.content-dropdown-btn');
+            const dropdown = this.closest('.model-dropdown');
+            const btn = dropdown.querySelector('.model-dropdown-btn');
             const hiddenInput = document.getElementById('simProviderValue');
             const value = this.getAttribute('data-value');
 
