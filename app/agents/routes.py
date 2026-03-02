@@ -2,6 +2,8 @@
 Agents Routes - Global AI Agent management APIs and pages
 """
 
+import sys
+from pathlib import Path
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -19,7 +21,15 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
-templates = Jinja2Templates(directory="app/templates")
+# Detect if running as frozen executable (PyInstaller)
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable - templates are in _MEIPASS/app/templates
+    _BASE_DIR = Path(sys._MEIPASS)
+else:
+    # Running as script - templates are relative to project root
+    _BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+templates = Jinja2Templates(directory=str(_BASE_DIR / "app" / "templates"))
 
 
 # ============================================================================

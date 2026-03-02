@@ -304,10 +304,15 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Your Bots</h5>
-                <a href="/dashboard/bots" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg me-1"></i> New Bot
-                </a>
+                <h5 class="mb-0">Your Bots <span id="botCountBadge" class="badge bg-secondary ms-2"></span></h5>
+                <div>
+                    <a href="/dashboard/bots" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-list me-1"></i> View All
+                    </a>
+                    <a href="/dashboard/bots" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New Bot
+                    </a>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -508,24 +513,21 @@
                     </tr>
                 `;
             } else {
-                tbody.innerHTML = botsData.bots.slice(0, 5).map(bot => `
-                    <tr>
-                        <td><strong>${bot.name}</strong></td>
-                        <td>
-                            ${bot.is_running
-                                ? '<span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>Running</span>'
-                                : '<span class="badge bg-secondary"><i class="bi bi-circle me-1"></i>Stopped</span>'
-                            }
-                        </td>
-                        <td>${bot.message_count || 0}</td>
-                        <td>${bot.last_active ? new Date(bot.last_active).toLocaleDateString() : 'Never'}</td>
-                        <td>
-                            <a href="#" class="action-icon" onclick="openBotSettings(${bot.id}); return false;">
-                                <i class="bi bi-gear"></i>
-                            </a>
-                        </td>
-                    </tr>
-                `).join('');
+                const totalBots = botsData.bots.length;
+                const displayLimit = 10;
+                const hasMore = totalBots > displayLimit;
+
+                // Update bot count badge
+                const countBadge = document.getElementById('botCountBadge');
+                if (countBadge) countBadge.textContent = totalBots;
+
+                // Store all bots data for expand/collapse functionality
+                window.allBotsData = botsData.bots;
+                window.botsDisplayLimit = displayLimit;
+                window.botsExpanded = false;
+
+                // Render bots table with expand/collapse support
+                renderBotsTable(false);
             }
         } catch (e) {
             console.error('Error loading bots:', e);
@@ -556,6 +558,76 @@
         } catch (e) {
             console.error('Error loading activity:', e);
         }
+    }
+
+    // Render bots table with expand/collapse functionality
+    function renderBotsTable(expanded) {
+        const tbody = document.getElementById('botsTableBody');
+        const bots = window.allBotsData || [];
+        const limit = window.botsDisplayLimit || 10;
+        const totalBots = bots.length;
+        const hasMore = totalBots > limit;
+
+        // Determine which bots to show
+        const botsToShow = expanded ? bots : bots.slice(0, limit);
+
+        // Generate bot rows
+        let html = botsToShow.map(bot => `
+            <tr>
+                <td><strong>${bot.name}</strong></td>
+                <td>
+                    ${bot.is_running
+                        ? '<span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>Running</span>'
+                        : '<span class="badge bg-secondary"><i class="bi bi-circle me-1"></i>Stopped</span>'
+                    }
+                </td>
+                <td>${bot.message_count || 0}</td>
+                <td>${bot.last_active ? new Date(bot.last_active).toLocaleDateString() : 'Never'}</td>
+                <td>
+                    <a href="#" class="action-icon" onclick="openBotSettings(${bot.id}); return false;">
+                        <i class="bi bi-gear"></i>
+                    </a>
+                </td>
+            </tr>
+        `).join('');
+
+        // Add expand/collapse row if there are more bots
+        if (hasMore) {
+            const remaining = totalBots - limit;
+            if (expanded) {
+                // Show "Show Less" button
+                html += `
+                    <tr class="table-light" id="botsToggleRow">
+                        <td colspan="5" class="text-center py-3">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleBotsDisplay(false)">
+                                <i class="bi bi-chevron-up me-1"></i>
+                                Show Less
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Show "View All" button (28px padding to align with right column bottom)
+                html += `
+                    <tr class="table-light" id="botsToggleRow">
+                        <td colspan="5" class="text-center" style="padding: 28px 0;">
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleBotsDisplay(true)">
+                                <i class="bi bi-chevron-down me-1"></i>
+                                View All ${totalBots} Bots (${remaining} more)
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        tbody.innerHTML = html;
+        window.botsExpanded = expanded;
+    }
+
+    // Toggle bots display between collapsed and expanded
+    function toggleBotsDisplay(expand) {
+        renderBotsTable(expand);
     }
 
     function formatActivityDetails(details) {

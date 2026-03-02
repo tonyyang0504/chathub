@@ -222,16 +222,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Get paths
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Get paths - use the already-defined BASE_DIR which handles frozen executables correctly
+# BASE_DIR is set at top of file: sys._MEIPASS for frozen, project root for script
 TEMPLATES_DIR = BASE_DIR / "app" / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# Bot media files directory
-BOT_SESSIONS_DIR = BASE_DIR / "data" / "sessions"
+# Bot media files directory - use DATA_DIR for user data (AppData on Windows when frozen)
+BOT_SESSIONS_DIR = DATA_DIR / "sessions"
 
 
 # Serve bot media files from /media/bot_{bot_id}/conversations/{chat_name}/{type_folder}/{direction}/{filename}

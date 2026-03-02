@@ -16,7 +16,10 @@ import threading
 import webbrowser
 import time
 import signal
+import logging
+import traceback
 from pathlib import Path
+from datetime import datetime
 
 # Determine if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
@@ -39,15 +42,43 @@ else:
 # Ensure data directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# Setup logging to file for debugging (especially important when console is hidden)
+LOG_DIR = DATA_DIR / 'logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / 'tray_app.log'
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
+
+logger.info(f"=== ChatHub Tray App Starting ===")
+logger.info(f"IS_FROZEN: {IS_FROZEN}")
+logger.info(f"BASE_DIR: {BASE_DIR}")
+logger.info(f"APP_DIR: {APP_DIR}")
+logger.info(f"DATA_DIR: {DATA_DIR}")
+logger.info(f"Python: {sys.executable}")
+logger.info(f"Version: {sys.version}")
+
 # Set environment variables for the app
 os.environ['CHATHUB_DATA_DIR'] = str(DATA_DIR)
 os.environ['DATABASE_URL'] = f"sqlite:///{DATA_DIR / 'app.db'}"
+logger.info(f"DATABASE_URL: {os.environ['DATABASE_URL']}")
 
 # Import pystray after setting up paths
 try:
+    logger.info("Importing pystray and PIL...")
     import pystray
     from PIL import Image, ImageDraw
-except ImportError:
+    logger.info("pystray and PIL imported successfully")
+except ImportError as e:
+    logger.error(f"Failed to import pystray/PIL: {e}")
+    logger.error(traceback.format_exc())
     print("Error: Required packages not found.")
     print("Please install: pip install pystray pillow")
     sys.exit(1)
@@ -60,7 +91,7 @@ class ChatHubTray:
         self.server_process = None
         self.server_running = False
         self.server_port = int(os.environ.get('PORT', 8000))
-        self.server_host = os.environ.get('HOST', '127.0.0.1')
+        self.server_host = os.environ.get('HOST', '0.0.0.0')  # Match config.py default
         self.icon = None
         self.status_text = "Stopped"
 
@@ -104,47 +135,84 @@ class ChatHubTray:
     def start_server(self, icon=None, item=None):
         """Start the ChatHub server."""
         if self.server_running:
+            logger.info("Server already running, skipping start")
             return
 
+        logger.info("Starting server...")
         self.status_text = "Starting..."
         self.update_icon()
 
+        self._server_start_error = None
+
         def run_server():
             try:
+                logger.info("run_server thread started")
                 # Determine the script/module to run
                 if IS_FROZEN:
+                    logger.info("Running as frozen executable, importing app.main...")
                     # When frozen, import and run directly
-                    import uvicorn
-                    from app.main import app
+                    try:
+                        import uvicorn
+                        logger.info("uvicorn imported successfully")
+                    except Exception as e:
+                        logger.error(f"Failed to import uvicorn: {e}")
+                        logger.error(traceback.format_exc())
+                        self._server_start_error = f"Import uvicorn failed: {e}"
+                        return
+
+                    try:
+                        from app.main import app
+                        logger.info("app.main imported successfully")
+                    except Exception as e:
+                        logger.error(f"Failed to import app.main: {e}")
+                        logger.error(traceback.format_exc())
+                        self._server_start_error = f"Import app.main failed: {e}"
+                        return
 
                     # Run in a way that can be stopped
+                    # When frozen, sys.stdout/stderr are None, so disable uvicorn's default logging
+                    logger.info(f"Creating uvicorn config: host={self.server_host}, port={self.server_port}")
                     config = uvicorn.Config(
                         app,
                         host=self.server_host,
                         port=self.server_port,
-                        log_level="info"
+                        log_level="info",
+                        log_config=None  # Disable default logging to avoid 'NoneType' has no 'isatty' error
                     )
                     server = uvicorn.Server(config)
                     self.server_process = server
+                    logger.info("Starting uvicorn server...")
                     server.run()
+                    logger.info("uvicorn server stopped")
                 else:
+                    logger.info("Running as script, using subprocess")
                     # When running as script, use subprocess
                     env = os.environ.copy()
                     env['HOST'] = self.server_host
                     env['PORT'] = str(self.server_port)
 
-                    self.server_process = subprocess.Popen(
-                        [sys.executable, 'run.py'],
-                        cwd=str(APP_DIR),
-                        env=env,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-                    )
-                    self.server_process.wait()
+                    # Log file for subprocess output
+                    log_file = LOG_DIR / 'server.log'
+                    logger.info(f"Server output will be logged to: {log_file}")
+
+                    with open(log_file, 'w', encoding='utf-8') as f:
+                        self.server_process = subprocess.Popen(
+                            [sys.executable, 'run.py'],
+                            cwd=str(APP_DIR),
+                            env=env,
+                            stdout=f,
+                            stderr=subprocess.STDOUT,
+                            # Don't use CREATE_NO_WINDOW so we can debug
+                        )
+                        logger.info(f"Subprocess started with PID: {self.server_process.pid}")
+                        # Don't wait() - let it run in background
+                        # Just keep the thread alive while server runs
+                        self.server_process.wait()
 
             except Exception as e:
-                print(f"Server error: {e}")
+                logger.error(f"Server error: {e}")
+                logger.error(traceback.format_exc())
+                self._server_start_error = str(e)
                 self.server_running = False
                 self.status_text = f"Error: {str(e)[:30]}"
                 self.update_icon()
@@ -153,15 +221,44 @@ class ChatHubTray:
         self.server_thread = threading.Thread(target=run_server, daemon=True)
         self.server_thread.start()
 
-        # Wait a moment for server to start
-        time.sleep(2)
+        # Wait for server to start and check if it's actually running
+        logger.info("Waiting for server to start...")
+        time.sleep(5)  # Give server more time to start
 
-        self.server_running = True
-        self.status_text = f"Running on port {self.server_port}"
-        self.update_icon()
+        # Check if there was a startup error
+        if self._server_start_error:
+            logger.error(f"Server failed to start: {self._server_start_error}")
+            self.server_running = False
+            self.status_text = f"Error: {self._server_start_error[:30]}"
+            self.update_icon()
+            return
 
-        # Auto-open browser
-        self.open_dashboard()
+        # Verify server is actually responding
+        # Note: Connect to 127.0.0.1 even if server binds to 0.0.0.0 (can't connect TO 0.0.0.0)
+        import socket
+        try:
+            check_host = '127.0.0.1' if self.server_host == '0.0.0.0' else self.server_host
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
+            result = sock.connect_ex((check_host, self.server_port))
+            sock.close()
+            if result == 0:
+                logger.info(f"Server is listening on {self.server_host}:{self.server_port} (checked via {check_host})")
+                self.server_running = True
+                self.status_text = f"Running on port {self.server_port}"
+                self.update_icon()
+                # Auto-open browser
+                self.open_dashboard()
+            else:
+                logger.error(f"Server not responding on port {self.server_port} (connect result: {result})")
+                self.server_running = False
+                self.status_text = "Failed to start"
+                self.update_icon()
+        except Exception as e:
+            logger.error(f"Error checking server status: {e}")
+            self.server_running = False
+            self.status_text = f"Error: {str(e)[:30]}"
+            self.update_icon()
 
     def stop_server(self, icon=None, item=None):
         """Stop the ChatHub server."""
@@ -198,7 +295,9 @@ class ChatHubTray:
 
     def open_dashboard(self, icon=None, item=None):
         """Open the dashboard in the default browser."""
-        url = f"http://{self.server_host}:{self.server_port}"
+        # Use localhost for browser even if server binds to 0.0.0.0
+        browser_host = 'localhost' if self.server_host == '0.0.0.0' else self.server_host
+        url = f"http://{browser_host}:{self.server_port}"
         webbrowser.open(url)
 
     def open_data_folder(self, icon=None, item=None):
@@ -277,6 +376,8 @@ class ChatHubTray:
 
 def main():
     """Main entry point."""
+    logger.info("main() called")
+
     # Handle Windows-specific setup
     if sys.platform == 'win32':
         # Hide console window if running as GUI
@@ -285,17 +386,43 @@ def main():
             ctypes.windll.user32.ShowWindow(
                 ctypes.windll.kernel32.GetConsoleWindow(), 0
             )
-        except:
-            pass
+            logger.info("Console window hidden")
+        except Exception as e:
+            logger.warning(f"Could not hide console window: {e}")
 
     # Create and run the tray app
+    logger.info("Creating ChatHubTray instance...")
     app = ChatHubTray()
+    logger.info("ChatHubTray instance created")
 
     try:
+        logger.info("Starting tray app...")
         app.run()
     except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt received, quitting...")
         app.quit_app()
+    except Exception as e:
+        logger.error(f"Unexpected error in main: {e}")
+        logger.error(traceback.format_exc())
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
+        logger.error(traceback.format_exc())
+        # Keep a simple message box for fatal errors on Windows
+        if sys.platform == 'win32':
+            try:
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(
+                    0,
+                    f"ChatHub failed to start:\n\n{str(e)}\n\nCheck logs at:\n{LOG_FILE}",
+                    "ChatHub Error",
+                    0x10  # MB_ICONERROR
+                )
+            except:
+                pass
+        sys.exit(1)

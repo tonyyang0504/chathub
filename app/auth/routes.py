@@ -7,8 +7,10 @@ Authentication Routes
 """
 
 import logging
+import sys
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -30,7 +32,16 @@ from app.auth.utils import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Authentication"])
-templates = Jinja2Templates(directory="app/templates")
+
+# Detect if running as frozen executable (PyInstaller)
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable - templates are in _MEIPASS/app/templates
+    _BASE_DIR = Path(sys._MEIPASS)
+else:
+    # Running as script - templates are relative to project root
+    _BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+templates = Jinja2Templates(directory=str(_BASE_DIR / "app" / "templates"))
 
 # Add cache_bust to prevent browser caching
 templates.env.globals['cache_bust'] = str(int(time.time()))

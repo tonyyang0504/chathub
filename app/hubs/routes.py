@@ -1144,6 +1144,88 @@ async def list_contacts(
     return {"items": result, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
+@router.get("/{hub_id}/contacts/export")
+async def export_contacts(
+    hub_id: int,
+    format: str = Query("csv", regex="^(csv|json)$"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Export contacts with analysis results as CSV or JSON."""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Get all contacts for the hub
+    contacts = db.query(Contact).filter(Contact.hub_id == hub_id).all()
+
+    # Build export data
+    export_data = []
+    for c in contacts:
+        # Get tags for this contact
+        tags = db.query(ContactTag).filter(ContactTag.contact_id == c.id).all()
+        tag_list = [t.tag for t in tags]
+
+        # Parse key_topics if stored as JSON
+        key_topics = []
+        if c.key_topics:
+            try:
+                key_topics = json.loads(c.key_topics) if isinstance(c.key_topics, str) else c.key_topics
+            except (json.JSONDecodeError, TypeError):
+                key_topics = []
+
+        export_data.append({
+            "phone": c.phone,
+            "display_name": c.display_name or "",
+            "description": c.description or "",
+            "predicted_intent": c.predicted_intent or "",
+            "engagement_score": c.engagement_score or 0,
+            "sentiment": c.sentiment or "",
+            "urgency": c.urgency or "",
+            "follow_up_needed": c.follow_up_needed or False,
+            "follow_up_reason": c.follow_up_reason or "",
+            "key_topics": ", ".join(key_topics) if key_topics else "",
+            "tags": ", ".join(tag_list),
+            "analysis_status": c.analysis_status or "",
+            "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else "",
+            "last_interaction_at": c.last_interaction_at.isoformat() if c.last_interaction_at else ""
+        })
+
+    if format == "json":
+        return {
+            "hub_id": hub_id,
+            "hub_name": hub.name,
+            "exported_at": datetime.utcnow().isoformat(),
+            "total_contacts": len(export_data),
+            "contacts": export_data
+        }
+    else:
+        # Generate CSV
+        output = io.StringIO()
+        if export_data:
+            fieldnames = list(export_data[0].keys())
+            writer = csv.DictWriter(output, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(export_data)
+
+        output.seek(0)
+        filename = f"contacts_{hub.name.replace(' ', '_')}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+
+
 @router.get("/contacts/{contact_id}")
 async def get_contact(
     contact_id: int,
@@ -2189,6 +2271,91 @@ async def get_contact_analysis_status(
         "failed": failed,
         "cancelled": cancelled,
         "total_contacts": total
+    }
+
+
+@router.get("/{hub_id}/auto-analysis")
+async def get_auto_analysis_config(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get auto-analysis configuration for a hub."""
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    return {
+        "enabled": hub.auto_analysis_enabled or False,
+        "interval_hours": hub.auto_analysis_interval_hours or 24,
+        "min_new_messages": hub.auto_analysis_min_new_messages or 5,
+        "last_run": hub.auto_analysis_last_run.isoformat() if hub.auto_analysis_last_run else None
+    }
+
+
+@router.put("/{hub_id}/auto-analysis")
+async def update_auto_analysis_config(
+    hub_id: int,
+    enabled: bool = None,
+    interval_hours: int = Query(None, ge=1, le=168),  # 1 hour to 1 week
+    min_new_messages: int = Query(None, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update auto-analysis configuration for a hub."""
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    if enabled is not None:
+        hub.auto_analysis_enabled = enabled
+    if interval_hours is not None:
+        hub.auto_analysis_interval_hours = interval_hours
+    if min_new_messages is not None:
+        hub.auto_analysis_min_new_messages = min_new_messages
+
+    db.commit()
+
+    return {
+        "message": "Auto-analysis configuration updated",
+        "enabled": hub.auto_analysis_enabled,
+        "interval_hours": hub.auto_analysis_interval_hours,
+        "min_new_messages": hub.auto_analysis_min_new_messages,
+        "last_run": hub.auto_analysis_last_run.isoformat() if hub.auto_analysis_last_run else None
+    }
+
+
+@router.post("/{hub_id}/auto-analysis/run")
+async def trigger_auto_analysis(
+    hub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Manually trigger auto-analysis check for contacts with new messages."""
+    from app.hubs.analysis_scheduler import contact_analysis_scheduler
+
+    hub = db.query(Hub).filter(
+        Hub.id == hub_id,
+        Hub.user_id == current_user.id
+    ).first()
+
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    # Run auto-analysis check
+    queued_count = await contact_analysis_scheduler.check_and_queue_auto_analysis(db, hub)
+
+    return {
+        "message": f"Auto-analysis check completed",
+        "contacts_queued": queued_count
     }
 
 

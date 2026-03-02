@@ -547,6 +547,52 @@
     color: var(--bs-secondary) !important;
     border-color: rgba(108, 117, 125, 0.3) !important;
 }
+
+/* Auto-Analysis Modal Styling */
+#autoAnalysisModal .modal-content {
+    border-radius: 12px;
+    border: none;
+}
+
+#autoAnalysisModal .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+#autoAnalysisModal .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+#autoAnalysisModal .form-control:focus {
+    border-color: #f093fb;
+    box-shadow: 0 0 0 0.2rem rgba(240, 147, 251, 0.25);
+}
+
+#autoAnalysisModal .form-check-input:checked {
+    background-color: #f093fb;
+    border-color: #f093fb;
+}
+
+/* Auto-Analysis Switch Styling - matches bot card switch */
+#autoAnalysisModal .form-switch {
+    display: flex;
+    align-items: center;
+    padding-left: 0;
+}
+
+#autoAnalysisModal .form-switch .form-check-input {
+    width: 40px;
+    height: 22px;
+    margin-left: 0;
+    margin-right: 0;
+    cursor: pointer;
+}
+
+#autoAnalysisModal .form-switch .form-check-label {
+    margin-left: 8px;
+    line-height: 22px;
+    cursor: pointer;
+    margin-bottom: 0;
+}
 </style>
 {% endblock %}
 
@@ -1095,7 +1141,35 @@ function renderInstances() {
 
     let html = '';
     filtered.forEach(hub => {
-        html += `<div class="instance-card"><div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold">${hub.name}</span><span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">${hub.is_active ? 'Active' : 'Inactive'}</span></div><p class="text-muted small mb-2">${hub.description || 'No description'}</p><div class="d-flex gap-3 small text-muted mb-2"><span><i class="bi bi-people me-1"></i>${hub.contact_count} contacts</span><span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span></div><a href="/dashboard/hubs" class="btn btn-sm btn-theme" onclick="localStorage.setItem('openHubId', ${hub.id})"><i class="bi bi-gear me-1"></i>Configure</a></div>`;
+        html += `
+        <div class="instance-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold">${hub.name}</span>
+                <span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">${hub.is_active ? 'Active' : 'Inactive'}</span>
+            </div>
+            <p class="text-muted small mb-2">${hub.description || 'No description'}</p>
+            <div class="d-flex gap-3 small text-muted mb-2">
+                <span><i class="bi bi-people me-1"></i>${hub.contact_count} contacts</span>
+                <span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <a href="/dashboard/hubs" class="btn btn-sm btn-theme" onclick="localStorage.setItem('openHubId', ${hub.id})">
+                    <i class="bi bi-gear me-1"></i>Configure
+                </a>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-theme dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="exportContacts(${hub.id}, 'csv'); return false;"><i class="bi bi-filetype-csv me-2"></i>Export as CSV</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportContacts(${hub.id}, 'json'); return false;"><i class="bi bi-filetype-json me-2"></i>Export as JSON</a></li>
+                    </ul>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="showAutoAnalysisSettings(${hub.id}, '${escapeHtml(hub.name)}')">
+                    <i class="bi bi-clock-history me-1"></i>Auto-Analysis
+                </button>
+            </div>
+        </div>`;
     });
     container.innerHTML = html;
     document.getElementById('totalInstances').textContent = allInstances.length;
@@ -1469,6 +1543,161 @@ function initActivityPopoverPositioning() {
 function createHubInstance() {
     localStorage.setItem('createHubTaskType', 'contact_analyzer');
     window.location.href = '/dashboard/hubs';
+}
+
+// Export contacts to CSV or JSON
+async function exportContacts(hubId, format) {
+    try {
+        const response = await fetch(`/api/hubs/${hubId}/contacts/export?format=${format}`);
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Export failed');
+        }
+
+        if (format === 'json') {
+            // For JSON, download as file
+            const data = await response.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contacts_${data.hub_name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        } else {
+            // For CSV, stream the download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Get filename from Content-Disposition header if available
+            const contentDisposition = response.headers.get('Content-Disposition');
+            const filenameMatch = contentDisposition && contentDisposition.match(/filename=([^;]+)/);
+            a.download = filenameMatch ? filenameMatch[1] : `contacts_export.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Export failed: ' + error.message);
+    }
+}
+
+// Show auto-analysis settings modal
+async function showAutoAnalysisSettings(hubId, hubName) {
+    // Fetch current settings
+    try {
+        const response = await fetch(`/api/hubs/${hubId}/auto-analysis`);
+        const settings = await response.json();
+
+        // Create and show modal
+        const modalHtml = `
+        <div class="modal fade" id="autoAnalysisModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Auto-Analysis Settings</h5>
+                        <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">Configure automatic re-analysis for contacts with new messages in <strong>${escapeHtml(hubName)}</strong></p>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="autoAnalysisEnabled" ${settings.enabled ? 'checked' : ''}>
+                            <label class="form-check-label" for="autoAnalysisEnabled">Enable Auto-Analysis</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Check Interval (hours)</label>
+                            <input type="number" class="form-control" id="autoAnalysisInterval" value="${settings.interval_hours || 24}" min="1" max="168">
+                            <small class="text-muted">How often to check for contacts with new messages (1-168 hours)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Minimum New Messages</label>
+                            <input type="number" class="form-control" id="autoAnalysisMinMessages" value="${settings.min_new_messages || 5}" min="1" max="100">
+                            <small class="text-muted">Number of new messages required to trigger re-analysis</small>
+                        </div>
+
+                        ${settings.last_run ? `<p class="small text-muted mb-0"><i class="bi bi-clock me-1"></i>Last run: ${formatDateTime(settings.last_run)}</p>` : ''}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-theme" onclick="saveAutoAnalysisSettings(${hubId})">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        // Remove existing modal if any
+        const existingModal = document.getElementById('autoAnalysisModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Add modal to DOM and show
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('autoAnalysisModal'));
+        modal.show();
+
+    } catch (error) {
+        console.error('Error loading auto-analysis settings:', error);
+        alert('Failed to load auto-analysis settings');
+    }
+}
+
+// Save auto-analysis settings
+async function saveAutoAnalysisSettings(hubId) {
+    const enabled = document.getElementById('autoAnalysisEnabled').checked;
+    const intervalHours = parseInt(document.getElementById('autoAnalysisInterval').value) || 24;
+    const minMessages = parseInt(document.getElementById('autoAnalysisMinMessages').value) || 5;
+
+    try {
+        const response = await fetch(`/api/hubs/${hubId}/auto-analysis?enabled=${enabled}&interval_hours=${intervalHours}&min_new_messages=${minMessages}`, {
+            method: 'PUT'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save settings');
+        }
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('autoAnalysisModal'));
+        modal.hide();
+
+        // If enabled, trigger auto-analysis check
+        if (enabled) {
+            try {
+                const runResponse = await fetch(`/api/hubs/${hubId}/auto-analysis/run`, {
+                    method: 'POST'
+                });
+
+                const result = await runResponse.json();
+
+                if (runResponse.ok && result.contacts_queued > 0) {
+                    alert(`Settings saved. ${result.contacts_queued} contacts queued for analysis.`);
+                    loadActivity();
+                } else {
+                    alert('Auto-analysis settings saved and enabled.');
+                }
+            } catch (runError) {
+                // Settings saved but run failed - still show success for settings
+                alert('Auto-analysis settings saved.');
+            }
+        } else {
+            alert('Auto-analysis settings saved.');
+        }
+
+    } catch (error) {
+        console.error('Error saving auto-analysis settings:', error);
+        alert('Failed to save settings: ' + error.message);
+    }
 }
 
 async function runSimulation() {

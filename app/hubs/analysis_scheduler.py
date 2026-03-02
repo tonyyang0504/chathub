@@ -178,15 +178,124 @@ class ContactAnalysisScheduler:
             "total_queued": pending + analyzing
         }
 
+    async def check_and_queue_auto_analysis(self, db: Session, hub: Hub) -> int:
+        """
+        Check for contacts with new messages since last analysis and queue them.
+        Returns the number of contacts queued.
+        """
+        from app.database import HubBotMembership
+
+        if not hub:
+            return 0
+
+        min_new_messages = hub.auto_analysis_min_new_messages or 5
+
+        # Get bot IDs that are members of this hub
+        bot_memberships = db.query(HubBotMembership).filter(
+            HubBotMembership.hub_id == hub.id,
+            HubBotMembership.is_active == True
+        ).all()
+        bot_profile_ids = [m.bot_profile_id for m in bot_memberships]
+
+        if not bot_profile_ids:
+            return 0
+
+        # Get all contacts in this hub that have been analyzed before
+        contacts = db.query(Contact).filter(
+            Contact.hub_id == hub.id,
+            Contact.analysis_status.in_(["completed", "failed", None])
+        ).all()
+
+        queued_count = 0
+        for contact in contacts:
+            # Count messages for this contact since last analysis
+            # Find conversations for this phone across hub bots
+            convs = db.query(Conversation).filter(
+                Conversation.bot_profile_id.in_(bot_profile_ids),
+                Conversation.phone == contact.phone,
+                Conversation.is_group == False
+            ).all()
+
+            if not convs:
+                continue
+
+            conv_ids = [c.id for c in convs]
+
+            # Count messages since last analysis (or all if never analyzed)
+            msg_query = db.query(Message).filter(
+                Message.conversation_id.in_(conv_ids)
+            )
+
+            # If contact was previously analyzed, count only new messages
+            if contact.updated_at:
+                msg_query = msg_query.filter(Message.timestamp > contact.updated_at)
+
+            new_message_count = msg_query.count()
+
+            if new_message_count >= min_new_messages:
+                # Queue this contact for re-analysis
+                contact.analysis_status = "pending"
+                contact.analysis_queued_at = datetime.utcnow()
+                queued_count += 1
+                logger.info(f"Auto-queued contact {contact.id} ({contact.display_name or contact.phone}) with {new_message_count} new messages")
+
+        if queued_count > 0:
+            db.commit()
+            # Update last run time
+            hub.auto_analysis_last_run = datetime.utcnow()
+            db.commit()
+
+        logger.info(f"Auto-analysis check for hub {hub.id}: queued {queued_count} contacts")
+        return queued_count
+
     async def _run_loop(self):
         """Main scheduler loop."""
+        last_auto_check = datetime.utcnow()
+        auto_check_interval = 60  # Check for auto-analysis every 60 seconds
+
         while self._running:
             try:
                 await self._process_pending_contacts()
             except Exception as e:
                 logger.error(f"Error in contact analysis scheduler: {e}")
 
+            # Periodically check for auto-analysis enabled hubs
+            now = datetime.utcnow()
+            if (now - last_auto_check).total_seconds() >= auto_check_interval:
+                try:
+                    await self._check_auto_analysis_hubs()
+                    last_auto_check = now
+                except Exception as e:
+                    logger.error(f"Error checking auto-analysis hubs: {e}")
+
             await asyncio.sleep(self._check_interval)
+
+    async def _check_auto_analysis_hubs(self):
+        """Check all hubs with auto-analysis enabled and queue contacts if needed."""
+        db = SessionLocal()
+        try:
+            # Find hubs with auto-analysis enabled and contact_analyzer task type
+            hubs = db.query(Hub).filter(
+                Hub.auto_analysis_enabled == True,
+                Hub.task_type == "contact_analyzer"
+            ).all()
+
+            for hub in hubs:
+                # Check if enough time has passed since last run
+                interval_hours = hub.auto_analysis_interval_hours or 24
+                if hub.auto_analysis_last_run:
+                    hours_since_last = (datetime.utcnow() - hub.auto_analysis_last_run).total_seconds() / 3600
+                    if hours_since_last < interval_hours:
+                        continue
+
+                # Run auto-analysis check for this hub
+                logger.info(f"Running auto-analysis check for hub {hub.id} ({hub.name})")
+                await self.check_and_queue_auto_analysis(db, hub)
+
+        except Exception as e:
+            logger.error(f"Error in auto-analysis hub check: {e}")
+        finally:
+            db.close()
 
     async def _process_pending_contacts(self):
         """Process contacts that are pending analysis."""

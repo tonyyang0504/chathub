@@ -263,6 +263,12 @@ class Hub(Base):
     response_delay_max_ms = Column(Integer, default=3000)  # Deprecated: use response_delay_max instead
     response_delay_ms = Column(Integer, default=2000)  # Deprecated: use min/max instead
 
+    # Auto-analysis settings (for contact_analyzer hubs)
+    auto_analysis_enabled = Column(Boolean, default=False)
+    auto_analysis_interval_hours = Column(Integer, default=24)  # How often to check for new messages
+    auto_analysis_min_new_messages = Column(Integer, default=5)  # Min new messages to trigger re-analysis
+    auto_analysis_last_run = Column(DateTime)  # Last time auto-analysis ran
+
     # Relationships
     user = relationship("User", backref="hubs")
     bot_memberships = relationship("HubBotMembership", back_populates="hub", cascade="all, delete-orphan")

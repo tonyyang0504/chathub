@@ -30,7 +30,19 @@ logger = logging.getLogger(__name__)
 
 # Get base directory for session storage (absolute path)
 # This ensures consistent path resolution regardless of working directory
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # python_bot directory
+# Use the same session path for both frozen executable and script mode
+if getattr(sys, 'frozen', False):
+    # Running as frozen executable (PyInstaller)
+    # Executable is at: <project>/dist/ChatHub/ChatHub.exe
+    # Go up 3 levels to reach project root
+    BASE_DIR = Path(sys.executable).resolve().parent.parent.parent
+else:
+    # Running as script
+    # Script is at: <project>/app/bots/whatsapp_bot.py
+    # Go up 3 levels to reach project root
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Both modes use the same session path: <project>/data/sessions
 SESSIONS_DIR = BASE_DIR / "data" / "sessions"
 
 # Default profile picture for AI Agent messages
