@@ -556,6 +556,21 @@ async function startSession() {
     const prompt = document.getElementById('promptInput').value.trim();
     if (!prompt || isRunning) return;
 
+    // Slash commands are interactive-only, not supported in print mode
+    if (prompt.startsWith('/')) {
+        const slashHints = {
+            '/model': 'Use the Model dropdown in Settings above.',
+            '/help': 'Type your request in natural language — Claude Code will handle it.',
+            '/clear': 'Click a new session or refresh the page.',
+            '/compact': 'Not needed — each session starts fresh.',
+        };
+        const cmd = prompt.split(/\s/)[0].toLowerCase();
+        const hint = slashHints[cmd] || 'Slash commands are not supported in web mode. Describe what you need in natural language.';
+        appendSystemMessage(`"${cmd}" is a terminal-only command. ${hint}`);
+        document.getElementById('promptInput').value = '';
+        return;
+    }
+
     document.getElementById('promptInput').value = '';
     clearChat();
     appendUserMessage(prompt);
