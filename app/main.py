@@ -37,6 +37,8 @@ from .hubs.followup_scheduler import followup_send_scheduler
 from .scripts.scheduler import script_scheduler
 from .tools import tools_router
 from .agents import agents_router
+from .claude_code.routes import router as claude_code_router
+from .claude_code.manager import claude_code_manager
 from .scripts.routes import router as scripts_router
 from .metrics import metrics_endpoint
 from .logging_config import setup_logging
@@ -120,6 +122,10 @@ async def lifespan(app: FastAPI):
 
     # Stop the content scheduler
     await content_scheduler.stop()
+
+    # Stop all Claude Code sessions
+    await claude_code_manager.stop_all()
+    print("All Claude Code sessions stopped.")
 
     # Stop all running bots
     await bot_manager.stop_all_bots()
@@ -300,6 +306,7 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
 app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
+app.include_router(claude_code_router, tags=["Claude Code"])
 app.include_router(agents_router, tags=["Agents"])
 
 # Prometheus metrics endpoint

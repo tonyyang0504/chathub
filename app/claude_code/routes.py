@@ -1,0 +1,450 @@
+"""
+Claude Code Routes - HTTP + WebSocket endpoints for Claude Code CLI integration
+"""
+
+import json
+import sys
+import asyncio
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
+from app.database import (
+    get_db, SessionLocal, ClaudeCodeSession, ClaudeCodeMessage, ClaudeCodeSettings
+)
+from app.auth.utils import get_current_user, get_current_user_optional, get_websocket_user, encrypt_string, decrypt_string
+from .manager import claude_code_manager
+from app.tools.monitoring import ToolMonitor
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/tools", tags=["Claude Code"])
+
+# Template setup
+if getattr(sys, 'frozen', False):
+    _BASE_DIR = Path(sys._MEIPASS)
+else:
+    _BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+templates = Jinja2Templates(directory=str(_BASE_DIR / "app" / "templates"))
+
+
+# ============================================================================
+# Page Route
+# ============================================================================
+
+@router.get("/claude-code", response_class=HTMLResponse)
+async def claude_code_page(request: Request, db: Session = Depends(get_db)):
+    """Claude Code tool page."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/auth/login")
+
+    return templates.TemplateResponse(
+        "dashboard/tools/claude_code.html",
+        {
+            "request": request,
+            "user": user,
+            "active_page": "tools_claude_code",
+            "page_title": "Claude Code"
+        }
+    )
+
+
+# ============================================================================
+# Settings API
+# ============================================================================
+
+@router.get("/api/claude-code/settings")
+async def get_settings(request: Request, db: Session = Depends(get_db)):
+    """Get Claude Code settings (API key masked)."""
+    user = await get_current_user(request, None, db)
+    settings = db.query(ClaudeCodeSettings).filter(
+        ClaudeCodeSettings.user_id == user.id
+    ).first()
+
+    if not settings:
+        return {
+            "api_key_set": False,
+            "default_model": "sonnet",
+            "auto_commit": True,
+            "auto_backup_db": True,
+            "max_session_minutes": 30
+        }
+
+    return {
+        "api_key_set": bool(settings.anthropic_api_key_encrypted),
+        "api_key_masked": "****" + decrypt_string(settings.anthropic_api_key_encrypted)[-4:] if settings.anthropic_api_key_encrypted else "",
+        "default_model": settings.default_model or "sonnet",
+        "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
+        "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
+        "max_session_minutes": settings.max_session_minutes or 30
+    }
+
+
+@router.put("/api/claude-code/settings")
+async def save_settings(request: Request, db: Session = Depends(get_db)):
+    """Save Claude Code settings."""
+    user = await get_current_user(request, None, db)
+    data = await request.json()
+
+    settings = db.query(ClaudeCodeSettings).filter(
+        ClaudeCodeSettings.user_id == user.id
+    ).first()
+
+    if not settings:
+        settings = ClaudeCodeSettings(user_id=user.id)
+        db.add(settings)
+
+    # Only update API key if provided (non-empty)
+    api_key = data.get("anthropic_api_key")
+    if api_key and api_key.strip() and not api_key.startswith("****"):
+        settings.anthropic_api_key_encrypted = encrypt_string(api_key.strip())
+
+    if "default_model" in data:
+        settings.default_model = data["default_model"]
+    if "auto_commit" in data:
+        settings.auto_commit = data["auto_commit"]
+    if "auto_backup_db" in data:
+        settings.auto_backup_db = data["auto_backup_db"]
+    if "max_session_minutes" in data:
+        settings.max_session_minutes = data["max_session_minutes"]
+
+    db.commit()
+    return {"status": "ok"}
+
+
+# ============================================================================
+# Session API
+# ============================================================================
+
+@router.post("/api/claude-code/sessions")
+async def create_session(request: Request, db: Session = Depends(get_db)):
+    """Create a new Claude Code session."""
+    user = await get_current_user(request, None, db)
+    data = await request.json()
+    prompt = data.get("prompt", "").strip()
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Prompt is required")
+
+    # Check for existing active session
+    active = claude_code_manager.get_active_session(user.id)
+    if active:
+        raise HTTPException(status_code=409, detail="You already have an active session")
+
+    # Get settings
+    settings = db.query(ClaudeCodeSettings).filter(
+        ClaudeCodeSettings.user_id == user.id
+    ).first()
+
+    if not settings or not settings.anthropic_api_key_encrypted:
+        raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+
+    api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+    model = data.get("model") or settings.default_model
+
+    # Safety commit and backup
+    git_hash = None
+    db_backup_path = None
+
+    if settings.auto_commit:
+        git_hash = claude_code_manager.create_safety_commit()
+
+    if settings.auto_backup_db:
+        db_backup_path = claude_code_manager.create_db_backup()
+
+    # Create session record
+    session = ClaudeCodeSession(
+        user_id=user.id,
+        prompt=prompt,
+        git_commit_hash=git_hash,
+        db_backup_path=db_backup_path,
+        model=model,
+        status="pending"
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    # Also add the user prompt as a message
+    user_msg = ClaudeCodeMessage(
+        session_id=session.id,
+        role="user",
+        content=prompt,
+        message_type="text"
+    )
+    db.add(user_msg)
+    db.commit()
+
+    # Spawn CLI subprocess
+    active_session = await claude_code_manager.start_session(
+        user_id=user.id,
+        session_id=session.id,
+        prompt=prompt,
+        api_key=api_key,
+        model=model
+    )
+
+    if not active_session:
+        session.status = "failed"
+        db.commit()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to start Claude Code CLI. Ensure 'claude' is installed (npm install -g @anthropic-ai/claude-code)"
+        )
+
+    session.status = "running"
+    session.pid = active_session.process.pid
+    session.started_at = datetime.utcnow()
+    db.commit()
+
+    # Log to tool monitor
+    try:
+        ToolMonitor.log_execution(
+            db=db,
+            tool_type="claude_code",
+            operation="session_start",
+            input_data={"prompt": prompt[:200], "model": model},
+            output_data={"session_id": session.id, "git_hash": git_hash},
+            user_id=user.id
+        )
+    except Exception:
+        pass
+
+    return {
+        "session_id": session.id,
+        "status": "running",
+        "pid": active_session.process.pid,
+        "git_commit_hash": git_hash,
+        "db_backup_path": db_backup_path
+    }
+
+
+@router.get("/api/claude-code/sessions")
+async def list_sessions(request: Request, db: Session = Depends(get_db)):
+    """List user's Claude Code sessions."""
+    user = await get_current_user(request, None, db)
+    sessions = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.user_id == user.id
+    ).order_by(ClaudeCodeSession.created_at.desc()).limit(50).all()
+
+    return [{
+        "id": s.id,
+        "status": s.status,
+        "prompt": s.prompt[:100] if s.prompt else "",
+        "model": s.model,
+        "git_commit_hash": s.git_commit_hash,
+        "rolled_back": s.rolled_back,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
+        "ended_at": s.ended_at.isoformat() if s.ended_at else None
+    } for s in sessions]
+
+
+@router.get("/api/claude-code/sessions/{session_id}")
+async def get_session(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Get a session with its messages."""
+    user = await get_current_user(request, None, db)
+    session = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.id == session_id,
+        ClaudeCodeSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    messages = db.query(ClaudeCodeMessage).filter(
+        ClaudeCodeMessage.session_id == session_id
+    ).order_by(ClaudeCodeMessage.created_at.asc()).all()
+
+    return {
+        "id": session.id,
+        "status": session.status,
+        "prompt": session.prompt,
+        "model": session.model,
+        "git_commit_hash": session.git_commit_hash,
+        "db_backup_path": session.db_backup_path,
+        "rolled_back": session.rolled_back,
+        "created_at": session.created_at.isoformat() if session.created_at else None,
+        "started_at": session.started_at.isoformat() if session.started_at else None,
+        "ended_at": session.ended_at.isoformat() if session.ended_at else None,
+        "messages": [{
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "message_type": m.message_type,
+            "event_data": m.event_data,
+            "created_at": m.created_at.isoformat() if m.created_at else None
+        } for m in messages]
+    }
+
+
+@router.post("/api/claude-code/sessions/{session_id}/stop")
+async def stop_session(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Stop a running session."""
+    user = await get_current_user(request, None, db)
+
+    # Verify ownership
+    session = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.id == session_id,
+        ClaudeCodeSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    stopped = await claude_code_manager.stop_session(user.id)
+    if not stopped:
+        raise HTTPException(status_code=400, detail="No active session to stop")
+
+    return {"status": "stopped"}
+
+
+@router.post("/api/claude-code/sessions/{session_id}/rollback")
+async def rollback_session(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Rollback git + DB to pre-session state."""
+    user = await get_current_user(request, None, db)
+
+    session = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.id == session_id,
+        ClaudeCodeSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.status == "running":
+        raise HTTPException(status_code=400, detail="Cannot rollback a running session")
+
+    if session.rolled_back:
+        raise HTTPException(status_code=400, detail="Session already rolled back")
+
+    result = claude_code_manager.rollback_session(
+        session.git_commit_hash,
+        session.db_backup_path
+    )
+
+    session.rolled_back = True
+    session.rolled_back_at = datetime.utcnow()
+    db.commit()
+
+    # Log rollback
+    try:
+        ToolMonitor.log_execution(
+            db=db,
+            tool_type="claude_code",
+            operation="rollback",
+            input_data={"session_id": session_id, "git_hash": session.git_commit_hash},
+            output_data=result,
+            user_id=user.id
+        )
+    except Exception:
+        pass
+
+    return {"status": "ok", "result": result}
+
+
+# ============================================================================
+# WebSocket Streaming
+# ============================================================================
+
+@router.websocket("/api/claude-code/stream/{session_id}")
+async def stream_session(websocket: WebSocket, session_id: int):
+    """WebSocket for real-time session output streaming."""
+    await websocket.accept()
+
+    db = SessionLocal()
+    try:
+        user = await get_websocket_user(websocket, db)
+        if not user:
+            await websocket.send_json({"error": "Authentication required"})
+            await websocket.close(code=4001, reason="Authentication required")
+            return
+
+        # Verify ownership
+        session = db.query(ClaudeCodeSession).filter(
+            ClaudeCodeSession.id == session_id,
+            ClaudeCodeSession.user_id == user.id
+        ).first()
+
+        if not session:
+            await websocket.send_json({"error": "Session not found"})
+            await websocket.close(code=4004, reason="Session not found")
+            return
+
+        # Get active session
+        active = claude_code_manager.get_active_session(user.id)
+        if active and active.session_id == session_id:
+            # Send buffered output first
+            for data in active.output_buffer:
+                await websocket.send_text(json.dumps(data))
+
+            # Register for live broadcasts
+            active.websockets.add(websocket)
+
+            try:
+                # Keep alive with ping/pong
+                while active.is_running:
+                    try:
+                        msg = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                        # Handle ping
+                        if msg == "ping":
+                            await websocket.send_text(json.dumps({"type": "pong"}))
+                    except asyncio.TimeoutError:
+                        # Send keepalive ping
+                        try:
+                            await websocket.send_text(json.dumps({"type": "ping"}))
+                        except Exception:
+                            break
+                    except WebSocketDisconnect:
+                        break
+
+                # Session ended — send final status
+                if not active.is_running:
+                    await websocket.send_text(json.dumps({
+                        "type": "session_end",
+                        "status": session.status
+                    }))
+
+            except WebSocketDisconnect:
+                pass
+            finally:
+                active.websockets.discard(websocket)
+        else:
+            # Session not active, send historical messages
+            messages = db.query(ClaudeCodeMessage).filter(
+                ClaudeCodeMessage.session_id == session_id
+            ).order_by(ClaudeCodeMessage.created_at.asc()).all()
+
+            for m in messages:
+                try:
+                    if m.event_data:
+                        data = json.loads(m.event_data)
+                    else:
+                        data = {"type": m.message_type, "role": m.role, "content": m.content}
+                    await websocket.send_text(json.dumps(data))
+                except Exception:
+                    pass
+
+            await websocket.send_text(json.dumps({
+                "type": "session_end",
+                "status": session.status or "completed"
+            }))
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+    finally:
+        db.close()
+        try:
+            await websocket.close()
+        except Exception:
+            pass

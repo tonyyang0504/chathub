@@ -643,6 +643,65 @@ class ToolExecution(Base):
     user = relationship("User", backref="tool_executions")
 
 
+# ============== Claude Code Models ==============
+
+class ClaudeCodeSession(Base):
+    """Claude Code CLI session - tracks each spawned CLI subprocess."""
+    __tablename__ = "claude_code_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String(20), default="pending", index=True)  # pending, running, completed, failed, stopped
+    prompt = Column(Text, nullable=False)
+    git_commit_hash = Column(String(40))  # Safety commit before session
+    db_backup_path = Column(String(500))  # Backup file path
+    pid = Column(Integer)  # OS process ID
+    model = Column(String(100))
+    rolled_back = Column(Boolean, default=False)
+    rolled_back_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime)
+    ended_at = Column(DateTime)
+
+    # Relationships
+    user = relationship("User", backref="claude_code_sessions")
+    messages = relationship("ClaudeCodeMessage", back_populates="session", cascade="all, delete-orphan", order_by="ClaudeCodeMessage.created_at")
+
+
+class ClaudeCodeMessage(Base):
+    """Claude Code message - individual stream events from CLI."""
+    __tablename__ = "claude_code_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("claude_code_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(20), nullable=False)  # user, assistant, system, tool_use, tool_result
+    content = Column(Text)
+    message_type = Column(String(50))  # text, tool_use, tool_result, error, system
+    event_data = Column(Text)  # JSON of raw stream event
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    session = relationship("ClaudeCodeSession", back_populates="messages")
+
+
+class ClaudeCodeSettings(Base):
+    """Claude Code settings - per-user configuration."""
+    __tablename__ = "claude_code_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    anthropic_api_key_encrypted = Column(Text)  # Fernet-encrypted
+    default_model = Column(String(100), default="sonnet")
+    auto_commit = Column(Boolean, default=True)
+    auto_backup_db = Column(Boolean, default=True)
+    max_session_minutes = Column(Integer, default=30)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="claude_code_settings")
+
+
 # ============== Database Functions ==============
 
 def create_tables():

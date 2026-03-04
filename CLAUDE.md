@@ -29,12 +29,82 @@ python build_windows.py --clean --skip-playwright
 
 ChatHub is a multi-tenant platform for AI-powered WhatsApp bots with coordinated multi-bot orchestration.
 
+### Project File Structure
+
+```
+chathub/
+├── app/
+│   ├── main.py                    # FastAPI app entry, lifespan, router registration
+│   ├── database.py                # All SQLAlchemy models + migrations (23 models)
+│   ├── config.py                  # Settings from .env
+│   ├── logging_config.py          # Logging setup
+│   ├── metrics.py                 # Prometheus metrics endpoint
+│   ├── ai/                        # AI provider abstraction
+│   │   ├── factory.py             # get_ai_provider(provider_name, api_key, model)
+│   │   ├── base.py                # AIProvider base class
+│   │   └── providers/             # OpenAI, Anthropic, Google, DeepSeek, Qwen, Grok
+│   ├── auth/
+│   │   ├── routes.py              # Login, register, logout, profile (9 routes)
+│   │   ├── utils.py               # JWT, password hash, encrypt/decrypt, WS auth
+│   │   └── ownership.py           # get_user_hub_ids() helper
+│   ├── bots/
+│   │   ├── manager.py             # BotManager singleton + BotInstance class
+│   │   ├── whatsapp_bot.py        # Playwright browser automation (11K+ lines)
+│   │   └── routes.py              # Bot CRUD, start/stop, contacts, groups, WS QR (19 routes)
+│   ├── conversations/
+│   │   └── routes.py              # Conversation list, messages, send, export, WS (11 routes)
+│   ├── hubs/
+│   │   ├── routes.py              # Hub CRUD, contacts, agents, content, groups (48 routes)
+│   │   ├── coordinator.py         # RoutingCache, multi-bot message routing
+│   │   ├── scheduler.py           # Content delivery scheduler
+│   │   ├── analysis_scheduler.py  # Contact auto-analysis
+│   │   └── followup_scheduler.py  # Follow-up auto-send
+│   ├── scripts/
+│   │   ├── routes.py              # Script CRUD, execution (17 routes)
+│   │   └── scheduler.py           # Script execution scheduler
+│   ├── tools/
+│   │   ├── __init__.py            # Exports tools_router
+│   │   ├── routes.py              # All tool pages + APIs (32 routes)
+│   │   └── monitoring.py          # ToolMonitor class for execution logging
+│   ├── agents/
+│   │   └── routes.py              # Agent CRUD, templates, testing (13 routes)
+│   ├── analytics/
+│   │   └── routes.py              # Overview, daily stats, activity feed (5 routes)
+│   ├── claude_code/
+│   │   ├── __init__.py            # Exports claude_code_manager
+│   │   ├── manager.py             # ClaudeCodeManager — CLI subprocess management
+│   │   └── routes.py              # HTTP + WebSocket routes (8 routes)
+│   ├── middleware/
+│   │   └── rate_limit.py          # SlowAPI rate limiter
+│   └── templates/
+│       ├── base.html              # Base layout with navbar
+│       ├── auth/                   # login.html, register.html
+│       ├── errors/                 # 404.html
+│       └── dashboard/
+│           ├── index.html          # Main dashboard
+│           ├── bots.html, hubs.html, conversations.html, analytics.html, settings.html, agents.html
+│           └── tools/              # group_management, scheduled_content, scripted_conversations,
+│                                   # contact_analyzer, contact_followup, content_generator,
+│                                   # message_routing, claude_code
+├── static/
+│   ├── css/style.css, tools.css
+│   ├── js/app.js
+│   └── images/ai-agent.svg
+├── data/                          # Runtime data (sessions, DB, backups)
+├── migrations/                    # Migration scripts (run with python migrations/xxx.py)
+├── tests/                         # pytest tests
+├── .env                           # Environment config
+├── run.py                         # Dev server entry
+├── build_windows.py               # PyInstaller build script
+└── tray_app.py                    # Windows system tray app
+```
+
 ### Core Components
 
 **Bot Lifecycle**: `BotProfile` (DB) → `BotInstance` (memory) → WhatsApp automation → `Conversations` (DB)
 
 - `app/bots/manager.py`: `BotManager` singleton manages `BotInstance` objects with callback system for QR codes and status updates
-- `app/bots/whatsapp_bot.py`: Playwright-based browser automation (707KB - the core bot logic)
+- `app/bots/whatsapp_bot.py`: Playwright-based browser automation (11K+ lines — the core bot logic)
 - Sessions persist in `data/sessions/bot_{id}/`
 
 **AI Provider Abstraction** (`app/ai/`):
@@ -48,9 +118,16 @@ ChatHub is a multi-tenant platform for AI-powered WhatsApp bots with coordinated
 - `coordinator.py`: `RoutingCache` prevents duplicate AI calls when multiple bots receive same message
 - Agents: classifier (categorizes messages), router (determines which bot responds)
 
+**Claude Code Integration** (`app/claude_code/`):
+- Embeds Claude Code CLI as a subprocess with real-time WebSocket streaming
+- `manager.py`: `ClaudeCodeManager` singleton — spawns CLI, reads stream-json output, broadcasts to WebSockets
+- Safety: auto git commit + DB backup before each session, rollback support
+- One active session per user enforced
+
 **WebSocket Real-time**:
 - QR code display: `WS /api/bots/{id}/qr`
 - Conversation updates via `conversation_ws_manager`
+- Claude Code streaming: `WS /tools/api/claude-code/stream/{session_id}`
 - Cross-thread calls: `conversation_ws_manager.set_main_loop()` stores asyncio loop
 
 ### Key Patterns
@@ -63,18 +140,75 @@ async def endpoint(user: User = Depends(get_current_user), db: Session = Depends
     # All resources filtered by user.id
 ```
 
+**WebSocket Authentication**:
+```python
+@router.websocket("/path/{id}")
+async def ws_endpoint(websocket: WebSocket, id: int):
+    await websocket.accept()
+    db = next(get_db())
+    user = await get_websocket_user(websocket, db)  # Token from cookie or ?token= param
+    if not user:
+        await websocket.close(code=4001)
+        return
+```
+
 **API Key Encryption**: Use `encrypt_string()` / `decrypt_string()` from `app/auth/utils.py` for storing API keys
 
 **Async/Threading**: FastAPI async routes, but Playwright runs in thread. `BotInstance` uses `threading.Lock` for `_queue_lock`
 
 **Message Deduplication**: WhatsApp message ID + 5-minute content hash fallback
 
-### Database
+### Database Models (23 tables)
 
-SQLAlchemy models in `app/database.py` (50+ tables). Key tables:
-- `users`, `bot_profiles`, `conversations`, `messages`
-- `hubs`, `hub_bot_memberships`, `ai_agents`
-- `contacts`, `contact_tags`, `scheduled_contents`
+All models in `app/database.py`:
+
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| `users` | User accounts | id, email, name, password_hash, is_active |
+| `bot_profiles` | Bot config | id, user_id, name, ai_provider, api_key_encrypted, model, system_prompt, is_running |
+| `conversations` | Chat threads | id, bot_profile_id, chat_name, chat_type, is_group |
+| `messages` | Individual messages | id, conversation_id, content, sender, direction, wa_message_id |
+| `scheduled_messages` | Legacy scheduled | id, bot_profile_id, content, scheduled_for |
+| `activity_logs` | Activity tracking | id, user_id, action, details |
+| `hubs` | Multi-bot groups | id, user_id, name, task_type, ai_provider |
+| `hub_bot_memberships` | Bot-Hub links | id, hub_id, bot_profile_id, role |
+| `hub_message_topics` | Message categories | id, hub_id, name, keywords |
+| `agent_templates` | Template library | id, name, agent_type, system_prompt |
+| `ai_agents` | AI agents | id, hub_id, name, agent_type, model, api_key_encrypted |
+| `contacts` | WhatsApp contacts | id, hub_id, phone, display_name, sentiment, urgency, follow_up_needed |
+| `contact_tags` | Contact labels | id, contact_id, tag, value, confidence, source |
+| `scheduled_contents` | Content queue | id, hub_id, content, scheduled_for, status, recipient_type |
+| `agent_executions` | Agent run logs | id, agent_id, input_data, output_data, tokens_used |
+| `message_routings` | Routing decisions | id, hub_id, message_id, classification, assigned_bots |
+| `conversation_scripts` | Script templates | id, hub_id, name, schedule_type, status |
+| `script_messages` | Script steps | id, script_id, bot_profile_id, content, delay_seconds |
+| `script_executions` | Script run logs | id, script_id, status, messages_sent |
+| `tool_executions` | Tool monitor | id, hub_id, tool_type, operation, status, execution_time_ms |
+| `claude_code_sessions` | CLI sessions | id, user_id, prompt, status, git_commit_hash, db_backup_path, pid |
+| `claude_code_messages` | Stream events | id, session_id, role, content, message_type, metadata |
+| `claude_code_settings` | Per-user config | id, user_id, anthropic_api_key_encrypted, default_model |
+
+### API Endpoints Catalog (179 routes)
+
+**Auth** (`/auth`): login, register, logout, profile CRUD, password change
+**Bots** (`/api/bots`): CRUD, start/stop, toggle AI, sync history, contacts/groups, analytics, WS QR
+**Conversations** (`/api/conversations`): list by bot, messages, send, send-file, export, WS updates
+**Hubs** (`/api/hubs`): CRUD, bot membership, agents, contacts (CRUD + analyze + export), groups, topics, scheduled content, generation
+**Scripts** (`/scripts`): script CRUD, messages, execution, scheduling
+**Tools** (`/tools`): tool pages (7 pages), monitoring API, tool-specific stats/simulation/operations
+**Claude Code** (`/tools`): page, settings, session CRUD, stop, rollback, WS stream
+**Agents** (`/agents`): CRUD, templates, test, history
+**Analytics** (`/api/analytics`): overview, daily, per-bot, top conversations, activity feed
+**Dashboard** (root): 6 page routes (dashboard, bots, conversations, analytics, settings, hubs)
+
+### Frontend Tech Stack
+
+- **Bootstrap 5.3.2** — CSS framework + JS components
+- **Bootstrap Icons 1.11.1** — Icon library
+- **HTMX 1.9.9** — Progressive enhancement
+- **marked.js** — Markdown rendering (Claude Code page)
+- **Custom CSS** — `static/css/style.css` (main), `static/css/tools.css` (tool pages)
+- **Custom JS** — `static/js/app.js` (auth, toast, utilities)
 
 ### Deployment Modes
 
@@ -154,6 +288,7 @@ For toggle switches that match the bot card style:
 - **Scheduled Content**: Purple-blue gradient (`#667eea` to `#764ba2`)
 - **Message Routing**: Purple gradient (`#a855f7` to `#7c3aed`)
 - **Scripted Conversations**: Indigo gradient (`#6366f1` to `#4f46e5`)
+- **Claude Code**: Cyan gradient (`#06b6d4` to `#0284c7`)
 
 ### Card Grid Layout (Equal Height)
 When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:

@@ -1,0 +1,948 @@
+{% extends "base.html" %}
+
+{% block title %}Claude Code - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
+<style>
+/* Cyan theme */
+.tool-hero {
+    background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+    color: white;
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+}
+.tool-hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+.tool-hero p { font-size: 1rem; opacity: 0.9; max-width: 600px; margin: 0; }
+
+/* Settings panel */
+.settings-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.settings-panel .form-label { font-weight: 500; font-size: 0.85rem; }
+.settings-panel .form-control:focus,
+.settings-panel .form-select:focus {
+    border-color: #06b6d4;
+    box-shadow: none;
+}
+
+/* Chat area */
+.chat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 65vh;
+    min-height: 450px;
+}
+.chat-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+.chat-header .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+.status-idle { background: var(--border-color); color: var(--text-secondary); }
+.status-running { background: rgba(6,182,212,0.15); color: #06b6d4; }
+.status-completed { background: rgba(16,185,129,0.15); color: #10b981; }
+.status-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
+.status-stopped { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+.chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Messages */
+.msg { max-width: 95%; }
+.msg-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 12px 12px 2px 12px;
+}
+.msg-assistant {
+    align-self: flex-start;
+    background: var(--border-color);
+    padding: 0.75rem 1rem;
+    border-radius: 12px 12px 12px 2px;
+    width: 100%;
+}
+.msg-assistant pre {
+    background: rgba(0,0,0,0.3);
+    padding: 0.75rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    font-size: 0.82rem;
+}
+.msg-assistant code {
+    font-size: 0.82rem;
+}
+.msg-assistant p:last-child { margin-bottom: 0; }
+
+.msg-tool {
+    align-self: flex-start;
+    width: 100%;
+    font-size: 0.82rem;
+}
+.tool-block {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.tool-block-header {
+    background: rgba(6,182,212,0.08);
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    user-select: none;
+}
+.tool-block-header:hover { background: rgba(6,182,212,0.15); }
+.tool-block-header .chevron {
+    transition: transform 0.2s;
+    font-size: 0.7rem;
+}
+.tool-block-header.collapsed .chevron { transform: rotate(-90deg); }
+.tool-block-body {
+    padding: 0.5rem 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: rgba(0,0,0,0.15);
+}
+
+.msg-system {
+    align-self: center;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-style: italic;
+    padding: 0.25rem 0.75rem;
+}
+
+/* Input area */
+.chat-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.chat-footer .input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+#promptInput {
+    resize: none;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    max-height: 120px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+#promptInput:focus {
+    border-color: #06b6d4;
+    box-shadow: none;
+}
+#sendBtn {
+    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    border: none;
+    color: white;
+    border-radius: 10px;
+    padding: 0 1.25rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+#sendBtn:disabled { opacity: 0.5; }
+
+/* Session sidebar */
+.session-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    height: 65vh;
+    min-height: 450px;
+    display: flex;
+    flex-direction: column;
+}
+.session-sidebar-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+.session-item {
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 0.25rem;
+    transition: background 0.15s;
+}
+.session-item:hover { background: var(--border-color); }
+.session-item.active { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); }
+.session-item .prompt-preview {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+}
+.session-item .session-meta {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.session-item .mini-badge {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+/* Spinner */
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.5rem 0.75rem;
+}
+.typing-indicator span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #06b6d4;
+    animation: typing 1.2s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+}
+
+/* Rollback button */
+.btn-rollback {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #ef4444;
+    background: transparent;
+}
+.btn-rollback:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="tool-hero">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-terminal" style="font-size: 2.5rem;"></i>
+            <div>
+                <h1>Claude Code</h1>
+                <p>AI-powered code assistant with full codebase access. Describe what you need in natural language.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Main Chat Area -->
+        <div class="col-lg-9">
+            <!-- Settings (collapsible) -->
+            <div class="settings-panel" id="settingsPanel" style="display: none;">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Anthropic API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="apiKeyInput" placeholder="sk-ant-...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVisibility()">
+                                <i class="bi bi-eye" id="keyToggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="apiKeyStatus"></small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Model</label>
+                        <select class="form-select" id="modelSelect">
+                            <option value="opus">Opus 4.6 - Most capable</option>
+                            <option value="opus-1m">Opus (1M context)</option>
+                            <option value="sonnet" selected>Sonnet 4.6 - Best for everyday tasks</option>
+                            <option value="sonnet-1m">Sonnet (1M context)</option>
+                            <option value="haiku">Haiku 4.5 - Fastest</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Max Minutes</label>
+                        <input type="number" class="form-control" id="maxMinutesInput" value="30" min="5" max="120">
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoCommitToggle" checked>
+                            <label class="form-check-label" for="autoCommitToggle">Auto safety commit</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoBackupToggle" checked>
+                            <label class="form-check-label" for="autoBackupToggle">Auto DB backup</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-sm" onclick="saveSettings()" style="background: linear-gradient(135deg, #06b6d4, #0284c7); color: white;">
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Card -->
+            <div class="chat-card">
+                <div class="chat-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="status-badge status-idle" id="statusBadge">
+                            <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i>
+                            <span id="statusText">Ready</span>
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleSettings()">
+                            <i class="bi bi-gear me-1"></i>Settings
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill" id="stopBtn" style="display: none;" onclick="stopSession()">
+                            <i class="bi bi-stop-fill me-1"></i>Stop
+                        </button>
+                    </div>
+                </div>
+                <div class="chat-body" id="chatBody">
+                    <div class="text-center text-muted py-5" id="emptyState">
+                        <i class="bi bi-terminal" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">Describe what you need and Claude Code will work on it.</p>
+                        <small>Configure your API key in Settings first.</small>
+                    </div>
+                </div>
+                <div class="chat-footer">
+                    <div class="input-group">
+                        <textarea class="form-control" id="promptInput" rows="1"
+                            placeholder="Describe what you need..."
+                            onkeydown="handleKeydown(event)"></textarea>
+                        <button class="btn" id="sendBtn" onclick="startSession()">
+                            <i class="bi bi-send me-1"></i>Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Sidebar -->
+        <div class="col-lg-3">
+            <div class="session-sidebar">
+                <div class="session-sidebar-header">
+                    <i class="bi bi-clock-history me-2"></i>Session History
+                </div>
+                <div class="session-list" id="sessionList">
+                    <div class="text-center text-muted py-4" id="noSessions">
+                        <small>No sessions yet</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Marked.js for markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// State
+let currentSessionId = null;
+let ws = null;
+let isRunning = false;
+let autoScroll = true;
+let assistantBuffer = '';  // Buffer for streaming assistant text
+
+// Token from cookie
+function getToken() {
+    const match = document.cookie.match(/access_token=([^;]+)/);
+    return match ? match[1] : '';
+}
+
+// --- Settings ---
+function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleKeyVisibility() {
+    const input = document.getElementById('apiKeyInput');
+    const icon = document.getElementById('keyToggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+async function loadSettings() {
+    try {
+        const res = await fetch('/tools/api/claude-code/settings', { credentials: 'include' });
+        const data = await res.json();
+        if (data.api_key_set) {
+            document.getElementById('apiKeyInput').placeholder = data.api_key_masked || '****';
+            document.getElementById('apiKeyStatus').textContent = 'API key configured';
+            document.getElementById('apiKeyStatus').className = 'text-success small';
+        }
+        document.getElementById('modelSelect').value = data.default_model || 'sonnet';
+        document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
+        document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
+        document.getElementById('maxMinutesInput').value = data.max_session_minutes || 30;
+    } catch (e) {
+        console.error('Failed to load settings:', e);
+    }
+}
+
+async function saveSettings() {
+    const apiKey = document.getElementById('apiKeyInput').value;
+    const payload = {
+        default_model: document.getElementById('modelSelect').value,
+        auto_commit: document.getElementById('autoCommitToggle').checked,
+        auto_backup_db: document.getElementById('autoBackupToggle').checked,
+        max_session_minutes: parseInt(document.getElementById('maxMinutesInput').value) || 30
+    };
+    if (apiKey && !apiKey.startsWith('****')) {
+        payload.anthropic_api_key = apiKey;
+    }
+
+    try {
+        const res = await fetch('/tools/api/claude-code/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            showToast('Settings saved', 'success');
+            document.getElementById('apiKeyInput').value = '';
+            loadSettings();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to save', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+}
+
+// --- Sessions ---
+async function loadSessions() {
+    try {
+        const res = await fetch('/tools/api/claude-code/sessions', { credentials: 'include' });
+        const sessions = await res.json();
+        const list = document.getElementById('sessionList');
+        const noSessions = document.getElementById('noSessions');
+
+        if (!sessions.length) {
+            noSessions.style.display = 'block';
+            return;
+        }
+        noSessions.style.display = 'none';
+
+        list.innerHTML = sessions.map(s => {
+            const statusClass = `mini-badge status-${s.status}`;
+            const date = s.created_at ? new Date(s.created_at).toLocaleString() : '';
+            const active = s.id === currentSessionId ? 'active' : '';
+            const rollbackBtn = (s.status === 'completed' || s.status === 'failed' || s.status === 'stopped') && !s.rolled_back && s.git_commit_hash
+                ? `<button class="btn-rollback" onclick="event.stopPropagation(); rollbackSession(${s.id})" title="Rollback changes"><i class="bi bi-arrow-counterclockwise"></i></button>`
+                : s.rolled_back ? '<span class="text-muted" style="font-size:0.65rem;">rolled back</span>' : '';
+
+            return `<div class="session-item ${active}" onclick="viewSession(${s.id})">
+                <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
+                <div class="session-meta">
+                    <span class="${statusClass}">${s.status}</span>
+                    <span>${date}</span>
+                    ${rollbackBtn}
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Failed to load sessions:', e);
+    }
+}
+
+async function viewSession(sessionId) {
+    try {
+        const res = await fetch(`/tools/api/claude-code/sessions/${sessionId}`, { credentials: 'include' });
+        const session = await res.json();
+
+        currentSessionId = sessionId;
+        clearChat();
+
+        // Render stored messages
+        for (const msg of session.messages) {
+            if (msg.role === 'user') {
+                appendUserMessage(msg.content);
+            } else if (msg.role === 'assistant') {
+                if (msg.content) appendAssistantMessage(msg.content);
+            } else if (msg.role === 'tool_use') {
+                appendToolUse(msg.content);
+            } else if (msg.role === 'tool_result') {
+                appendToolResult(msg.content);
+            } else if (msg.role === 'system') {
+                appendSystemMessage(msg.content);
+            }
+        }
+
+        setStatus(session.status);
+
+        // If session is running, connect WebSocket
+        if (session.status === 'running') {
+            connectWebSocket(sessionId);
+        }
+
+        loadSessions();
+    } catch (e) {
+        console.error('Failed to load session:', e);
+    }
+}
+
+async function startSession() {
+    const prompt = document.getElementById('promptInput').value.trim();
+    if (!prompt || isRunning) return;
+
+    document.getElementById('promptInput').value = '';
+    clearChat();
+    appendUserMessage(prompt);
+    setStatus('pending');
+
+    try {
+        const res = await fetch('/tools/api/claude-code/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                prompt: prompt,
+                model: document.getElementById('modelSelect').value
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            appendSystemMessage(err.detail || 'Failed to start session');
+            setStatus('failed');
+            return;
+        }
+
+        const data = await res.json();
+        currentSessionId = data.session_id;
+        setStatus('running');
+        connectWebSocket(data.session_id);
+        loadSessions();
+
+        if (data.git_commit_hash) {
+            appendSystemMessage(`Safety commit: ${data.git_commit_hash.substring(0, 8)}`);
+        }
+    } catch (e) {
+        appendSystemMessage('Network error: ' + e.message);
+        setStatus('failed');
+    }
+}
+
+async function stopSession() {
+    if (!currentSessionId) return;
+    try {
+        await fetch(`/tools/api/claude-code/sessions/${currentSessionId}/stop`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (e) {
+        console.error('Failed to stop:', e);
+    }
+}
+
+async function rollbackSession(sessionId) {
+    if (!confirm('This will reset git and restore the database to before this session. Continue?')) return;
+
+    try {
+        const res = await fetch(`/tools/api/claude-code/sessions/${sessionId}/rollback`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            showToast('Rollback successful', 'success');
+            loadSessions();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Rollback failed', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+}
+
+// --- WebSocket ---
+function connectWebSocket(sessionId) {
+    if (ws) {
+        try { ws.close(); } catch(e) {}
+    }
+
+    isRunning = true;
+    assistantBuffer = '';
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${location.host}/tools/api/claude-code/stream/${sessionId}`);
+
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+        // Start ping interval
+        ws._pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) ws.send('ping');
+        }, 30000);
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            renderStreamEvent(data);
+        } catch (e) {
+            console.error('Parse error:', e);
+        }
+    };
+
+    ws.onclose = () => {
+        isRunning = false;
+        clearInterval(ws._pingInterval);
+        flushAssistantBuffer();
+        document.getElementById('stopBtn').style.display = 'none';
+        document.getElementById('sendBtn').disabled = false;
+        // Refresh session to get final status
+        if (currentSessionId) {
+            setTimeout(() => loadSessions(), 500);
+        }
+    };
+
+    ws.onerror = (e) => {
+        console.error('WebSocket error:', e);
+    };
+}
+
+// --- Rendering ---
+let currentAssistantEl = null;
+let currentToolUseEl = null;
+
+function renderStreamEvent(data) {
+    const type = data.type;
+
+    if (type === 'pong' || type === 'ping') return;
+
+    if (type === 'assistant' && data.message) {
+        // Full assistant message
+        flushAssistantBuffer();
+        const blocks = data.message.content || [];
+        for (const block of blocks) {
+            if (block.type === 'text' && block.text) {
+                appendAssistantMessage(block.text);
+            } else if (block.type === 'tool_use') {
+                appendToolUse(JSON.stringify({ tool: block.name, input: block.input }));
+            }
+        }
+    } else if (type === 'content_block_start') {
+        const block = data.content_block || {};
+        if (block.type === 'text') {
+            flushAssistantBuffer();
+            currentAssistantEl = createAssistantBubble();
+        } else if (block.type === 'tool_use') {
+            flushAssistantBuffer();
+            appendToolUse(JSON.stringify({ tool: block.name, id: block.id }));
+        }
+    } else if (type === 'content_block_delta') {
+        const delta = data.delta || {};
+        if (delta.type === 'text_delta' && delta.text) {
+            assistantBuffer += delta.text;
+            if (currentAssistantEl) {
+                currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
+                scrollToBottom();
+            }
+        } else if (delta.type === 'input_json_delta' && delta.partial_json) {
+            // Tool input streaming - append to current tool block if exists
+            if (currentToolUseEl) {
+                const body = currentToolUseEl.querySelector('.tool-block-body');
+                if (body) body.textContent += delta.partial_json;
+            }
+        }
+    } else if (type === 'content_block_stop') {
+        flushAssistantBuffer();
+        currentAssistantEl = null;
+        currentToolUseEl = null;
+    } else if (type === 'tool_use') {
+        flushAssistantBuffer();
+        appendToolUse(JSON.stringify({
+            tool: data.tool?.name || data.name || 'tool',
+            input: data.tool?.input || data.input || {}
+        }));
+    } else if (type === 'tool_result') {
+        appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
+    } else if (type === 'result') {
+        // Final result
+        flushAssistantBuffer();
+        let text = '';
+        const result = data.result;
+        if (Array.isArray(result)) {
+            text = result.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        } else if (typeof result === 'string') {
+            text = result;
+        }
+        if (text) appendAssistantMessage(text);
+        setStatus('completed');
+    } else if (type === 'error') {
+        const errMsg = data.error?.message || JSON.stringify(data);
+        appendSystemMessage('Error: ' + errMsg);
+        setStatus('failed');
+    } else if (type === 'session_end') {
+        isRunning = false;
+        setStatus(data.status || (data.exit_code === 0 ? 'completed' : 'failed'));
+        if (data.stderr) {
+            appendSystemMessage(data.stderr);
+        }
+        document.getElementById('stopBtn').style.display = 'none';
+        document.getElementById('sendBtn').disabled = false;
+    } else if (type === 'system') {
+        appendSystemMessage(data.message || data.content || '');
+    }
+}
+
+function flushAssistantBuffer() {
+    if (assistantBuffer && !currentAssistantEl) {
+        appendAssistantMessage(assistantBuffer);
+    }
+    assistantBuffer = '';
+}
+
+function createAssistantBubble() {
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-assistant';
+    chatBody.appendChild(div);
+    scrollToBottom();
+    return div;
+}
+
+function appendUserMessage(text) {
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-user';
+    div.textContent = text;
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
+function appendAssistantMessage(text) {
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-assistant';
+    div.innerHTML = marked.parse(text);
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
+function appendToolUse(content) {
+    let parsed;
+    try { parsed = JSON.parse(content); } catch { parsed = { tool: 'unknown', input: content }; }
+
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-tool';
+
+    const inputStr = typeof parsed.input === 'object' ? JSON.stringify(parsed.input, null, 2) : (parsed.input || '');
+    div.innerHTML = `<div class="tool-block">
+        <div class="tool-block-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.style.display = this.classList.contains('collapsed') ? 'none' : 'block';">
+            <i class="bi bi-chevron-down chevron"></i>
+            <i class="bi bi-wrench me-1" style="color: #06b6d4;"></i>
+            ${escapeHtml(parsed.tool || 'Tool')}
+        </div>
+        <div class="tool-block-body">${escapeHtml(inputStr)}</div>
+    </div>`;
+    chatBody.appendChild(div);
+    currentToolUseEl = div;
+    scrollToBottom();
+}
+
+function appendToolResult(content) {
+    let text;
+    try {
+        const parsed = JSON.parse(content);
+        text = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+    } catch {
+        text = content;
+    }
+    // Truncate very long results
+    const displayText = text.length > 2000 ? text.substring(0, 2000) + '\n... (truncated)' : text;
+
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-tool';
+    div.innerHTML = `<div class="tool-block">
+        <div class="tool-block-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.style.display = this.classList.contains('collapsed') ? 'none' : 'block';">
+            <i class="bi bi-chevron-down chevron"></i>
+            <i class="bi bi-check-circle me-1" style="color: #10b981;"></i>
+            Result
+        </div>
+        <div class="tool-block-body" style="display: none;">${escapeHtml(displayText)}</div>
+    </div>`;
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
+function appendSystemMessage(text) {
+    if (!text) return;
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-system';
+    div.textContent = text;
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
+function clearChat() {
+    const chatBody = document.getElementById('chatBody');
+    // Remove all children except emptyState
+    const emptyState = document.getElementById('emptyState');
+    chatBody.innerHTML = '';
+    if (emptyState) {
+        emptyState.style.display = 'none';
+        chatBody.appendChild(emptyState);
+    }
+    currentAssistantEl = null;
+    currentToolUseEl = null;
+    assistantBuffer = '';
+}
+
+// --- UI Helpers ---
+function setStatus(status) {
+    const badge = document.getElementById('statusBadge');
+    const text = document.getElementById('statusText');
+    const stopBtn = document.getElementById('stopBtn');
+    const sendBtn = document.getElementById('sendBtn');
+
+    badge.className = 'status-badge status-' + status;
+    text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+    if (status === 'running') {
+        stopBtn.style.display = 'inline-flex';
+        sendBtn.disabled = true;
+        isRunning = true;
+    } else {
+        stopBtn.style.display = 'none';
+        sendBtn.disabled = false;
+        isRunning = false;
+    }
+}
+
+function scrollToBottom() {
+    if (!autoScroll) return;
+    const body = document.getElementById('chatBody');
+    body.scrollTop = body.scrollHeight;
+}
+
+// Smart auto-scroll: pause when user scrolls up
+document.addEventListener('DOMContentLoaded', () => {
+    const chatBody = document.getElementById('chatBody');
+    chatBody.addEventListener('scroll', () => {
+        const atBottom = chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight < 50;
+        autoScroll = atBottom;
+    });
+});
+
+function handleKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        startSession();
+    }
+}
+
+// Auto-resize textarea
+document.addEventListener('DOMContentLoaded', () => {
+    const textarea = document.getElementById('promptInput');
+    textarea.addEventListener('input', () => {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    });
+});
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const id = 'toast_' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${escapeHtml(message)}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `);
+    const el = document.getElementById(id);
+    const toast = new bootstrap.Toast(el, { delay: 3000 });
+    toast.show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    loadSessions();
+
+    // Configure marked
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            highlight: null
+        });
+    }
+});
+</script>
+{% endblock %}

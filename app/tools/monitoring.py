@@ -24,7 +24,8 @@ class ToolMonitor:
         'contact_analyzer',
         'scheduled_content',
         'message_routing',
-        'agent_execution'
+        'agent_execution',
+        'claude_code'
     ]
 
     @staticmethod
