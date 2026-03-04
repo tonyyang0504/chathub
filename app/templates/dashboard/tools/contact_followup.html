@@ -1,0 +1,2608 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Follow Up - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.workflow-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 2rem;
+    position: relative;
+}
+
+.workflow-steps::before {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, #10b981, #059669);
+    z-index: 0;
+}
+
+.workflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    max-width: 180px;
+}
+
+.workflow-step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #10b981;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.workflow-step h5 { font-weight: 600; margin-bottom: 0.5rem; }
+.workflow-step p { font-size: 0.85rem; color: var(--text-muted); }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.stat-card .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+.stat-card .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+.stat-card.success .stat-icon { color: #10b981; }
+.stat-card.info .stat-icon { color: #17a2b8; }
+.stat-card.warning .stat-icon { color: #ffc107; }
+.stat-card.secondary .stat-icon { color: #6c757d; }
+
+/* Theme button styling - Emerald */
+.btn-theme {
+    background: #10b981;
+    border: none;
+    color: white;
+}
+.btn-theme:hover, .btn-theme:focus {
+    background: #059669;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-outline-theme {
+    color: #10b981;
+    border-color: #10b981;
+    background: transparent;
+}
+.btn-outline-theme:hover, .btn-outline-theme:focus {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+}
+
+/* Queue Section */
+.queue-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+#queueSearchInput:focus {
+    border-color: #10b981;
+    box-shadow: none;
+}
+
+.contact-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.contact-card:hover {
+    border-color: #10b981;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.contact-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.contact-avatar img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.contact-avatar.avatar-color-1 { background: linear-gradient(135deg, #25D366 0%, #1ebe5d 100%); }
+.contact-avatar.avatar-color-2 { background: linear-gradient(135deg, #53bdeb 0%, #3a9fd1 100%); }
+.contact-avatar.avatar-color-3 { background: linear-gradient(135deg, #e542a3 0%, #c9358a 100%); }
+.contact-avatar.avatar-color-4 { background: linear-gradient(135deg, #ff7b5a 0%, #e5634a 100%); }
+.contact-avatar.avatar-color-5 { background: linear-gradient(135deg, #9c7cff 0%, #7c5ce0 100%); }
+.contact-avatar.avatar-color-6 { background: linear-gradient(135deg, #00a884 0%, #008f70 100%); }
+.contact-avatar.avatar-color-7 { background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%); }
+.contact-avatar.avatar-color-8 { background: linear-gradient(135deg, #ab47bc 0%, #8e24aa 100%); }
+
+.contact-info { flex: 1; min-width: 0; }
+.contact-name { font-weight: 600; margin-bottom: 0.25rem; }
+.contact-phone { font-size: 0.85rem; color: var(--text-muted); }
+
+.contact-badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.badge-urgency-high { background: rgba(220, 53, 69, 0.15); color: var(--bs-danger); }
+.badge-urgency-medium { background: rgba(255, 193, 7, 0.15); color: #b8860b; }
+.badge-urgency-low { background: rgba(108, 117, 125, 0.15); color: var(--bs-secondary); }
+
+.badge-sentiment-positive { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-sentiment-neutral { background: rgba(108, 117, 125, 0.15); color: var(--bs-secondary); }
+.badge-sentiment-negative { background: rgba(220, 53, 69, 0.15); color: var(--bs-danger); }
+
+.followup-reason {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(16, 185, 129, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #10b981;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+/* Message Generation Panel */
+.generation-panel {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid #10b981;
+}
+
+.message-preview {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    min-height: 100px;
+    border: 1px solid var(--border-color);
+}
+
+.message-preview textarea {
+    width: 100%;
+    min-height: 100px;
+    border: none;
+    background: transparent;
+    resize: vertical;
+    font-size: 0.95rem;
+}
+
+.message-preview textarea:focus {
+    outline: none;
+}
+
+/* Simulation Section */
+.simulation-section {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.simulation-section h3 { color: #065f46; }
+
+.sample-profile {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Instance Filter Dropdown */
+.instance-dropdown {
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+}
+.instance-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+.instance-dropdown-btn::after {
+    margin-left: auto;
+}
+.instance-dropdown-btn:hover, .instance-dropdown-btn:focus {
+    border-color: #10b981;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.instance-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.instance-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.instance-dropdown-menu .dropdown-item:hover {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+.instance-dropdown-menu .dropdown-item.selected {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    font-weight: 500;
+}
+
+/* Model Dropdown */
+.model-dropdown {
+    position: relative;
+    width: 100%;
+}
+.model-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+.model-dropdown-btn::after { margin-left: auto; }
+.model-dropdown-btn:hover, .model-dropdown-btn:focus {
+    border-color: #10b981;
+    background: var(--bs-body-bg);
+    color: var(--text-color);
+    box-shadow: none;
+    outline: none;
+}
+.model-dropdown-menu {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    margin-top: 4px !important;
+}
+.model-dropdown-menu-inner {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.model-dropdown-menu .dropdown-item {
+    padding: 8px 16px;
+    color: var(--text-color);
+    transition: all 0.15s;
+}
+.model-dropdown-menu .dropdown-header {
+    color: var(--bs-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 8px 16px 4px;
+}
+.model-dropdown-menu .dropdown-item:hover {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+.model-dropdown-menu .dropdown-item.selected {
+    font-weight: 500;
+}
+
+/* Simulation textarea */
+.simulation-textarea {
+    border-radius: 12px;
+    padding: 12px 16px;
+    resize: vertical;
+}
+.simulation-textarea:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+}
+
+/* Activity log */
+.activity-log .activity-log-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.activity-log .activity-log-item:last-child {
+    border-bottom: none;
+}
+.activity-log .activity-log-item:hover {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.activity-contact-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+.activity-avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+}
+.activity-avatar-placeholder.avatar-color-1 { background: linear-gradient(135deg, #25D366 0%, #1ebe5d 100%); }
+.activity-avatar-placeholder.avatar-color-2 { background: linear-gradient(135deg, #53bdeb 0%, #3a9fd1 100%); }
+.activity-avatar-placeholder.avatar-color-3 { background: linear-gradient(135deg, #e542a3 0%, #c9358a 100%); }
+.activity-avatar-placeholder.avatar-color-4 { background: linear-gradient(135deg, #ff7b5a 0%, #e5634a 100%); }
+.activity-avatar-placeholder.avatar-color-5 { background: linear-gradient(135deg, #9c7cff 0%, #7c5ce0 100%); }
+.activity-avatar-placeholder.avatar-color-6 { background: linear-gradient(135deg, #00a884 0%, #008f70 100%); }
+.activity-avatar-placeholder.avatar-color-7 { background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%); }
+.activity-avatar-placeholder.avatar-color-8 { background: linear-gradient(135deg, #ab47bc 0%, #8e24aa 100%); }
+
+.feature-list { list-style: none; padding: 0; }
+.feature-list li { padding: 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+.feature-list li i { color: #10b981; font-size: 1.2rem; }
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Instances Section */
+.instances-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.instance-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+.instance-card:hover {
+    border-color: #10b981;
+    transform: translateY(-2px);
+}
+.instance-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.instance-status.status-active {
+    background: rgba(25, 135, 84, 0.15);
+    color: var(--bs-success);
+}
+.instance-status.status-inactive {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--bs-secondary);
+}
+
+/* Queue filter pill active state */
+.queue-filter-opt.active {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    color: white !important;
+}
+
+/* Auto Send Switch */
+.auto-send-switch {
+    display: flex;
+    align-items: center;
+    padding-left: 0;
+}
+.auto-send-switch .form-check-input {
+    width: 40px;
+    height: 22px;
+    margin-left: 0;
+    margin-right: 0;
+    cursor: pointer;
+}
+.auto-send-switch .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+.auto-send-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+}
+.auto-send-switch .form-check-label {
+    margin-left: 8px;
+    line-height: 22px;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+/* Auto Send Modal filter active state */
+#autoSendModal .auto-send-filter.active {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    color: white !important;
+}
+
+/* Contact Detail Modal */
+.contact-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.contact-detail-info h5 { margin-bottom: 0.25rem; }
+.contact-avatar-lg { width: 64px; height: 64px; flex-shrink: 0; }
+.avatar-placeholder-lg {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+}
+.contact-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.contact-stat { text-align: center; padding: 1rem; background: var(--bs-light); border-radius: 8px; }
+.contact-stat-value { font-size: 1.5rem; font-weight: 600; color: #10b981; }
+.contact-stat-label { font-size: 0.75rem; color: var(--bs-secondary); text-transform: uppercase; }
+.contact-tags-section { margin-bottom: 1.5rem; }
+.contact-tag-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.35rem 0.75rem; background: var(--bs-light);
+    border: 1px solid var(--bs-border-color); border-radius: 20px; font-size: 0.8rem; margin: 0.25rem;
+}
+.contact-tag-badge .confidence { font-size: 0.65rem; color: var(--bs-secondary); }
+.contact-tag-badge.ai-tag { background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-color: #4dd0e1; }
+.contact-info-badge {
+    display: inline-flex; align-items: center;
+    padding: 0.35rem 0.75rem; border: 1px solid var(--bs-border-color);
+    border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+}
+.contact-info-badge.badge-bot { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-color: #64b5f6; color: #1565c0; }
+.contact-info-badge.badge-intent { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%); border-color: #f48fb1; color: #c2185b; }
+.contact-info-badge.badge-sentiment-positive { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-color: #81c784; color: #2e7d32; }
+.contact-info-badge.badge-sentiment-neutral { background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%); border-color: #90a4ae; color: #546e7a; }
+.contact-info-badge.badge-sentiment-negative { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-color: #e57373; color: #c62828; }
+.contact-info-badge.badge-urgency-low { background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%); border-color: #90a4ae; color: #546e7a; }
+.contact-info-badge.badge-urgency-medium { background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); border-color: #ffd54f; color: #f57f17; }
+.contact-info-badge.badge-urgency-high { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-color: #e57373; color: #c62828; }
+.contact-info-badge.badge-topic { background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-color: #4dd0e1; color: #00838f; }
+.engagement-meter-lg { height: 12px; background: var(--bs-light); border-radius: 6px; overflow: hidden; margin-top: 0.5rem; }
+.engagement-meter-lg .fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+.message-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.message-stat-item { text-align: center; padding: 0.75rem 0.5rem; background: var(--bs-light); border-radius: 6px; }
+.message-stat-item .stat-value { font-size: 1.25rem; font-weight: 600; color: #10b981; }
+.message-stat-item .stat-label { font-size: 0.65rem; color: var(--bs-secondary); text-transform: uppercase; }
+.recent-messages-chat { background: #efeae2; padding: 12px; border-radius: 8px; max-height: 300px; overflow-y: auto; }
+.recent-message-row { display: flex; margin-bottom: 4px; }
+.recent-message-row.incoming { justify-content: flex-start; }
+.recent-message-row.outgoing { justify-content: flex-end; }
+.recent-message-bubble {
+    max-width: 75%; padding: 6px 8px 6px 9px; border-radius: 7.5px; position: relative;
+    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+}
+.recent-message-row.incoming .recent-message-bubble { background: #ffffff; }
+.recent-message-row.incoming.with-tail .recent-message-bubble { border-top-left-radius: 0; }
+.recent-message-row.incoming.with-tail .recent-message-bubble::before {
+    content: ''; position: absolute; top: 0; left: -8px; width: 8px; height: 13px;
+    background: #ffffff; clip-path: polygon(100% 0, 100% 100%, 0 0);
+}
+.recent-message-row.outgoing .recent-message-bubble { background: #d9fdd3; }
+.recent-message-row.outgoing.with-tail .recent-message-bubble { border-top-right-radius: 0; }
+.recent-message-row.outgoing.with-tail .recent-message-bubble::before {
+    content: ''; position: absolute; top: 0; right: -8px; width: 8px; height: 13px;
+    background: #d9fdd3; clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.recent-message-sender { font-size: 12px; font-weight: 500; margin-bottom: 2px; color: #1fa855; }
+.recent-message-row.incoming .recent-message-sender { color: #6b5ce7; }
+.recent-message-text { color: #111b21; font-size: 13.5px; line-height: 18px; word-wrap: break-word; white-space: pre-wrap; }
+.recent-message-footer { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 2px; }
+.recent-message-time { font-size: 10px; color: rgba(17, 27, 33, 0.45); }
+.recent-message-meta .badge { font-size: 9px; padding: 2px 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-reply-all me-3"></i>Contact Follow Up</h1>
+                <p>Use AI to generate personalized follow-up messages based on Contact Analyzer insights. Nurture leads, re-engage customers, and maintain relationships with intelligent automation.</p>
+                <a href="/tools/contact-analyzer" class="btn btn-light btn-lg mt-3">
+                    <i class="bi bi-arrow-left me-2"></i>Go to Contact Analyzer
+                </a>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-send-check" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <h3 class="mb-3">Follow-up Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-card warning">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-value" id="totalPending">0</div>
+            <div class="stat-label">Pending Follow-ups</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="bi bi-send-check"></i></div>
+            <div class="stat-value" id="sentToday">0</div>
+            <div class="stat-label">Sent Today</div>
+        </div>
+        <div class="stat-card info">
+            <div class="stat-icon"><i class="bi bi-chat-heart"></i></div>
+            <div class="stat-value" id="responseRate">0%</div>
+            <div class="stat-label">Response Rate</div>
+        </div>
+        <div class="stat-card secondary">
+            <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-value" id="totalDismissed">0</div>
+            <div class="stat-label">Dismissed</div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="workflow-section">
+        <h3><i class="bi bi-diagram-3 me-2"></i>How It Works</h3>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-person-badge"></i></div>
+                <h5>1. Analyze Contacts</h5>
+                <p>Contact Analyzer identifies contacts needing follow-up</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-magic"></i></div>
+                <h5>2. AI Generation</h5>
+                <p>AI creates personalized message using contact insights</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-pencil"></i></div>
+                <h5>3. Review & Edit</h5>
+                <p>Review the message and make any adjustments</p>
+            </div>
+            <div class="workflow-step">
+                <div class="workflow-step-icon"><i class="bi bi-send"></i></div>
+                <h5>4. Send & Track</h5>
+                <p>Send via bot and track responses</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Hub Instances -->
+    <div class="instances-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-collection me-2"></i>Active Hub Instances <span class="text-muted fs-6 fw-normal" id="instanceCount"></span></h3>
+            <div class="d-flex align-items-center gap-2">
+                <input type="hidden" id="instanceHubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="instanceHubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="instanceHubFilterOptions">
+                        <a class="dropdown-item instance-hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+                <input type="hidden" id="instanceStatusFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="instanceStatusFilterDropdown" data-bs-toggle="dropdown">
+                        All Status
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item instance-status-filter-item selected" href="#" data-value="">All Status</a>
+                        <a class="dropdown-item instance-status-filter-item" href="#" data-value="active">Active</a>
+                        <a class="dropdown-item instance-status-filter-item" href="#" data-value="inactive">Inactive</a>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadInstances()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="instancesContainer">
+            <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+    </div>
+
+    <!-- Follow-up Queue -->
+    <div class="queue-section">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h3 class="mb-0"><i class="bi bi-list-check me-2"></i>Follow-up Queue <span class="text-muted fs-6 fw-normal" id="queueCount"></span></h3>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Search -->
+                <div class="position-relative">
+                    <input type="text" class="form-control" id="queueSearchInput" placeholder="Search name or phone..."
+                           style="border-radius: 20px; padding: 10px 18px 10px 36px; font-size: 0.875rem; min-width: 240px;"
+                           oninput="debounceQueueSearch()">
+                    <i class="bi bi-search position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); color: var(--bs-secondary);"></i>
+                </div>
+
+                <!-- Hub filter -->
+                <input type="hidden" id="hubFilterValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
+                        All Hubs
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="hubFilterOptions">
+                        <a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>
+                    </div>
+                </div>
+
+                <!-- Filter dropdown -->
+                <input type="hidden" id="urgencyFilterValue" value="">
+                <input type="hidden" id="sentimentFilterValue" value="">
+                <input type="hidden" id="engagementFilterValue" value="">
+                <input type="hidden" id="dateFilterValue" value="">
+                <div class="dropdown" style="min-width: 130px;">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="queueFilterBtn" style="width: 100%;">
+                        <i class="bi bi-funnel me-1"></i>Filters
+                        <span class="badge rounded-pill ms-1" id="activeFilterCount" style="display: none; background: #10b981;">0</span>
+                    </button>
+                    <div class="dropdown-menu p-3" style="min-width: 300px; border-radius: 12px;">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold mb-1">Urgency</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="urgency" data-value="" onclick="setQueueFilter('urgency', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill queue-filter-opt" data-filter="urgency" data-value="high" onclick="setQueueFilter('urgency', 'high', this)">High</button>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill queue-filter-opt" data-filter="urgency" data-value="medium" onclick="setQueueFilter('urgency', 'medium', this)">Medium</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="urgency" data-value="low" onclick="setQueueFilter('urgency', 'low', this)">Low</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold mb-1">Sentiment</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="sentiment" data-value="" onclick="setQueueFilter('sentiment', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-success rounded-pill queue-filter-opt" data-filter="sentiment" data-value="positive" onclick="setQueueFilter('sentiment', 'positive', this)">Positive</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="sentiment" data-value="neutral" onclick="setQueueFilter('sentiment', 'neutral', this)">Neutral</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill queue-filter-opt" data-filter="sentiment" data-value="negative" onclick="setQueueFilter('sentiment', 'negative', this)">Negative</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold mb-1">Engagement</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="engagement" data-value="" onclick="setQueueFilter('engagement', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-success rounded-pill queue-filter-opt" data-filter="engagement" data-value="high" onclick="setQueueFilter('engagement', 'high', this)">High (70+)</button>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill queue-filter-opt" data-filter="engagement" data-value="medium" onclick="setQueueFilter('engagement', 'medium', this)">Medium (40-69)</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill queue-filter-opt" data-filter="engagement" data-value="low" onclick="setQueueFilter('engagement', 'low', this)">Low (&lt;40)</button>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small fw-semibold mb-1">Last Message</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="date" data-value="" onclick="setQueueFilter('date', '', this)">Any</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="24h" onclick="setQueueFilter('date', '24h', this)">24h</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="7d" onclick="setQueueFilter('date', '7d', this)">7d</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="30d" onclick="setQueueFilter('date', '30d', this)">30d</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="over7d" onclick="setQueueFilter('date', 'over7d', this)">&gt;7d</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="over30d" onclick="setQueueFilter('date', 'over30d', this)">&gt;30d</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sort dropdown -->
+                <input type="hidden" id="sortFilterValue" value="">
+                <div class="dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="sortFilterDropdown" data-bs-toggle="dropdown" style="width: auto; min-width: 110px;">
+                        <i class="bi bi-sort-down me-1"></i>Sort
+                    </button>
+                    <div class="dropdown-menu" style="border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg);">
+                        <a class="dropdown-item queue-sort-opt active" href="#" data-value="" onclick="setQueueSort('', this); return false;">Urgency (Highest)</a>
+                        <a class="dropdown-item queue-sort-opt" href="#" data-value="urgency_lowest" onclick="setQueueSort('urgency_lowest', this); return false;">Urgency (Lowest)</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item queue-sort-opt" href="#" data-value="last_message_newest" onclick="setQueueSort('last_message_newest', this); return false;">Last Message (Newest)</a>
+                        <a class="dropdown-item queue-sort-opt" href="#" data-value="last_message_oldest" onclick="setQueueSort('last_message_oldest', this); return false;">Last Message (Oldest)</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item queue-sort-opt" href="#" data-value="engagement_highest" onclick="setQueueSort('engagement_highest', this); return false;">Engagement (Highest)</a>
+                        <a class="dropdown-item queue-sort-opt" href="#" data-value="engagement_lowest" onclick="setQueueSort('engagement_lowest', this); return false;">Engagement (Lowest)</a>
+                    </div>
+                </div>
+
+                <!-- Refresh -->
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadQueue()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+        <div id="queueContainer">
+            <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+        <!-- Pagination -->
+        <div id="queuePagination" class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" style="display: none !important;">
+            <div class="d-flex align-items-center gap-2">
+                <select class="form-select form-select-sm rounded-pill" style="width: auto; padding: 4px 28px 4px 12px; font-size: 0.8rem;" onchange="changeQueuePageSize(this.value)" id="perPageSelect">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+                <span class="text-muted small">per page</span>
+            </div>
+            <div id="queuePaginationInfo" class="text-muted small"></div>
+            <div id="queuePaginationButtons" class="d-flex align-items-center gap-1"></div>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div class="simulation-section">
+        <div class="row">
+            <div class="col-lg-6">
+                <h3><i class="bi bi-play-circle me-2"></i>Test Message Generation</h3>
+                <p class="text-muted">Enter sample contact data to see how the AI generates follow-up messages.</p>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Contact Name</label>
+                        <input type="text" class="form-control" id="simContactName" value="John Smith">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Predicted Intent</label>
+                        <select class="form-select" id="simIntent">
+                            <option value="purchase">Purchase</option>
+                            <option value="inquiry">Inquiry</option>
+                            <option value="support">Support</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Contact Description</label>
+                    <textarea class="form-control simulation-textarea" id="simDescription" rows="2">Customer interested in premium subscription. Has been comparing features with competitors. Asked about pricing last week.</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Follow-up Reason</label>
+                    <input type="text" class="form-control" id="simFollowupReason" value="Follow up on pricing inquiry - customer seemed ready to purchase">
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Sentiment</label>
+                        <select class="form-select" id="simSentiment">
+                            <option value="positive" selected>Positive</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="negative">Negative</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Urgency</label>
+                        <select class="form-select" id="simUrgency">
+                            <option value="high">High</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Engagement</label>
+                        <input type="number" class="form-control" id="simEngagement" value="75" min="0" max="100">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tone</label>
+                        <select class="form-select" id="simTone">
+                            <option value="friendly" selected>Friendly</option>
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Key Topics (comma-separated)</label>
+                        <input type="text" class="form-control" id="simKeyTopics" value="pricing, features, comparison">
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- AI Configuration -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">AI Provider</label>
+                        <input type="hidden" id="simProviderValue" value="openai">
+                        <div class="dropdown model-dropdown">
+                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simProviderDropdown" data-bs-toggle="dropdown">
+                                OpenAI
+                            </button>
+                            <div class="dropdown-menu model-dropdown-menu">
+                                <div class="model-dropdown-menu-inner">
+                                    <a class="dropdown-item sim-provider-item selected" href="#" data-value="openai">OpenAI</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="anthropic">Anthropic (Claude)</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="google">Google (Gemini)</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="deepseek">DeepSeek</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="qwen">Qwen</a>
+                                    <a class="dropdown-item sim-provider-item" href="#" data-value="grok">xAI (Grok)</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Model</label>
+                        <input type="hidden" id="simModelValue" value="gpt-4o-mini">
+                        <div class="dropdown model-dropdown">
+                            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="simModelDropdown" data-bs-toggle="dropdown">
+                                GPT-4o Mini
+                            </button>
+                            <div class="dropdown-menu model-dropdown-menu">
+                                <div class="model-dropdown-menu-inner" id="simModelList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-control" id="simApiKey" placeholder="sk-...">
+                    <small class="text-muted" id="simApiKeyHelp">Required for testing. Key is not stored.</small>
+                </div>
+
+                <button class="btn btn-theme" onclick="runSimulation()">
+                    <i class="bi bi-magic me-2"></i>Generate Follow-up Message
+                </button>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Generated Message Preview</h5>
+                <div class="sample-profile">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="contact-avatar">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <div>
+                            <strong id="previewContactName">John Smith</strong>
+                            <div class="text-muted small">+1 555-123-4567</div>
+                        </div>
+                    </div>
+                    <div class="message-preview" style="background: #e8f5e9; border: 1px solid #a5d6a7;">
+                        <div id="previewMessage" style="white-space: pre-wrap;">Click "Generate Follow-up Message" to see the AI-generated message...</div>
+                    </div>
+                    <div class="mt-3 text-center text-muted small" id="previewTokens"></div>
+                </div>
+
+                <hr class="my-4">
+
+                <h5>Key Features</h5>
+                <ul class="feature-list">
+                    <li><i class="bi bi-check-circle-fill"></i> Uses Contact Analyzer insights for personalization</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Adapts tone based on sentiment and urgency</li>
+                    <li><i class="bi bi-check-circle-fill"></i> References specific topics and context</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Editable before sending</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Tracks follow-up attempts and responses</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Detail Modal -->
+    <div class="modal fade" id="toolsContactDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Contact Details</h5>
+                    <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="toolsContactDetailContent">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="tool-card">
+        <div class="tool-card-header">
+            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+            <button class="btn btn-outline-secondary btn-sm" onclick="loadActivity()"><i class="bi bi-arrow-clockwise"></i></button>
+        </div>
+        <div class="tool-card-body p-0">
+            <div class="activity-log" id="activityLog">
+                <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Provider models configuration
+const SIM_PROVIDER_MODELS = {
+    openai: {
+        label: 'OpenAI',
+        defaultModel: 'gpt-4o-mini',
+        apiKeyUrl: 'https://platform.openai.com/api-keys',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'GPT-5.2 Series (Latest)', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            ]},
+            { header: 'GPT-5.1 Series', models: [
+                { value: 'gpt-5.1', label: 'GPT-5.1' },
+            ]},
+            { header: 'GPT-5 Series', models: [
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+            ]},
+            { header: 'GPT-4 Series', models: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+            ]},
+        ]
+    },
+    anthropic: {
+        label: 'Anthropic',
+        defaultModel: 'claude-sonnet-4-5-20241022',
+        apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+        apiKeyPlaceholder: 'sk-ant-...',
+        groups: [
+            { header: 'Claude 4.6 Series (Latest)', models: [
+                { value: 'claude-opus-4-6-20260205', label: 'Claude Opus 4.6' },
+            ]},
+            { header: 'Claude 4.5 Series', models: [
+                { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
+                { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
+                { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-1-20250414', label: 'Claude Opus 4.1' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+            ]},
+            { header: 'Claude 3.5 Series (Legacy)', models: [
+                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+            ]},
+        ]
+    },
+    google: {
+        label: 'Google',
+        defaultModel: 'gemini-3-flash',
+        apiKeyUrl: 'https://aistudio.google.com/apikey',
+        apiKeyPlaceholder: 'AIza...',
+        groups: [
+            { header: 'Gemini 3 Series (Latest)', models: [
+                { value: 'gemini-3-pro', label: 'Gemini 3 Pro' },
+                { value: 'gemini-3-flash', label: 'Gemini 3 Flash (Default)' },
+            ]},
+            { header: 'Gemini 2.5 Series', models: [
+                { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+            ]},
+            { header: 'Gemini 2.0 Series (Retiring Mar 2026)', models: [
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+            ]},
+            { header: 'Gemini 1.5 Series (Legacy)', models: [
+                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            ]},
+        ]
+    },
+    deepseek: {
+        label: 'DeepSeek',
+        defaultModel: 'deepseek-chat',
+        apiKeyUrl: 'https://platform.deepseek.com/api_keys',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'DeepSeek V3.2 (Latest)', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek V3.2 Chat (Default)' },
+            ]},
+            { header: 'DeepSeek Reasoning', models: [
+                { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
+            ]},
+            { header: 'DeepSeek V3', models: [
+                { value: 'deepseek-v3', label: 'DeepSeek V3' },
+            ]},
+        ]
+    },
+    qwen: {
+        label: 'Qwen',
+        defaultModel: 'qwen3-turbo',
+        apiKeyUrl: 'https://dashscope.console.aliyun.com/apiKey',
+        apiKeyPlaceholder: 'sk-...',
+        groups: [
+            { header: 'Qwen3 Series (Latest)', models: [
+                { value: 'qwen3-max-thinking', label: 'Qwen3 Max Thinking' },
+                { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-plus', label: 'Qwen3 Plus' },
+                { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
+            ]},
+            { header: 'Qwen2.5 Series', models: [
+                { value: 'qwen-max', label: 'Qwen Max' },
+                { value: 'qwen-plus', label: 'Qwen Plus' },
+                { value: 'qwen-turbo', label: 'Qwen Turbo' },
+            ]},
+        ]
+    },
+    grok: {
+        label: 'xAI (Grok)',
+        defaultModel: 'grok-4',
+        apiKeyUrl: 'https://console.x.ai/',
+        apiKeyPlaceholder: 'xai-...',
+        groups: [
+            { header: 'Grok 4 Series (Latest)', models: [
+                { value: 'grok-4', label: 'Grok 4 (Default)' },
+                { value: 'grok-4-1-fast-reasoning', label: 'Grok 4.1 Fast Reasoning' },
+                { value: 'grok-4-1-fast-non-reasoning', label: 'Grok 4.1 Fast' },
+            ]},
+            { header: 'Grok Code', models: [
+                { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+            { header: 'Grok 3 Series', models: [
+                { value: 'grok-3', label: 'Grok 3' },
+                { value: 'grok-3-fast', label: 'Grok 3 Fast' },
+            ]},
+        ]
+    }
+};
+
+// Selected contact state
+let selectedContact = null;
+let queueData = [];
+let allInstances = [];
+let queueCurrentPage = 1;
+let queuePageSize = 20;
+let queueTotal = 0;
+let queueSearchTimer = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadInstances();
+    loadQueue();
+    loadActivity();
+    setupSimProviderDropdown();
+    updateSimModelDropdown('openai');
+});
+
+// Load stats
+async function loadStats() {
+    try {
+        const response = await fetch('/tools/api/contact-followup/stats');
+        const stats = await response.json();
+        document.getElementById('totalPending').textContent = stats.total_pending || 0;
+        document.getElementById('sentToday').textContent = stats.sent_today || 0;
+        document.getElementById('responseRate').textContent = (stats.response_rate || 0) + '%';
+        document.getElementById('totalDismissed').textContent = stats.total_dismissed || 0;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// ============================================================================
+// Active Hub Instances
+// ============================================================================
+
+async function loadInstances() {
+    try {
+        const response = await fetch('/api/hubs?task_type=contact_followup');
+        allInstances = await response.json();
+        populateInstanceHubFilter();
+        setupInstanceFilterHandlers();
+        renderInstances();
+    } catch (error) {
+        console.error('Error loading instances:', error);
+        document.getElementById('instancesContainer').innerHTML = '<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle display-4"></i><p class="mt-2">Failed to load instances</p></div>';
+    }
+}
+
+function populateInstanceHubFilter() {
+    const filterMenu = document.getElementById('instanceHubFilterOptions');
+    let html = '<a class="dropdown-item instance-hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+    allInstances.forEach(hub => {
+        html += `<a class="dropdown-item instance-hub-filter-item" href="#" data-value="${hub.id}">${escapeHtml(hub.name)}</a>`;
+    });
+    filterMenu.innerHTML = html;
+}
+
+function setupInstanceFilterHandlers() {
+    document.querySelectorAll('.instance-hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('instanceHubFilterValue').value = this.dataset.value;
+            document.getElementById('instanceHubFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.instance-hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+    document.querySelectorAll('.instance-status-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('instanceStatusFilterValue').value = this.dataset.value;
+            document.getElementById('instanceStatusFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.instance-status-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            renderInstances();
+        });
+    });
+}
+
+function renderInstances() {
+    const container = document.getElementById('instancesContainer');
+    const hubFilter = document.getElementById('instanceHubFilterValue').value;
+    const statusFilter = document.getElementById('instanceStatusFilterValue').value;
+
+    let filtered = allInstances.filter(hub => {
+        if (hubFilter && hub.id != hubFilter) return false;
+        if (statusFilter === 'active' && !hub.is_active) return false;
+        if (statusFilter === 'inactive' && hub.is_active) return false;
+        return true;
+    });
+
+    document.getElementById('instanceCount').textContent = `(${filtered.length} of ${allInstances.length})`;
+
+    if (allInstances.length === 0) {
+        container.innerHTML = '<div class="text-center py-4"><i class="bi bi-inbox display-4 text-muted"></i><p class="text-muted mt-2">No contact follow-up hub instances yet</p><a href="/dashboard/hubs" class="btn btn-theme"><i class="bi bi-plus-lg me-2"></i>Create Your First Instance</a></div>';
+        return;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="text-center py-4"><i class="bi bi-filter display-4 text-muted"></i><p class="text-muted mt-2">No instances match the current filters</p></div>';
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(hub => {
+        html += `
+        <div class="instance-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold">${escapeHtml(hub.name)}</span>
+                <span class="instance-status ${hub.is_active ? 'status-active' : 'status-inactive'}">${hub.is_active ? 'Active' : 'Inactive'}</span>
+            </div>
+            <p class="text-muted small mb-2">${escapeHtml(hub.description || 'No description')}</p>
+            <div class="d-flex gap-3 small text-muted mb-2">
+                <span><i class="bi bi-robot me-1"></i>${hub.bot_count} bots</span>
+                <span><i class="bi bi-cpu me-1"></i>${hub.agent_count} agents</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <a href="/dashboard/hubs" class="btn btn-sm btn-theme" onclick="localStorage.setItem('openHubId', ${hub.id})">
+                    <i class="bi bi-gear me-1"></i>Configure
+                </a>
+                <button class="btn btn-sm btn-outline-secondary" onclick="showInstanceAutoSendSettings(${hub.id}, '${escapeHtml(hub.name).replace(/'/g, "\\'")}')">
+                    <i class="bi bi-lightning me-1"></i>Auto Send
+                </button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+// ============================================================================
+// Auto Send Settings Modal (standalone for tools page)
+// ============================================================================
+
+async function showInstanceAutoSendSettings(hubId, hubName) {
+    const existing = document.getElementById('autoSendModal');
+    if (existing) existing.remove();
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/auto-send/settings?hub_id=${hubId}`);
+        if (!response.ok) throw new Error('Failed to load settings');
+        const settings = await response.json();
+
+        const filters = settings.filters || {};
+        const urgencyF = filters.urgency || '';
+        const sentimentF = filters.sentiment || '';
+        const engagementF = filters.engagement || '';
+        const dateFilter = filters.date || '';
+        const customDays = filters.custom_days || 7;
+        const customDaysDirection = filters.custom_days_direction || 'over';
+
+        const tone = settings.tone || 'friendly';
+        const toneLabels = { friendly: 'Friendly', professional: 'Professional', casual: 'Casual' };
+        const toneLabel = toneLabels[tone] || 'Friendly';
+
+        const intervalMin = settings.interval_minutes || 15;
+        const intervalLabels = { 5: 'Every 5 min', 15: 'Every 15 min', 30: 'Every 30 min', 60: 'Every 1 hour' };
+        const intervalLabel = intervalLabels[intervalMin] || 'Every 15 min';
+
+        const speedMode = settings.speed_mode || 'auto';
+        const speedLabels = { auto: 'Auto (Recommended)', custom: 'Custom', fast: 'Fast' };
+
+        let lastRunText = '';
+        if (settings.last_run) {
+            const d = new Date(settings.last_run + 'Z');
+            lastRunText = `<p class="small text-muted mb-0 mt-3"><i class="bi bi-clock me-1"></i>Last run: ${d.toLocaleString()}</p>`;
+        }
+
+        const modalHtml = `
+        <div class="modal fade" id="autoSendModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-lightning me-2"></i>Auto Send Settings — ${escapeHtml(hubName)}</h5>
+                        <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">When enabled, the scheduler continuously monitors the queue and sends follow-up messages to matching contacts.</p>
+
+                        <div class="form-check form-switch auto-send-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="autoSendEnabled" ${settings.enabled ? 'checked' : ''}>
+                            <label class="form-check-label" for="autoSendEnabled">Enable Auto-Send</label>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Tone</label>
+                                <input type="hidden" id="autoSendTone" value="${tone}">
+                                <div class="dropdown model-dropdown">
+                                    <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendToneDropdown" data-bs-toggle="dropdown">${toneLabel}</button>
+                                    <div class="dropdown-menu model-dropdown-menu" style="min-width: 280px;">
+                                        <div class="model-dropdown-menu-inner">
+                                            <a class="dropdown-item auto-send-tone-item ${tone === 'friendly' ? 'selected' : ''}" href="#" data-value="friendly"><strong>Friendly</strong><br><small class="text-muted">Warm and approachable messages</small></a>
+                                            <a class="dropdown-item auto-send-tone-item ${tone === 'professional' ? 'selected' : ''}" href="#" data-value="professional"><strong>Professional</strong><br><small class="text-muted">Formal and business-like tone</small></a>
+                                            <a class="dropdown-item auto-send-tone-item ${tone === 'casual' ? 'selected' : ''}" href="#" data-value="casual"><strong>Casual</strong><br><small class="text-muted">Relaxed and conversational</small></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Check Interval</label>
+                                <input type="hidden" id="autoSendInterval" value="${intervalMin}">
+                                <div class="dropdown model-dropdown">
+                                    <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendIntervalDropdown" data-bs-toggle="dropdown">${intervalLabel}</button>
+                                    <div class="dropdown-menu model-dropdown-menu">
+                                        <div class="model-dropdown-menu-inner">
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 5 ? 'selected' : ''}" href="#" data-value="5"><strong>Every 5 min</strong><br><small class="text-muted">Most frequent checking</small></a>
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 15 ? 'selected' : ''}" href="#" data-value="15"><strong>Every 15 min</strong><br><small class="text-muted">Recommended interval</small></a>
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 30 ? 'selected' : ''}" href="#" data-value="30"><strong>Every 30 min</strong><br><small class="text-muted">Moderate checking frequency</small></a>
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 60 ? 'selected' : ''}" href="#" data-value="60"><strong>Every 1 hour</strong><br><small class="text-muted">Least frequent checking</small></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Send From Bots</label>
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendBotDropdown" data-bs-toggle="dropdown">
+                                    <i class="bi bi-robot me-1"></i>Any Available Bot
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" style="min-width: 300px;">
+                                    <div class="model-dropdown-menu-inner" id="autoSendBotOptions">
+                                        <span class="dropdown-item text-muted small">Loading bots...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Sending Speed</label>
+                            <input type="hidden" id="autoSendSpeedMode" value="${speedMode}">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendSpeedDropdown" data-bs-toggle="dropdown">${speedLabels[speedMode] || 'Auto (Recommended)'}</button>
+                                <div class="dropdown-menu model-dropdown-menu" style="min-width: 300px;">
+                                    <div class="model-dropdown-menu-inner">
+                                        <a class="dropdown-item auto-send-speed-item ${speedMode === 'auto' ? 'selected' : ''}" href="#" data-value="auto"><strong>Auto (Recommended)</strong><br><small class="text-muted">Adjusts speed based on contact count</small></a>
+                                        <a class="dropdown-item auto-send-speed-item ${speedMode === 'custom' ? 'selected' : ''}" href="#" data-value="custom"><strong>Custom</strong><br><small class="text-muted">Configure your own delays and batching</small></a>
+                                        <a class="dropdown-item auto-send-speed-item ${speedMode === 'fast' ? 'selected' : ''}" href="#" data-value="fast"><strong>Fast</strong><br><small class="text-warning">Minimal delays - use with caution</small></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="autoSendCustomSpeed" style="display: ${speedMode === 'custom' ? 'block' : 'none'};">
+                            <div class="card"><div class="card-body p-3">
+                                <div class="row mb-2">
+                                    <div class="col-6"><label class="form-label small">Min Delay (seconds)</label><input type="number" class="form-control form-control-sm" id="autoSendDelayMin" value="${settings.delay_min || 5}" min="1" max="60"></div>
+                                    <div class="col-6"><label class="form-label small">Max Delay (seconds)</label><input type="number" class="form-control form-control-sm" id="autoSendDelayMax" value="${settings.delay_max || 15}" min="1" max="120"></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6"><label class="form-label small">Batch Size</label><input type="number" class="form-control form-control-sm" id="autoSendBatchSize" value="${settings.batch_size || 20}" min="0" max="100"><small class="text-muted">0 = no batching</small></div>
+                                    <div class="col-6"><label class="form-label small">Batch Pause (seconds)</label><input type="number" class="form-control form-control-sm" id="autoSendBatchPause" value="${settings.batch_pause || 180}" min="0" max="600"></div>
+                                </div>
+                            </div></div>
+                        </div>
+
+                        <hr class="my-3">
+                        <h6 class="small fw-semibold mb-2"><i class="bi bi-funnel me-1"></i>Filter Conditions</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Urgency</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${urgencyF === '' ? 'active' : ''}" data-filter="urgency" data-value="" onclick="setAutoSendModalFilter('urgency', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill auto-send-filter ${urgencyF === 'high' ? 'active' : ''}" data-filter="urgency" data-value="high" onclick="setAutoSendModalFilter('urgency', 'high', this)">High</button>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill auto-send-filter ${urgencyF === 'medium' ? 'active' : ''}" data-filter="urgency" data-value="medium" onclick="setAutoSendModalFilter('urgency', 'medium', this)">Medium</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${urgencyF === 'low' ? 'active' : ''}" data-filter="urgency" data-value="low" onclick="setAutoSendModalFilter('urgency', 'low', this)">Low</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Sentiment</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${sentimentF === '' ? 'active' : ''}" data-filter="sentiment" data-value="" onclick="setAutoSendModalFilter('sentiment', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-success rounded-pill auto-send-filter ${sentimentF === 'positive' ? 'active' : ''}" data-filter="sentiment" data-value="positive" onclick="setAutoSendModalFilter('sentiment', 'positive', this)">Positive</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${sentimentF === 'neutral' ? 'active' : ''}" data-filter="sentiment" data-value="neutral" onclick="setAutoSendModalFilter('sentiment', 'neutral', this)">Neutral</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill auto-send-filter ${sentimentF === 'negative' ? 'active' : ''}" data-filter="sentiment" data-value="negative" onclick="setAutoSendModalFilter('sentiment', 'negative', this)">Negative</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Engagement</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${engagementF === '' ? 'active' : ''}" data-filter="engagement" data-value="" onclick="setAutoSendModalFilter('engagement', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-success rounded-pill auto-send-filter ${engagementF === 'high' ? 'active' : ''}" data-filter="engagement" data-value="high" onclick="setAutoSendModalFilter('engagement', 'high', this)">High (70+)</button>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill auto-send-filter ${engagementF === 'medium' ? 'active' : ''}" data-filter="engagement" data-value="medium" onclick="setAutoSendModalFilter('engagement', 'medium', this)">Medium (40-69)</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill auto-send-filter ${engagementF === 'low' ? 'active' : ''}" data-filter="engagement" data-value="low" onclick="setAutoSendModalFilter('engagement', 'low', this)">Low (&lt;40)</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Last Message</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '' ? 'active' : ''}" data-filter="date" data-value="" onclick="setAutoSendModalFilter('date', '', this)">Any Time</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '24h' ? 'active' : ''}" data-filter="date" data-value="24h" onclick="setAutoSendModalFilter('date', '24h', this)">24h</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '7d' ? 'active' : ''}" data-filter="date" data-value="7d" onclick="setAutoSendModalFilter('date', '7d', this)">7 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '30d' ? 'active' : ''}" data-filter="date" data-value="30d" onclick="setAutoSendModalFilter('date', '30d', this)">30 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === 'over7d' ? 'active' : ''}" data-filter="date" data-value="over7d" onclick="setAutoSendModalFilter('date', 'over7d', this)">&gt;7 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === 'over30d' ? 'active' : ''}" data-filter="date" data-value="over30d" onclick="setAutoSendModalFilter('date', 'over30d', this)">&gt;30 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === 'custom' ? 'active' : ''}" data-filter="date" data-value="custom" onclick="setAutoSendModalFilter('date', 'custom', this)">Custom</button>
+                            </div>
+                            <div id="autoSendCustomDays" class="mt-2" style="display: ${dateFilter === 'custom' ? 'block' : 'none'};">
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm" id="autoSendCustomDaysDirection" style="width: 130px;">
+                                        <option value="over" ${customDaysDirection === 'over' ? 'selected' : ''}>More than</option>
+                                        <option value="within" ${customDaysDirection === 'within' ? 'selected' : ''}>Within last</option>
+                                    </select>
+                                    <input type="number" class="form-control form-control-sm" id="autoSendCustomDaysValue" value="${customDays}" min="1" max="365" style="width: 70px;">
+                                    <span class="small text-muted">days ago</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${lastRunText}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-theme" onclick="saveInstanceAutoSendSettings()">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        const modalEl = document.getElementById('autoSendModal');
+        modalEl._hubId = hubId;
+        modalEl._filters = { urgency: urgencyF, sentiment: sentimentF, date: dateFilter, engagement: engagementF, custom_days: customDays, custom_days_direction: customDaysDirection };
+
+        // Tone dropdown handler
+        modalEl.querySelectorAll('.auto-send-tone-item').forEach(item => {
+            item.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('autoSendTone').value = item.dataset.value; document.getElementById('autoSendToneDropdown').textContent = item.querySelector('strong').textContent; modalEl.querySelectorAll('.auto-send-tone-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); });
+        });
+        // Interval dropdown handler
+        modalEl.querySelectorAll('.auto-send-interval-item').forEach(item => {
+            item.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('autoSendInterval').value = item.dataset.value; document.getElementById('autoSendIntervalDropdown').textContent = item.querySelector('strong').textContent; modalEl.querySelectorAll('.auto-send-interval-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); });
+        });
+        // Speed dropdown handler
+        modalEl.querySelectorAll('.auto-send-speed-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const value = item.dataset.value;
+                document.getElementById('autoSendSpeedMode').value = value;
+                document.getElementById('autoSendSpeedDropdown').textContent = item.querySelector('strong').textContent;
+                modalEl.querySelectorAll('.auto-send-speed-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                document.getElementById('autoSendCustomSpeed').style.display = value === 'custom' ? 'block' : 'none';
+            });
+        });
+
+        modalEl.addEventListener('hidden.bs.modal', () => { modalEl.remove(); });
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        // Load bots
+        loadAutoSendBotsForTools(settings.bot_ids || []);
+    } catch (error) {
+        console.error('Error loading auto-send settings:', error);
+        alert('Failed to load auto-send settings');
+    }
+}
+
+function setAutoSendModalFilter(filterType, value, btn) {
+    const modalEl = document.getElementById('autoSendModal');
+    if (!modalEl) return;
+    modalEl._filters[filterType] = value;
+    const siblings = btn.closest('.d-flex').querySelectorAll(`.auto-send-filter[data-filter="${filterType}"]`);
+    siblings.forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    if (filterType === 'date') {
+        const el = document.getElementById('autoSendCustomDays');
+        if (el) el.style.display = value === 'custom' ? 'block' : 'none';
+    }
+}
+
+async function loadAutoSendBotsForTools(savedBotIds) {
+    const container = document.getElementById('autoSendBotOptions');
+    if (!container) return;
+    try {
+        const response = await fetch('/api/bots');
+        if (!response.ok) throw new Error('Failed');
+        const data = await response.json();
+        const bots = data.bots || [];
+        if (bots.length === 0) { container.innerHTML = '<span class="dropdown-item text-muted small">No bots found.</span>'; return; }
+        const savedSet = new Set(savedBotIds || []);
+        let html = `<a class="dropdown-item auto-send-bot-item ${savedSet.size === 0 ? 'selected' : ''}" href="#" data-value="any"><strong>Any Available Bot</strong><br><small class="text-muted">Use whichever bot has a conversation</small></a><div class="dropdown-divider"></div>`;
+        for (const bot of bots) {
+            const isSelected = savedSet.has(bot.id);
+            const phone = bot.whatsapp_phone ? (bot.whatsapp_phone.startsWith('+') ? bot.whatsapp_phone : '+' + bot.whatsapp_phone) : '';
+            html += `<a class="dropdown-item auto-send-bot-item ${isSelected ? 'selected' : ''}" href="#" data-value="${bot.id}"><strong>${bot.name || 'Bot ' + bot.id}</strong>${phone ? '<br><small class="text-muted">' + phone + '</small>' : ''}</a>`;
+        }
+        container.innerHTML = html;
+        updateAutoSendBotLabel();
+        container.querySelectorAll('.auto-send-bot-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const value = item.dataset.value;
+                if (value === 'any') { container.querySelectorAll('.auto-send-bot-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); }
+                else { item.classList.toggle('selected'); const anyItem = container.querySelector('[data-value="any"]'); const sel = container.querySelectorAll('.auto-send-bot-item.selected:not([data-value="any"])'); if (sel.length > 0) anyItem.classList.remove('selected'); else anyItem.classList.add('selected'); }
+                updateAutoSendBotLabel();
+            });
+        });
+    } catch (error) { container.innerHTML = '<span class="dropdown-item text-muted small">Failed to load bots.</span>'; }
+}
+
+function updateAutoSendBotLabel() {
+    const btn = document.getElementById('autoSendBotDropdown');
+    const container = document.getElementById('autoSendBotOptions');
+    if (!btn || !container) return;
+    const anySelected = container.querySelector('[data-value="any"]')?.classList.contains('selected');
+    if (anySelected) { btn.innerHTML = '<i class="bi bi-robot me-1"></i>Any Available Bot'; return; }
+    const selected = container.querySelectorAll('.auto-send-bot-item.selected:not([data-value="any"])');
+    if (selected.length === 0) btn.innerHTML = '<i class="bi bi-robot me-1"></i>Any Available Bot';
+    else if (selected.length === 1) btn.innerHTML = '<i class="bi bi-robot me-1"></i>' + selected[0].querySelector('strong').textContent;
+    else btn.innerHTML = '<i class="bi bi-robot me-1"></i>' + selected.length + ' Bots Selected';
+}
+
+function getAutoSendBotIds() {
+    const container = document.getElementById('autoSendBotOptions');
+    if (!container) return [];
+    if (container.querySelector('[data-value="any"]')?.classList.contains('selected')) return [];
+    const ids = [];
+    container.querySelectorAll('.auto-send-bot-item.selected:not([data-value="any"])').forEach(item => { ids.push(parseInt(item.dataset.value)); });
+    return ids;
+}
+
+async function saveInstanceAutoSendSettings() {
+    const modalEl = document.getElementById('autoSendModal');
+    if (!modalEl) return;
+    const hubId = modalEl._hubId;
+    const enabled = document.getElementById('autoSendEnabled').checked;
+    const tone = document.getElementById('autoSendTone').value;
+    const interval = parseInt(document.getElementById('autoSendInterval').value) || 15;
+    const speedMode = document.getElementById('autoSendSpeedMode').value || 'auto';
+    const delayMin = parseInt(document.getElementById('autoSendDelayMin')?.value) || 5;
+    const delayMax = parseInt(document.getElementById('autoSendDelayMax')?.value) || 15;
+    const batchSize = parseInt(document.getElementById('autoSendBatchSize')?.value) || 20;
+    const batchPause = parseInt(document.getElementById('autoSendBatchPause')?.value) || 180;
+    const botIds = getAutoSendBotIds();
+
+    const filters = Object.assign({}, modalEl._filters || {});
+    if (filters.date === 'custom') {
+        filters.custom_days = parseInt(document.getElementById('autoSendCustomDaysValue')?.value) || 7;
+        filters.custom_days_direction = document.getElementById('autoSendCustomDaysDirection')?.value || 'over';
+    } else { delete filters.custom_days; delete filters.custom_days_direction; }
+
+    try {
+        const response = await fetch('/tools/api/contact-followup/auto-send/settings', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hub_id: hubId, enabled, interval_minutes: interval, tone, speed_mode: speedMode, delay_min: delayMin, delay_max: delayMax, batch_size: batchSize, batch_pause: batchPause, bot_ids: botIds, filters })
+        });
+        if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Failed to save'); }
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+        alert(enabled ? 'Auto-send enabled and settings saved.' : 'Auto-send settings saved.');
+        loadInstances();
+    } catch (e) { alert(e.message || 'Failed to save settings'); }
+}
+
+// ============================================================================
+// Follow-up Queue
+// ============================================================================
+
+async function loadQueue(page = 1) {
+    try {
+        queueCurrentPage = page;
+        const hubId = document.getElementById('hubFilterValue').value;
+        const urgency = document.getElementById('urgencyFilterValue').value;
+        const sentiment = document.getElementById('sentimentFilterValue').value;
+        const engagementVal = document.getElementById('engagementFilterValue').value;
+        const dateVal = document.getElementById('dateFilterValue').value;
+        const sortBy = document.getElementById('sortFilterValue').value;
+        const search = document.getElementById('queueSearchInput').value.trim();
+
+        const offset = (page - 1) * queuePageSize;
+        let url = `/tools/api/contact-followup/queue?limit=${queuePageSize}&offset=${offset}`;
+        if (hubId) url += `&hub_id=${hubId}`;
+        if (urgency) url += `&urgency=${urgency}`;
+        if (sentiment) url += `&sentiment=${sentiment}`;
+        if (sortBy) url += `&sort_by=${sortBy}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        if (engagementVal === 'high') url += '&engagement_min=70';
+        else if (engagementVal === 'medium') url += '&engagement_min=40&engagement_max=69';
+        else if (engagementVal === 'low') url += '&engagement_max=39';
+
+        if (dateVal) {
+            const now = new Date();
+            if (dateVal === '24h') url += `&last_message_after=${new Date(now - 24*60*60*1000).toISOString()}`;
+            else if (dateVal === '7d') url += `&last_message_after=${new Date(now - 7*24*60*60*1000).toISOString()}`;
+            else if (dateVal === '30d') url += `&last_message_after=${new Date(now - 30*24*60*60*1000).toISOString()}`;
+            else if (dateVal === 'over7d') url += `&last_message_before=${new Date(now - 7*24*60*60*1000).toISOString()}`;
+            else if (dateVal === 'over30d') url += `&last_message_before=${new Date(now - 30*24*60*60*1000).toISOString()}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        queueData = data.contacts || [];
+        queueTotal = data.total || 0;
+
+        renderQueue();
+        renderPagination();
+        populateHubFilter();
+    } catch (error) {
+        console.error('Error loading queue:', error);
+        document.getElementById('queueContainer').innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>Failed to load follow-up queue</p></div>';
+    }
+}
+
+function populateHubFilter() {
+    const hubs = {};
+    queueData.forEach(c => { if (c.hub_id && c.hub_name) hubs[c.hub_id] = c.hub_name; });
+    const filterMenu = document.getElementById('hubFilterOptions');
+    let html = '<a class="dropdown-item hub-filter-item selected" href="#" data-value="">All Hubs</a>';
+    Object.entries(hubs).forEach(([id, name]) => {
+        html += `<a class="dropdown-item hub-filter-item" href="#" data-value="${id}">${escapeHtml(name)}</a>`;
+    });
+    filterMenu.innerHTML = html;
+    document.querySelectorAll('.hub-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('hubFilterValue').value = this.dataset.value;
+            document.getElementById('hubFilterDropdown').textContent = this.textContent;
+            document.querySelectorAll('.hub-filter-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            loadQueue(1);
+        });
+    });
+}
+
+function setQueueFilter(filterType, value, btn) {
+    const inputMap = { urgency: 'urgencyFilterValue', sentiment: 'sentimentFilterValue', engagement: 'engagementFilterValue', date: 'dateFilterValue' };
+    const inputId = inputMap[filterType];
+    if (inputId) document.getElementById(inputId).value = value;
+    const siblings = btn.closest('.d-flex').querySelectorAll(`.queue-filter-opt[data-filter="${filterType}"]`);
+    siblings.forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    updateActiveFilterCount();
+    loadQueue(1);
+}
+
+function setQueueSort(value, btn) {
+    document.getElementById('sortFilterValue').value = value;
+    document.getElementById('sortFilterDropdown').innerHTML = '<i class="bi bi-sort-down me-1"></i>' + btn.textContent;
+    document.querySelectorAll('.queue-sort-opt').forEach(i => i.classList.remove('active'));
+    btn.classList.add('active');
+    loadQueue(1);
+}
+
+function debounceQueueSearch() {
+    clearTimeout(queueSearchTimer);
+    queueSearchTimer = setTimeout(() => loadQueue(1), 400);
+}
+
+function changeQueuePageSize(size) {
+    queuePageSize = parseInt(size);
+    loadQueue(1);
+}
+
+function updateActiveFilterCount() {
+    let count = 0;
+    if (document.getElementById('urgencyFilterValue').value) count++;
+    if (document.getElementById('sentimentFilterValue').value) count++;
+    if (document.getElementById('engagementFilterValue').value) count++;
+    if (document.getElementById('dateFilterValue').value) count++;
+    const badge = document.getElementById('activeFilterCount');
+    if (count > 0) { badge.textContent = count; badge.style.display = ''; } else { badge.style.display = 'none'; }
+}
+
+function renderPagination() {
+    const paginationEl = document.getElementById('queuePagination');
+    if (queueTotal <= queuePageSize) { paginationEl.style.display = 'none'; return; }
+    paginationEl.style.cssText = '';
+    paginationEl.classList.add('d-flex');
+    const totalPages = Math.ceil(queueTotal / queuePageSize);
+    const start = (queueCurrentPage - 1) * queuePageSize + 1;
+    const end = Math.min(queueCurrentPage * queuePageSize, queueTotal);
+    document.getElementById('queuePaginationInfo').textContent = `${start}-${end} of ${queueTotal}`;
+    let btns = `<button class="btn btn-sm btn-outline-secondary rounded-circle" style="width:32px;height:32px;padding:0;" onclick="loadQueue(${queueCurrentPage - 1})" ${queueCurrentPage <= 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+    let startPage = Math.max(1, queueCurrentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+    for (let p = startPage; p <= endPage; p++) {
+        btns += p === queueCurrentPage
+            ? `<button class="btn btn-sm btn-theme rounded-circle" style="width:32px;height:32px;padding:0;">${p}</button>`
+            : `<button class="btn btn-sm btn-outline-secondary rounded-circle" style="width:32px;height:32px;padding:0;" onclick="loadQueue(${p})">${p}</button>`;
+    }
+    btns += `<button class="btn btn-sm btn-outline-secondary rounded-circle" style="width:32px;height:32px;padding:0;" onclick="loadQueue(${queueCurrentPage + 1})" ${queueCurrentPage >= totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
+    document.getElementById('queuePaginationButtons').innerHTML = btns;
+}
+
+function renderQueue() {
+    const container = document.getElementById('queueContainer');
+
+    if (queueData.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p class="mb-2">No contacts need follow-up</p><small class="text-muted">Use Contact Analyzer to identify contacts that need follow-up</small></div>';
+        document.getElementById('queueCount').textContent = queueTotal > 0 ? `(0 of ${queueTotal})` : '';
+        return;
+    }
+
+    document.getElementById('queueCount').textContent = `(${queueTotal})`;
+
+    let html = '<div class="row g-3">';
+    queueData.forEach(contact => {
+        const urgencyClass = contact.urgency === 'high' ? 'danger' : contact.urgency === 'medium' ? 'warning' : 'secondary';
+        const sentimentClass = contact.sentiment === 'positive' ? 'success' : contact.sentiment === 'negative' ? 'danger' : 'secondary';
+        const avatarColor = getAvatarColorClass(contact.display_name || contact.phone);
+        const engScore = contact.engagement_score;
+
+        html += `
+            <div class="col-lg-6" id="contactCol-${contact.id}">
+                <div class="contact-card">
+                    <div class="d-flex gap-3">
+                        <div class="contact-avatar ${avatarColor}">
+                            ${contact.profile_pic
+                                ? `<img src="${escapeHtml(contact.profile_pic)}" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'bi bi-person\\'></i>';">`
+                                : `<i class="bi bi-person"></i>`
+                            }
+                        </div>
+                        <div class="contact-info">
+                            <div class="contact-name">${escapeHtml(contact.display_name || contact.phone)}</div>
+                            <div class="contact-phone">${escapeHtml(contact.phone)}</div>
+                            <div class="contact-badges">
+                                <span class="badge bg-${urgencyClass}-subtle text-${urgencyClass}">Urgency: ${capitalizeFirst(contact.urgency || 'low')}</span>
+                                <span class="badge bg-${sentimentClass}-subtle text-${sentimentClass}">Sentiment: ${capitalizeFirst(contact.sentiment || 'neutral')}</span>
+                                ${contact.predicted_intent ? `<span class="badge bg-info-subtle text-info" style="overflow: hidden; text-overflow: ellipsis;" title="Intent: ${escapeHtml(humanizeSlug(contact.predicted_intent))}">Intent: ${escapeHtml(humanizeSlug(contact.predicted_intent))}</span>` : ''}
+                                ${engScore != null ? `<span class="badge bg-secondary-subtle text-secondary">Score: ${engScore}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-end small text-muted" style="min-width: 70px;">
+                            ${contact.last_message_at ? formatRelativeTime(contact.last_message_at) : (contact.last_interaction_at ? formatRelativeTime(contact.last_interaction_at) : 'No activity')}
+                        </div>
+                    </div>
+                    ${contact.follow_up_reason ? `<div class="followup-reason" title="${escapeHtml(contact.follow_up_reason)}"><strong>Reason:</strong> ${escapeHtml(contact.follow_up_reason)}</div>` : ''}
+                    <div class="contact-actions">
+                        <button class="btn btn-sm btn-theme" onclick="generateMessage(${contact.id})">
+                            <i class="bi bi-magic me-1"></i>Generate Message
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="dismissFollowup(${contact.id})">
+                            <i class="bi bi-x me-1"></i>Dismiss
+                        </button>
+                        <button class="btn btn-sm btn-outline-theme" onclick="showContactDetail(${contact.id})" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Load bots that have conversation history with a specific contact
+async function loadBots(contactId) {
+    const select = document.getElementById('selectedBot');
+    select.innerHTML = '<option value="">Select a bot...</option>';
+
+    if (!contactId) return;
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/contact/${contactId}/bots`);
+        const data = await response.json();
+
+        if (!data.bots || data.bots.length === 0) {
+            select.innerHTML = '<option value="">No bots with conversation history</option>';
+            select.disabled = true;
+            return;
+        }
+
+        select.disabled = false;
+        select.innerHTML = '<option value="">Select a bot...</option>';
+        data.bots.forEach(bot => {
+            if (bot.whatsapp_connected) {
+                select.innerHTML += `<option value="${bot.id}">${escapeHtml(bot.name)}${bot.is_running ? ' (Running)' : ''}</option>`;
+            }
+        });
+
+        // Auto-select if only one bot
+        const connectedBots = data.bots.filter(b => b.whatsapp_connected);
+        if (connectedBots.length === 1) {
+            select.value = connectedBots[0].id;
+        }
+    } catch (error) {
+        console.error('Error loading bots:', error);
+    }
+}
+
+// Generate follow-up message for a contact
+async function generateMessage(contactId) {
+    selectedContact = queueData.find(c => c.id === contactId);
+    if (!selectedContact) return;
+
+    // Close any existing panel first
+    closeGenerationPanel();
+    selectedContact = queueData.find(c => c.id === contactId);
+
+    // Build inline generation panel HTML
+    const avatarColor = getAvatarColorClass(selectedContact.display_name || selectedContact.phone);
+    const avatarInner = selectedContact.profile_pic
+        ? `<img src="${escapeHtml(selectedContact.profile_pic)}" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'bi bi-person\\'></i>';">`
+        : `<i class="bi bi-person"></i>`;
+
+    const panelHtml = `
+        <div class="col-12" id="generationPanel">
+            <div class="generation-panel mb-3">
+                <div class="row">
+                    <div class="col-lg-4 border-end">
+                        <h5><i class="bi bi-person me-2"></i>Selected Contact</h5>
+                        <div id="selectedContactInfo" class="mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="contact-avatar ${avatarColor}" style="width: 40px; height: 40px; font-size: 1rem;">
+                                    ${avatarInner}
+                                </div>
+                                <div>
+                                    <strong>${escapeHtml(selectedContact.display_name || selectedContact.phone)}</strong>
+                                    <div class="small text-muted">${escapeHtml(selectedContact.phone)}</div>
+                                </div>
+                            </div>
+                            <div class="small">
+                                <div><strong>Intent:</strong> ${escapeHtml(humanizeSlug(selectedContact.predicted_intent || 'Unknown'))}</div>
+                                <div><strong>Reason:</strong> ${escapeHtml(selectedContact.follow_up_reason || 'General follow-up')}</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tone</label>
+                            <select class="form-select" id="messageTone">
+                                <option value="friendly">Friendly</option>
+                                <option value="professional">Professional</option>
+                                <option value="casual">Casual</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Send via Bot</label>
+                            <select class="form-select" id="selectedBot">
+                                <option value="">Select a bot...</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary flex-fill" onclick="closeGenerationPanel()">
+                                <i class="bi bi-x me-1"></i>Cancel
+                            </button>
+                            <button class="btn btn-theme flex-fill" onclick="sendFollowup()" id="sendBtn">
+                                <i class="bi bi-send me-1"></i>Send Follow-up
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-lg-8 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5><i class="bi bi-chat-text me-2"></i>Generated Message</h5>
+                            <button class="btn btn-sm btn-outline-theme" onclick="regenerateMessage()">
+                                <i class="bi bi-arrow-repeat me-1"></i>Regenerate
+                            </button>
+                        </div>
+                        <div class="message-preview flex-fill d-flex flex-column">
+                            <textarea id="generatedMessage" placeholder="Generating follow-up message..." class="flex-fill"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    // Insert panel above the target contact card
+    const cardCol = document.getElementById(`contactCol-${contactId}`);
+    if (!cardCol) return;
+    cardCol.insertAdjacentHTML('beforebegin', panelHtml);
+
+    // Scroll to the panel
+    document.getElementById('generationPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Load bots with conversation history for this contact
+    loadBots(contactId);
+
+    // Generate message
+    await regenerateMessage();
+}
+
+// Regenerate the follow-up message
+async function regenerateMessage() {
+    if (!selectedContact) return;
+
+    const messageArea = document.getElementById('generatedMessage');
+    const tone = document.getElementById('messageTone').value;
+
+    messageArea.value = 'Generating message...';
+    messageArea.disabled = true;
+
+    // Build request body - include hub_id from first available contact_followup instance
+    const requestBody = {
+        contact_id: selectedContact.id,
+        tone: tone
+    };
+    if (allInstances.length > 0) {
+        requestBody.hub_id = allInstances[0].id;
+    }
+
+    try {
+        const response = await fetch('/tools/api/contact-followup/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Generation failed');
+        }
+
+        messageArea.value = result.message;
+    } catch (error) {
+        messageArea.value = `Error: ${error.message}`;
+    } finally {
+        messageArea.disabled = false;
+    }
+}
+
+// Send the follow-up message
+async function sendFollowup() {
+    if (!selectedContact) return;
+
+    const message = document.getElementById('generatedMessage').value.trim();
+    const botId = document.getElementById('selectedBot').value;
+
+    if (!message) {
+        alert('Please generate or enter a message first');
+        return;
+    }
+
+    if (!botId) {
+        const select = document.getElementById('selectedBot');
+        if (select.disabled) {
+            alert('No bots have conversation history with this contact. A bot must have chatted with this contact before you can send a follow-up.');
+        } else {
+            alert('Please select a bot to send the message');
+        }
+        return;
+    }
+
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+
+    try {
+        const response = await fetch('/tools/api/contact-followup/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contact_id: selectedContact.id,
+                message: message,
+                bot_id: parseInt(botId),
+                tone: document.getElementById('messageTone') ? document.getElementById('messageTone').value : 'friendly'
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Send failed');
+        }
+
+        alert('Follow-up message sent successfully!');
+        closeGenerationPanel();
+        loadQueue();
+        loadStats();
+        loadActivity();
+    } catch (error) {
+        alert('Failed to send: ' + error.message);
+    } finally {
+        if (sendBtn && sendBtn.isConnected) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Send Follow-up';
+        }
+    }
+}
+
+// Dismiss a follow-up
+async function dismissFollowup(contactId) {
+    if (!confirm('Dismiss this follow-up? The contact will be removed from the queue.')) return;
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/${contactId}/dismiss`, {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.detail || 'Dismiss failed');
+        }
+
+        loadQueue();
+        loadStats();
+    } catch (error) {
+        alert('Failed to dismiss: ' + error.message);
+    }
+}
+
+// Close generation panel
+function closeGenerationPanel() {
+    const panel = document.getElementById('generationPanel');
+    if (panel) panel.remove();
+    selectedContact = null;
+}
+
+// Load activity log
+async function loadActivity() {
+    try {
+        const response = await fetch('/tools/api/executions?tool_type=contact_followup&limit=20');
+        const data = await response.json();
+        const container = document.getElementById('activityLog');
+
+        if (!data.executions || data.executions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state py-3">
+                    <i class="bi bi-activity" style="font-size: 2rem;"></i>
+                    <p class="mb-0">No recent follow-up activity</p>
+                </div>`;
+            return;
+        }
+
+        let html = '';
+        data.executions.forEach(exec => {
+            const time = formatDateTime(exec.created_at);
+            const statusClass = exec.status === 'success' ? 'text-success' : 'text-danger';
+            const statusIcon = exec.status === 'success' ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+
+            const inputData = exec.input_data ? (typeof exec.input_data === 'string' ? JSON.parse(exec.input_data) : exec.input_data) : {};
+            const outputData = exec.output_data ? (typeof exec.output_data === 'string' ? JSON.parse(exec.output_data) : exec.output_data) : {};
+
+            // Contact info - prefer name over phone
+            const contactPhone = outputData.contact_phone || '';
+            const contactName = inputData.contact_name || contactPhone || 'Unknown';
+
+            // Avatar
+            const avatarColorClass = getAvatarColorClass(contactName || contactPhone);
+            const avatarHtml = `<div class="activity-contact-avatar"><div class="activity-avatar-placeholder ${avatarColorClass}"><i class="bi bi-person-fill"></i></div></div>`;
+
+            // Humanize operation
+            const operationLabels = {
+                'send_followup': 'Sent Follow-up',
+                'generate_followup': 'Generated Message',
+                'dismiss_followup': 'Dismissed'
+            };
+            const operationLabel = operationLabels[exec.operation] || exec.operation;
+
+            // Triggered by badge
+            const triggeredBy = exec.triggered_by === 'auto'
+                ? '<span class="badge bg-info-subtle text-info" style="font-size: 0.7rem;">Auto</span>'
+                : '<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">Manual</span>';
+
+            // Tone badge
+            const toneLabels = { 'friendly': 'Friendly', 'professional': 'Professional', 'casual': 'Casual' };
+            const toneBadge = inputData.tone
+                ? `<span class="badge bg-success-subtle text-success" style="font-size: 0.7rem;">${toneLabels[inputData.tone] || inputData.tone}</span>`
+                : '';
+
+            // Intent badge
+            const intentBadge = outputData.predicted_intent
+                ? `<span class="badge bg-info-subtle text-info" style="font-size: 0.7rem;">Intent: ${escapeHtml(humanizeSlug(outputData.predicted_intent))}</span>`
+                : '';
+
+            // Detail cells - bot name, phone, reason
+            let detailsHtml = '';
+            if (inputData.bot_name) {
+                detailsHtml += `<span class="text-muted small me-3"><i class="bi bi-robot me-1"></i>${escapeHtml(inputData.bot_name)}</span>`;
+            }
+            if (contactPhone && inputData.contact_name) {
+                detailsHtml += `<span class="text-muted small me-3"><i class="bi bi-phone me-1"></i>${escapeHtml(contactPhone)}</span>`;
+            }
+
+            // Message preview
+            let previewHtml = '';
+            if (inputData.message_preview) {
+                previewHtml = `<div class="small text-muted mt-1" style="font-style: italic;">"${escapeHtml(inputData.message_preview)}"</div>`;
+            }
+
+            // Reason
+            let reasonHtml = '';
+            if (outputData.follow_up_reason) {
+                reasonHtml = `<div class="small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>${escapeHtml(outputData.follow_up_reason)}</div>`;
+            }
+
+            // Metrics
+            let metrics = '';
+            if (exec.execution_time_ms) {
+                const timeStr = exec.execution_time_ms >= 1000
+                    ? (exec.execution_time_ms / 1000).toFixed(1) + 's'
+                    : exec.execution_time_ms + 'ms';
+                metrics += `<span class="text-muted small me-2"><i class="bi bi-clock me-1"></i>${timeStr}</span>`;
+            }
+            if (exec.tokens_used) {
+                metrics += `<span class="text-muted small"><i class="bi bi-lightning me-1"></i>${exec.tokens_used} tokens</span>`;
+            }
+
+            // Error display
+            let errorHtml = '';
+            if (exec.status === 'error' && exec.error_message) {
+                errorHtml = `<div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>${escapeHtml(exec.error_message)}</div>`;
+            }
+
+            html += `
+                <div class="activity-log-item d-flex align-items-center gap-3 py-2 px-3">
+                    ${avatarHtml}
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <strong class="text-truncate" style="max-width: 180px;">${escapeHtml(contactName)}</strong>
+                                ${triggeredBy}
+                                ${toneBadge}
+                                ${intentBadge}
+                            </div>
+                            <span class="text-muted small">${time}</span>
+                        </div>
+                        <div class="small text-muted">
+                            ${exec.status === 'success'
+                                ? `<span class="text-success"><i class="bi bi-check me-1"></i>${escapeHtml(operationLabel)}</span>`
+                                : `<span class="text-danger"><i class="bi bi-x me-1"></i>${escapeHtml(operationLabel)} failed</span>`
+                            }
+                        </div>
+                        ${detailsHtml ? `<div class="mt-1">${detailsHtml}</div>` : ''}
+                        ${previewHtml}
+                        ${reasonHtml}
+                        ${errorHtml}
+                        ${metrics ? `<div class="d-flex justify-content-between align-items-center mt-1"><div>${metrics}</div><span class="${statusClass} small">${exec.status}</span></div>` : ''}
+                    </div>
+                </div>`;
+        });
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading activity:', error);
+    }
+}
+
+// Simulation functions
+function updateSimModelDropdown(providerName) {
+    const provider = SIM_PROVIDER_MODELS[providerName];
+    if (!provider) return;
+
+    const listEl = document.getElementById('simModelList');
+    const hiddenInput = document.getElementById('simModelValue');
+    const btn = document.getElementById('simModelDropdown');
+
+    let html = '';
+    provider.groups.forEach(group => {
+        html += `<h6 class="dropdown-header">${group.header}</h6>`;
+        group.models.forEach(m => {
+            const isDefault = m.value === provider.defaultModel;
+            html += `<a class="dropdown-item sim-model-item${isDefault ? ' selected' : ''}" href="#" data-value="${m.value}">${m.label}</a>`;
+        });
+    });
+    listEl.innerHTML = html;
+
+    hiddenInput.value = provider.defaultModel;
+    const defaultItem = listEl.querySelector(`.dropdown-item[data-value="${provider.defaultModel}"]`);
+    btn.textContent = defaultItem ? defaultItem.textContent : provider.defaultModel;
+
+    listEl.querySelectorAll('.sim-model-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.model-dropdown');
+            const dropBtn = dropdown.querySelector('.model-dropdown-btn');
+            dropBtn.textContent = this.textContent;
+            hiddenInput.value = this.getAttribute('data-value');
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            bootstrap.Dropdown.getInstance(dropBtn)?.hide();
+        });
+    });
+
+    const helpEl = document.getElementById('simApiKeyHelp');
+    if (helpEl) {
+        const domain = provider.apiKeyUrl.replace('https://', '').split('/')[0];
+        helpEl.innerHTML = `Get your ${provider.label} key at <a href="${provider.apiKeyUrl}" target="_blank">${domain}</a>. Key is not stored.`;
+    }
+
+    const apiKeyInput = document.getElementById('simApiKey');
+    if (apiKeyInput) {
+        apiKeyInput.placeholder = provider.apiKeyPlaceholder;
+    }
+}
+
+function setupSimProviderDropdown() {
+    document.querySelectorAll('.sim-provider-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.model-dropdown');
+            const btn = dropdown.querySelector('.model-dropdown-btn');
+            const hiddenInput = document.getElementById('simProviderValue');
+            const value = this.getAttribute('data-value');
+
+            btn.textContent = this.textContent.trim();
+            hiddenInput.value = value;
+
+            dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+
+            bootstrap.Dropdown.getInstance(btn)?.hide();
+            updateSimModelDropdown(value);
+        });
+    });
+}
+
+async function runSimulation() {
+    const contactName = document.getElementById('simContactName').value;
+    const description = document.getElementById('simDescription').value;
+    const followupReason = document.getElementById('simFollowupReason').value;
+    const intent = document.getElementById('simIntent').value;
+    const sentiment = document.getElementById('simSentiment').value;
+    const urgency = document.getElementById('simUrgency').value;
+    const engagement = parseInt(document.getElementById('simEngagement').value) || 75;
+    const tone = document.getElementById('simTone').value;
+    const keyTopicsStr = document.getElementById('simKeyTopics').value;
+    const keyTopics = keyTopicsStr.split(',').map(t => t.trim()).filter(t => t);
+
+    const aiProvider = document.getElementById('simProviderValue').value;
+    const aiModel = document.getElementById('simModelValue').value;
+    const apiKey = document.getElementById('simApiKey').value;
+
+    if (!apiKey.trim()) {
+        alert('Please enter an API key to test the follow-up generator');
+        return;
+    }
+
+    // Update preview name
+    document.getElementById('previewContactName').textContent = contactName;
+
+    // Show loading
+    const previewEl = document.getElementById('previewMessage');
+    previewEl.textContent = 'Generating message...';
+    document.getElementById('previewTokens').textContent = '';
+
+    try {
+        const response = await fetch('/tools/api/simulate/contact-followup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contact_name: contactName,
+                description: description,
+                predicted_intent: intent,
+                follow_up_reason: followupReason,
+                key_topics: keyTopics,
+                sentiment: sentiment,
+                urgency: urgency,
+                engagement_score: engagement,
+                tone: tone,
+                ai_provider: aiProvider,
+                ai_model: aiModel,
+                api_key: apiKey
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Generation failed');
+        }
+
+        previewEl.textContent = result.message;
+        if (result.tokens_used) {
+            document.getElementById('previewTokens').textContent = `${result.tokens_used} tokens used`;
+        }
+    } catch (error) {
+        previewEl.textContent = `Error: ${error.message}`;
+    }
+}
+
+// ============================================================================
+// Contact Detail
+// ============================================================================
+
+let toolsContactDetailModal = null;
+
+async function showContactDetail(contactId) {
+    if (!toolsContactDetailModal) {
+        toolsContactDetailModal = new bootstrap.Modal(document.getElementById('toolsContactDetailModal'));
+    }
+    const content = document.getElementById('toolsContactDetailContent');
+    content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+    toolsContactDetailModal.show();
+
+    try {
+        const [contactResponse, messagesResponse] = await Promise.all([
+            fetch(`/api/hubs/contacts/${contactId}`),
+            fetch(`/api/hubs/contacts/${contactId}/messages`)
+        ]);
+
+        if (!contactResponse.ok) throw new Error('Failed to load contact');
+
+        const contact = await contactResponse.json();
+        const messagesData = messagesResponse.ok ? await messagesResponse.json() : { statistics: {}, recent_messages: [] };
+
+        renderContactDetail(contact, messagesData);
+    } catch (error) {
+        content.innerHTML = '<div class="alert alert-danger">Failed to load contact details</div>';
+    }
+}
+
+function getContactAvatarColor(identifier) {
+    if (!identifier) return 'avatar-color-1';
+    let hash = 0;
+    for (let i = 0; i < identifier.length; i++) {
+        hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+}
+
+function formatTagName(tag) {
+    if (!tag) return '';
+    let formatted = tag.replace(/[_-]/g, ' ');
+    formatted = formatted.replace(/([a-z])([A-Z])/g, '$1 $2');
+    formatted = formatted.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    return formatted;
+}
+
+function renderContactTags(tags) {
+    if (!tags || tags.length === 0) {
+        return '<p class="text-muted small mb-0">No tags yet.</p>';
+    }
+    return tags.map(tag => `
+        <span class="contact-tag-badge ${tag.source === 'ai_analyzer' ? 'ai-tag' : ''}">
+            ${escapeHtml(formatTagName(tag.tag))}
+            ${tag.confidence && tag.confidence < 1 ? `<span class="confidence">${Math.round(tag.confidence * 100)}%</span>` : ''}
+        </span>
+    `).join('');
+}
+
+function renderContactDetail(contact, messagesData = {}) {
+    const content = document.getElementById('toolsContactDetailContent');
+    const engagementPercent = Math.round((contact.engagement_score || 0) * 100);
+    const engagementClass = engagementPercent >= 70 ? 'bg-success' : engagementPercent >= 40 ? 'bg-warning' : 'bg-danger';
+
+    const stats = messagesData.statistics || {};
+    const recentMessages = messagesData.recent_messages || [];
+
+    const getSentimentBadgeClass = (sentiment) => {
+        if (!sentiment) return 'contact-info-badge badge-sentiment-neutral';
+        const s = sentiment.toLowerCase();
+        if (s === 'positive') return 'contact-info-badge badge-sentiment-positive';
+        if (s === 'negative') return 'contact-info-badge badge-sentiment-negative';
+        return 'contact-info-badge badge-sentiment-neutral';
+    };
+
+    const getUrgencyBadgeClass = (urgency) => {
+        if (!urgency) return 'contact-info-badge badge-urgency-low';
+        const u = urgency.toLowerCase();
+        if (u === 'high') return 'contact-info-badge badge-urgency-high';
+        if (u === 'medium') return 'contact-info-badge badge-urgency-medium';
+        return 'contact-info-badge badge-urgency-low';
+    };
+
+    // Build recent messages HTML separately to avoid nested template literals
+    let recentMessagesHtml = '<p class="text-muted small mb-0">No messages found for this contact.</p>';
+    if (recentMessages.length > 0) {
+        const reversed = recentMessages.slice().reverse();
+        let lastRole = null;
+        recentMessagesHtml = '<div class="recent-messages-chat">';
+        reversed.forEach(msg => {
+            const isNewSender = msg.role !== lastRole;
+            lastRole = msg.role;
+            const senderName = msg.role === 'assistant' ? escapeHtml(msg.bot_name || 'Bot') : escapeHtml(msg.sender_name || contact.display_name || 'Contact');
+            const dirClass = msg.role === 'assistant' ? 'outgoing' : 'incoming';
+            const tailClass = isNewSender ? ' with-tail' : '';
+            recentMessagesHtml += '<div class="recent-message-row ' + dirClass + tailClass + '">';
+            recentMessagesHtml += '<div class="recent-message-bubble">';
+            if (isNewSender) recentMessagesHtml += '<div class="recent-message-sender">' + senderName + '</div>';
+            recentMessagesHtml += '<div class="recent-message-text">' + escapeHtml(msg.content || '') + '</div>';
+            recentMessagesHtml += '<div class="recent-message-footer">';
+            if (msg.is_group) recentMessagesHtml += '<span class="badge bg-info">Group</span>';
+            if (msg.has_attachment) recentMessagesHtml += '<span class="badge bg-secondary"><i class="bi bi-paperclip"></i></span>';
+            recentMessagesHtml += '<span class="recent-message-time">' + (msg.timestamp ? formatRelativeTime(msg.timestamp) : '') + '</span>';
+            recentMessagesHtml += '</div></div></div>';
+        });
+        recentMessagesHtml += '</div>';
+    }
+
+    // Build bot names HTML
+    let botNamesHtml = '';
+    if (contact.bot_names && contact.bot_names.length > 0) {
+        botNamesHtml = contact.bot_names.map(name => '<span class="contact-info-badge badge-bot">' + escapeHtml(name) + '</span>').join('');
+    }
+
+    // Build key topics HTML
+    let keyTopicsHtml = '';
+    if (contact.key_topics && contact.key_topics.length > 0) {
+        keyTopicsHtml = contact.key_topics.map(topic => '<span class="contact-info-badge badge-topic">' + escapeHtml(topic) + '</span>').join('');
+    }
+
+    content.innerHTML = `
+        <div style="max-height: 70vh; overflow-y: auto; overflow-x: hidden; padding-right: 1rem;">
+            <div class="contact-detail-header">
+                <div class="contact-avatar-lg">
+                    ${contact.profile_pic
+                        ? `<img src="${contact.profile_pic}" alt="" class="rounded-circle" style="width: 64px; height: 64px; object-fit: cover;"
+                               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                           <div class="avatar-placeholder-lg ${getContactAvatarColor(contact.phone)}" style="display:none;"><i class="bi bi-person"></i></div>`
+                        : `<div class="avatar-placeholder-lg ${getContactAvatarColor(contact.phone)}"><i class="bi bi-person"></i></div>`
+                    }
+                </div>
+                <div class="contact-detail-info">
+                    <h5>${escapeHtml(contact.display_name || contact.phone)}</h5>
+                    <div class="text-muted">${escapeHtml(contact.phone)}</div>
+                </div>
+            </div>
+
+            <div class="contact-stats">
+                <div class="contact-stat">
+                    <div class="contact-stat-value">${engagementPercent}%</div>
+                    <div class="contact-stat-label">Engagement</div>
+                </div>
+                <div class="contact-stat">
+                    <div class="contact-stat-value">${contact.tags?.length || 0}</div>
+                    <div class="contact-stat-label">Tags</div>
+                </div>
+                <div class="contact-stat">
+                    <div class="contact-stat-value">${contact.first_seen_at ? formatRelativeTime(contact.first_seen_at) : '-'}</div>
+                    <div class="contact-stat-label">First Seen</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Engagement Score</label>
+                <div class="engagement-meter-lg">
+                    <div class="fill ${engagementClass}" style="width: ${engagementPercent}%"></div>
+                </div>
+            </div>
+
+            ${contact.bot_names && contact.bot_names.length > 0 ? `
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Interacted with Bots</label>
+                    <div class="d-flex flex-wrap gap-1">${botNamesHtml}</div>
+                </div>
+            ` : ''}
+
+            ${(contact.predicted_intent || contact.sentiment || contact.urgency) ? `
+                <div class="row g-3 mb-3">
+                    <div class="col-4">
+                        <div class="small text-muted mb-1">Intent</div>
+                        ${contact.predicted_intent
+                            ? `<span class="contact-info-badge badge-intent">${escapeHtml(formatTagName(contact.predicted_intent))}</span>`
+                            : '<span class="text-muted small">-</span>'
+                        }
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-muted mb-1">Sentiment</div>
+                        ${contact.sentiment
+                            ? `<span class="${getSentimentBadgeClass(contact.sentiment)}">${capitalizeFirst(contact.sentiment)}</span>`
+                            : '<span class="text-muted small">-</span>'
+                        }
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-muted mb-1">Urgency</div>
+                        ${contact.urgency
+                            ? `<span class="${getUrgencyBadgeClass(contact.urgency)}">${capitalizeFirst(contact.urgency)}</span>`
+                            : '<span class="text-muted small">-</span>'
+                        }
+                    </div>
+                </div>
+            ` : ''}
+
+            ${contact.follow_up_needed ? `
+                <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2" style="font-size: 0.875rem;">
+                    <i class="bi bi-bell-fill"></i>
+                    <div>
+                        <strong>Follow-up Needed</strong>
+                        ${contact.follow_up_reason ? `<div class="small">${escapeHtml(contact.follow_up_reason)}</div>` : ''}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${contact.description ? `
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Profile Summary</label>
+                    <p class="text-muted mb-0">${escapeHtml(contact.description)}</p>
+                </div>
+            ` : ''}
+
+            ${contact.key_topics && contact.key_topics.length > 0 ? `
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Key Topics</label>
+                    <div class="d-flex flex-wrap gap-1">${keyTopicsHtml}</div>
+                </div>
+            ` : ''}
+
+            <div class="contact-tags-section">
+                <label class="form-label fw-semibold mb-2">Tags</label>
+                <div>${renderContactTags(contact.tags || [])}</div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Last Active</label>
+                    <p class="text-muted mb-0">${contact.last_interaction_at ? formatDateTime(contact.last_interaction_at) : 'Never'}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">First Seen</label>
+                    <p class="text-muted mb-0">${contact.first_seen_at ? formatDateTime(contact.first_seen_at) : 'Unknown'}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Message Statistics</label>
+                <div class="message-stats-grid">
+                    <div class="message-stat-item">
+                        <div class="stat-value">${stats.total_messages || 0}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="message-stat-item">
+                        <div class="stat-value">${stats.messages_received || 0}</div>
+                        <div class="stat-label">Received</div>
+                    </div>
+                    <div class="message-stat-item">
+                        <div class="stat-value">${stats.messages_sent || 0}</div>
+                        <div class="stat-label">Sent</div>
+                    </div>
+                    <div class="message-stat-item">
+                        <div class="stat-value">${stats.conversations_count || 0}</div>
+                        <div class="stat-label">Chats</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Recent Messages</label>
+                ${recentMessagesHtml}
+            </div>
+        </div>
+    `;
+}
+
+// Helper functions
+function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function humanizeSlug(slug) {
+    if (!slug) return '';
+    return capitalizeFirst(slug.replace(/_/g, ' '));
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    const utcDateStr = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-', 10)
+        ? dateStr
+        : dateStr + 'Z';
+    return new Date(utcDateStr).toLocaleString();
+}
+
+function formatRelativeTime(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+}
+
+function getAvatarColorClass(name) {
+    if (!name) return 'avatar-color-1';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+}
+</script>
+{% endblock %}

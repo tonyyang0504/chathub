@@ -33,6 +33,7 @@ from .analytics.routes import router as analytics_router
 from .hubs.routes import router as hubs_router
 from .hubs.scheduler import content_scheduler
 from .hubs.analysis_scheduler import contact_analysis_scheduler
+from .hubs.followup_scheduler import followup_send_scheduler
 from .scripts.scheduler import script_scheduler
 from .tools import tools_router
 from .agents import agents_router
@@ -100,10 +101,16 @@ async def lifespan(app: FastAPI):
     # Start the contact analysis scheduler
     await contact_analysis_scheduler.start()
 
+    # Start the follow-up send scheduler
+    await followup_send_scheduler.start()
+
     yield
 
     # Shutdown
     print("Shutting down ChatHub...")
+
+    # Stop the follow-up send scheduler
+    await followup_send_scheduler.stop()
 
     # Stop the contact analysis scheduler
     await contact_analysis_scheduler.stop()

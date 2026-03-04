@@ -15,13 +15,14 @@ from typing import Optional
 # Thread pool for running blocking AI operations
 ai_executor = ThreadPoolExecutor(max_workers=4)
 
-from app.database import get_db, ToolExecution, Hub, ScheduledContent, HubBotMembership, Contact, ContactTag, AIAgent, ConversationScript, ScriptExecution
+from app.database import get_db, SessionLocal, ToolExecution, Hub, ScheduledContent, HubBotMembership, Contact, ContactTag, AIAgent, ConversationScript, ScriptExecution, BotProfile, Conversation, Message
 from app.auth.utils import get_current_user_optional
 from app.auth.ownership import get_user_hub_ids
-from sqlalchemy import func
+from sqlalchemy import func, case
 from .monitoring import ToolMonitor
 
 router = APIRouter(prefix="/tools", tags=["tools"])
+
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
@@ -1229,3 +1230,893 @@ async def scripted_conversations_page(
             "page_title": "Scripted Conversations"
         }
     )
+
+
+@router.get("/contact-followup", response_class=HTMLResponse)
+async def contact_followup_page(
+    request: Request,
+    hub_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Contact Follow Up tool page - AI-powered follow-up message generation."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "error": "Please log in to access this page"}
+        )
+
+    return templates.TemplateResponse(
+        "dashboard/tools/contact_followup.html",
+        {
+            "request": request,
+            "user": user,
+            "hub_id": hub_id,
+            "page_title": "Contact Follow Up"
+        }
+    )
+
+
+# ============================================================================
+# Contact Follow Up API Endpoints
+# ============================================================================
+
+@router.get("/api/contact-followup/stats")
+async def get_contact_followup_stats(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Get statistics for contact follow-up across all hub instances."""
+    from datetime import datetime, timedelta
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Get hub IDs for this user (contact_analyzer and contact_followup hubs have the contacts)
+    hub_ids = db.query(Hub.id).filter(
+        Hub.user_id == user.id,
+        Hub.task_type.in_(["contact_analyzer", "contact_followup"])
+    ).all()
+    hub_ids = [h[0] for h in hub_ids]
+
+    if hub_ids:
+        # Count contacts needing follow-up
+        total_pending = db.query(func.count(Contact.id)).filter(
+            Contact.hub_id.in_(hub_ids),
+            Contact.follow_up_needed == True,
+            (Contact.followup_status.is_(None)) | (Contact.followup_status == 'pending')
+        ).scalar() or 0
+
+        # Count follow-ups sent today
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        sent_today = db.query(func.count(Contact.id)).filter(
+            Contact.hub_id.in_(hub_ids),
+            Contact.followup_status == 'sent',
+            Contact.followup_sent_at >= today_start
+        ).scalar() or 0
+
+        # Count total sent
+        total_sent = db.query(func.count(Contact.id)).filter(
+            Contact.hub_id.in_(hub_ids),
+            Contact.followup_status == 'sent'
+        ).scalar() or 0
+
+        # Count responded
+        total_responded = db.query(func.count(Contact.id)).filter(
+            Contact.hub_id.in_(hub_ids),
+            Contact.followup_status == 'responded'
+        ).scalar() or 0
+
+        # Count dismissed
+        total_dismissed = db.query(func.count(Contact.id)).filter(
+            Contact.hub_id.in_(hub_ids),
+            Contact.followup_status == 'dismissed'
+        ).scalar() or 0
+
+        # Calculate response rate
+        response_rate = round((total_responded / max(total_sent, 1)) * 100, 1)
+    else:
+        total_pending = 0
+        sent_today = 0
+        total_sent = 0
+        total_responded = 0
+        total_dismissed = 0
+        response_rate = 0
+
+    return {
+        "total_pending": total_pending,
+        "sent_today": sent_today,
+        "total_sent": total_sent,
+        "total_responded": total_responded,
+        "total_dismissed": total_dismissed,
+        "response_rate": response_rate
+    }
+
+
+@router.get("/api/contact-followup/queue")
+async def get_contact_followup_queue(
+    request: Request,
+    hub_id: Optional[int] = None,
+    bot_ids: Optional[str] = None,  # Comma-separated list of bot IDs
+    urgency: Optional[str] = None,
+    sentiment: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: Optional[str] = None,  # urgency, last_message_newest, last_message_oldest, engagement_highest, engagement_lowest
+    last_message_before: Optional[str] = None,  # ISO date string
+    last_message_after: Optional[str] = None,  # ISO date string
+    engagement_min: Optional[int] = None,
+    engagement_max: Optional[int] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """Get contacts that need follow-up, sorted by urgency."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Parse bot_ids if provided
+    selected_bot_ids = []
+    if bot_ids:
+        try:
+            selected_bot_ids = [int(bid.strip()) for bid in bot_ids.split(",") if bid.strip()]
+        except ValueError:
+            pass
+
+    # Get user's hub IDs
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    # Build query for contacts needing follow-up
+    query = db.query(Contact).filter(
+        Contact.follow_up_needed == True,
+        (Contact.followup_status.is_(None)) | (Contact.followup_status == 'pending')
+    )
+
+    # Check if provided hub_id is a contact_followup hub
+    # If so, we need to look across all contact_analyzer hubs (where contacts are stored)
+    if hub_id:
+        if hub_id not in user_hub_ids:
+            raise HTTPException(status_code=404, detail="Hub not found")
+
+        # Check the hub type
+        hub = db.query(Hub).filter(Hub.id == hub_id).first()
+        if hub and hub.task_type == "contact_followup":
+            # For Contact Follow Up hubs, get contacts from ALL Contact Analyzer hubs
+            ca_hub_ids = db.query(Hub.id).filter(
+                Hub.id.in_(user_hub_ids),
+                Hub.task_type == "contact_analyzer"
+            ).all()
+            ca_hub_ids = [h[0] for h in ca_hub_ids]
+            if ca_hub_ids:
+                query = query.filter(Contact.hub_id.in_(ca_hub_ids))
+            else:
+                return {"contacts": [], "total": 0}
+        else:
+            # For other hub types, filter by specific hub_id
+            query = query.filter(Contact.hub_id == hub_id)
+    else:
+        # No hub_id provided - get contacts from all contact_analyzer hubs
+        ca_hub_ids = db.query(Hub.id).filter(
+            Hub.id.in_(user_hub_ids),
+            Hub.task_type == "contact_analyzer"
+        ).all()
+        ca_hub_ids = [h[0] for h in ca_hub_ids]
+        if ca_hub_ids:
+            query = query.filter(Contact.hub_id.in_(ca_hub_ids))
+        else:
+            return {"contacts": [], "total": 0}
+
+    # Filter by urgency
+    if urgency:
+        query = query.filter(Contact.urgency == urgency)
+
+    # Filter by sentiment
+    if sentiment:
+        query = query.filter(Contact.sentiment == sentiment)
+
+    # Filter by search term (name or phone)
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            (Contact.display_name.ilike(search_term)) | (Contact.phone.ilike(search_term))
+        )
+
+    # Filter by engagement score range
+    if engagement_min is not None:
+        query = query.filter(Contact.engagement_score >= engagement_min)
+    if engagement_max is not None:
+        query = query.filter(Contact.engagement_score <= engagement_max)
+
+    # Filter by selected bots - only show contacts that have conversations with the selected bots
+    if selected_bot_ids:
+        # Subquery to find phones that have conversations with selected bots
+        phones_with_selected_bots = db.query(Conversation.phone).filter(
+            Conversation.bot_profile_id.in_(selected_bot_ids),
+            Conversation.is_group == False
+        ).distinct().subquery()
+
+        query = query.filter(Contact.phone.in_(phones_with_selected_bots))
+
+    # Build last_message subquery for date filtering and sorting
+    last_msg_subq = db.query(
+        Conversation.phone,
+        func.max(Message.timestamp).label('last_msg_at')
+    ).join(Message, Message.conversation_id == Conversation.id).filter(
+        Conversation.is_group == False
+    ).group_by(Conversation.phone).subquery()
+
+    # Filter by last message date range
+    if last_message_before or last_message_after or (sort_by and sort_by.startswith('last_message')):
+        query = query.outerjoin(last_msg_subq, Contact.phone == last_msg_subq.c.phone)
+
+        if last_message_before:
+            try:
+                from datetime import datetime as dt
+                before_date = dt.fromisoformat(last_message_before)
+                query = query.filter(last_msg_subq.c.last_msg_at <= before_date)
+            except ValueError:
+                pass
+
+        if last_message_after:
+            try:
+                from datetime import datetime as dt
+                after_date = dt.fromisoformat(last_message_after)
+                query = query.filter(last_msg_subq.c.last_msg_at >= after_date)
+            except ValueError:
+                pass
+
+    # Get total count
+    total = query.count()
+
+    # Sort
+    if sort_by == 'last_message_newest':
+        query = query.order_by(last_msg_subq.c.last_msg_at.desc().nullslast())
+    elif sort_by == 'last_message_oldest':
+        query = query.order_by(last_msg_subq.c.last_msg_at.asc().nullslast())
+    elif sort_by == 'engagement_highest':
+        query = query.order_by(Contact.engagement_score.desc().nullslast())
+    elif sort_by == 'engagement_lowest':
+        query = query.order_by(Contact.engagement_score.asc().nullslast())
+    elif sort_by == 'urgency_lowest':
+        urgency_order = case(
+            (Contact.urgency == 'low', 1),
+            (Contact.urgency == 'medium', 2),
+            (Contact.urgency == 'high', 3),
+            else_=4
+        )
+        query = query.order_by(urgency_order, Contact.engagement_score.desc())
+    else:
+        # Default: urgency (high first), then engagement score (high first)
+        urgency_order = case(
+            (Contact.urgency == 'high', 1),
+            (Contact.urgency == 'medium', 2),
+            (Contact.urgency == 'low', 3),
+            else_=4
+        )
+        query = query.order_by(urgency_order, Contact.engagement_score.desc())
+
+    # Apply pagination
+    contacts = query.offset(offset).limit(limit).all()
+
+    # Build response
+    # Batch query last message times for all contacts' phones
+    # Use Message.timestamp (always populated) via Conversation join
+    contact_phones = [c.phone for c in contacts if c.phone]
+    last_message_map = {}
+    if contact_phones:
+        last_msg_query = db.query(
+            Conversation.phone,
+            func.max(Message.timestamp).label('last_msg')
+        ).join(Message, Message.conversation_id == Conversation.id).filter(
+            Conversation.phone.in_(contact_phones),
+            Conversation.is_group == False
+        ).group_by(Conversation.phone).all()
+        last_message_map = {row.phone: row.last_msg for row in last_msg_query}
+
+    result = []
+    for contact in contacts:
+        # Get hub name
+        hub = db.query(Hub).filter(Hub.id == contact.hub_id).first()
+
+        # Parse key_topics if JSON string
+        key_topics = []
+        if contact.key_topics:
+            try:
+                import json
+                key_topics = json.loads(contact.key_topics) if isinstance(contact.key_topics, str) else contact.key_topics
+            except:
+                key_topics = []
+
+        # Get tags
+        tags = [t.tag for t in contact.tags] if contact.tags else []
+
+        last_message_at = last_message_map.get(contact.phone)
+
+        result.append({
+            "id": contact.id,
+            "hub_id": contact.hub_id,
+            "hub_name": hub.name if hub else None,
+            "phone": contact.phone,
+            "display_name": contact.display_name,
+            "profile_pic": contact.profile_pic,
+            "description": contact.description,
+            "predicted_intent": contact.predicted_intent,
+            "follow_up_reason": contact.follow_up_reason,
+            "sentiment": contact.sentiment,
+            "urgency": contact.urgency,
+            "engagement_score": contact.engagement_score,
+            "key_topics": key_topics,
+            "tags": tags,
+            "last_interaction_at": contact.last_interaction_at.isoformat() if contact.last_interaction_at else None,
+            "last_message_at": last_message_at.isoformat() if last_message_at else None,
+            "followup_attempts": contact.followup_attempts or 0,
+            "followup_last_attempt_at": contact.followup_last_attempt_at.isoformat() if contact.followup_last_attempt_at else None
+        })
+
+    return {"contacts": result, "total": total}
+
+
+@router.post("/api/contact-followup/generate")
+async def generate_followup_message(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Generate a personalized follow-up message for a contact using AI."""
+    import json
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    data = await request.json()
+    contact_id = data.get("contact_id")
+    tone = data.get("tone", "friendly")  # friendly, professional, casual
+    followup_hub_id = data.get("hub_id")  # The Contact Follow Up hub ID
+
+    # Get custom AI configuration from request
+    custom_api_key = data.get("api_key", "")
+    ai_provider = data.get("ai_provider", "")
+    ai_model = data.get("ai_model", "")
+
+    if not contact_id:
+        raise HTTPException(status_code=400, detail="contact_id is required")
+
+    # Get contact
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Verify user owns the contact's hub (Contact Analyzer hub)
+    contact_hub = db.query(Hub).filter(Hub.id == contact.hub_id, Hub.user_id == user.id).first()
+    if not contact_hub:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Get Contact Follow Up hub if specified
+    followup_hub = None
+    followup_agent = None
+    if followup_hub_id:
+        followup_hub = db.query(Hub).filter(
+            Hub.id == followup_hub_id,
+            Hub.user_id == user.id,
+            Hub.task_type == "contact_followup"
+        ).first()
+
+        # Look for a followup or generator agent in the hub
+        if followup_hub:
+            followup_agent = db.query(AIAgent).filter(
+                AIAgent.hub_id == followup_hub.id,
+                AIAgent.agent_type.in_(["followup", "generator"]),
+                AIAgent.is_active == True
+            ).first()
+
+    # Get API key - try from: request > followup agent > followup hub > contact hub
+    from app.auth.utils import decrypt_string
+    api_key = custom_api_key.strip() if custom_api_key else None
+
+    if not api_key and followup_agent and followup_agent.api_key_encrypted:
+        api_key = decrypt_string(followup_agent.api_key_encrypted)
+
+    if not api_key and followup_hub and followup_hub.api_key_encrypted:
+        api_key = decrypt_string(followup_hub.api_key_encrypted)
+
+    if not api_key and contact_hub.api_key_encrypted:
+        api_key = decrypt_string(contact_hub.api_key_encrypted)
+
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key required. Configure a followup agent with API key in the Agents tab.")
+
+    # Get AI provider/model - prefer followup agent > followup hub > defaults
+    if not ai_provider:
+        if followup_agent and followup_agent.ai_provider:
+            ai_provider = followup_agent.ai_provider
+        elif followup_hub and followup_hub.ai_provider:
+            ai_provider = followup_hub.ai_provider
+        else:
+            ai_provider = "openai"
+
+    if not ai_model:
+        if followup_agent and followup_agent.model:
+            ai_model = followup_agent.model
+        elif followup_hub and followup_hub.model:
+            ai_model = followup_hub.model
+        else:
+            ai_model = "gpt-4o-mini"
+
+    # Parse key_topics
+    key_topics = []
+    if contact.key_topics:
+        try:
+            key_topics = json.loads(contact.key_topics) if isinstance(contact.key_topics, str) else contact.key_topics
+        except:
+            key_topics = []
+
+    # Get tags
+    tags = [t.tag for t in contact.tags] if contact.tags else []
+
+    # Build AI prompt using all Contact Analyzer data
+    system_prompt = f"""You are generating a follow-up message for a WhatsApp contact.
+
+CONTACT PROFILE:
+- Name: {contact.display_name or 'Unknown'}
+- Description: {contact.description or 'No description available'}
+- Predicted Intent: {contact.predicted_intent or 'Unknown'}
+- Follow-up Reason: {contact.follow_up_reason or 'General follow-up'}
+- Key Topics: {', '.join(key_topics) if key_topics else 'None identified'}
+- Sentiment: {contact.sentiment or 'neutral'}
+- Urgency: {contact.urgency or 'low'}
+- Engagement Score: {contact.engagement_score or 0}%
+- Tags: {', '.join(tags) if tags else 'None'}
+- Last Interaction: {contact.last_interaction_at.strftime('%Y-%m-%d') if contact.last_interaction_at else 'Unknown'}
+
+Generate a personalized, natural follow-up message that:
+1. References their specific situation from the description
+2. Addresses their predicted intent
+3. Matches their sentiment (warm for positive, professional for neutral, empathetic for negative)
+4. Is appropriately urgent based on urgency level
+5. Uses a {tone} tone
+6. Is concise and actionable (2-4 sentences)
+7. Does not use markdown formatting (no asterisks, underscores, etc.)
+
+Return only the message text, no explanations or quotes."""
+
+    # Append additional instructions from the followup agent if provided
+    if followup_agent and followup_agent.additional_instructions:
+        system_prompt += f"\n\nAdditional Instructions:\n{followup_agent.additional_instructions}"
+
+    try:
+        from app.ai.providers import get_ai_provider
+        provider = get_ai_provider(ai_provider, api_key, ai_model)
+
+        # Reasoning models need more tokens
+        is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
+        max_tokens = 4000 if is_reasoning_model else 300
+
+        # Run AI call in thread pool
+        loop = asyncio.get_event_loop()
+        ai_response = await loop.run_in_executor(
+            ai_executor,
+            lambda: provider.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": "Generate a follow-up message for this contact."}
+                ],
+                max_tokens=max_tokens,
+                temperature=0.7
+            )
+        )
+
+        generated_message = ai_response.content.strip()
+        # Remove quotes if present
+        if generated_message.startswith('"') and generated_message.endswith('"'):
+            generated_message = generated_message[1:-1]
+
+        tokens_used = ai_response.usage.get("total_tokens", 0) if ai_response.usage else 0
+
+        return {
+            "success": True,
+            "message": generated_message,
+            "tokens_used": tokens_used,
+            "contact": {
+                "id": contact.id,
+                "display_name": contact.display_name,
+                "phone": contact.phone
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
+
+@router.get("/api/contact-followup/contact/{contact_id}/bots")
+async def get_contact_bots(
+    contact_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Get bots that have conversation history with a specific contact."""
+    from app.bots.manager import BotManager
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Get contact and verify ownership
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    hub = db.query(Hub).filter(Hub.id == contact.hub_id, Hub.user_id == user.id).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Find bots that have conversations with this contact's phone number
+    bot_ids = db.query(Conversation.bot_profile_id).filter(
+        Conversation.phone == contact.phone,
+        Conversation.is_group == False
+    ).distinct().all()
+    bot_ids = [bid[0] for bid in bot_ids]
+
+    if not bot_ids:
+        return {"bots": [], "message": "No bots have conversation history with this contact."}
+
+    # Get bot profiles that belong to the user
+    bots = db.query(BotProfile).filter(
+        BotProfile.id.in_(bot_ids),
+        BotProfile.user_id == user.id
+    ).all()
+
+    bot_manager = BotManager()
+    result = []
+    for bot in bots:
+        instance = bot_manager.get_instance(bot.id)
+        is_running = instance.is_running if instance else False
+        result.append({
+            "id": bot.id,
+            "name": bot.name,
+            "whatsapp_connected": bot.whatsapp_connected or False,
+            "whatsapp_phone": bot.whatsapp_phone,
+            "is_running": is_running
+        })
+
+    return {"bots": result}
+
+
+@router.post("/api/contact-followup/send")
+async def send_followup_message(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Send a follow-up message to a contact via a bot."""
+    from datetime import datetime
+    from app.bots.manager import BotManager
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    data = await request.json()
+    contact_id = data.get("contact_id")
+    message = data.get("message")
+    bot_id = data.get("bot_id")
+
+    if not contact_id or not message or not bot_id:
+        raise HTTPException(status_code=400, detail="contact_id, message, and bot_id are required")
+
+    # Get contact
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Verify user owns the hub
+    hub = db.query(Hub).filter(Hub.id == contact.hub_id, Hub.user_id == user.id).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Verify user owns the bot
+    bot = db.query(BotProfile).filter(BotProfile.id == bot_id, BotProfile.user_id == user.id).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    # Check if bot is running
+    bot_manager = BotManager()
+    bot_instance = bot_manager.get_instance(bot_id)
+    if not bot_instance or not bot_instance.is_running:
+        raise HTTPException(status_code=400, detail="Bot is not running. Please start the bot first.")
+
+    try:
+        # Send message via bot using the send_whatsapp_message function
+        from app.bots.whatsapp_bot import send_whatsapp_message
+
+        # The chat_id for a contact is typically their phone number with @c.us suffix
+        chat_id = f"{contact.phone}@c.us" if not contact.phone.endswith("@c.us") else contact.phone
+        chat_name = contact.display_name or contact.phone
+        success = await send_whatsapp_message(bot_id, chat_id, chat_name, message)
+
+        if success:
+            # Update contact follow-up status
+            contact.followup_status = 'sent'
+            contact.followup_sent_at = datetime.utcnow()
+            contact.followup_message = message
+            contact.followup_attempts = (contact.followup_attempts or 0) + 1
+            contact.followup_last_attempt_at = datetime.utcnow()
+            db.commit()
+
+            # Log the execution
+            from .monitoring import ToolMonitor
+            ToolMonitor.log_execution(
+                db=db,
+                tool_type="contact_followup",
+                operation="send_followup",
+                hub_id=hub.id,
+                user_id=user.id,
+                input_data={
+                    "contact_id": contact_id,
+                    "bot_id": bot_id,
+                    "bot_name": bot.name if bot else None,
+                    "contact_name": contact.display_name,
+                    "tone": data.get("tone", "friendly"),
+                    "message_length": len(message),
+                    "message_preview": message[:80] + ("..." if len(message) > 80 else ""),
+                },
+                output_data={
+                    "status": "sent",
+                    "contact_phone": contact.phone,
+                    "predicted_intent": contact.predicted_intent,
+                    "follow_up_reason": contact.follow_up_reason,
+                },
+                status="success",
+                triggered_by="user"
+            )
+
+            return {
+                "success": True,
+                "message": "Follow-up message sent successfully",
+                "contact_id": contact_id,
+                "bot_id": bot_id
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send message via bot")
+
+    except Exception as e:
+        # Log the failure
+        from .monitoring import ToolMonitor
+        ToolMonitor.log_execution(
+            db=db,
+            tool_type="contact_followup",
+            operation="send_followup",
+            hub_id=hub.id,
+            user_id=user.id,
+            input_data={"contact_id": contact_id, "bot_id": bot_id},
+            output_data={"error": str(e)},
+            status="error",
+            error_message=str(e),
+            triggered_by="user"
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
+
+
+@router.post("/api/contact-followup/{contact_id}/dismiss")
+async def dismiss_followup(
+    request: Request,
+    contact_id: int,
+    db: Session = Depends(get_db)
+):
+    """Mark a contact as dismissed (no follow-up needed)."""
+    from datetime import datetime
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Get contact
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Verify user owns the hub
+    hub = db.query(Hub).filter(Hub.id == contact.hub_id, Hub.user_id == user.id).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    # Update status
+    contact.followup_status = 'dismissed'
+    contact.follow_up_needed = False
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Follow-up dismissed",
+        "contact_id": contact_id
+    }
+
+
+@router.get("/api/contact-followup/auto-send/settings")
+async def get_auto_send_settings(
+    request: Request,
+    hub_id: int = None,
+    db: Session = Depends(get_db)
+):
+    """Get auto-send settings for a contact_followup hub."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if not hub_id:
+        raise HTTPException(status_code=400, detail="hub_id is required")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+    if hub_id not in user_hub_ids:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    hub = db.query(Hub).filter(Hub.id == hub_id).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    import json as _json
+    filters = {}
+    if hub.auto_send_filters:
+        try:
+            filters = _json.loads(hub.auto_send_filters)
+        except (ValueError, TypeError):
+            pass
+
+    bot_ids = []
+    if hub.auto_send_bot_ids:
+        try:
+            bot_ids = _json.loads(hub.auto_send_bot_ids)
+        except (ValueError, TypeError):
+            pass
+
+    return {
+        "enabled": bool(hub.auto_send_enabled),
+        "interval_minutes": hub.auto_send_interval_minutes or 15,
+        "tone": hub.auto_send_tone or "friendly",
+        "speed_mode": hub.auto_send_speed_mode or "auto",
+        "delay_min": hub.auto_send_delay_min or 5,
+        "delay_max": hub.auto_send_delay_max or 15,
+        "batch_size": hub.auto_send_batch_size or 20,
+        "batch_pause": hub.auto_send_batch_pause or 180,
+        "bot_ids": bot_ids,
+        "filters": filters,
+        "last_run": hub.auto_send_last_run.isoformat() if hub.auto_send_last_run else None
+    }
+
+
+@router.put("/api/contact-followup/auto-send/settings")
+async def save_auto_send_settings(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Save auto-send settings for a contact_followup hub."""
+    import json as _json
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    data = await request.json()
+    hub_id = data.get("hub_id")
+    if not hub_id:
+        raise HTTPException(status_code=400, detail="hub_id is required")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+    if hub_id not in user_hub_ids:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    hub = db.query(Hub).filter(Hub.id == hub_id).first()
+    if not hub:
+        raise HTTPException(status_code=404, detail="Hub not found")
+
+    hub.auto_send_enabled = bool(data.get("enabled", False))
+    hub.auto_send_interval_minutes = int(data.get("interval_minutes", 15))
+    hub.auto_send_tone = data.get("tone", "friendly")
+    hub.auto_send_speed_mode = data.get("speed_mode", "auto")
+    hub.auto_send_delay_min = int(data.get("delay_min", 5))
+    hub.auto_send_delay_max = int(data.get("delay_max", 15))
+    hub.auto_send_batch_size = int(data.get("batch_size", 20))
+    hub.auto_send_batch_pause = int(data.get("batch_pause", 180))
+    bot_ids = data.get("bot_ids", [])
+    hub.auto_send_bot_ids = _json.dumps(bot_ids) if bot_ids else None
+    hub.auto_send_filters = _json.dumps(data.get("filters", {}))
+    db.commit()
+
+    return {"success": True, "message": "Auto-send settings saved"}
+
+
+@router.post("/api/simulate/contact-followup")
+async def simulate_contact_followup(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Test follow-up message generation with sample contact data."""
+    import json
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    data = await request.json()
+
+    # Sample contact data from request
+    contact_name = data.get("contact_name", "Sample Contact")
+    description = data.get("description", "Customer interested in our services")
+    predicted_intent = data.get("predicted_intent", "purchase")
+    follow_up_reason = data.get("follow_up_reason", "Follow up on product inquiry")
+    key_topics = data.get("key_topics", ["pricing", "features"])
+    sentiment = data.get("sentiment", "positive")
+    urgency = data.get("urgency", "medium")
+    engagement_score = data.get("engagement_score", 75)
+    tone = data.get("tone", "friendly")
+
+    # Get AI configuration
+    custom_api_key = data.get("api_key", "")
+    ai_provider = data.get("ai_provider", "openai")
+    ai_model = data.get("ai_model", "gpt-4o-mini")
+
+    # Validate API key
+    api_key = custom_api_key.strip() if custom_api_key else None
+    if not api_key:
+        raise HTTPException(status_code=400, detail="Please enter an API key to test the follow-up generator.")
+
+    if len(api_key) < 10:
+        raise HTTPException(status_code=400, detail="Invalid API key format. Please check your API key.")
+
+    # Build AI prompt
+    system_prompt = f"""You are generating a follow-up message for a WhatsApp contact.
+
+CONTACT PROFILE:
+- Name: {contact_name}
+- Description: {description}
+- Predicted Intent: {predicted_intent}
+- Follow-up Reason: {follow_up_reason}
+- Key Topics: {', '.join(key_topics) if key_topics else 'None identified'}
+- Sentiment: {sentiment}
+- Urgency: {urgency}
+- Engagement Score: {engagement_score}%
+
+Generate a personalized, natural follow-up message that:
+1. References their specific situation from the description
+2. Addresses their predicted intent
+3. Matches their sentiment (warm for positive, professional for neutral, empathetic for negative)
+4. Is appropriately urgent based on urgency level
+5. Uses a {tone} tone
+6. Is concise and actionable (2-4 sentences)
+7. Does not use markdown formatting (no asterisks, underscores, etc.)
+
+Return only the message text, no explanations or quotes."""
+
+    try:
+        from app.ai.providers import get_ai_provider
+        provider = get_ai_provider(ai_provider, api_key, ai_model)
+
+        # Reasoning models need more tokens
+        is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
+        max_tokens = 4000 if is_reasoning_model else 300
+
+        # Run AI call in thread pool
+        loop = asyncio.get_event_loop()
+        ai_response = await loop.run_in_executor(
+            ai_executor,
+            lambda: provider.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": "Generate a follow-up message for this contact."}
+                ],
+                max_tokens=max_tokens,
+                temperature=0.7
+            )
+        )
+
+        generated_message = ai_response.content.strip()
+        # Remove quotes if present
+        if generated_message.startswith('"') and generated_message.endswith('"'):
+            generated_message = generated_message[1:-1]
+
+        tokens_used = ai_response.usage.get("total_tokens", 0) if ai_response.usage else 0
+
+        return {
+            "success": True,
+            "message": generated_message,
+            "tokens_used": tokens_used
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")

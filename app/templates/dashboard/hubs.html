@@ -817,6 +817,35 @@
         overflow-y: auto;
     }
 
+    /* Scrollable follow-up queue */
+    .followup-queue-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .followup-queue-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .followup-queue-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .followup-queue-scroll::-webkit-scrollbar-thumb {
+        background: var(--bs-border-color);
+        border-radius: 3px;
+    }
+
+    .followup-queue-scroll::-webkit-scrollbar-thumb:hover {
+        background: var(--bs-secondary);
+    }
+
+    /* Firefox scrollbar for follow-up queue */
+    .followup-queue-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bs-border-color) transparent;
+    }
+
     /* Pagination styling */
     .content-pagination {
         display: flex;
@@ -1579,6 +1608,10 @@
                                         <i class="bi bi-person-lines-fill me-2"></i>Contact Analyzer
                                         <small class="d-block text-muted">Analyze and categorize contacts</small>
                                     </a>
+                                    <a class="dropdown-item task-type-item" href="#" data-value="contact_followup">
+                                        <i class="bi bi-reply-all me-2"></i>Contact Follow Up
+                                        <small class="d-block text-muted">AI-powered follow-up message generation</small>
+                                    </a>
                                     <a class="dropdown-item task-type-item" href="#" data-value="content_generator">
                                         <i class="bi bi-magic me-2"></i>Content Generator
                                         <small class="d-block text-muted">AI-powered content creation</small>
@@ -1806,6 +1839,11 @@
                             <i class="bi bi-chat-square-text me-1"></i>Scripts
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation" id="queue-tab-item">
+                        <button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queueTab" type="button">
+                            <i class="bi bi-list-check me-1"></i>Queue
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Tab Content -->
@@ -1847,6 +1885,25 @@
                             </div>
                             <p class="text-muted small mb-3">Select bots to sync contacts from. Contacts from selected bots' conversations will be available for analysis.</p>
                             <div class="d-flex flex-wrap gap-2 mb-3" id="analyzerBotsList">
+                                <span class="text-muted small">Loading bots...</span>
+                            </div>
+                        </div>
+                        <!-- Contact Follow Up mode: Select bots to send follow-ups -->
+                        <div id="botsTabContactFollowup" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Select Bots for Sending</h6>
+                                <div class="d-flex gap-2 align-items-stretch">
+                                    <span class="form-control form-control-sm" style="width: 0; padding: 0; border: none; visibility: hidden;"></span>
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="selectAllFollowupBots()">
+                                        <i class="bi bi-check-all me-1"></i>Select All
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="clearFollowupBotSelection()">
+                                        <i class="bi bi-x-lg me-1"></i>Clear All
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3">Select bots that will send follow-up messages. Only running bots can deliver messages.</p>
+                            <div class="d-flex flex-wrap gap-2 mb-3" id="followupBotsList">
                                 <span class="text-muted small">Loading bots...</span>
                             </div>
                         </div>
@@ -2001,6 +2058,126 @@
                             <p class="text-muted">Loading scripts...</p>
                         </div>
                     </div>
+
+                    <!-- Follow-up Queue Tab -->
+                    <div class="tab-pane fade" id="queueTab">
+                        <div class="content-header d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Follow-up Queue</h6>
+                            <div class="d-flex gap-2 align-items-stretch">
+                                <input type="text" class="form-control form-control-sm rounded-pill" style="width: 150px" placeholder="Search..." id="queueSearch" onkeyup="searchFollowupQueue()">
+                                <!-- Hidden inputs to store current filter/sort values -->
+                                <input type="hidden" id="queueUrgencyFilter" value="">
+                                <input type="hidden" id="queueSentimentFilter" value="">
+                                <input type="hidden" id="queueDateFilter" value="">
+                                <input type="hidden" id="queueEngagementFilter" value="">
+                                <input type="hidden" id="queueSortBy" value="">
+                                <!-- Filter dropdown -->
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary rounded-pill" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="queueFilterBtn" style="font-size: 0.875rem;">
+                                        <i class="bi bi-funnel me-1"></i>Filter
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 280px;">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold mb-1">Urgency</label>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="urgency" data-value="" onclick="setQueueFilter('urgency', '', this)">All</button>
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill queue-filter-opt" data-filter="urgency" data-value="high" onclick="setQueueFilter('urgency', 'high', this)">High</button>
+                                                <button class="btn btn-sm btn-outline-warning rounded-pill queue-filter-opt" data-filter="urgency" data-value="medium" onclick="setQueueFilter('urgency', 'medium', this)">Medium</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="urgency" data-value="low" onclick="setQueueFilter('urgency', 'low', this)">Low</button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold mb-1">Sentiment</label>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="sentiment" data-value="" onclick="setQueueFilter('sentiment', '', this)">All</button>
+                                                <button class="btn btn-sm btn-outline-success rounded-pill queue-filter-opt" data-filter="sentiment" data-value="positive" onclick="setQueueFilter('sentiment', 'positive', this)">Positive</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="sentiment" data-value="neutral" onclick="setQueueFilter('sentiment', 'neutral', this)">Neutral</button>
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill queue-filter-opt" data-filter="sentiment" data-value="negative" onclick="setQueueFilter('sentiment', 'negative', this)">Negative</button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold mb-1">Last Message</label>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="date" data-value="" onclick="setQueueFilter('date', '', this)">Any Time</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="24h" onclick="setQueueFilter('date', '24h', this)">24h</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="7d" onclick="setQueueFilter('date', '7d', this)">7 Days</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="30d" onclick="setQueueFilter('date', '30d', this)">30 Days</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="over7d" onclick="setQueueFilter('date', 'over7d', this)">&gt;7 Days</button>
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt" data-filter="date" data-value="over30d" onclick="setQueueFilter('date', 'over30d', this)">&gt;30 Days</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="form-label small fw-semibold mb-1">Engagement Score</label>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill queue-filter-opt active" data-filter="engagement" data-value="" onclick="setQueueFilter('engagement', '', this)">All</button>
+                                                <button class="btn btn-sm btn-outline-success rounded-pill queue-filter-opt" data-filter="engagement" data-value="high" onclick="setQueueFilter('engagement', 'high', this)">High (70+)</button>
+                                                <button class="btn btn-sm btn-outline-warning rounded-pill queue-filter-opt" data-filter="engagement" data-value="medium" onclick="setQueueFilter('engagement', 'medium', this)">Medium (40-69)</button>
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill queue-filter-opt" data-filter="engagement" data-value="low" onclick="setQueueFilter('engagement', 'low', this)">Low (&lt;40)</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Sort dropdown -->
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary rounded-pill" type="button" data-bs-toggle="dropdown" id="queueSortBtn" style="font-size: 0.875rem;">
+                                        <i class="bi bi-sort-down me-1"></i>Sort
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item queue-sort-opt active" href="#" data-value="" onclick="setQueueSort('', this); return false;"><i class="bi bi-check2 me-2"></i>Urgency (Highest)</a></li>
+                                        <li><a class="dropdown-item queue-sort-opt" href="#" data-value="urgency_lowest" onclick="setQueueSort('urgency_lowest', this); return false;"><i class="bi bi-check2 me-2 invisible"></i>Urgency (Lowest)</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item queue-sort-opt" href="#" data-value="last_message_newest" onclick="setQueueSort('last_message_newest', this); return false;"><i class="bi bi-check2 me-2 invisible"></i>Newest Message</a></li>
+                                        <li><a class="dropdown-item queue-sort-opt" href="#" data-value="last_message_oldest" onclick="setQueueSort('last_message_oldest', this); return false;"><i class="bi bi-check2 me-2 invisible"></i>Oldest Message</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item queue-sort-opt" href="#" data-value="engagement_highest" onclick="setQueueSort('engagement_highest', this); return false;"><i class="bi bi-check2 me-2 invisible"></i>Engagement (Highest)</a></li>
+                                        <li><a class="dropdown-item queue-sort-opt" href="#" data-value="engagement_lowest" onclick="setQueueSort('engagement_lowest', this); return false;"><i class="bi bi-check2 me-2 invisible"></i>Engagement (Lowest)</a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-secondary rounded-pill" id="autoSendBtn" onclick="showAutoSendSettings()" style="font-size: 0.875rem;">
+                                    <i class="bi bi-lightning me-1"></i>Auto Send
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;" onclick="loadFollowupQueue()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">Contacts marked for follow-up from Contact Analyzer. Generate personalized messages and send via selected bots.</p>
+
+                        <!-- Inline expansion template (cloned into each card) -->
+                        <template id="followupExpansionTemplate">
+                            <div class="followup-inline-expansion">
+                                <hr class="my-2">
+                                <div class="d-flex gap-2 mb-2 flex-wrap align-items-end">
+                                    <div class="flex-grow-1" style="min-width: 120px;">
+                                        <label class="form-label small mb-1">Tone</label>
+                                        <select class="form-select form-select-sm" id="followupTone">
+                                            <option value="friendly">Friendly</option>
+                                            <option value="professional">Professional</option>
+                                            <option value="casual">Casual</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex-grow-1" style="min-width: 140px;">
+                                        <label class="form-label small mb-1">Send via Bot</label>
+                                        <select class="form-select form-select-sm" id="followupBotSelect">
+                                            <option value="">Select bot...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <textarea class="form-control form-control-sm" id="followupMessageText" rows="3" placeholder="Generating message..."></textarea>
+                                <div class="d-flex justify-content-end gap-2 mt-2">
+                                    <button class="btn btn-sm btn-secondary" onclick="collapseFollowupCard()">Cancel</button>
+                                    <button class="btn btn-sm btn-success" onclick="sendFollowupMessage()" id="sendFollowupBtn">
+                                        <i class="bi bi-send me-1"></i>Send
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div id="followupQueueContainer">
+                            <p class="text-muted">Loading follow-up queue...</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -3059,16 +3236,11 @@ Generate:
 
 Be specific and actionable with insights.`,
 
-    followup: `You are a follow-up agent. Identify contacts needing follow-up and generate appropriate messages.
-
-Triggers:
-- No response in X days
-- Abandoned inquiry
-- Post-purchase check-in
-- Scheduled reminders
-
-Generate personalized follow-up messages that feel natural and helpful.`
+    followup: ``
 };
+
+// Note: followup agent uses a built-in prompt with contact data from Contact Analyzer.
+// Additional instructions are appended to customize message generation style.
 
 // Default descriptions for agent types
 const defaultDescriptions = {
@@ -3571,6 +3743,7 @@ function setupModelDropdowns() {
                 'group_management': 'Group Management',
                 'scheduled_content': 'Scheduled Content',
                 'contact_analyzer': 'Contact Analyzer',
+                'contact_followup': 'Contact Follow Up',
                 'message_routing': 'Message Routing',
                 'content_generator': 'Content Generator',
                 'scripted_conversations': 'Scripted Conversations'
@@ -4040,6 +4213,7 @@ function setTaskTypeDropdownValue(value) {
             'group_management': 'Group Management',
             'scheduled_content': 'Scheduled Content',
             'contact_analyzer': 'Contact Analyzer',
+            'contact_followup': 'Contact Follow Up',
             'message_routing': 'Message Routing',
             'content_generator': 'Content Generator',
             'scripted_conversations': 'Scripted Conversations'
@@ -6578,6 +6752,12 @@ async function openHubDetail(hubId, stayOnTab = null) {
             await loadAnalyzerBots();
             loadHubContacts();
         }
+        if (['contact_followup'].includes(hub.task_type)) {
+            // For contact follow up, load follow-up bots and queue
+            selectedHubBotIds = currentHubBots.map(b => b.bot_profile_id);
+            await loadFollowupBots();
+            loadFollowupQueue();
+        }
         if (['scheduled_content'].includes(hub.task_type)) {
             // For scheduled content, also load available bots selection mode
             selectedHubBotIds = currentHubBots.map(b => b.bot_profile_id);
@@ -6602,12 +6782,13 @@ async function openHubDetail(hubId, stayOnTab = null) {
 // Configure visible tabs based on hub task type
 function configureTabsForTaskType(taskType, stayOnTab = null) {
     const tabConfig = {
-        'group_management': { groups: true, bots: true, agents: true, contacts: false, content: false, scripts: false, showTabs: true },
-        'scheduled_content': { groups: false, bots: false, agents: true, contacts: false, content: true, scripts: false, showTabs: true },
-        'contact_analyzer': { groups: false, bots: true, agents: true, contacts: true, content: false, scripts: false, showTabs: true },
-        'message_routing': { groups: true, bots: true, agents: true, contacts: false, content: false, scripts: false, showTabs: true },
-        'content_generator': { groups: false, bots: false, agents: true, contacts: false, content: false, scripts: false, showTabs: true },
-        'scripted_conversations': { groups: false, bots: false, agents: true, contacts: false, content: false, scripts: true, showTabs: true }
+        'group_management': { groups: true, bots: true, agents: true, contacts: false, content: false, scripts: false, queue: false, showTabs: true },
+        'scheduled_content': { groups: false, bots: false, agents: true, contacts: false, content: true, scripts: false, queue: false, showTabs: true },
+        'contact_analyzer': { groups: false, bots: true, agents: true, contacts: true, content: false, scripts: false, queue: false, showTabs: true },
+        'contact_followup': { groups: false, bots: true, agents: true, contacts: false, content: false, scripts: false, queue: true, showTabs: true },
+        'message_routing': { groups: true, bots: true, agents: true, contacts: false, content: false, scripts: false, queue: false, showTabs: true },
+        'content_generator': { groups: false, bots: false, agents: true, contacts: false, content: false, scripts: false, queue: false, showTabs: true },
+        'scripted_conversations': { groups: false, bots: false, agents: true, contacts: false, content: false, scripts: true, queue: false, showTabs: true }
     };
 
     const config = tabConfig[taskType] || tabConfig['group_management'];
@@ -6623,23 +6804,28 @@ function configureTabsForTaskType(taskType, stayOnTab = null) {
     document.querySelector('[data-bs-target="#contactsTab"]').parentElement.style.display = config.contacts ? '' : 'none';
     document.querySelector('[data-bs-target="#contentTab"]').parentElement.style.display = config.content ? '' : 'none';
     document.querySelector('[data-bs-target="#scriptsTab"]').parentElement.style.display = config.scripts ? '' : 'none';
+    document.querySelector('[data-bs-target="#queueTab"]').parentElement.style.display = config.queue ? '' : 'none';
 
     // Toggle Bots tab mode based on task type
     const botsTabScheduledContent = document.getElementById('botsTabScheduledContent');
     const botsTabContactAnalyzer = document.getElementById('botsTabContactAnalyzer');
+    const botsTabContactFollowup = document.getElementById('botsTabContactFollowup');
     const botsTabGroupManagement = document.getElementById('botsTabGroupManagement');
-    if (botsTabScheduledContent && botsTabContactAnalyzer && botsTabGroupManagement) {
+    if (botsTabScheduledContent && botsTabContactAnalyzer && botsTabContactFollowup && botsTabGroupManagement) {
         // Hide all first
         botsTabScheduledContent.style.display = 'none';
         botsTabContactAnalyzer.style.display = 'none';
+        botsTabContactFollowup.style.display = 'none';
         botsTabGroupManagement.style.display = 'none';
 
         if (taskType === 'scheduled_content' || taskType === 'scripted_conversations') {
             botsTabScheduledContent.style.display = 'block';
         } else if (taskType === 'contact_analyzer') {
             botsTabContactAnalyzer.style.display = 'block';
-            // Load available bots for contact analyzer
             loadAnalyzerBots();
+        } else if (taskType === 'contact_followup') {
+            botsTabContactFollowup.style.display = 'block';
+            loadFollowupBots();
         } else {
             botsTabGroupManagement.style.display = 'block';
         }
@@ -6689,6 +6875,7 @@ function configureTabsForTaskType(taskType, stayOnTab = null) {
         'group_management': 'groups-tab',
         'scheduled_content': 'content-tab',
         'contact_analyzer': 'contacts-tab',
+        'contact_followup': 'queue-tab',
         'message_routing': 'groups-tab',
         'content_generator': 'agents-tab',
         'scripted_conversations': 'scripts-tab'
@@ -7102,8 +7289,8 @@ function updateAgentPrompt() {
     const systemPromptSection = document.getElementById('systemPromptSection');
     const additionalInstructionsSection = document.getElementById('additionalInstructionsSection');
 
-    // Classifier and router use default prompts with additional instructions
-    const useDefaultPrompt = ['classifier', 'router'].includes(type);
+    // Classifier, router, and followup use default prompts with additional instructions
+    const useDefaultPrompt = ['classifier', 'router', 'followup'].includes(type);
 
     if (useDefaultPrompt) {
         systemPromptSection.style.display = 'none';
@@ -7154,7 +7341,7 @@ async function editAgent(agentId) {
         apiKeyInput.value = '';  // Clear any previous value
 
         // Toggle prompt sections based on agent type
-        const useDefaultPrompt = ['classifier', 'router'].includes(agent.agent_type);
+        const useDefaultPrompt = ['classifier', 'router', 'followup'].includes(agent.agent_type);
         const systemPromptSection = document.getElementById('systemPromptSection');
         const additionalInstructionsSection = document.getElementById('additionalInstructionsSection');
 
@@ -7190,7 +7377,7 @@ async function saveAgent() {
     };
 
     // Use the correct field based on agent type
-    const useDefaultPrompt = ['classifier', 'router'].includes(agentType);
+    const useDefaultPrompt = ['classifier', 'router', 'followup'].includes(agentType);
     if (useDefaultPrompt) {
         // For classifier/router: use additional_instructions (appended to default)
         data.additional_instructions = document.getElementById('agentAdditionalInstructions').value;
@@ -11105,6 +11292,16 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function humanizeSlug(slug) {
+    if (!slug) return '';
+    return capitalizeFirst(slug.replace(/_/g, ' '));
+}
+
 // Helper: Format datetime to user's local timezone
 function formatDateTime(dateStr) {
     if (!dateStr) return '';
@@ -11310,11 +11507,1174 @@ document.addEventListener('DOMContentLoaded', function() {
     }, true);
 });
 
+// ============================================================================
+// Contact Follow Up Functions
+// ============================================================================
+
+let selectedFollowupContact = null;
+let expandedFollowupCardId = null;
+let followupBotsList = [];
+let queueCurrentPage = 1;
+let queuePageSize = 20;
+
+// Load bots for follow-up sending
+async function loadFollowupBots() {
+    const container = document.getElementById('followupBotsList');
+    if (!container) return;
+    container.innerHTML = '<span class="text-muted small">Loading bots...</span>';
+
+    try {
+        // Fetch all user's bot profiles
+        const response = await fetch('/api/bots', {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load bots');
+
+        const data = await response.json();
+        followupBotsList = data.bots || [];
+        renderFollowupBots();
+    } catch (error) {
+        console.error('Error loading bots:', error);
+        followupBotsList = [];
+        container.innerHTML = '<span class="text-muted small">Failed to load bots. Please try again.</span>';
+    }
+}
+
+function renderFollowupBots() {
+    const container = document.getElementById('followupBotsList');
+    if (!container) return;
+
+    if (followupBotsList.length === 0) {
+        container.innerHTML = '<span class="text-muted small">No bots found. Create a bot first in the Bots section.</span>';
+        return;
+    }
+
+    container.innerHTML = followupBotsList.map(bot => {
+        const isSelected = selectedHubBotIds.includes(bot.id);
+        return `
+            <span class="expertise-badge ${isSelected ? 'selected' : ''}"
+                  data-bot-id="${bot.id}"
+                  onclick="toggleFollowupBot(${bot.id}, '${escapeHtml(bot.name)}')"
+                  style="cursor: pointer;">
+                ${escapeHtml(bot.name)}
+            </span>
+        `;
+    }).join('');
+
+    // Also populate the bot select in generation panel if contact is selected
+    if (selectedFollowupContact) {
+        updateFollowupBotSelect(selectedFollowupContact.id);
+    }
+}
+
+async function toggleFollowupBot(botId, botName) {
+    const index = selectedHubBotIds.indexOf(botId);
+    const wasAdded = index === -1;
+
+    if (wasAdded) {
+        // Add bot to hub
+        selectedHubBotIds.push(botId);
+        await addBotToHubQuiet(botId);
+    } else {
+        // Remove bot from hub
+        selectedHubBotIds.splice(index, 1);
+        await removeBotFromHubQuiet(botId);
+    }
+
+    // Update badge styling in followup bots list
+    const container = document.getElementById('followupBotsList');
+    if (container) {
+        const badge = container.querySelector(`.expertise-badge[data-bot-id="${botId}"]`);
+        if (badge) {
+            if (wasAdded) {
+                badge.classList.add('selected');
+            } else {
+                badge.classList.remove('selected');
+            }
+        }
+    }
+
+    // Update bot select in generation panel if contact is selected
+    if (selectedFollowupContact) {
+        updateFollowupBotSelect(selectedFollowupContact.id);
+    }
+
+    // Refresh queue to reflect bot selection changes
+    loadFollowupQueue(1);
+}
+
+async function selectAllFollowupBots() {
+    // Add all available bots to hub
+    let addedCount = 0;
+    for (const bot of followupBotsList) {
+        if (!selectedHubBotIds.includes(bot.id)) {
+            selectedHubBotIds.push(bot.id);
+            await addBotToHubQuiet(bot.id);
+            addedCount++;
+        }
+    }
+    renderFollowupBots();
+    showToast(`Selected ${followupBotsList.length} bots`, 'success');
+
+    // Refresh queue to reflect bot selection changes
+    loadFollowupQueue(1);
+}
+
+async function clearFollowupBotSelection() {
+    // Remove all bots from hub
+    const count = selectedHubBotIds.length;
+    for (const botId of [...selectedHubBotIds]) {
+        await removeBotFromHubQuiet(botId);
+    }
+    selectedHubBotIds = [];
+    renderFollowupBots();
+    if (count > 0) {
+        showToast(`Cleared ${count} bots`, 'info');
+    }
+
+    // Refresh queue to reflect bot selection changes
+    loadFollowupQueue(1);
+}
+
+async function updateFollowupBotSelect(contactId) {
+    const select = document.getElementById('followupBotSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Select bot...</option>';
+    select.disabled = false;
+
+    if (!contactId) return;
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/contact/${contactId}/bots`);
+        const data = await response.json();
+
+        if (!data.bots || data.bots.length === 0) {
+            select.innerHTML = '<option value="">No bots with conversation history</option>';
+            select.disabled = true;
+            return;
+        }
+
+        select.innerHTML = '<option value="">Select bot...</option>';
+        data.bots.filter(b => b.is_running && b.whatsapp_connected).forEach(bot => {
+            select.innerHTML += `<option value="${bot.id}">${escapeHtml(bot.name)}</option>`;
+        });
+
+        // Auto-select if only one connected bot
+        const connectedBots = data.bots.filter(b => b.is_running && b.whatsapp_connected);
+        if (connectedBots.length === 1) {
+            select.value = connectedBots[0].id;
+        }
+    } catch (error) {
+        console.error('Error loading contact bots:', error);
+    }
+}
+
+// Load follow-up queue
+async function loadFollowupQueue(page = 1) {
+    if (!currentHubId) return;
+
+    const container = document.getElementById('followupQueueContainer');
+    if (!container) return;
+
+    // Update auto-send button state
+    try {
+        const asResp = await fetch(`/tools/api/contact-followup/auto-send/settings?hub_id=${currentHubId}`);
+        if (asResp.ok) {
+            const asData = await asResp.json();
+            updateAutoSendButtonState(asData.enabled);
+        }
+    } catch (e) {}
+
+    queueCurrentPage = page;
+    const urgencyFilter = document.getElementById('queueUrgencyFilter')?.value || '';
+    const sentimentFilter = document.getElementById('queueSentimentFilter')?.value || '';
+    const dateFilter = document.getElementById('queueDateFilter')?.value || '';
+    const engagementFilter = document.getElementById('queueEngagementFilter')?.value || '';
+    const sortBy = document.getElementById('queueSortBy')?.value || '';
+
+    // Check if bots are selected
+    if (!selectedHubBotIds || selectedHubBotIds.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-robot display-4 text-muted"></i>
+                <p class="text-muted mt-2">No bots selected</p>
+                <small class="text-muted">Select bots on the Bots tab to see contacts for follow-up</small>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = '<p class="text-muted">Loading follow-up queue...</p>';
+
+    try {
+        const queueSearchVal = document.getElementById('queueSearch')?.value || '';
+        let url = `/tools/api/contact-followup/queue?hub_id=${currentHubId}&limit=${queuePageSize}&offset=${(page - 1) * queuePageSize}`;
+        url += `&bot_ids=${selectedHubBotIds.join(',')}`;
+        if (urgencyFilter) url += `&urgency=${urgencyFilter}`;
+        if (sentimentFilter) url += `&sentiment=${sentimentFilter}`;
+        if (queueSearchVal.trim()) url += `&search=${encodeURIComponent(queueSearchVal.trim())}`;
+        if (sortBy) url += `&sort_by=${sortBy}`;
+
+        // Convert date filter to ISO date params
+        if (dateFilter) {
+            const now = new Date();
+            if (dateFilter === '24h') {
+                url += `&last_message_after=${new Date(now - 24*60*60*1000).toISOString()}`;
+            } else if (dateFilter === '7d') {
+                url += `&last_message_after=${new Date(now - 7*24*60*60*1000).toISOString()}`;
+            } else if (dateFilter === '30d') {
+                url += `&last_message_after=${new Date(now - 30*24*60*60*1000).toISOString()}`;
+            } else if (dateFilter === 'over7d') {
+                url += `&last_message_before=${new Date(now - 7*24*60*60*1000).toISOString()}`;
+            } else if (dateFilter === 'over30d') {
+                url += `&last_message_before=${new Date(now - 30*24*60*60*1000).toISOString()}`;
+            }
+        }
+
+        // Convert engagement filter to min/max params
+        if (engagementFilter === 'high') {
+            url += '&engagement_min=70';
+        } else if (engagementFilter === 'medium') {
+            url += '&engagement_min=40&engagement_max=69';
+        } else if (engagementFilter === 'low') {
+            url += '&engagement_max=39';
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const total = data.total || 0;
+        const totalPages = Math.ceil(total / queuePageSize) || 1;
+
+        // Reset expansion state when queue reloads
+        expandedFollowupCardId = null;
+        selectedFollowupContact = null;
+
+        if (!data.contacts || data.contacts.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox display-4 text-muted"></i>
+                    <p class="text-muted mt-2">No contacts need follow-up</p>
+                    <small class="text-muted">Use Contact Analyzer to identify contacts that need follow-up</small>
+                </div>`;
+            return;
+        }
+
+        let html = '<div class="followup-queue-scroll"><div class="list-group list-group-flush">';
+        data.contacts.forEach(contact => {
+            const urgencyClass = contact.urgency === 'high' ? 'danger' : contact.urgency === 'medium' ? 'warning' : 'secondary';
+            const sentimentClass = contact.sentiment === 'positive' ? 'success' : contact.sentiment === 'negative' ? 'danger' : 'secondary';
+
+            // Build avatar (same structure as Contact Analyzer contacts tab)
+            const avatarColorClass = getContactAvatarColor(contact.phone);
+            let avatarHtml = '';
+            if (contact.profile_pic) {
+                avatarHtml = `<div class="contact-avatar-sm">
+                    <img src="${escapeHtml(contact.profile_pic)}" alt="" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="avatar-placeholder-sm ${avatarColorClass}" style="display:none;"><i class="bi bi-person"></i></div>
+                </div>`;
+            } else {
+                avatarHtml = `<div class="contact-avatar-sm"><div class="avatar-placeholder-sm ${avatarColorClass}"><i class="bi bi-person"></i></div></div>`;
+            }
+
+            html += `
+                <div class="list-group-item followup-contact-card" data-contact-id="${contact.id}">
+                    <div class="d-flex align-items-center gap-3">
+                        ${avatarHtml}
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>${escapeHtml(contact.display_name || contact.phone)}</strong>
+                                    <div class="small text-muted">${escapeHtml(contact.phone)}</div>
+                                </div>
+                                <div class="text-end small text-muted">
+                                    ${(contact.last_message_at || contact.last_interaction_at) ? formatRelativeTime(contact.last_message_at || contact.last_interaction_at) : ''}
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1 mt-1 flex-wrap">
+                                <span class="badge bg-${urgencyClass}-subtle text-${urgencyClass}">Urgency: ${capitalizeFirst(contact.urgency || 'low')}</span>
+                                <span class="badge bg-${sentimentClass}-subtle text-${sentimentClass}">Sentiment: ${capitalizeFirst(contact.sentiment || 'neutral')}</span>
+                                ${contact.predicted_intent ? `<span class="badge bg-info-subtle text-info">Intent: ${escapeHtml(humanizeSlug(contact.predicted_intent))}</span>` : ''}
+                                ${contact.engagement_score != null ? `<span class="badge bg-secondary-subtle text-secondary">Score: ${contact.engagement_score}</span>` : ''}
+                            </div>
+                            ${contact.follow_up_reason ? `
+                                <div class="followup-reason mt-2">
+                                    <strong>Reason:</strong> ${escapeHtml(contact.follow_up_reason)}
+                                </div>` : ''}
+                            <div class="d-flex gap-2 mt-2" id="followupActions-${contact.id}">
+                                <button class="btn btn-sm btn-success" id="followupGenerateBtn-${contact.id}" onclick="expandFollowupCard(${contact.id})">
+                                    <i class="bi bi-magic me-1"></i>Generate
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="dismissFollowup(${contact.id})">
+                                    <i class="bi bi-x me-1"></i>Dismiss
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="showContactDetail(${contact.id})" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div id="followupExpansion-${contact.id}"></div>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        html += '</div></div>'; // Close list-group and followup-queue-scroll
+
+        // Add pagination (same styling as Contact Analyzer contacts tab)
+        html += `
+        <div class="content-pagination">
+            <div class="dropdown per-page-dropdown">
+                <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Items per page">
+                    ${queuePageSize}
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item ${queuePageSize === 10 ? 'selected' : ''}" href="#" onclick="changeQueuePageSize(10); return false;">10</a></li>
+                    <li><a class="dropdown-item ${queuePageSize === 20 ? 'selected' : ''}" href="#" onclick="changeQueuePageSize(20); return false;">20</a></li>
+                    <li><a class="dropdown-item ${queuePageSize === 50 ? 'selected' : ''}" href="#" onclick="changeQueuePageSize(50); return false;">50</a></li>
+                </ul>
+            </div>
+            ${totalPages > 1 ? `
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadFollowupQueue(1)" ${page === 1 ? 'disabled' : ''} title="First">
+                    <i class="bi bi-chevron-double-left"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadFollowupQueue(${page - 1})" ${page === 1 ? 'disabled' : ''} title="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            ` : ''}
+            <span class="page-info">Page ${page} of ${totalPages} (${total} items)</span>
+            ${totalPages > 1 ? `
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadFollowupQueue(${page + 1})" ${page === totalPages ? 'disabled' : ''} title="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadFollowupQueue(${totalPages})" ${page === totalPages ? 'disabled' : ''} title="Last">
+                    <i class="bi bi-chevron-double-right"></i>
+                </button>
+            ` : ''}
+        </div>`;
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading follow-up queue:', error);
+        container.innerHTML = '<p class="text-danger">Failed to load follow-up queue</p>';
+    }
+}
+
+function changeQueuePageSize(newSize) {
+    queuePageSize = newSize;
+    loadFollowupQueue(1);
+}
+
+function searchFollowupQueue() {
+    loadFollowupQueue(1);
+}
+
+// ============================================================================
+// Auto Send Follow-up Settings (Persistent Scheduler)
+// ============================================================================
+
+async function showAutoSendSettings() {
+    if (!currentHubId) {
+        showToast('No hub selected', 'error');
+        return;
+    }
+
+    // Remove existing modal if any
+    const existing = document.getElementById('autoSendModal');
+    if (existing) existing.remove();
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/auto-send/settings?hub_id=${currentHubId}`);
+        if (!response.ok) throw new Error('Failed to load settings');
+        const settings = await response.json();
+
+        const filters = settings.filters || {};
+        const urgency = filters.urgency || '';
+        const sentiment = filters.sentiment || '';
+        const engagement = filters.engagement || '';
+        const dateFilter = filters.date || '';
+        const customDays = filters.custom_days || 7;
+        const customDaysDirection = filters.custom_days_direction || 'over';
+
+        // Tone
+        const tone = settings.tone || 'friendly';
+        const toneLabels = { friendly: 'Friendly', professional: 'Professional', casual: 'Casual' };
+        const toneLabel = toneLabels[tone] || 'Friendly';
+
+        // Check interval
+        const intervalMin = settings.interval_minutes || 15;
+        const intervalLabels = { 5: 'Every 5 min', 15: 'Every 15 min', 30: 'Every 30 min', 60: 'Every 1 hour' };
+        const intervalLabel = intervalLabels[intervalMin] || 'Every 15 min';
+
+        // Sending speed
+        const speedMode = settings.speed_mode || 'auto';
+        const speedLabels = { auto: 'Auto (Recommended)', custom: 'Custom', fast: 'Fast' };
+
+        // Format last run time
+        let lastRunText = '';
+        if (settings.last_run) {
+            const lastRunDate = new Date(settings.last_run + 'Z');
+            lastRunText = `<p class="small text-muted mb-0 mt-3"><i class="bi bi-clock me-1"></i>Last run: ${lastRunDate.toLocaleString()}</p>`;
+        }
+
+        const modalHtml = `
+        <div class="modal fade" id="autoSendModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-lightning me-2"></i>Auto Send Settings</h5>
+                        <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">When enabled, the scheduler continuously monitors the queue and sends follow-up messages to matching contacts.</p>
+
+                        <div class="form-check form-switch hub-auto-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="autoSendEnabled" ${settings.enabled ? 'checked' : ''}>
+                            <label class="form-check-label" for="autoSendEnabled">Enable Auto-Send</label>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Tone</label>
+                                <input type="hidden" id="autoSendTone" value="${tone}">
+                                <div class="dropdown model-dropdown">
+                                    <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendToneDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        ${toneLabel}
+                                    </button>
+                                    <div class="dropdown-menu model-dropdown-menu" style="min-width: 280px;" aria-labelledby="autoSendToneDropdown">
+                                        <div class="model-dropdown-menu-inner">
+                                            <a class="dropdown-item auto-send-tone-item ${tone === 'friendly' ? 'selected' : ''}" href="#" data-value="friendly">
+                                                <strong>Friendly</strong>
+                                                <br><small class="text-muted">Warm and approachable messages</small>
+                                            </a>
+                                            <a class="dropdown-item auto-send-tone-item ${tone === 'professional' ? 'selected' : ''}" href="#" data-value="professional">
+                                                <strong>Professional</strong>
+                                                <br><small class="text-muted">Formal and business-like tone</small>
+                                            </a>
+                                            <a class="dropdown-item auto-send-tone-item ${tone === 'casual' ? 'selected' : ''}" href="#" data-value="casual">
+                                                <strong>Casual</strong>
+                                                <br><small class="text-muted">Relaxed and conversational</small>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Check Interval</label>
+                                <input type="hidden" id="autoSendInterval" value="${intervalMin}">
+                                <div class="dropdown model-dropdown">
+                                    <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendIntervalDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        ${intervalLabel}
+                                    </button>
+                                    <div class="dropdown-menu model-dropdown-menu" aria-labelledby="autoSendIntervalDropdown">
+                                        <div class="model-dropdown-menu-inner">
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 5 ? 'selected' : ''}" href="#" data-value="5">
+                                                <strong>Every 5 min</strong>
+                                                <br><small class="text-muted">Most frequent checking</small>
+                                            </a>
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 15 ? 'selected' : ''}" href="#" data-value="15">
+                                                <strong>Every 15 min</strong>
+                                                <br><small class="text-muted">Recommended interval</small>
+                                            </a>
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 30 ? 'selected' : ''}" href="#" data-value="30">
+                                                <strong>Every 30 min</strong>
+                                                <br><small class="text-muted">Moderate checking frequency</small>
+                                            </a>
+                                            <a class="dropdown-item auto-send-interval-item ${intervalMin === 60 ? 'selected' : ''}" href="#" data-value="60">
+                                                <strong>Every 1 hour</strong>
+                                                <br><small class="text-muted">Least frequent checking</small>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Send From Bots</label>
+                            <input type="hidden" id="autoSendBotIds" value="">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendBotDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-robot me-1"></i>Any Available Bot
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" style="min-width: 300px;" aria-labelledby="autoSendBotDropdown">
+                                    <div class="model-dropdown-menu-inner" id="autoSendBotOptions">
+                                        <span class="dropdown-item text-muted small">Loading bots...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Sending Speed</label>
+                            <input type="hidden" id="autoSendSpeedMode" value="${speedMode}">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="autoSendSpeedDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    ${speedLabels[speedMode] || 'Auto (Recommended)'}
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" style="min-width: 300px;" aria-labelledby="autoSendSpeedDropdown">
+                                    <div class="model-dropdown-menu-inner">
+                                        <a class="dropdown-item auto-send-speed-item ${speedMode === 'auto' ? 'selected' : ''}" href="#" data-value="auto">
+                                            <strong>Auto (Recommended)</strong>
+                                            <br><small class="text-muted">Adjusts speed based on contact count</small>
+                                        </a>
+                                        <a class="dropdown-item auto-send-speed-item ${speedMode === 'custom' ? 'selected' : ''}" href="#" data-value="custom">
+                                            <strong>Custom</strong>
+                                            <br><small class="text-muted">Configure your own delays and batching</small>
+                                        </a>
+                                        <a class="dropdown-item auto-send-speed-item ${speedMode === 'fast' ? 'selected' : ''}" href="#" data-value="fast">
+                                            <strong>Fast</strong>
+                                            <br><small class="text-warning">Minimal delays - use with caution</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted" id="autoSendSpeedInfo">${speedMode === 'auto' ? 'Automatically adjusts sending speed based on the number of contacts.' : speedMode === 'fast' ? 'Minimal delays (2-3s). Risk of spam detection.' : 'Custom rate limiting configuration.'}</small>
+                        </div>
+
+                        <div class="mb-3" id="autoSendCustomSpeed" style="display: ${speedMode === 'custom' ? 'block' : 'none'};">
+                            <div class="card">
+                                <div class="card-body p-3">
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label small">Min Delay (seconds)</label>
+                                            <input type="number" class="form-control form-control-sm" id="autoSendDelayMin" value="${settings.delay_min || 5}" min="1" max="60">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Max Delay (seconds)</label>
+                                            <input type="number" class="form-control form-control-sm" id="autoSendDelayMax" value="${settings.delay_max || 15}" min="1" max="120">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <label class="form-label small">Batch Size</label>
+                                            <input type="number" class="form-control form-control-sm" id="autoSendBatchSize" value="${settings.batch_size || 20}" min="0" max="100" placeholder="0 = no batching">
+                                            <small class="text-muted">0 = no batching</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Batch Pause (seconds)</label>
+                                            <input type="number" class="form-control form-control-sm" id="autoSendBatchPause" value="${settings.batch_pause || 180}" min="0" max="600">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+                        <h6 class="small fw-semibold mb-2"><i class="bi bi-funnel me-1"></i>Filter Conditions</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Urgency</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${urgency === '' ? 'active' : ''}" data-filter="urgency" data-value="" onclick="setAutoSendFilter('urgency', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill auto-send-filter ${urgency === 'high' ? 'active' : ''}" data-filter="urgency" data-value="high" onclick="setAutoSendFilter('urgency', 'high', this)">High</button>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill auto-send-filter ${urgency === 'medium' ? 'active' : ''}" data-filter="urgency" data-value="medium" onclick="setAutoSendFilter('urgency', 'medium', this)">Medium</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${urgency === 'low' ? 'active' : ''}" data-filter="urgency" data-value="low" onclick="setAutoSendFilter('urgency', 'low', this)">Low</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Sentiment</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${sentiment === '' ? 'active' : ''}" data-filter="sentiment" data-value="" onclick="setAutoSendFilter('sentiment', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-success rounded-pill auto-send-filter ${sentiment === 'positive' ? 'active' : ''}" data-filter="sentiment" data-value="positive" onclick="setAutoSendFilter('sentiment', 'positive', this)">Positive</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${sentiment === 'neutral' ? 'active' : ''}" data-filter="sentiment" data-value="neutral" onclick="setAutoSendFilter('sentiment', 'neutral', this)">Neutral</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill auto-send-filter ${sentiment === 'negative' ? 'active' : ''}" data-filter="sentiment" data-value="negative" onclick="setAutoSendFilter('sentiment', 'negative', this)">Negative</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Engagement</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${engagement === '' ? 'active' : ''}" data-filter="engagement" data-value="" onclick="setAutoSendFilter('engagement', '', this)">All</button>
+                                <button class="btn btn-sm btn-outline-success rounded-pill auto-send-filter ${engagement === 'high' ? 'active' : ''}" data-filter="engagement" data-value="high" onclick="setAutoSendFilter('engagement', 'high', this)">High (70+)</button>
+                                <button class="btn btn-sm btn-outline-warning rounded-pill auto-send-filter ${engagement === 'medium' ? 'active' : ''}" data-filter="engagement" data-value="medium" onclick="setAutoSendFilter('engagement', 'medium', this)">Medium (40-69)</button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill auto-send-filter ${engagement === 'low' ? 'active' : ''}" data-filter="engagement" data-value="low" onclick="setAutoSendFilter('engagement', 'low', this)">Low (&lt;40)</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small mb-1">Last Message</label>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '' ? 'active' : ''}" data-filter="date" data-value="" onclick="setAutoSendFilter('date', '', this)">Any Time</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '24h' ? 'active' : ''}" data-filter="date" data-value="24h" onclick="setAutoSendFilter('date', '24h', this)">24h</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '7d' ? 'active' : ''}" data-filter="date" data-value="7d" onclick="setAutoSendFilter('date', '7d', this)">7 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === '30d' ? 'active' : ''}" data-filter="date" data-value="30d" onclick="setAutoSendFilter('date', '30d', this)">30 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === 'over7d' ? 'active' : ''}" data-filter="date" data-value="over7d" onclick="setAutoSendFilter('date', 'over7d', this)">&gt;7 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === 'over30d' ? 'active' : ''}" data-filter="date" data-value="over30d" onclick="setAutoSendFilter('date', 'over30d', this)">&gt;30 Days</button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill auto-send-filter ${dateFilter === 'custom' ? 'active' : ''}" data-filter="date" data-value="custom" onclick="setAutoSendFilter('date', 'custom', this)">Custom</button>
+                            </div>
+                            <div id="autoSendCustomDays" class="mt-2" style="display: ${dateFilter === 'custom' ? 'block' : 'none'};">
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm" id="autoSendCustomDaysDirection" style="width: 130px;">
+                                        <option value="over" ${customDaysDirection === 'over' ? 'selected' : ''}>More than</option>
+                                        <option value="within" ${customDaysDirection === 'within' ? 'selected' : ''}>Within last</option>
+                                    </select>
+                                    <input type="number" class="form-control form-control-sm" id="autoSendCustomDaysValue" value="${customDays}" min="1" max="365" style="width: 70px;">
+                                    <span class="small text-muted">days ago</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${lastRunText}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveAutoSendSettings()">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Store filter state on the modal element
+        const modalEl = document.getElementById('autoSendModal');
+        modalEl._filters = {
+            urgency: urgency,
+            sentiment: sentiment,
+            date: dateFilter,
+            engagement: engagement,
+            custom_days: customDays,
+            custom_days_direction: customDaysDirection
+        };
+
+        // Tone dropdown handler
+        modalEl.querySelectorAll('.auto-send-tone-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('autoSendTone').value = item.dataset.value;
+                document.getElementById('autoSendToneDropdown').textContent = item.querySelector('strong').textContent;
+                modalEl.querySelectorAll('.auto-send-tone-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+        });
+
+        // Check interval dropdown handler
+        modalEl.querySelectorAll('.auto-send-interval-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('autoSendInterval').value = item.dataset.value;
+                document.getElementById('autoSendIntervalDropdown').textContent = item.querySelector('strong').textContent;
+                modalEl.querySelectorAll('.auto-send-interval-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+        });
+
+        // Sending speed dropdown handler
+        modalEl.querySelectorAll('.auto-send-speed-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const value = item.dataset.value;
+                document.getElementById('autoSendSpeedMode').value = value;
+                document.getElementById('autoSendSpeedDropdown').textContent = item.querySelector('strong').textContent;
+                modalEl.querySelectorAll('.auto-send-speed-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                document.getElementById('autoSendCustomSpeed').style.display = value === 'custom' ? 'block' : 'none';
+                const infoEl = document.getElementById('autoSendSpeedInfo');
+                if (value === 'auto') infoEl.textContent = 'Automatically adjusts sending speed based on the number of contacts.';
+                else if (value === 'fast') infoEl.textContent = 'Minimal delays (2-3s). Risk of spam detection.';
+                else infoEl.textContent = 'Custom rate limiting configuration.';
+            });
+        });
+
+        modalEl.addEventListener('hidden.bs.modal', () => { modalEl.remove(); });
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        // Load bots into dropdown after modal is shown
+        loadAutoSendBots(settings.bot_ids || []);
+
+    } catch (error) {
+        console.error('Error loading auto-send settings:', error);
+        showToast('Failed to load auto-send settings', 'error');
+    }
+}
+
+async function loadAutoSendBots(savedBotIds) {
+    const container = document.getElementById('autoSendBotOptions');
+    if (!container) return;
+
+    try {
+        const response = await fetch('/api/bots', {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to load bots');
+        const data = await response.json();
+        const bots = data.bots || [];
+
+        if (bots.length === 0) {
+            container.innerHTML = '<span class="dropdown-item text-muted small">No bots found.</span>';
+            return;
+        }
+
+        const savedSet = new Set(savedBotIds || []);
+        let html = `<a class="dropdown-item auto-send-bot-item ${savedSet.size === 0 ? 'selected' : ''}" href="#" data-value="any">
+            <strong>Any Available Bot</strong>
+            <br><small class="text-muted">Use whichever bot has a conversation</small>
+        </a>
+        <div class="dropdown-divider"></div>`;
+
+        for (const bot of bots) {
+            const isSelected = savedSet.has(bot.id);
+            const phone = bot.whatsapp_phone ? (bot.whatsapp_phone.startsWith('+') ? bot.whatsapp_phone : '+' + bot.whatsapp_phone) : '';
+            html += `<a class="dropdown-item auto-send-bot-item ${isSelected ? 'selected' : ''}" href="#" data-value="${bot.id}">
+                <strong>${bot.name || 'Bot ' + bot.id}</strong>
+                ${phone ? '<br><small class="text-muted">' + phone + '</small>' : ''}
+            </a>`;
+        }
+
+        container.innerHTML = html;
+        updateAutoSendBotDropdownLabel();
+
+        // Attach click handlers — multi-select with "Any" toggle
+        container.querySelectorAll('.auto-send-bot-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const value = item.dataset.value;
+
+                if (value === 'any') {
+                    // Deselect all individual bots, select "Any"
+                    container.querySelectorAll('.auto-send-bot-item').forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                } else {
+                    // Toggle this bot
+                    item.classList.toggle('selected');
+                    // Deselect "Any" if any bot is selected
+                    const anyItem = container.querySelector('[data-value="any"]');
+                    const selectedBots = container.querySelectorAll('.auto-send-bot-item.selected:not([data-value="any"])');
+                    if (selectedBots.length > 0) {
+                        anyItem.classList.remove('selected');
+                    } else {
+                        // If none selected, revert to "Any"
+                        anyItem.classList.add('selected');
+                    }
+                }
+                updateAutoSendBotDropdownLabel();
+            });
+        });
+    } catch (error) {
+        console.error('Error loading bots for auto-send:', error);
+        container.innerHTML = '<span class="dropdown-item text-muted small">Failed to load bots.</span>';
+    }
+}
+
+function updateAutoSendBotDropdownLabel() {
+    const btn = document.getElementById('autoSendBotDropdown');
+    const container = document.getElementById('autoSendBotOptions');
+    if (!btn || !container) return;
+
+    const anySelected = container.querySelector('[data-value="any"]')?.classList.contains('selected');
+    if (anySelected) {
+        btn.innerHTML = '<i class="bi bi-robot me-1"></i>Any Available Bot';
+        return;
+    }
+
+    const selected = container.querySelectorAll('.auto-send-bot-item.selected:not([data-value="any"])');
+    if (selected.length === 0) {
+        btn.innerHTML = '<i class="bi bi-robot me-1"></i>Any Available Bot';
+    } else if (selected.length === 1) {
+        const name = selected[0].querySelector('strong').textContent;
+        btn.innerHTML = '<i class="bi bi-robot me-1"></i>' + name;
+    } else {
+        btn.innerHTML = '<i class="bi bi-robot me-1"></i>' + selected.length + ' Bots Selected';
+    }
+}
+
+function getAutoSendSelectedBotIds() {
+    const container = document.getElementById('autoSendBotOptions');
+    if (!container) return [];
+    const anySelected = container.querySelector('[data-value="any"]')?.classList.contains('selected');
+    if (anySelected) return [];
+    const ids = [];
+    container.querySelectorAll('.auto-send-bot-item.selected:not([data-value="any"])').forEach(item => {
+        ids.push(parseInt(item.dataset.value));
+    });
+    return ids;
+}
+
+function setAutoSendFilter(filterType, value, btn) {
+    const modalEl = document.getElementById('autoSendModal');
+    if (!modalEl) return;
+
+    modalEl._filters[filterType] = value;
+
+    // Update active state for this filter group
+    const siblings = btn.closest('.d-flex').querySelectorAll(`.auto-send-filter[data-filter="${filterType}"]`);
+    siblings.forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Show/hide custom days input
+    if (filterType === 'date') {
+        const customDaysEl = document.getElementById('autoSendCustomDays');
+        if (customDaysEl) customDaysEl.style.display = value === 'custom' ? 'block' : 'none';
+    }
+}
+
+async function saveAutoSendSettings() {
+    const modalEl = document.getElementById('autoSendModal');
+    if (!modalEl) return;
+
+    const enabled = document.getElementById('autoSendEnabled').checked;
+    const tone = document.getElementById('autoSendTone').value;
+    const interval = parseInt(document.getElementById('autoSendInterval').value) || 15;
+    const speedMode = document.getElementById('autoSendSpeedMode').value || 'auto';
+    const delayMin = parseInt(document.getElementById('autoSendDelayMin')?.value) || 5;
+    const delayMax = parseInt(document.getElementById('autoSendDelayMax')?.value) || 15;
+    const batchSize = parseInt(document.getElementById('autoSendBatchSize')?.value) || 20;
+    const batchPause = parseInt(document.getElementById('autoSendBatchPause')?.value) || 180;
+
+    // Collect selected bot IDs from dropdown
+    const botIds = getAutoSendSelectedBotIds();
+
+    const filters = Object.assign({}, modalEl._filters || {});
+    // Include custom days values in filters
+    if (filters.date === 'custom') {
+        filters.custom_days = parseInt(document.getElementById('autoSendCustomDaysValue')?.value) || 7;
+        filters.custom_days_direction = document.getElementById('autoSendCustomDaysDirection')?.value || 'over';
+    } else {
+        delete filters.custom_days;
+        delete filters.custom_days_direction;
+    }
+
+    try {
+        const response = await fetch('/tools/api/contact-followup/auto-send/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                hub_id: currentHubId,
+                enabled: enabled,
+                interval_minutes: interval,
+                tone: tone,
+                speed_mode: speedMode,
+                delay_min: delayMin,
+                delay_max: delayMax,
+                batch_size: batchSize,
+                batch_pause: batchPause,
+                bot_ids: botIds,
+                filters: filters
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Failed to save settings');
+        }
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        // Update button indicator
+        updateAutoSendButtonState(enabled);
+
+        showToast(enabled ? 'Auto-send enabled and settings saved.' : 'Auto-send settings saved.', 'success');
+    } catch (e) {
+        showToast(e.message || 'Failed to save settings', 'danger');
+    }
+}
+
+function updateAutoSendButtonState(enabled) {
+    const btn = document.getElementById('autoSendBtn');
+    if (!btn) return;
+    if (enabled) {
+        btn.className = 'btn btn-success rounded-pill';
+        btn.style.fontSize = '0.875rem';
+        btn.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Auto Send';
+    } else {
+        btn.className = 'btn btn-outline-secondary rounded-pill';
+        btn.style.fontSize = '0.875rem';
+        btn.innerHTML = '<i class="bi bi-lightning me-1"></i>Auto Send';
+    }
+}
+
+function setQueueFilter(filterType, value, btn) {
+    // Map filter type to hidden input ID
+    const inputMap = { urgency: 'queueUrgencyFilter', sentiment: 'queueSentimentFilter', date: 'queueDateFilter', engagement: 'queueEngagementFilter' };
+    const input = document.getElementById(inputMap[filterType]);
+    if (input) input.value = value;
+
+    // Update active state for this filter group
+    const siblings = btn.closest('.d-flex').querySelectorAll(`.queue-filter-opt[data-filter="${filterType}"]`);
+    siblings.forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+
+    updateQueueFilterBadge();
+    loadFollowupQueue(1);
+}
+
+function setQueueSort(value, item) {
+    document.getElementById('queueSortBy').value = value;
+
+    // Update check marks
+    document.querySelectorAll('.queue-sort-opt').forEach(opt => {
+        const icon = opt.querySelector('i');
+        if (opt.dataset.value === value) {
+            opt.classList.add('active');
+            if (icon) icon.classList.remove('invisible');
+        } else {
+            opt.classList.remove('active');
+            if (icon) icon.classList.add('invisible');
+        }
+    });
+
+    loadFollowupQueue(1);
+}
+
+function updateQueueFilterBadge() {
+    let count = 0;
+    if (document.getElementById('queueUrgencyFilter')?.value) count++;
+    if (document.getElementById('queueSentimentFilter')?.value) count++;
+    if (document.getElementById('queueDateFilter')?.value) count++;
+    if (document.getElementById('queueEngagementFilter')?.value) count++;
+
+    const btn = document.getElementById('queueFilterBtn');
+    if (btn) {
+        btn.innerHTML = count > 0
+            ? `<i class="bi bi-funnel-fill me-1"></i>Filter <span class="badge bg-success rounded-pill ms-1">${count}</span>`
+            : '<i class="bi bi-funnel me-1"></i>Filter';
+    }
+}
+
+
+// Expand a follow-up card inline with generation controls
+async function expandFollowupCard(contactId) {
+    const generateBtn = document.getElementById(`followupGenerateBtn-${contactId}`);
+
+    // If this card is already expanded, just regenerate the message
+    if (expandedFollowupCardId === contactId && selectedFollowupContact) {
+        if (generateBtn) {
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+        }
+        await generateFollowupMessage();
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Generate';
+        }
+        return;
+    }
+
+    // Collapse any other expanded card first
+    collapseFollowupCard();
+
+    // Set state and expand card immediately
+    expandedFollowupCardId = contactId;
+
+    const card = document.querySelector(`.followup-contact-card[data-contact-id="${contactId}"]`);
+    if (card) card.classList.add('expanded');
+
+    const template = document.getElementById('followupExpansionTemplate');
+    const slot = document.getElementById(`followupExpansion-${contactId}`);
+    if (!template || !slot) return;
+
+    const clone = template.content.cloneNode(true);
+    slot.appendChild(clone);
+
+    // Disable Generate button during async work
+    if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+    }
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/queue?hub_id=${currentHubId}`);
+        const data = await response.json();
+        selectedFollowupContact = data.contacts.find(c => c.id === contactId);
+
+        if (!selectedFollowupContact) {
+            showToast('Contact not found', 'error');
+            collapseFollowupCard();
+            return;
+        }
+
+        // Load bots and generate message
+        await updateFollowupBotSelect(contactId);
+        await generateFollowupMessage();
+
+        // Scroll card into view
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+        console.error('Error expanding follow-up card:', error);
+        showToast('Failed to load contact', 'error');
+        collapseFollowupCard();
+    } finally {
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Generate';
+        }
+    }
+}
+
+// Collapse the currently expanded follow-up card
+function collapseFollowupCard() {
+    if (expandedFollowupCardId !== null) {
+        const slot = document.getElementById(`followupExpansion-${expandedFollowupCardId}`);
+        if (slot) slot.innerHTML = '';
+
+        const card = document.querySelector(`.followup-contact-card[data-contact-id="${expandedFollowupCardId}"]`);
+        if (card) card.classList.remove('expanded');
+    }
+    expandedFollowupCardId = null;
+    selectedFollowupContact = null;
+}
+
+async function generateFollowupMessage() {
+    if (!selectedFollowupContact) return;
+
+    const messageEl = document.getElementById('followupMessageText');
+    const tone = document.getElementById('followupTone').value;
+
+    messageEl.value = 'Generating message...';
+    messageEl.disabled = true;
+
+    const requestBody = {
+        contact_id: selectedFollowupContact.id,
+        tone: tone,
+        hub_id: currentHubId
+    };
+    console.log('Generate followup request:', requestBody);
+
+    try {
+        const response = await fetch('/tools/api/contact-followup/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        const result = await response.json();
+        console.log('Generate followup response:', response.status, result);
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Generation failed');
+        }
+
+        messageEl.value = result.message;
+    } catch (error) {
+        console.error('Generate followup error:', error);
+        messageEl.value = `Error: ${error.message}`;
+        showToast('Failed to generate message', 'error');
+    } finally {
+        messageEl.disabled = false;
+    }
+}
+
+async function regenerateFollowupMessage() {
+    await generateFollowupMessage();
+}
+
+async function sendFollowupMessage() {
+    if (!selectedFollowupContact) return;
+
+    const message = document.getElementById('followupMessageText').value.trim();
+    const botId = document.getElementById('followupBotSelect').value;
+
+    if (!message) {
+        showToast('Please generate or enter a message', 'error');
+        return;
+    }
+
+    if (!botId) {
+        const select = document.getElementById('followupBotSelect');
+        if (select.disabled) {
+            showToast('No bots have conversation history with this contact', 'error');
+        } else {
+            showToast('Please select a bot to send the message', 'error');
+        }
+        return;
+    }
+
+    const sendBtn = document.getElementById('sendFollowupBtn');
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+
+    try {
+        const response = await fetch('/tools/api/contact-followup/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contact_id: selectedFollowupContact.id,
+                message: message,
+                bot_id: parseInt(botId)
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Send failed');
+        }
+
+        showToast('Follow-up sent successfully', 'success');
+        collapseFollowupCard();
+        loadFollowupQueue();
+    } catch (error) {
+        showToast('Failed to send: ' + error.message, 'error');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
+    }
+}
+
+async function dismissFollowup(contactId) {
+    if (!confirm('Dismiss this follow-up? The contact will be removed from the queue.')) return;
+
+    // Collapse if this card is currently expanded
+    if (expandedFollowupCardId === contactId) {
+        collapseFollowupCard();
+    }
+
+    try {
+        const response = await fetch(`/tools/api/contact-followup/${contactId}/dismiss`, {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.detail || 'Dismiss failed');
+        }
+
+        showToast('Follow-up dismissed', 'success');
+        loadFollowupQueue();
+    } catch (error) {
+        showToast('Failed to dismiss: ' + error.message, 'error');
+    }
+}
+
+// Helper: Format relative time
+function formatRelativeTime(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+}
+
+// Helper: Format datetime
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    const utcDateStr = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-', 10)
+        ? dateStr
+        : dateStr + 'Z';
+    return new Date(utcDateStr).toLocaleString();
+}
+
 function getTaskTypeLabel(taskType) {
     const labels = {
         'group_management': 'Group Management',
         'scheduled_content': 'Scheduled Content',
         'contact_analyzer': 'Contact Analyzer',
+        'contact_followup': 'Contact Follow Up',
         'message_routing': 'Message Routing',
         'content_generator': 'Content Generator',
         'scripted_conversations': 'Scripted Conversations'
@@ -11330,6 +12690,7 @@ function getHubCardStats(hub) {
         'group_management': ['groups', 'bots', 'agents'],
         'scheduled_content': ['agents', 'content'],
         'contact_analyzer': ['bots', 'agents', 'contacts'],
+        'contact_followup': ['bots', 'contacts'],
         'message_routing': ['bots', 'agents'],
         'content_generator': ['agents'],
         'scripted_conversations': ['scripts', 'agents']

@@ -149,10 +149,58 @@ For toggle switches that match the bot card style:
 
 ### Color Themes by Tool/Hub Type
 - **Contact Analyzer**: Pink gradient (`#f093fb` to `#f5576c`)
+- **Contact Follow Up**: Emerald gradient (`#10b981` to `#059669`)
 - **Group Management**: Teal/WhatsApp green (`--wa-teal`, `#25D366`)
 - **Scheduled Content**: Purple-blue gradient (`#667eea` to `#764ba2`)
 - **Message Routing**: Purple gradient (`#a855f7` to `#7c3aed`)
 - **Scripted Conversations**: Indigo gradient (`#6366f1` to `#4f46e5`)
+
+### Card Grid Layout (Equal Height)
+When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:
+- Clamp variable-length text to single lines with `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` and add `title` attribute for hover tooltip
+- Use `g-3` on the `.row` for consistent gap spacing (not `margin-bottom` on cards)
+- Apply the same truncation to badge containers (remove `flex-wrap`, add `overflow: hidden`)
+
+### Avatar Colors (Consistent Across Pages)
+Use CSS class-based avatar colors (`avatar-color-1` through `avatar-color-8`) with gradient backgrounds, NOT inline `style="background: #hex;"`. The hash function should return a class name:
+```javascript
+function getAvatarColorClass(name) {
+    if (!name) return 'avatar-color-1';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+}
+```
+Reference `hubs.html` for the canonical gradient definitions. Each tool page must define matching `.contact-avatar.avatar-color-N` and `.activity-avatar-placeholder.avatar-color-N` CSS rules.
+
+### Inline Expansion Panels (Not Static Top Panels)
+When a "Generate" or action button on a card needs to show an expansion panel:
+- Do NOT use a static panel at the top of the page — it's disorienting
+- Dynamically inject the panel as a `col-12` div directly above the target card using `insertAdjacentHTML('beforebegin')`
+- Use fixed element IDs (only one panel open at a time) so existing functions (`regenerateMessage`, `sendFollowup`, `loadBots`) work without changes
+- `closePanel()` should `remove()` the DOM element, not hide it
+
+### API Parameters — Match Hub Page Behavior
+When a tool page calls the same API endpoint as a hub page, always compare parameters. Common miss: the tool page omits `hub_id` which the hub page sends. Without it, the server can't find the AI agent's API key, causing 400 errors. Always check the working hub page implementation first.
+
+### Search Input Focus Styling
+Search inputs should match the page theme on focus — set `border-color` to theme color and `box-shadow: none` (no glow):
+```css
+#searchInput:focus {
+    border-color: #10b981; /* or page theme color */
+    box-shadow: none;
+}
+```
+
+### Activity Log / Execution Logging
+When logging tool executions via `ToolMonitor.log_execution()`, include rich data for meaningful activity display:
+- `input_data`: contact_name, bot_name, tone, message_preview (first 80 chars)
+- `output_data`: contact_phone, predicted_intent, follow_up_reason
+- Frontend should display contact name (fallback to phone), bot name, message preview (italic), intent/reason, exact datetime (not relative), and tone badge
+- Reference `scheduled_content.html` activity log for the canonical styling pattern
+- Avoid rendering empty wrapper divs — only render rows when content exists to prevent blank lines
 
 ## Testing
 

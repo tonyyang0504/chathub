@@ -599,3 +599,482 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .empty-state p {
     margin-bottom: 1rem;
 }
+
+/* ============================================
+   Contact Follow Up Tool Styles
+   Emerald Green Theme: #10b981 to #059669
+   ============================================ */
+
+/* Emerald color variables */
+:root {
+    --followup-primary: #10b981;
+    --followup-primary-dark: #059669;
+    --followup-primary-light: #34d399;
+    --followup-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Follow-up Contact Card */
+.followup-contact-card {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.followup-contact-card:hover {
+    border-color: var(--followup-primary);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.followup-contact-card.selected {
+    border-color: var(--followup-primary);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.followup-contact-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.followup-contact-card .card-body {
+    padding-left: 3.25rem;
+}
+
+/* Follow-up Contact Info */
+.followup-contact-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.followup-contact-name {
+    font-weight: 600;
+    color: var(--bs-body-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.followup-contact-phone {
+    font-size: 0.8rem;
+    color: var(--bs-secondary);
+}
+
+/* Follow-up Reason */
+.followup-reason {
+    font-size: 0.875rem;
+    color: var(--bs-body-color);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.followup-reason-label {
+    font-weight: 500;
+    color: var(--followup-primary-dark);
+}
+
+/* Follow-up Meta Info */
+.followup-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--bs-secondary);
+    margin-top: 0.5rem;
+}
+
+.followup-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Urgency Badges */
+.urgency-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.urgency-badge.urgency-high {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.urgency-badge.urgency-medium {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.urgency-badge.urgency-low {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+/* Sentiment Badges */
+.sentiment-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.sentiment-badge.sentiment-positive {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--followup-primary);
+}
+
+.sentiment-badge.sentiment-neutral {
+    background-color: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+}
+
+.sentiment-badge.sentiment-negative {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+/* Follow-up Queue Container */
+.followup-queue {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.followup-queue::-webkit-scrollbar {
+    width: 6px;
+}
+
+.followup-queue::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.followup-queue::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 3px;
+}
+
+.followup-queue::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary);
+}
+
+/* Message Generation Panel */
+.followup-message-panel {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.followup-message-panel.generating {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.followup-message-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.followup-message-textarea {
+    width: 100%;
+    min-height: 120px;
+    max-height: 250px;
+    padding: 12px 16px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    resize: vertical;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+.followup-message-textarea:focus {
+    border-color: var(--followup-primary);
+    outline: none;
+}
+
+.followup-message-textarea::placeholder {
+    color: var(--bs-secondary);
+}
+
+/* Follow-up Action Buttons */
+.followup-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.followup-actions .btn-followup-primary {
+    background: var(--followup-gradient);
+    border: none;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.followup-actions .btn-followup-primary:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+}
+
+.followup-actions .btn-followup-primary:disabled {
+    opacity: 0.6;
+    transform: none;
+}
+
+.followup-actions .btn-followup-outline {
+    border: 1px solid var(--bs-border-color);
+    background: transparent;
+    color: var(--bs-body-color);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.followup-actions .btn-followup-outline:hover {
+    border-color: var(--followup-primary);
+    color: var(--followup-primary);
+}
+
+/* Follow-up Activity Log */
+.followup-activity-log {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.followup-activity-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.followup-activity-item:last-child {
+    border-bottom: none;
+}
+
+.followup-activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+}
+
+.followup-activity-icon.sent {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--followup-primary);
+}
+
+.followup-activity-icon.dismissed {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+}
+
+.followup-activity-icon.responded {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.followup-activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.followup-activity-title {
+    font-weight: 500;
+    color: var(--bs-body-color);
+    margin-bottom: 0.25rem;
+}
+
+.followup-activity-details {
+    font-size: 0.8rem;
+    color: var(--bs-secondary);
+}
+
+.followup-activity-time {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+    white-space: nowrap;
+}
+
+/* Follow-up Stats Cards (Emerald themed) */
+.followup-stat-card {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.followup-stat-card .stat-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--followup-primary);
+}
+
+.followup-stat-card .stat-label {
+    font-size: 0.8rem;
+    color: var(--bs-secondary);
+}
+
+.followup-stat-card.stat-pending .stat-value {
+    color: #f59e0b;
+}
+
+.followup-stat-card.stat-sent .stat-value {
+    color: var(--followup-primary);
+}
+
+.followup-stat-card.stat-responded .stat-value {
+    color: #3b82f6;
+}
+
+.followup-stat-card.stat-dismissed .stat-value {
+    color: #6b7280;
+}
+
+/* Empty queue state */
+.followup-empty-queue {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--bs-secondary);
+}
+
+.followup-empty-queue i {
+    font-size: 3rem;
+    color: var(--followup-primary);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+.followup-empty-queue h5 {
+    color: var(--bs-body-color);
+    margin-bottom: 0.5rem;
+}
+
+/* Bot selector for follow-up */
+.followup-bot-selector {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.followup-bot-selector label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--bs-secondary);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.followup-bot-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.followup-bot-option:hover {
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.followup-bot-option.selected {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.followup-bot-option input[type="radio"] {
+    accent-color: var(--followup-primary);
+}
+
+.followup-bot-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.followup-bot-status.online {
+    background: var(--followup-primary);
+}
+
+.followup-bot-status.offline {
+    background: var(--bs-secondary);
+}
+
+/* Inline expansion inside follow-up contact card */
+.followup-inline-expansion {
+    padding: 0.5rem 0 0.25rem;
+    font-size: 0.875rem;
+}
+
+.followup-inline-expansion .form-label {
+    font-weight: 500;
+    color: var(--bs-secondary);
+}
+
+.followup-inline-expansion textarea {
+    font-size: 0.875rem;
+}
+
+/* Expanded card highlight */
+.followup-contact-card.expanded {
+    border-color: var(--followup-primary);
+    background: rgba(16, 185, 129, 0.04);
+}
+
+/* Queue header button height matching */
+#queueTab .d-flex.align-items-stretch > .btn,
+#queueTab .d-flex.align-items-stretch > .dropdown > .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Queue filter pill buttons */
+.queue-filter-opt.active {
+    background-color: var(--followup-primary) !important;
+    border-color: var(--followup-primary) !important;
+    color: white !important;
+}
+
+/* Queue sort dropdown active item */
+.queue-sort-opt.active {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--followup-primary);
+}
+
+/* Auto Send Settings Modal */
+
+#autoSendModal .auto-send-filter.active {
+    background-color: var(--followup-primary) !important;
+    border-color: var(--followup-primary) !important;
+    color: white !important;
+}

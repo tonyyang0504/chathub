@@ -269,6 +269,19 @@ class Hub(Base):
     auto_analysis_min_new_messages = Column(Integer, default=5)  # Min new messages to trigger re-analysis
     auto_analysis_last_run = Column(DateTime)  # Last time auto-analysis ran
 
+    # Auto-send follow-up settings (for contact_followup hubs)
+    auto_send_enabled = Column(Boolean, default=False)
+    auto_send_interval_minutes = Column(Integer, default=15)  # How often to check for pending contacts
+    auto_send_tone = Column(String(20), default="friendly")  # friendly, professional, casual
+    auto_send_speed_mode = Column(String(20), default="auto")  # auto, custom, fast
+    auto_send_delay_min = Column(Integer, default=5)  # Min seconds between sends
+    auto_send_delay_max = Column(Integer, default=15)  # Max seconds between sends
+    auto_send_batch_size = Column(Integer, default=20)  # Messages per batch (0 = no batching)
+    auto_send_batch_pause = Column(Integer, default=180)  # Seconds to pause between batches
+    auto_send_bot_ids = Column(Text)  # JSON array of bot profile IDs, null = any available
+    auto_send_filters = Column(Text)  # JSON: {urgency, sentiment, engagement, date, custom_days, custom_days_direction}
+    auto_send_last_run = Column(DateTime)
+
     # Relationships
     user = relationship("User", backref="hubs")
     bot_memberships = relationship("HubBotMembership", back_populates="hub", cascade="all, delete-orphan")
@@ -405,6 +418,13 @@ class Contact(Base):
     # Analysis queue fields
     analysis_status = Column(String(20))  # pending, analyzing, completed, failed, cancelled
     analysis_queued_at = Column(DateTime)  # When queued for analysis
+
+    # Follow-up tracking fields
+    followup_status = Column(String(20))  # pending, sent, responded, dismissed
+    followup_sent_at = Column(DateTime)
+    followup_message = Column(Text)  # Last sent follow-up message
+    followup_attempts = Column(Integer, default=0)
+    followup_last_attempt_at = Column(DateTime)
 
     # Relationships
     hub = relationship("Hub", back_populates="contacts")
@@ -1152,6 +1172,52 @@ def run_migrations():
                     print("Added key_topics column to contacts table")
                 except Exception as e:
                     print(f"Could not add key_topics column: {e}")
+
+            # ============== Add follow-up tracking fields to contacts table ==============
+            # Add followup_status column if not exists
+            if 'followup_status' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN followup_status VARCHAR(20)'))
+                    conn.commit()
+                    print("Added followup_status column to contacts table")
+                except Exception as e:
+                    print(f"Could not add followup_status column: {e}")
+
+            # Add followup_sent_at column if not exists
+            if 'followup_sent_at' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN followup_sent_at DATETIME'))
+                    conn.commit()
+                    print("Added followup_sent_at column to contacts table")
+                except Exception as e:
+                    print(f"Could not add followup_sent_at column: {e}")
+
+            # Add followup_message column if not exists
+            if 'followup_message' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN followup_message TEXT'))
+                    conn.commit()
+                    print("Added followup_message column to contacts table")
+                except Exception as e:
+                    print(f"Could not add followup_message column: {e}")
+
+            # Add followup_attempts column if not exists
+            if 'followup_attempts' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN followup_attempts INTEGER DEFAULT 0'))
+                    conn.commit()
+                    print("Added followup_attempts column to contacts table")
+                except Exception as e:
+                    print(f"Could not add followup_attempts column: {e}")
+
+            # Add followup_last_attempt_at column if not exists
+            if 'followup_last_attempt_at' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE contacts ADD COLUMN followup_last_attempt_at DATETIME'))
+                    conn.commit()
+                    print("Added followup_last_attempt_at column to contacts table")
+                except Exception as e:
+                    print(f"Could not add followup_last_attempt_at column: {e}")
 
 
 # Run migrations on import
