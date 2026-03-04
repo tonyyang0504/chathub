@@ -144,13 +144,18 @@ class ClaudeCodeManager:
             "claude",
             "-p", prompt,
             "--output-format", "stream-json",
+            "--verbose",
             "--dangerously-skip-permissions"
         ]
         if model:
             cmd.extend(["--model", model])
 
-        # Set environment
+        # Set environment — must remove Claude Code nesting guard vars,
+        # otherwise the child `claude` process refuses to start with:
+        # "Claude Code cannot be launched inside another Claude Code session"
         env = os.environ.copy()
+        env.pop("CLAUDECODE", None)
+        env.pop("CLAUDE_CODE_ENTRYPOINT", None)
         env["ANTHROPIC_API_KEY"] = api_key
 
         try:
@@ -276,6 +281,27 @@ class ClaudeCodeManager:
             # Wait for exit code
             exit_code = await session.process.wait()
             session.is_running = False
+
+            if stderr_str:
+                logger.error(f"Session {session.session_id} stderr: {stderr_str[:1000]}")
+                # Persist stderr as a system message so user sees the error in chat
+                try:
+                    db = SessionLocal()
+                    err_msg = ClaudeCodeMessage(
+                        session_id=session.session_id,
+                        role="system",
+                        content=stderr_str[:5000],
+                        message_type="error"
+                    )
+                    db.add(err_msg)
+                    db.commit()
+                    db.close()
+                except Exception:
+                    pass
+                await session.broadcast({
+                    "type": "error",
+                    "error": {"message": stderr_str[:2000]}
+                })
 
             # Update session status in DB
             try:
