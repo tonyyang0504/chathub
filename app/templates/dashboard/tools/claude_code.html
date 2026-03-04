@@ -728,16 +728,8 @@ function renderStreamEvent(data) {
     } else if (type === 'tool_result') {
         appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
     } else if (type === 'result') {
-        // Final result
+        // Final result — text was already streamed via content_block_delta, don't duplicate
         flushAssistantBuffer();
-        let text = '';
-        const result = data.result;
-        if (Array.isArray(result)) {
-            text = result.filter(b => b.type === 'text').map(b => b.text).join('\n');
-        } else if (typeof result === 'string') {
-            text = result;
-        }
-        if (text) appendAssistantMessage(text);
         setStatus('completed');
     } else if (type === 'error') {
         const errMsg = data.error?.message || JSON.stringify(data);
