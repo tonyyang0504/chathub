@@ -382,9 +382,11 @@
                 <div class="session-sidebar-header">
                     <i class="bi bi-clock-history me-2"></i>Session History
                 </div>
-                <div class="session-list" id="sessionList">
-                    <div class="text-center text-muted py-4" id="noSessions">
+                <div style="position: relative; flex: 1; min-height: 0;">
+                    <div class="text-center text-muted py-4" id="noSessions" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
                         <small>No sessions yet</small>
+                    </div>
+                    <div class="session-list" id="sessionList">
                     </div>
                 </div>
             </div>
