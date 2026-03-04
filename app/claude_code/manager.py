@@ -32,6 +32,7 @@ class ActiveSession:
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []
         self.is_running = True
+        self.is_waiting = False  # True when process finished responding, awaiting next stdin message
         self._read_task: Optional[asyncio.Task] = None
 
     async def broadcast(self, data: dict):
@@ -139,10 +140,11 @@ class ClaudeCodeManager:
             logger.warning(f"User {user_id} already has an active session {existing.session_id}")
             return None
 
-        # Build command
+        # Build command — multi-turn via stdin streaming (no -p prompt)
         cmd = [
             "claude",
-            "-p", prompt,
+            "--print",
+            "--input-format", "stream-json",
             "--output-format", "stream-json",
             "--verbose",
             "--dangerously-skip-permissions"
@@ -161,6 +163,7 @@ class ClaudeCodeManager:
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=str(PROJECT_ROOT),
@@ -175,6 +178,11 @@ class ClaudeCodeManager:
                 self._read_output(session)
             )
 
+            # Send the first message via stdin
+            first_msg = json.dumps({"type": "user_input", "content": prompt}) + "\n"
+            process.stdin.write(first_msg.encode())
+            await process.stdin.drain()
+
             logger.info(f"Started Claude Code session {session_id} for user {user_id}, PID={process.pid}")
             return session
 
@@ -184,6 +192,31 @@ class ClaudeCodeManager:
         except Exception as e:
             logger.error(f"Failed to start Claude Code session: {e}")
             return None
+
+    async def send_message(self, user_id: int, message: str) -> bool:
+        """Send a follow-up message to an active session via stdin."""
+        session = self.get_active_session(user_id)
+        if not session or not session.is_running:
+            logger.warning(f"No active session for user {user_id}")
+            return False
+        if not session.is_waiting:
+            logger.warning(f"Session {session.session_id} is not waiting for input")
+            return False
+
+        try:
+            msg_line = json.dumps({"type": "user_input", "content": message}) + "\n"
+            session.process.stdin.write(msg_line.encode())
+            await session.process.stdin.drain()
+            session.is_waiting = False
+
+            # Broadcast the user message to WebSocket clients
+            await session.broadcast({"type": "user_message", "content": message})
+
+            logger.info(f"Sent follow-up to session {session.session_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send message to session {session.session_id}: {e}")
+            return False
 
     async def _read_output(self, session: ActiveSession):
         """Read stdout line-by-line, parse JSON, persist to DB, broadcast to WebSockets."""
@@ -239,7 +272,8 @@ class ClaudeCodeManager:
                     content = json.dumps(data.get("content", data.get("output", "")))
                 elif msg_type == "result":
                     role = "assistant"
-                    # Final result message
+                    # Result event — turn complete, process awaits more stdin
+                    session.is_waiting = True
                     result_content = data.get("result", "")
                     if isinstance(result_content, list):
                         text_parts = [b.get("text", "") for b in result_content if b.get("type") == "text"]
@@ -273,6 +307,10 @@ class ClaudeCodeManager:
 
                 # Broadcast to WebSocket clients
                 await session.broadcast(data)
+
+                # After result event, broadcast a marker so frontend knows turn is done
+                if msg_type == "result":
+                    await session.broadcast({"type": "result_done"})
 
             # Process ended - read stderr
             stderr_data = await session.process.stderr.read()

@@ -286,6 +286,43 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
     }
 
 
+@router.post("/api/claude-code/sessions/{session_id}/message")
+async def send_message(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Send a follow-up message to an active session."""
+    user = await get_current_user(request, None, db)
+    data = await request.json()
+    prompt = data.get("prompt", "").strip()
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Prompt is required")
+
+    # Verify ownership
+    session = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.id == session_id,
+        ClaudeCodeSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Persist the user message
+    user_msg = ClaudeCodeMessage(
+        session_id=session.id,
+        role="user",
+        content=prompt,
+        message_type="text"
+    )
+    db.add(user_msg)
+    db.commit()
+
+    # Send via stdin
+    sent = await claude_code_manager.send_message(user.id, prompt)
+    if not sent:
+        raise HTTPException(status_code=400, detail="Session is not ready for input")
+
+    return {"status": "ok"}
+
+
 @router.post("/api/claude-code/sessions/{session_id}/stop")
 async def stop_session(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Stop a running session."""
@@ -406,12 +443,7 @@ async def stream_session(websocket: WebSocket, session_id: int):
                     except WebSocketDisconnect:
                         break
 
-                # Session ended — send final status
-                if not active.is_running:
-                    await websocket.send_text(json.dumps({
-                        "type": "session_end",
-                        "status": session.status
-                    }))
+                # Session ended — _read_output already broadcasts session_end
 
             except WebSocketDisconnect:
                 pass

@@ -60,6 +60,7 @@
 }
 .status-idle { background: var(--border-color); color: var(--text-secondary); }
 .status-running { background: rgba(6,182,212,0.15); color: #06b6d4; }
+.status-ready { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-completed { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
 .status-stopped { background: rgba(245,158,11,0.15); color: #f59e0b; }
@@ -368,7 +369,7 @@
                         <textarea class="form-control" id="promptInput" rows="1"
                             placeholder="Describe what you need..."
                             onkeydown="handleKeydown(event)"></textarea>
-                        <button class="btn" id="sendBtn" onclick="startSession()">
+                        <button class="btn" id="sendBtn" onclick="handleSend()">
                             <i class="bi bi-send me-1"></i>Send
                         </button>
                     </div>
@@ -403,6 +404,7 @@
 let currentSessionId = null;
 let ws = null;
 let isRunning = false;
+let isWaiting = false;  // True when session finished responding, awaiting follow-up
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
 
@@ -544,6 +546,9 @@ async function viewSession(sessionId) {
         // If session is running, connect WebSocket
         if (session.status === 'running') {
             connectWebSocket(sessionId);
+        } else {
+            // Viewing a finished session — reset multi-turn state
+            isWaiting = false;
         }
 
         loadSessions();
@@ -552,9 +557,9 @@ async function viewSession(sessionId) {
     }
 }
 
-async function startSession() {
+function handleSend() {
     const prompt = document.getElementById('promptInput').value.trim();
-    if (!prompt || isRunning) return;
+    if (!prompt) return;
 
     // Slash commands are interactive-only, not supported in print mode
     if (prompt.startsWith('/')) {
@@ -571,6 +576,17 @@ async function startSession() {
         return;
     }
 
+    if (currentSessionId && isWaiting) {
+        // Follow-up message in existing session
+        sendFollowUp(prompt);
+    } else if (!isRunning) {
+        // New session
+        startSession(prompt);
+    }
+    // If isRunning && !isWaiting → still processing, ignore
+}
+
+async function startSession(prompt) {
     document.getElementById('promptInput').value = '';
     clearChat();
     appendUserMessage(prompt);
@@ -606,6 +622,33 @@ async function startSession() {
     } catch (e) {
         appendSystemMessage('Network error: ' + e.message);
         setStatus('failed');
+    }
+}
+
+async function sendFollowUp(prompt) {
+    document.getElementById('promptInput').value = '';
+    appendUserMessage(prompt);
+    setStatus('running');
+    isWaiting = false;
+
+    try {
+        const res = await fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ prompt: prompt })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            appendSystemMessage(err.detail || 'Failed to send message');
+            setStatus('ready');
+            isWaiting = true;
+        }
+    } catch (e) {
+        appendSystemMessage('Network error: ' + e.message);
+        setStatus('ready');
+        isWaiting = true;
     }
 }
 
@@ -671,6 +714,7 @@ function connectWebSocket(sessionId) {
 
     ws.onclose = () => {
         isRunning = false;
+        isWaiting = false;
         clearInterval(ws._pingInterval);
         flushAssistantBuffer();
         document.getElementById('stopBtn').style.display = 'none';
@@ -743,15 +787,23 @@ function renderStreamEvent(data) {
     } else if (type === 'tool_result') {
         appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
     } else if (type === 'result') {
-        // Final result — text was already streamed via content_block_delta, don't duplicate
+        // Turn result — text was already streamed via content_block_delta, don't duplicate
         flushAssistantBuffer();
-        setStatus('completed');
+        // Don't set completed yet — process is still alive for follow-ups
+    } else if (type === 'result_done') {
+        // Turn complete — ready for follow-up input
+        isWaiting = true;
+        setStatus('ready');
+    } else if (type === 'user_message') {
+        // Follow-up user message broadcast from server
+        appendUserMessage(data.content);
     } else if (type === 'error') {
         const errMsg = data.error?.message || JSON.stringify(data);
         appendSystemMessage('Error: ' + errMsg);
         setStatus('failed');
     } else if (type === 'session_end') {
         isRunning = false;
+        isWaiting = false;
         setStatus(data.status || (data.exit_code === 0 ? 'completed' : 'failed'));
         if (data.stderr) {
             appendSystemMessage(data.stderr);
@@ -877,10 +929,18 @@ function setStatus(status) {
         stopBtn.style.display = 'inline-flex';
         sendBtn.disabled = true;
         isRunning = true;
+    } else if (status === 'ready') {
+        // Between turns — can send follow-up or stop
+        stopBtn.style.display = 'inline-flex';
+        sendBtn.disabled = false;
+        isRunning = true;  // Process is still alive
+        document.getElementById('promptInput').placeholder = 'Send a follow-up message...';
     } else {
         stopBtn.style.display = 'none';
         sendBtn.disabled = false;
         isRunning = false;
+        isWaiting = false;
+        document.getElementById('promptInput').placeholder = 'Describe what you need...';
     }
 }
 
@@ -902,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function handleKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        startSession();
+        handleSend();
     }
 }
 
