@@ -7,7 +7,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen"]
-VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "wechat", "line", "linkedin", "tinder", "bumble"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "wechat", "line", "linkedin", "tinder", "bumble", "discord"]
 
 
 class BotProfileCreate(BaseModel):

@@ -33,6 +33,15 @@ class BotInstance:
         # Platform type (defaults to whatsapp for backward compatibility)
         self.platform_type: str = config.get("platform_type", "whatsapp")
 
+    @property
+    def platform_connected(self) -> bool:
+        """Alias for whatsapp_connected (platform-agnostic name)."""
+        return self.whatsapp_connected
+
+    @platform_connected.setter
+    def platform_connected(self, value: bool):
+        self.whatsapp_connected = value
+
         # AI Response toggle (OFF by default after connection)
         self.ai_response_enabled = False
 

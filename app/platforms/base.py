@@ -19,6 +19,7 @@ class PlatformType(str, Enum):
     LINKEDIN = "linkedin"
     TINDER = "tinder"
     BUMBLE = "bumble"
+    DISCORD = "discord"
 
 
 class AuthMethod(str, Enum):
