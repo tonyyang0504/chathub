@@ -48,6 +48,9 @@ from .platforms.base import PlatformType
 from .platforms.registry import platform_registry
 from .platforms.whatsapp import WhatsAppAdapter
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
+from .platforms.line import LineAdapter
+platform_registry.register(PlatformType.LINE, LineAdapter)
+from .platforms.line.routes import router as line_webhook_router
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
@@ -315,6 +318,7 @@ app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(claude_code_router, tags=["Claude Code"])
 app.include_router(agents_router, tags=["Agents"])
+app.include_router(line_webhook_router, tags=["LINE"])
 
 # Prometheus metrics endpoint
 app.get("/metrics")(metrics_endpoint)
