@@ -43,6 +43,12 @@ from .scripts.routes import router as scripts_router
 from .metrics import metrics_endpoint
 from .logging_config import setup_logging
 
+# Register platform adapters
+from .platforms.base import PlatformType
+from .platforms.registry import platform_registry
+from .platforms.whatsapp import WhatsAppAdapter
+platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
+
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
@@ -170,6 +176,7 @@ async def auto_recover_bots():
                 # Build config for bot
                 config = {
                     "bot_profile_id": bot.id,
+                    "platform_type": bot.platform_type or "whatsapp",
                     "ai_provider": bot.ai_provider or "openai",
                     "api_key": api_key,
                     "model": bot.model or "gpt-4o-mini",

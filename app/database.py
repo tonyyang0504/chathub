@@ -71,6 +71,9 @@ class BotProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
 
+    # Platform type (whatsapp, telegram, instagram, messenger, wechat, line, linkedin, tinder, bumble)
+    platform_type = Column(String(50), default="whatsapp")
+
     # AI Provider Settings
     ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
 

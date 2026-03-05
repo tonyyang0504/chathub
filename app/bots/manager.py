@@ -30,6 +30,9 @@ class BotInstance:
         self.outbound_queue: list = []  # Queue for scheduled/proactive messages
         self._queue_lock = threading.Lock()  # Thread-safe queue access
 
+        # Platform type (defaults to whatsapp for backward compatibility)
+        self.platform_type: str = config.get("platform_type", "whatsapp")
+
         # AI Response toggle (OFF by default after connection)
         self.ai_response_enabled = False
 
@@ -174,13 +177,27 @@ class BotManager:
                 instance.task.cancel()
             del self.instances[bot_profile_id]
 
-            # Clean up message/file queues to prevent memory leaks
+            # Clean up via platform adapter
             try:
-                from app.bots.whatsapp_bot import cleanup_bot_queues
-                cleanup_bot_queues(bot_profile_id)
+                adapter = self._get_adapter(instance.platform_type)
+                adapter.cleanup(bot_profile_id)
                 logger.debug(f"Cleaned up queues for bot {bot_profile_id}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup queues for bot {bot_profile_id}: {e}")
+
+    def _get_adapter(self, platform_type: str = "whatsapp"):
+        """Get the platform adapter for a given platform type.
+
+        Args:
+            platform_type: Platform name (defaults to 'whatsapp')
+
+        Returns:
+            PlatformAdapter instance
+        """
+        from app.platforms.base import PlatformType
+        from app.platforms.registry import platform_registry
+        pt = PlatformType(platform_type)
+        return platform_registry.get_adapter(pt)
 
     async def start_bot(self, bot_profile_id: int, config: dict) -> BotInstance:
         """Start a bot instance."""
@@ -191,18 +208,19 @@ class BotManager:
             logger.info(f"Bot {bot_profile_id} already running")
             return instance
 
-        # Import here to avoid circular imports
-        from app.bots.whatsapp_bot import run_whatsapp_bot
+        # Get the platform adapter for this bot
+        platform_type = config.get("platform_type", "whatsapp")
+        adapter = self._get_adapter(platform_type)
 
         # Create task for running the bot
-        logger.info(f"Creating task for bot {bot_profile_id}")
+        logger.info(f"Creating task for bot {bot_profile_id} (platform: {platform_type})")
         instance.is_running = True
         instance.stopped_by_user = False  # Reset the flag when starting
         instance.error = None  # Clear any previous error
 
         async def run_bot_with_error_handling():
             try:
-                await run_whatsapp_bot(instance)
+                await adapter.run(instance)
             except Exception as e:
                 logger.error(f"Bot {bot_profile_id} crashed: {e}", exc_info=True)
                 instance.error = str(e)
