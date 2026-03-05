@@ -48,6 +48,8 @@ from .platforms.base import PlatformType
 from .platforms.registry import platform_registry
 from .platforms.whatsapp import WhatsAppAdapter
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
+from .platforms.telegram import TelegramAdapter
+platform_registry.register(PlatformType.TELEGRAM, TelegramAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):

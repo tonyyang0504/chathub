@@ -47,6 +47,9 @@ httpx>=0.25.0
 # Web search (optional - for bot web search feature)
 duckduckgo-search>=4.0.0
 
+# Telegram Bot API
+python-telegram-bot>=21.0
+
 # AI Providers
 anthropic>=0.18.0
 google-generativeai>=0.4.0
