@@ -55,6 +55,8 @@ from .platforms.line.routes import router as line_webhook_router
 from .platforms.instagram import InstagramAdapter
 from .platforms.messenger import MessengerAdapter
 from .platforms.wechat import WeChatAdapter
+from .platforms.tinder import TinderAdapter
+from .platforms.bumble import BumbleAdapter
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
 platform_registry.register(PlatformType.DISCORD, DiscordAdapter)
 platform_registry.register(PlatformType.LINKEDIN, LinkedInAdapter)
@@ -63,6 +65,8 @@ platform_registry.register(PlatformType.LINE, LineAdapter)
 platform_registry.register(PlatformType.INSTAGRAM, InstagramAdapter)
 platform_registry.register(PlatformType.MESSENGER, MessengerAdapter)
 platform_registry.register(PlatformType.WECHAT, WeChatAdapter)
+platform_registry.register(PlatformType.TINDER, TinderAdapter)
+platform_registry.register(PlatformType.BUMBLE, BumbleAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
