@@ -1006,6 +1006,15 @@ def run_migrations():
                 except Exception as e:
                     print(f"Could not add presence_penalty column: {e}")
 
+            # Add platform_type column if not exists
+            if 'platform_type' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE bot_profiles ADD COLUMN platform_type VARCHAR(50) DEFAULT 'whatsapp'"))
+                    conn.commit()
+                    print("Added platform_type column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add platform_type column: {e}")
+
             # Add ending_detection_enabled column if not exists
             if 'ending_detection_enabled' not in existing_columns:
                 try:
