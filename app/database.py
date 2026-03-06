@@ -1006,6 +1006,15 @@ def run_migrations():
                 except Exception as e:
                     print(f"Could not add presence_penalty column: {e}")
 
+            # Add platform_config column if not exists
+            if 'platform_config' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE bot_profiles ADD COLUMN platform_config TEXT DEFAULT '{}'"))
+                    conn.commit()
+                    print("Added platform_config column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add platform_config column: {e}")
+
             # Add platform_type column if not exists
             if 'platform_type' not in existing_columns:
                 try:
