@@ -366,7 +366,8 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Model</label>
-                        <input type="text" class="form-control" id="modelInput" placeholder="e.g. gpt-4o">
+                        <select class="form-select" id="modelSelect">
+                        </select>
                         <small class="text-muted" id="modelHint">Default model for selected provider</small>
                     </div>
                     <div class="col-md-4">
@@ -489,10 +490,38 @@ let autoScroll = true;
 let assistantBuffer = '';
 
 const API_BASE = '/tools/api/chathub-agent';
+const PROVIDER_MODELS = {
+    openai: [
+        { value: 'gpt-4o', label: 'GPT-4o - Best overall' },
+        { value: 'gpt-4o-mini', label: 'GPT-4o Mini - Fast & cheap' },
+        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+        { value: 'o1', label: 'o1 - Reasoning' },
+        { value: 'o3-mini', label: 'o3 Mini - Fast reasoning' },
+    ],
+    anthropic: [
+        { value: 'claude-opus-4-20250514', label: 'Claude Opus 4 - Most capable' },
+        { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 - Balanced' },
+        { value: 'claude-haiku-4-20250414', label: 'Claude Haiku 4 - Fastest' },
+    ],
+    google: [
+        { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+        { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+        { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+    ],
+    deepseek: [
+        { value: 'deepseek-chat', label: 'DeepSeek Chat' },
+        { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+    ],
+    qwen: [
+        { value: 'qwen-turbo', label: 'Qwen Turbo' },
+        { value: 'qwen-plus', label: 'Qwen Plus' },
+        { value: 'qwen-max', label: 'Qwen Max' },
+    ],
+};
 const DEFAULT_MODELS = {
     openai: 'gpt-4o',
     anthropic: 'claude-sonnet-4-20250514',
-    google: 'gemini-1.5-flash',
+    google: 'gemini-2.0-flash',
     deepseek: 'deepseek-chat',
     qwen: 'qwen-turbo'
 };
@@ -522,11 +551,16 @@ function toggleKeyVisibility() {
 
 function onProviderChange() {
     const provider = document.getElementById('providerSelect').value;
-    const modelInput = document.getElementById('modelInput');
-    if (!modelInput.value || Object.values(DEFAULT_MODELS).includes(modelInput.value)) {
-        modelInput.value = DEFAULT_MODELS[provider] || '';
-    }
-    document.getElementById('modelHint').textContent = `Default: ${DEFAULT_MODELS[provider] || 'N/A'}`;
+    const modelSelect = document.getElementById('modelSelect');
+    const currentVal = modelSelect.value;
+    const models = PROVIDER_MODELS[provider] || [];
+    modelSelect.innerHTML = models.map(m =>
+        `<option value="${m.value}">${m.label}</option>`
+    ).join('');
+    // Keep current selection if it exists in new provider
+    const hasCurrentVal = models.some(m => m.value === currentVal);
+    modelSelect.value = hasCurrentVal ? currentVal : (DEFAULT_MODELS[provider] || '');
+    document.getElementById('modelHint').textContent = `${models.length} models available`;
 }
 
 async function loadSettings() {
@@ -540,7 +574,8 @@ async function loadSettings() {
             document.getElementById('apiKeyStatus').className = 'text-success small';
         }
         document.getElementById('providerSelect').value = data.ai_provider || 'openai';
-        document.getElementById('modelInput').value = data.default_model || '';
+        onProviderChange();  // populate model dropdown for provider
+        document.getElementById('modelSelect').value = data.default_model || DEFAULT_MODELS[data.ai_provider || 'openai'];
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         document.getElementById('maxMinutesInput').value = data.max_session_minutes || 60;
@@ -548,7 +583,6 @@ async function loadSettings() {
             const radio = document.querySelector(`input[name="queueMode"][value="${data.queue_mode}"]`);
             if (radio) radio.checked = true;
         }
-        onProviderChange();
         updateProviderInfo(data.ai_provider, data.default_model);
     } catch (e) {
         console.error('Failed to load settings:', e);
@@ -559,7 +593,7 @@ async function saveSettings() {
     const apiKey = document.getElementById('apiKeyInput').value;
     const payload = {
         ai_provider: document.getElementById('providerSelect').value,
-        default_model: document.getElementById('modelInput').value,
+        default_model: document.getElementById('modelSelect').value,
         auto_commit: document.getElementById('autoCommitToggle').checked,
         auto_backup_db: document.getElementById('autoBackupToggle').checked,
         max_session_minutes: parseInt(document.getElementById('maxMinutesInput').value) || 60,
@@ -708,7 +742,7 @@ async function startSession(prompt) {
     setStatus('pending');
 
     const agentConfigId = document.getElementById('agentConfigSelect').value;
-    const model = document.getElementById('modelInput').value;
+    const model = document.getElementById('modelSelect').value;
 
     try {
         const res = await fetch(`${API_BASE}/sessions`, {
