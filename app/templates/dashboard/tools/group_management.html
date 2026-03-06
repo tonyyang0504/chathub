@@ -1011,24 +1011,15 @@
         <div class="tool-card-header">
             <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
             <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                <!-- Filters -->
-
-                <input class="form-control" id="activitySearch" placeholder="Search message, sender, group..." style="max-width: 280px;" />
-
-                <select class="form-select" id="activityStatus" style="max-width: 170px;">
-                    <option value="">All statuses</option>
-                    <option value="success">Success</option>
-                    <option value="error">Error</option>
-                </select>
-
-                <select class="form-select" id="activityOperation" style="max-width: 220px;">
-                    <option value="">All operations</option>
-                    <option value="message_routing">message_routing</option>
-                    <option value="bot_to_bot_blocked">bot_to_bot_blocked</option>
-                </select>
-
-                <input class="form-control" id="activityStart" type="date" style="max-width: 170px;" />
-                <input class="form-control" id="activityEnd" type="date" style="max-width: 170px;" />
+                <input type="hidden" id="activityInstanceValue" value="">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityInstanceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        All Instances
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" aria-labelledby="activityInstanceDropdown">
+                        <a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>
+                    </div>
+                </div>
 
                 <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" id="activityRefreshBtn" onclick="loadActivity()">
                     <i class="bi bi-arrow-clockwise"></i>
@@ -1266,24 +1257,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInstances();
     loadActivity();
 
-    // Wire up activity filters
-    const searchEl = document.getElementById('activitySearch');
-    const statusEl = document.getElementById('activityStatus');
-    const opEl = document.getElementById('activityOperation');
-    const startEl = document.getElementById('activityStart');
-    const endEl = document.getElementById('activityEnd');
-
-    // Debounced search
-    let searchTimer = null;
-    if (searchEl) {
-        searchEl.addEventListener('input', () => {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => loadActivity(), 350);
-        });
-    }
-    [statusEl, opEl, startEl, endEl].forEach(el => {
-        if (el) el.addEventListener('change', () => loadActivity());
-    });
+    // Activity instance filter
+    // (dropdown is populated from hub instances in renderInstances())
 
     // Initialize simulation dropdowns
     setupSimProviderDropdown();
@@ -1404,6 +1379,27 @@ function renderInstances() {
     container.innerHTML = html;
     document.getElementById('totalInstances').textContent = allInstances.length;
 
+    // Populate activity filter dropdown
+    const activityFilterMenu = document.getElementById('activityInstanceDropdown')?.closest('.dropdown')?.querySelector('.instance-dropdown-menu');
+    if (activityFilterMenu) {
+        let menuHtml = '<a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>';
+        allInstances.forEach(hub => {
+            menuHtml += `<a class="dropdown-item instance-filter-item" href="#" data-value="${hub.id}">${hub.name}</a>`;
+        });
+        activityFilterMenu.innerHTML = menuHtml;
+
+        document.querySelectorAll('.instance-filter-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('activityInstanceValue').value = this.dataset.value;
+                document.getElementById('activityInstanceDropdown').textContent = this.textContent;
+                document.querySelectorAll('.instance-filter-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                loadActivity();
+            });
+        });
+    }
+
 }
 
 // Format ending detection reason to human-readable text
@@ -1450,20 +1446,13 @@ function formatProcessStep(step) {
 
 async function loadActivity() {
     try {
-        // Build URL with filters
         let url = '/tools/api/executions?tool_type=group_management&limit=20';
 
-        const q = document.getElementById('activitySearch')?.value?.trim();
-        const status = document.getElementById('activityStatus')?.value;
-        const operation = document.getElementById('activityOperation')?.value;
-        const start = document.getElementById('activityStart')?.value;
-        const end = document.getElementById('activityEnd')?.value;
+        const selectedHubId = document.getElementById('activityInstanceValue')?.value || '';
+        if (selectedHubId) {
+            url += `&hub_id=${encodeURIComponent(selectedHubId)}`;
+        }
 
-        if (q) url += `&q=${encodeURIComponent(q)}`;
-        if (status) url += `&status=${encodeURIComponent(status)}`;
-        if (operation) url += `&operation=${encodeURIComponent(operation)}`;
-        if (start) url += `&start=${encodeURIComponent(start)}`;
-        if (end) url += `&end=${encodeURIComponent(end)}`;
         const response = await fetch(url);
         const data = await response.json();
         const container = document.getElementById('activityLog');
