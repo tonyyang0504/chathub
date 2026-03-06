@@ -71,6 +71,9 @@ class BotProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
 
+    # Platform type (whatsapp, telegram, instagram, messenger, wechat, line, linkedin, tinder, bumble)
+    platform_type = Column(String(50), default="whatsapp")
+
     # AI Provider Settings
     ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
 
@@ -104,6 +107,9 @@ class BotProfile(Base):
     # Default 'UTC' means WhatsApp shows UTC timestamps - simplest, no conversion needed
     # Can be set to match proxy location (e.g., 'America/New_York', 'Europe/London', 'Asia/Dubai')
     browser_timezone = Column(String(100), default='UTC')
+
+    # Platform-specific configuration (JSON string for OAuth tokens, API keys, etc.)
+    platform_config = Column(Text, default="{}")
 
     # Status
     is_active = Column(Boolean, default=False)

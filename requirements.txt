@@ -44,8 +44,20 @@ apscheduler>=3.10.0
 # HTTP client (async)
 httpx>=0.25.0
 
+# LINE Messaging API
+line-bot-sdk>=3.0.0
+
+# Secure XML parsing
+defusedxml>=0.7.1
+
 # Web search (optional - for bot web search feature)
 duckduckgo-search>=4.0.0
+
+# Discord bot
+discord.py>=2.3.0
+
+# Telegram Bot API
+python-telegram-bot>=21.0
 
 # AI Providers
 anthropic>=0.18.0

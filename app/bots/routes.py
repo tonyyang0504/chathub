@@ -89,6 +89,7 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
     return BotProfileResponse(
         id=bot.id,
         name=bot.name,
+        platform_type=bot.platform_type or "whatsapp",
         ai_provider=bot.ai_provider or "openai",
         api_key_masked=mask_api_key(bot.api_key_encrypted),
         model=bot.model,
@@ -289,6 +290,7 @@ async def create_bot(
     bot = BotProfile(
         user_id=current_user.id,
         name=bot_data.name,
+        platform_type=bot_data.platform_type,
         ai_provider=bot_data.ai_provider,
         api_key_encrypted=encrypted_key,
         model=bot_data.model,
@@ -344,6 +346,8 @@ async def update_bot(
     # Update fields if provided
     if bot_data.name is not None:
         bot.name = bot_data.name
+    if bot_data.platform_type is not None:
+        bot.platform_type = bot_data.platform_type
     if bot_data.ai_provider is not None:
         bot.ai_provider = bot_data.ai_provider
     if bot_data.api_key is not None:
@@ -459,6 +463,7 @@ async def start_bot(
 
         # Prepare config
         config = {
+            "platform_type": bot.platform_type or "whatsapp",
             "ai_provider": bot.ai_provider or "openai",
             "api_key_encrypted": bot.api_key_encrypted,
             "model": bot.model,

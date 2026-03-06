@@ -7,14 +7,23 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "wechat", "line", "linkedin", "tinder", "bumble", "discord"]
 
 
 class BotProfileCreate(BaseModel):
     """Schema for creating a bot profile."""
     name: str = Field(..., min_length=1, max_length=255)
+    platform_type: str = "whatsapp"
     ai_provider: str = "openai"
     api_key: str = Field(..., min_length=10)
     model: str = "gpt-4o-mini"
+
+    @field_validator('platform_type')
+    @classmethod
+    def validate_platform_type(cls, v):
+        if v not in VALID_PLATFORMS:
+            raise ValueError(f"platform_type must be one of {VALID_PLATFORMS}")
+        return v
 
     @field_validator('ai_provider')
     @classmethod
@@ -46,9 +55,17 @@ class BotProfileCreate(BaseModel):
 class BotProfileUpdate(BaseModel):
     """Schema for updating a bot profile."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    platform_type: Optional[str] = None
     ai_provider: Optional[str] = None
     api_key: Optional[str] = Field(None, min_length=10)
     model: Optional[str] = None
+
+    @field_validator('platform_type')
+    @classmethod
+    def validate_platform_type(cls, v):
+        if v is not None and v not in VALID_PLATFORMS:
+            raise ValueError(f"platform_type must be one of {VALID_PLATFORMS}")
+        return v
 
     @field_validator('ai_provider')
     @classmethod
@@ -81,6 +98,7 @@ class BotProfileResponse(BaseModel):
     """Schema for bot profile response."""
     id: int
     name: str
+    platform_type: str = "whatsapp"
     ai_provider: str = "openai"
     api_key_masked: Optional[str] = None  # Masked API key for display (e.g., sk-proj-...gasA)
     model: str

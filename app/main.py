@@ -43,6 +43,31 @@ from .scripts.routes import router as scripts_router
 from .metrics import metrics_endpoint
 from .logging_config import setup_logging
 
+# Register platform adapters
+from .platforms.base import PlatformType
+from .platforms.registry import platform_registry
+from .platforms.whatsapp import WhatsAppAdapter
+from .platforms.discord import DiscordAdapter
+from .platforms.linkedin import LinkedInAdapter
+from .platforms.telegram import TelegramAdapter
+from .platforms.line import LineAdapter
+from .platforms.line.routes import router as line_webhook_router
+from .platforms.instagram import InstagramAdapter
+from .platforms.messenger import MessengerAdapter
+from .platforms.wechat import WeChatAdapter
+from .platforms.tinder import TinderAdapter
+from .platforms.bumble import BumbleAdapter
+platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
+platform_registry.register(PlatformType.DISCORD, DiscordAdapter)
+platform_registry.register(PlatformType.LINKEDIN, LinkedInAdapter)
+platform_registry.register(PlatformType.TELEGRAM, TelegramAdapter)
+platform_registry.register(PlatformType.LINE, LineAdapter)
+platform_registry.register(PlatformType.INSTAGRAM, InstagramAdapter)
+platform_registry.register(PlatformType.MESSENGER, MessengerAdapter)
+platform_registry.register(PlatformType.WECHAT, WeChatAdapter)
+platform_registry.register(PlatformType.TINDER, TinderAdapter)
+platform_registry.register(PlatformType.BUMBLE, BumbleAdapter)
+
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
@@ -170,6 +195,7 @@ async def auto_recover_bots():
                 # Build config for bot
                 config = {
                     "bot_profile_id": bot.id,
+                    "platform_type": bot.platform_type or "whatsapp",
                     "ai_provider": bot.ai_provider or "openai",
                     "api_key": api_key,
                     "model": bot.model or "gpt-4o-mini",
@@ -308,6 +334,7 @@ app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(claude_code_router, tags=["Claude Code"])
 app.include_router(agents_router, tags=["Agents"])
+app.include_router(line_webhook_router, tags=["LINE"])
 
 # Prometheus metrics endpoint
 app.get("/metrics")(metrics_endpoint)
