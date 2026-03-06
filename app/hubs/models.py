@@ -132,7 +132,7 @@ class HubResponse(BaseModel):
     task_type: str = "group_management"
     ai_provider: str = "openai"
     api_key_masked: Optional[str] = None  # Masked API key for display (e.g., sk-proj-...gasA)
-    model: str
+    model: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
