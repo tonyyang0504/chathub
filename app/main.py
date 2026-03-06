@@ -47,7 +47,9 @@ from .logging_config import setup_logging
 from .platforms.base import PlatformType
 from .platforms.registry import platform_registry
 from .platforms.whatsapp import WhatsAppAdapter
+from .platforms.linkedin import LinkedInAdapter
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
+platform_registry.register(PlatformType.LINKEDIN, LinkedInAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
