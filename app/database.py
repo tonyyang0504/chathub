@@ -708,6 +708,130 @@ class ClaudeCodeSettings(Base):
     user = relationship("User", backref="claude_code_settings")
 
 
+# ============== ChatHub Agent Models ==============
+
+class ChatHubAgentSettings(Base):
+    """ChatHub Agent settings - per-user configuration."""
+    __tablename__ = "chathub_agent_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    ai_provider = Column(String(50), default="openai")
+    api_key_encrypted = Column(Text)
+    default_model = Column(String(100), default="gpt-4o")
+    default_agent_id = Column(Integer, ForeignKey("chathub_agent_configs.id", ondelete="SET NULL"), nullable=True)
+    auto_commit = Column(Boolean, default=True)
+    auto_backup_db = Column(Boolean, default=True)
+    max_session_minutes = Column(Integer, default=60)
+    queue_mode = Column(String(20), default="collect")
+    workspace_path = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="chathub_agent_settings")
+    default_agent = relationship("ChatHubAgentConfig", foreign_keys=[default_agent_id])
+
+
+class ChatHubAgentConfig(Base):
+    """ChatHub Agent config - reusable agent configurations."""
+    __tablename__ = "chathub_agent_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text)
+    ai_provider = Column(String(50), default="openai")
+    api_key_encrypted = Column(Text)
+    model = Column(String(100), default="gpt-4o")
+    system_prompt = Column(Text)
+    temperature = Column(Float, default=0.3)
+    max_tokens = Column(Integer, default=8192)
+    allowed_tools = Column(Text)  # JSON list
+    dangerous_tools = Column(Text, default='["exec_command"]')  # JSON list
+    auto_approve_read = Column(Boolean, default=True)
+    workspace_path = Column(String(500))
+    enabled_skills = Column(Text)  # JSON list
+    routing_rules = Column(Text)  # JSON object
+    is_default = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="chathub_agent_configs")
+    sessions = relationship("ChatHubAgentSession", back_populates="agent_config")
+
+
+class ChatHubAgentSession(Base):
+    """ChatHub Agent session - tracks each agent execution."""
+    __tablename__ = "chathub_agent_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    agent_config_id = Column(Integer, ForeignKey("chathub_agent_configs.id", ondelete="SET NULL"), nullable=True)
+    parent_session_id = Column(Integer, ForeignKey("chathub_agent_sessions.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(20), default="pending", index=True)  # pending, running, completed, failed, stopped
+    prompt = Column(Text, nullable=False)
+    git_commit_hash = Column(String(40))
+    db_backup_path = Column(String(500))
+    ai_provider = Column(String(50))
+    model = Column(String(100))
+    total_turns = Column(Integer, default=0)
+    total_tool_calls = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    rolled_back = Column(Boolean, default=False)
+    rolled_back_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime)
+    ended_at = Column(DateTime)
+
+    # Relationships
+    user = relationship("User", backref="chathub_agent_sessions")
+    agent_config = relationship("ChatHubAgentConfig", back_populates="sessions")
+    parent_session = relationship("ChatHubAgentSession", remote_side="ChatHubAgentSession.id", backref="child_sessions")
+    messages = relationship("ChatHubAgentMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatHubAgentMessage.created_at")
+
+
+class ChatHubAgentMessage(Base):
+    """ChatHub Agent message - individual events from agent execution."""
+    __tablename__ = "chathub_agent_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chathub_agent_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(20), nullable=False)  # user, assistant, system, tool_call, tool_result, approval_request
+    content = Column(Text)
+    message_type = Column(String(50))  # text, tool_use, tool_result, error, system
+    tool_name = Column(String(100))
+    tool_call_id = Column(String(100))
+    event_data = Column(Text)  # JSON of raw event data
+    tokens_used = Column(Integer, default=0)
+    execution_time_ms = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    session = relationship("ChatHubAgentSession", back_populates="messages")
+
+
+class ChatHubAgentSkill(Base):
+    """ChatHub Agent skill - managed or workspace skill definitions."""
+    __tablename__ = "chathub_agent_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    tier = Column(String(20), nullable=False)  # managed, workspace
+    path = Column(String(500))
+    description = Column(Text)
+    is_active = Column(Boolean, default=True)
+    metadata_json = Column(Text)  # JSON metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="chathub_agent_skills")
+
+
 # ============== Database Functions ==============
 
 def create_tables():

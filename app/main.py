@@ -39,6 +39,8 @@ from .tools import tools_router
 from .agents import agents_router
 from .claude_code.routes import router as claude_code_router
 from .claude_code.manager import claude_code_manager
+from .chathub_agent.routes import router as chathub_agent_router
+from .chathub_agent.manager import chathub_agent_manager
 from .scripts.routes import router as scripts_router
 from .metrics import metrics_endpoint
 from .logging_config import setup_logging
@@ -151,6 +153,10 @@ async def lifespan(app: FastAPI):
     # Stop all Claude Code sessions
     await claude_code_manager.stop_all()
     print("All Claude Code sessions stopped.")
+
+    # Stop all ChatHub Agent sessions
+    await chathub_agent_manager.stop_all()
+    print("All ChatHub Agent sessions stopped.")
 
     # Stop all running bots
     await bot_manager.stop_all_bots()
@@ -333,6 +339,7 @@ app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
 app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(claude_code_router, tags=["Claude Code"])
+app.include_router(chathub_agent_router, tags=["ChatHub Agent"])
 app.include_router(agents_router, tags=["Agents"])
 app.include_router(line_webhook_router, tags=["LINE"])
 

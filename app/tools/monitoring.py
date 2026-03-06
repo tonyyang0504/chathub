@@ -25,7 +25,8 @@ class ToolMonitor:
         'scheduled_content',
         'message_routing',
         'agent_execution',
-        'claude_code'
+        'claude_code',
+        'chathub_agent'
     ]
 
     @staticmethod
