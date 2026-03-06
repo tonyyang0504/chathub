@@ -50,10 +50,13 @@ from .platforms.whatsapp import WhatsAppAdapter
 from .platforms.discord import DiscordAdapter
 from .platforms.linkedin import LinkedInAdapter
 from .platforms.telegram import TelegramAdapter
+from .platforms.line import LineAdapter
+from .platforms.line.routes import router as line_webhook_router
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
 platform_registry.register(PlatformType.DISCORD, DiscordAdapter)
 platform_registry.register(PlatformType.LINKEDIN, LinkedInAdapter)
 platform_registry.register(PlatformType.TELEGRAM, TelegramAdapter)
+platform_registry.register(PlatformType.LINE, LineAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
@@ -321,6 +324,7 @@ app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(claude_code_router, tags=["Claude Code"])
 app.include_router(agents_router, tags=["Agents"])
+app.include_router(line_webhook_router, tags=["LINE"])
 
 # Prometheus metrics endpoint
 app.get("/metrics")(metrics_endpoint)

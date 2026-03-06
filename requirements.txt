@@ -44,6 +44,9 @@ apscheduler>=3.10.0
 # HTTP client (async)
 httpx>=0.25.0
 
+# LINE Messaging API
+line-bot-sdk>=3.0.0
+
 # Web search (optional - for bot web search feature)
 duckduckgo-search>=4.0.0
 
