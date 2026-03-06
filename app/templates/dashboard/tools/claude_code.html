@@ -794,9 +794,12 @@ function renderStreamEvent(data) {
         // Turn complete — ready for follow-up input
         isWaiting = true;
         setStatus('ready');
+    } else if (type === 'turn_end') {
+        // CLI process exited cleanly — session stays alive for follow-ups
+        isWaiting = true;
+        setStatus('ready');
     } else if (type === 'user_message') {
-        // Follow-up user message broadcast from server
-        appendUserMessage(data.content);
+        // Follow-up user message broadcast from server — skip since frontend already appended it
     } else if (type === 'error') {
         const errMsg = data.error?.message || JSON.stringify(data);
         appendSystemMessage('Error: ' + errMsg);

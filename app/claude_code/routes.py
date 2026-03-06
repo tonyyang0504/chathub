@@ -202,7 +202,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         )
 
     session.status = "running"
-    session.pid = active_session.process.pid
+    session.pid = active_session.process.pid if active_session.process else None
     session.started_at = datetime.utcnow()
     db.commit()
 
@@ -428,7 +428,7 @@ async def stream_session(websocket: WebSocket, session_id: int):
 
             try:
                 # Keep alive with ping/pong
-                while active.is_running:
+                while active.is_running or active.is_waiting:
                     try:
                         msg = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
                         # Handle ping

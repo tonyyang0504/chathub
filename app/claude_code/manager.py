@@ -1,6 +1,9 @@
 """
 Claude Code Process Manager
 Spawns and manages Claude Code CLI subprocesses with safety commits and DB backups.
+
+Uses `-p "prompt"` CLI invocation (one process per turn) with `--session-id` / `--resume`
+for multi-turn conversations. This avoids stdin pipe issues with `--input-format stream-json`.
 """
 
 import asyncio
@@ -8,8 +11,8 @@ import json
 import logging
 import os
 import shutil
-import signal
 import subprocess
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Set
@@ -25,15 +28,19 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 class ActiveSession:
     """Represents an active Claude Code CLI session."""
 
-    def __init__(self, session_id: int, user_id: int, process: asyncio.subprocess.Process):
+    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None):
         self.session_id = session_id
         self.user_id = user_id
-        self.process = process
+        self.claude_session_id = str(uuid.uuid4())  # UUID for Claude CLI --session-id/--resume
+        self._api_key = api_key
+        self._model = model
+        self.process: Optional[asyncio.subprocess.Process] = None
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []
-        self.is_running = True
-        self.is_waiting = False  # True when process finished responding, awaiting next stdin message
+        self.is_running = False   # True while a CLI turn is actively running
+        self.is_waiting = False   # True when turn finished, awaiting follow-up
         self._read_task: Optional[asyncio.Task] = None
+        self._stderr_task: Optional[asyncio.Task] = None
 
     async def broadcast(self, data: dict):
         """Broadcast data to all connected WebSocket clients."""
@@ -58,9 +65,9 @@ class ClaudeCodeManager:
         self._sessions: Dict[int, ActiveSession] = {}  # user_id -> ActiveSession
 
     def get_active_session(self, user_id: int) -> Optional[ActiveSession]:
-        """Get the active session for a user."""
+        """Get the active session for a user (running or waiting for follow-up)."""
         session = self._sessions.get(user_id)
-        if session and session.is_running:
+        if session and (session.is_running or session.is_waiting):
             return session
         return None
 
@@ -133,70 +140,91 @@ class ClaudeCodeManager:
         api_key: str,
         model: Optional[str] = None
     ) -> Optional[ActiveSession]:
-        """Spawn a Claude Code CLI subprocess and start reading output."""
+        """Create an ActiveSession and run the first turn."""
         # Enforce one session per user
         existing = self.get_active_session(user_id)
         if existing:
             logger.warning(f"User {user_id} already has an active session {existing.session_id}")
             return None
 
-        # Build command — multi-turn via stdin streaming (no -p prompt)
+        session = ActiveSession(session_id, user_id, api_key, model)
+        self._sessions[user_id] = session
+
+        try:
+            await self._run_turn(session, prompt, is_first=True)
+            return session
+        except FileNotFoundError:
+            logger.error("Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code")
+            del self._sessions[user_id]
+            return None
+        except Exception as e:
+            logger.error(f"Failed to start Claude Code session: {e}")
+            if user_id in self._sessions and self._sessions[user_id] is session:
+                del self._sessions[user_id]
+            return None
+
+    async def _run_turn(self, session: ActiveSession, prompt: str, is_first: bool = False):
+        """Spawn one CLI process for a single turn (prompt on command line)."""
         cmd = [
             "claude",
-            "--print",
-            "--input-format", "stream-json",
+            "-p", prompt,
             "--output-format", "stream-json",
             "--verbose",
             "--dangerously-skip-permissions"
         ]
-        if model:
-            cmd.extend(["--model", model])
 
-        # Set environment — must remove Claude Code nesting guard vars,
-        # otherwise the child `claude` process refuses to start with:
-        # "Claude Code cannot be launched inside another Claude Code session"
+        if session._model:
+            cmd.extend(["--model", session._model])
+
+        if is_first:
+            cmd.extend(["--session-id", session.claude_session_id])
+        else:
+            cmd.extend(["--resume", session.claude_session_id])
+
+        # Set environment
         env = os.environ.copy()
         env.pop("CLAUDECODE", None)
         env.pop("CLAUDE_CODE_ENTRYPOINT", None)
-        env["ANTHROPIC_API_KEY"] = api_key
+        env["ANTHROPIC_API_KEY"] = session._api_key
 
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(PROJECT_ROOT),
+            env=env
+        )
+
+        session.process = process
+        session.is_running = True
+        session.is_waiting = False
+
+        # Start reading stdout and stderr concurrently
+        session._read_task = asyncio.create_task(self._read_output(session))
+        session._stderr_task = asyncio.create_task(self._read_stderr(session))
+
+        logger.info(f"Turn started for session {session.session_id}, PID={process.pid}, first={is_first}")
+
+    async def _read_stderr(self, session: ActiveSession):
+        """Read stderr line-by-line to prevent pipe deadlock and log debug output."""
         try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(PROJECT_ROOT),
-                env=env
-            )
-
-            session = ActiveSession(session_id, user_id, process)
-            self._sessions[user_id] = session
-
-            # Start reading output in background
-            session._read_task = asyncio.create_task(
-                self._read_output(session)
-            )
-
-            # Send the first message via stdin
-            first_msg = json.dumps({"type": "user_input", "content": prompt}) + "\n"
-            process.stdin.write(first_msg.encode())
-            await process.stdin.drain()
-
-            logger.info(f"Started Claude Code session {session_id} for user {user_id}, PID={process.pid}")
-            return session
-
-        except FileNotFoundError:
-            logger.error("Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code")
-            return None
+            while True:
+                line = await session.process.stderr.readline()
+                if not line:
+                    break
+                line_str = line.decode("utf-8", errors="replace").strip()
+                if line_str:
+                    logger.debug(f"Session {session.session_id} stderr: {line_str}")
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
-            logger.error(f"Failed to start Claude Code session: {e}")
-            return None
+            logger.error(f"Error reading stderr for session {session.session_id}: {e}")
 
     async def send_message(self, user_id: int, message: str) -> bool:
-        """Send a follow-up message to an active session via stdin."""
-        session = self.get_active_session(user_id)
-        if not session or not session.is_running:
+        """Send a follow-up message by spawning a new CLI process with --resume."""
+        session = self._sessions.get(user_id)
+        if not session:
             logger.warning(f"No active session for user {user_id}")
             return False
         if not session.is_waiting:
@@ -204,14 +232,11 @@ class ClaudeCodeManager:
             return False
 
         try:
-            msg_line = json.dumps({"type": "user_input", "content": message}) + "\n"
-            session.process.stdin.write(msg_line.encode())
-            await session.process.stdin.drain()
-            session.is_waiting = False
-
             # Broadcast the user message to WebSocket clients
             await session.broadcast({"type": "user_message", "content": message})
 
+            # Spawn a new turn
+            await self._run_turn(session, message, is_first=False)
             logger.info(f"Sent follow-up to session {session.session_id}")
             return True
         except Exception as e:
@@ -241,26 +266,27 @@ class ClaudeCodeManager:
                 msg_type = data.get("type", "unknown")
                 role = "system"
                 content = ""
+                skip_db = False  # Skip high-frequency events
 
-                if msg_type == "assistant":
+                if msg_type == "assistant" and data.get("message"):
                     role = "assistant"
-                    # assistant messages have content blocks
-                    if "message" in data:
-                        blocks = data["message"].get("content", [])
-                        text_parts = [b.get("text", "") for b in blocks if b.get("type") == "text"]
-                        content = "\n".join(text_parts)
-                    elif "content_block" in data:
-                        content = data["content_block"].get("text", "")
-                elif msg_type == "content_block_delta":
-                    role = "assistant"
-                    delta = data.get("delta", {})
-                    content = delta.get("text", "")
+                    blocks = data["message"].get("content", [])
+                    text_parts = [b.get("text", "") for b in blocks if b.get("type") == "text"]
+                    content = "\n".join(text_parts)
                 elif msg_type == "content_block_start":
                     role = "assistant"
                     block = data.get("content_block", {})
                     if block.get("type") == "tool_use":
                         role = "tool_use"
                         content = json.dumps({"tool": block.get("name", ""), "id": block.get("id", "")})
+                elif msg_type == "content_block_delta":
+                    # High-frequency streaming event — skip DB persistence
+                    skip_db = True
+                    role = "assistant"
+                    delta = data.get("delta", {})
+                    content = delta.get("text", "")
+                elif msg_type == "content_block_stop":
+                    skip_db = True
                 elif msg_type == "tool_use":
                     role = "tool_use"
                     content = json.dumps({
@@ -272,8 +298,6 @@ class ClaudeCodeManager:
                     content = json.dumps(data.get("content", data.get("output", "")))
                 elif msg_type == "result":
                     role = "assistant"
-                    # Result event — turn complete, process awaits more stdin
-                    session.is_waiting = True
                     result_content = data.get("result", "")
                     if isinstance(result_content, list):
                         text_parts = [b.get("text", "") for b in result_content if b.get("type") == "text"]
@@ -289,112 +313,116 @@ class ClaudeCodeManager:
                 else:
                     content = line_str
 
-                # Persist to database
-                try:
-                    db = SessionLocal()
-                    msg = ClaudeCodeMessage(
-                        session_id=session.session_id,
-                        role=role,
-                        content=content[:10000] if content else "",
-                        message_type=msg_type,
-                        event_data=json.dumps(data)[:5000]
-                    )
-                    db.add(msg)
-                    db.commit()
-                    db.close()
-                except Exception as e:
-                    logger.error(f"Failed to persist message: {e}")
+                # Persist to database (skip high-frequency delta events)
+                if not skip_db:
+                    try:
+                        db = SessionLocal()
+                        msg = ClaudeCodeMessage(
+                            session_id=session.session_id,
+                            role=role,
+                            content=content[:10000] if content else "",
+                            message_type=msg_type,
+                            event_data=json.dumps(data)[:5000]
+                        )
+                        db.add(msg)
+                        db.commit()
+                        db.close()
+                    except Exception as e:
+                        logger.error(f"Failed to persist message: {e}")
 
                 # Broadcast to WebSocket clients
                 await session.broadcast(data)
 
-                # After result event, broadcast a marker so frontend knows turn is done
+                # After result event, broadcast result_done marker
                 if msg_type == "result":
                     await session.broadcast({"type": "result_done"})
 
-            # Process ended - read stderr
-            stderr_data = await session.process.stderr.read()
-            stderr_str = stderr_data.decode("utf-8", errors="replace").strip() if stderr_data else ""
+            # Wait for stderr reader to finish
+            if session._stderr_task and not session._stderr_task.done():
+                try:
+                    await asyncio.wait_for(session._stderr_task, timeout=5.0)
+                except (asyncio.TimeoutError, asyncio.CancelledError):
+                    pass
 
             # Wait for exit code
             exit_code = await session.process.wait()
-            session.is_running = False
 
-            if stderr_str:
-                logger.error(f"Session {session.session_id} stderr: {stderr_str[:1000]}")
-                # Persist stderr as a system message so user sees the error in chat
+            if exit_code == 0:
+                # Turn completed successfully — session stays alive for follow-ups
+                session.is_running = False
+                session.is_waiting = True
+                await session.broadcast({"type": "turn_end", "exit_code": 0})
+                logger.info(f"Turn completed for session {session.session_id}, waiting for follow-up")
+            else:
+                # Process failed — session is done
+                session.is_running = False
+                session.is_waiting = False
+
+                # Update session status in DB
                 try:
                     db = SessionLocal()
-                    err_msg = ClaudeCodeMessage(
-                        session_id=session.session_id,
-                        role="system",
-                        content=stderr_str[:5000],
-                        message_type="error"
-                    )
-                    db.add(err_msg)
-                    db.commit()
+                    db_session = db.query(ClaudeCodeSession).filter(
+                        ClaudeCodeSession.id == session.session_id
+                    ).first()
+                    if db_session:
+                        db_session.status = "failed"
+                        db_session.ended_at = datetime.utcnow()
+                        db.commit()
                     db.close()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to update session status: {e}")
+
                 await session.broadcast({
-                    "type": "error",
-                    "error": {"message": stderr_str[:2000]}
+                    "type": "session_end",
+                    "exit_code": exit_code,
+                    "stderr": ""
                 })
 
-            # Update session status in DB
-            try:
-                db = SessionLocal()
-                db_session = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == session.session_id
-                ).first()
-                if db_session:
-                    db_session.status = "completed" if exit_code == 0 else "failed"
-                    db_session.ended_at = datetime.utcnow()
-                    db.commit()
-                db.close()
-            except Exception as e:
-                logger.error(f"Failed to update session status: {e}")
+                logger.info(f"Session {session.session_id} ended with exit code {exit_code}")
 
-            # Notify WebSocket clients of session end
-            await session.broadcast({
-                "type": "session_end",
-                "exit_code": exit_code,
-                "stderr": stderr_str[:2000] if stderr_str else ""
-            })
-
-            logger.info(f"Session {session.session_id} ended with exit code {exit_code}")
+                # Clean up
+                if session.user_id in self._sessions and self._sessions[session.user_id] is session:
+                    del self._sessions[session.user_id]
 
         except asyncio.CancelledError:
             logger.info(f"Output reader cancelled for session {session.session_id}")
         except Exception as e:
             logger.error(f"Error reading output for session {session.session_id}: {e}")
             session.is_running = False
-        finally:
-            # Clean up from active sessions
+            session.is_waiting = False
             if session.user_id in self._sessions and self._sessions[session.user_id] is session:
                 del self._sessions[session.user_id]
 
     async def stop_session(self, user_id: int) -> bool:
-        """Stop a running session. SIGTERM -> wait 5s -> SIGKILL."""
+        """Stop a running or waiting session."""
         session = self._sessions.get(user_id)
-        if not session or not session.is_running:
+        if not session:
+            return False
+        if not session.is_running and not session.is_waiting:
             return False
 
+        was_waiting = session.is_waiting
         session.is_running = False
+        session.is_waiting = False
 
         try:
-            # Try graceful termination
-            session.process.terminate()
-            try:
-                await asyncio.wait_for(session.process.wait(), timeout=5.0)
-            except asyncio.TimeoutError:
-                # Force kill
-                session.process.kill()
-                await session.process.wait()
+            # If there's a running process, terminate it
+            if session.process and not was_waiting:
+                try:
+                    session.process.terminate()
+                    try:
+                        await asyncio.wait_for(session.process.wait(), timeout=5.0)
+                    except asyncio.TimeoutError:
+                        session.process.kill()
+                        await session.process.wait()
+                except ProcessLookupError:
+                    pass
 
-            # Cancel read task
+            # Cancel read tasks
             if session._read_task and not session._read_task.done():
                 session._read_task.cancel()
+            if session._stderr_task and not session._stderr_task.done():
+                session._stderr_task.cancel()
 
             # Update DB
             from app.database import SessionLocal, ClaudeCodeSession
