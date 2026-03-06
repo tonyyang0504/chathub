@@ -108,6 +108,9 @@ class BotProfile(Base):
     # Can be set to match proxy location (e.g., 'America/New_York', 'Europe/London', 'Asia/Dubai')
     browser_timezone = Column(String(100), default='UTC')
 
+    # Platform-specific configuration (JSON string for OAuth tokens, API keys, etc.)
+    platform_config = Column(Text, default="{}")
+
     # Status
     is_active = Column(Boolean, default=False)
     is_running = Column(Boolean, default=False)
