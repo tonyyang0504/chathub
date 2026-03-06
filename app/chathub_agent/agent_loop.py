@@ -86,6 +86,7 @@ class AgentLoop:
 
                 # Call AI provider (sync method, run in thread)
                 start = time.time()
+                logger.info(f"Calling provider with {len(tools)} tools, {len(self.conversation)} messages")
                 response: AIResponse = await asyncio.to_thread(
                     self.provider.chat_completion,
                     messages=self.conversation,
@@ -95,6 +96,7 @@ class AgentLoop:
                     max_tokens=self.agent_config.get("max_tokens", 8192),
                 )
                 elapsed_ms = int((time.time() - start) * 1000)
+                logger.info(f"Provider response: finish_reason={response.finish_reason}, tool_calls={len(response.tool_calls)}, content_len={len(response.content or '')}")
 
                 # Track tokens
                 tokens = response.usage.get("total_tokens", 0)
