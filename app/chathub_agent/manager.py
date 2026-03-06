@@ -153,7 +153,7 @@ class ChatHubAgentManager:
 
             # Create tool executor
             workspace = agent_config_dict.get("workspace_path") or settings_dict.get("workspace_path") or str(PROJECT_ROOT)
-            tool_executor = ToolExecutor(workspace_path=workspace)
+            tool_executor = ToolExecutor(workspace_root=workspace)
 
             # Create session object
             session = AgentSession(session_id, user_id, None)
@@ -188,7 +188,7 @@ class ChatHubAgentManager:
             return session
 
         except Exception as e:
-            logger.error(f"Failed to start ChatHub Agent session: {e}")
+            logger.exception(f"Failed to start ChatHub Agent session: {e}")
             if user_id in self._sessions:
                 del self._sessions[user_id]
             return None

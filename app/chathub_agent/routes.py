@@ -264,7 +264,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     if not active_session:
         session.status = "failed"
         db.commit()
-        raise HTTPException(status_code=500, detail="Failed to start ChatHub Agent session")
+        raise HTTPException(status_code=500, detail="Failed to start ChatHub Agent session. Check server logs for details.")
 
     session.status = "running"
     session.started_at = datetime.utcnow()
