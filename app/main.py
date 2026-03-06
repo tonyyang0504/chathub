@@ -53,12 +53,14 @@ from .platforms.telegram import TelegramAdapter
 from .platforms.line import LineAdapter
 from .platforms.line.routes import router as line_webhook_router
 from .platforms.instagram import InstagramAdapter
+from .platforms.messenger import MessengerAdapter
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
 platform_registry.register(PlatformType.DISCORD, DiscordAdapter)
 platform_registry.register(PlatformType.LINKEDIN, LinkedInAdapter)
 platform_registry.register(PlatformType.TELEGRAM, TelegramAdapter)
 platform_registry.register(PlatformType.LINE, LineAdapter)
 platform_registry.register(PlatformType.INSTAGRAM, InstagramAdapter)
+platform_registry.register(PlatformType.MESSENGER, MessengerAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
