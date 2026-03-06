@@ -419,12 +419,16 @@ def _verify_signature(body: bytes, signature_header: str) -> bool:
     if not _bot_state:
         return False
 
-    # Collect secrets from active bots
-    secrets = [s.get("app_secret") for s in _bot_state.values() if s.get("app_secret")]
+    # Collect secrets from active bots — strip whitespace and reject empty values
+    secrets = [
+        s.get("app_secret").strip()
+        for s in _bot_state.values()
+        if s.get("app_secret") and s.get("app_secret").strip()
+    ]
 
-    # Fail closed: if no bot has an app_secret configured, reject all webhooks
+    # Fail closed: if no bot has a valid app_secret configured, reject all webhooks
     if not secrets:
-        logger.warning("Messenger webhook: no app_secret configured — rejecting request")
+        logger.warning("Messenger webhook: no valid app_secret configured — rejecting request")
         return False
 
     # Signature header is required when secrets are configured
@@ -487,18 +491,21 @@ def _find_bot_for_page(
 ) -> tuple:
     """Find the active bot instance handling this page.
 
-    Matches by page_id (the recipient_id in inbound messages) or the
-    stored page_id from the Graph API /me response.
+    Matches by page_id — the entry-level ``id`` field from Meta's webhook
+    payload, which is always the receiving page's ID regardless of message
+    direction.
 
     Returns (instance, bot_profile_id) or (None, None).
     """
-    # First pass: match by stored page_id
+    if not page_id:
+        return None, None
+
     for bot_id, state in _bot_state.items():
         inst = state.get("instance")
         if not inst or not inst.is_running:
             continue
         stored_page_id = state.get("page_id")
-        if stored_page_id and (stored_page_id == page_id or stored_page_id == recipient_id):
+        if stored_page_id and stored_page_id == page_id:
             return inst, bot_id
 
     return None, None
@@ -734,7 +741,8 @@ async def _process_attachments(
                             config.get("api_key", ""),
                             config.get("model", "gpt-4o-mini"),
                         )
-                        media_analysis = analyze_media_with_ai(
+                        media_analysis = await asyncio.to_thread(
+                            analyze_media_with_ai,
                             provider,
                             file_info["local_file_path"],
                             content_type,
