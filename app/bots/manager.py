@@ -58,6 +58,15 @@ class BotInstance:
         self.auto_restart_hours: float = 12.0  # Restart browser every N hours (default 12)
         self.browser_restart_requested: bool = False  # Signal to main loop to restart browser
 
+    @property
+    def platform_connected(self) -> bool:
+        """Platform-agnostic alias for connection status."""
+        return self.whatsapp_connected
+
+    @platform_connected.setter
+    def platform_connected(self, value: bool):
+        self.whatsapp_connected = value
+
     def add_qr_callback(self, callback: Callable):
         """Add callback for QR code updates."""
         self.qr_callbacks.append(callback)
