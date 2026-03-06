@@ -244,6 +244,13 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     db.add(user_msg)
     db.commit()
 
+    # Inject user context so the agent knows who it's working for
+    agent_config_dict["user_context"] = {
+        "user_id": user.id,
+        "email": user.email,
+        "name": user.name or user.email,
+    }
+
     # Build settings dict for manager
     settings_dict = {
         "api_key": api_key,

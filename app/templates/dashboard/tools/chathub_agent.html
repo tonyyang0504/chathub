@@ -491,39 +491,105 @@ let assistantBuffer = '';
 
 const API_BASE = '/tools/api/chathub-agent';
 const PROVIDER_MODELS = {
-    openai: [
-        { value: 'gpt-4o', label: 'GPT-4o - Best overall' },
-        { value: 'gpt-4o-mini', label: 'GPT-4o Mini - Fast & cheap' },
-        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-        { value: 'o1', label: 'o1 - Reasoning' },
-        { value: 'o3-mini', label: 'o3 Mini - Fast reasoning' },
-    ],
-    anthropic: [
-        { value: 'claude-opus-4-20250514', label: 'Claude Opus 4 - Most capable' },
-        { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 - Balanced' },
-        { value: 'claude-haiku-4-20250414', label: 'Claude Haiku 4 - Fastest' },
-    ],
-    google: [
-        { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-        { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-        { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-    ],
-    deepseek: [
-        { value: 'deepseek-chat', label: 'DeepSeek Chat' },
-        { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
-    ],
-    qwen: [
-        { value: 'qwen-turbo', label: 'Qwen Turbo' },
-        { value: 'qwen-plus', label: 'Qwen Plus' },
-        { value: 'qwen-max', label: 'Qwen Max' },
-    ],
-};
-const DEFAULT_MODELS = {
-    openai: 'gpt-4o',
-    anthropic: 'claude-sonnet-4-20250514',
-    google: 'gemini-2.0-flash',
-    deepseek: 'deepseek-chat',
-    qwen: 'qwen-turbo'
+    openai: {
+        defaultModel: 'gpt-4o-mini',
+        groups: [
+            { header: 'GPT-5.2 Series (Latest)', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            ]},
+            { header: 'GPT-5.1 Series', models: [
+                { value: 'gpt-5.1', label: 'GPT-5.1' },
+            ]},
+            { header: 'GPT-5 Series', models: [
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+            ]},
+            { header: 'GPT-4 Series', models: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+            ]},
+        ]
+    },
+    anthropic: {
+        defaultModel: 'claude-sonnet-4-5-20241022',
+        groups: [
+            { header: 'Claude 4.6 Series (Latest)', models: [
+                { value: 'claude-opus-4-6-20260205', label: 'Claude Opus 4.6' },
+            ]},
+            { header: 'Claude 4.5 Series', models: [
+                { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
+                { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
+                { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-1-20250414', label: 'Claude Opus 4.1' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+            ]},
+            { header: 'Claude 3.5 Series (Legacy)', models: [
+                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+            ]},
+        ]
+    },
+    google: {
+        defaultModel: 'gemini-3-flash',
+        groups: [
+            { header: 'Gemini 3 Series (Latest)', models: [
+                { value: 'gemini-3-pro', label: 'Gemini 3 Pro' },
+                { value: 'gemini-3-flash', label: 'Gemini 3 Flash (Default)' },
+            ]},
+            { header: 'Gemini 2.5 Series', models: [
+                { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+            ]},
+            { header: 'Gemini 2.0 Series', models: [
+                { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+                { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+            ]},
+            { header: 'Gemini 1.5 Series (Legacy)', models: [
+                { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+            ]},
+        ]
+    },
+    deepseek: {
+        defaultModel: 'deepseek-chat',
+        groups: [
+            { header: 'DeepSeek V3.2 (Latest)', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek V3.2 Chat (Default)' },
+            ]},
+            { header: 'DeepSeek Reasoning', models: [
+                { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
+            ]},
+            { header: 'DeepSeek V3', models: [
+                { value: 'deepseek-v3', label: 'DeepSeek V3' },
+            ]},
+        ]
+    },
+    qwen: {
+        defaultModel: 'qwen3-turbo',
+        groups: [
+            { header: 'Qwen3 Series (Latest)', models: [
+                { value: 'qwen3-max-thinking', label: 'Qwen3 Max Thinking' },
+                { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-plus', label: 'Qwen3 Plus' },
+                { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
+            ]},
+            { header: 'Qwen2.5 Series', models: [
+                { value: 'qwen-max', label: 'Qwen Max' },
+                { value: 'qwen-plus', label: 'Qwen Plus' },
+                { value: 'qwen-turbo', label: 'Qwen Turbo' },
+            ]},
+        ]
+    },
 };
 
 function getToken() {
@@ -553,14 +619,26 @@ function onProviderChange() {
     const provider = document.getElementById('providerSelect').value;
     const modelSelect = document.getElementById('modelSelect');
     const currentVal = modelSelect.value;
-    const models = PROVIDER_MODELS[provider] || [];
-    modelSelect.innerHTML = models.map(m =>
-        `<option value="${m.value}">${m.label}</option>`
-    ).join('');
-    // Keep current selection if it exists in new provider
-    const hasCurrentVal = models.some(m => m.value === currentVal);
-    modelSelect.value = hasCurrentVal ? currentVal : (DEFAULT_MODELS[provider] || '');
-    document.getElementById('modelHint').textContent = `${models.length} models available`;
+    const providerData = PROVIDER_MODELS[provider];
+    if (!providerData) { modelSelect.innerHTML = ''; return; }
+
+    let html = '';
+    let totalModels = 0;
+    for (const group of providerData.groups) {
+        html += `<optgroup label="${group.header}">`;
+        for (const m of group.models) {
+            html += `<option value="${m.value}">${m.label}</option>`;
+            totalModels++;
+        }
+        html += '</optgroup>';
+    }
+    modelSelect.innerHTML = html;
+
+    // Keep current selection if it exists in new provider, otherwise use default
+    const allModels = providerData.groups.flatMap(g => g.models);
+    const hasCurrentVal = allModels.some(m => m.value === currentVal);
+    modelSelect.value = hasCurrentVal ? currentVal : (providerData.defaultModel || '');
+    document.getElementById('modelHint').textContent = `${totalModels} models available`;
 }
 
 async function loadSettings() {
@@ -575,7 +653,7 @@ async function loadSettings() {
         }
         document.getElementById('providerSelect').value = data.ai_provider || 'openai';
         onProviderChange();  // populate model dropdown for provider
-        document.getElementById('modelSelect').value = data.default_model || DEFAULT_MODELS[data.ai_provider || 'openai'];
+        document.getElementById('modelSelect').value = data.default_model || (PROVIDER_MODELS[data.ai_provider || 'openai'] || {}).defaultModel || '';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         document.getElementById('maxMinutesInput').value = data.max_session_minutes || 60;

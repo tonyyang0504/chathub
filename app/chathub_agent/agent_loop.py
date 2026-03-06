@@ -52,6 +52,18 @@ class AgentLoop:
 
         # Build system prompt
         system_prompt = self.agent_config.get("system_prompt") or self._default_system_prompt()
+
+        # Inject user context
+        user_ctx = self.agent_config.get("user_context")
+        if user_ctx:
+            system_prompt += (
+                f"\n\n## Current User\n"
+                f"- User ID: {user_ctx.get('user_id')}\n"
+                f"- Email: {user_ctx.get('email')}\n"
+                f"- Name: {user_ctx.get('name')}\n"
+                f"When querying the database for user-specific data, use user_id = {user_ctx.get('user_id')}."
+            )
+
         if self.skill_instructions:
             system_prompt += "\n\n" + self.skill_instructions
 
@@ -310,7 +322,13 @@ class AgentLoop:
             "4. **Make changes**: Read files first, then use `edit_file` or `write_file`\n"
             "5. **Run commands**: Use `exec_command` for git, python, tests, etc.\n"
             "6. **Verify changes**: Read back files or run tests after modifying code\n\n"
-            "Act autonomously. When the user asks something, use tools immediately to find the "
-            "answer or accomplish the task. Don't ask for clarification if you can figure it out "
-            "by exploring the codebase yourself."
+            "## Behavior\n"
+            "- Act autonomously. When the user asks something, use tools immediately.\n"
+            "- NEVER ask for clarification if you can figure it out by exploring.\n"
+            "- If you don't know a table name, run: exec_command with `sqlite3 data/app.db \".tables\"`\n"
+            "- If you don't know a table schema, run: `sqlite3 data/app.db \"PRAGMA table_info(table_name);\"`\n"
+            "- For user-specific queries, use the user_id provided in the Current User section.\n"
+            "- Chain multiple tool calls as needed — explore first, then act.\n"
+            "- Read-only tools (read_file, list_files, search_files) don't need approval.\n"
+            "- exec_command requires approval — that's expected, the user will approve it."
         )
