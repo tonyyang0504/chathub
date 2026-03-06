@@ -44,6 +44,13 @@ async def get_tool_executions(
     request: Request,
     tool_type: Optional[str] = None,
     hub_id: Optional[int] = None,
+    # New filters
+    q: Optional[str] = None,  # free-text search (message/sender/group + raw JSON)
+    status: Optional[str] = None,  # success|error
+    operation: Optional[str] = None,
+    triggered_by: Optional[str] = None,
+    start: Optional[str] = None,  # ISO date/datetime
+    end: Optional[str] = None,    # ISO date/datetime
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db)
@@ -82,6 +89,51 @@ async def get_tool_executions(
             )
         else:
             query = query.filter(ToolExecution.user_id == user.id)
+
+        # Apply filters
+        if status:
+            query = query.filter(ToolExecution.status == status)
+        if operation:
+            query = query.filter(ToolExecution.operation == operation)
+        if triggered_by:
+            query = query.filter(ToolExecution.triggered_by == triggered_by)
+
+        # Date filters (created_at)
+        from datetime import datetime
+        def _parse_dt(val: str) -> Optional[datetime]:
+            if not val:
+                return None
+            v = val.strip()
+            # accept YYYY-MM-DD or full ISO; also accept trailing 'Z'
+            if v.endswith('Z'):
+                v = v[:-1] + '+00:00'
+            try:
+                return datetime.fromisoformat(v)
+            except Exception:
+                # try date-only
+                try:
+                    return datetime.fromisoformat(v + 'T00:00:00')
+                except Exception:
+                    return None
+
+        start_dt = _parse_dt(start) if start else None
+        end_dt = _parse_dt(end) if end else None
+        if start_dt:
+            query = query.filter(ToolExecution.created_at >= start_dt)
+        if end_dt:
+            query = query.filter(ToolExecution.created_at <= end_dt)
+
+        # Free-text search across common JSON fields + raw JSON blobs
+        if q:
+            from sqlalchemy import or_
+            like = f"%{q}%"
+            query = query.filter(
+                or_(
+                    ToolExecution.input_data.like(like),
+                    ToolExecution.output_data.like(like),
+                    ToolExecution.error_message.like(like),
+                )
+            )
 
         executions = query.order_by(ToolExecution.created_at.desc()).offset(offset).limit(limit).all()
 

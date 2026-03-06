@@ -1010,7 +1010,8 @@
     <div class="tool-card">
         <div class="tool-card-header">
             <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <!-- Filters -->
                 <input type="hidden" id="activityInstanceValue" value="">
                 <div class="dropdown instance-dropdown">
                     <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="activityInstanceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -1020,7 +1021,25 @@
                         <a class="dropdown-item instance-filter-item selected" href="#" data-value="">All Instances</a>
                     </div>
                 </div>
-                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="loadActivity()">
+
+                <input class="form-control" id="activitySearch" placeholder="Search message, sender, group..." style="max-width: 280px;" />
+
+                <select class="form-select" id="activityStatus" style="max-width: 170px;">
+                    <option value="">All statuses</option>
+                    <option value="success">Success</option>
+                    <option value="error">Error</option>
+                </select>
+
+                <select class="form-select" id="activityOperation" style="max-width: 220px;">
+                    <option value="">All operations</option>
+                    <option value="message_routing">message_routing</option>
+                    <option value="bot_to_bot_blocked">bot_to_bot_blocked</option>
+                </select>
+
+                <input class="form-control" id="activityStart" type="date" style="max-width: 170px;" />
+                <input class="form-control" id="activityEnd" type="date" style="max-width: 170px;" />
+
+                <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" id="activityRefreshBtn" onclick="loadActivity()">
                     <i class="bi bi-arrow-clockwise"></i>
                 </button>
             </div>
@@ -1256,6 +1275,25 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInstances();
     loadActivity();
 
+    // Wire up activity filters
+    const searchEl = document.getElementById('activitySearch');
+    const statusEl = document.getElementById('activityStatus');
+    const opEl = document.getElementById('activityOperation');
+    const startEl = document.getElementById('activityStart');
+    const endEl = document.getElementById('activityEnd');
+
+    // Debounced search
+    let searchTimer = null;
+    if (searchEl) {
+        searchEl.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadActivity(), 350);
+        });
+    }
+    [statusEl, opEl, startEl, endEl].forEach(el => {
+        if (el) el.addEventListener('change', () => loadActivity());
+    });
+
     // Initialize simulation dropdowns
     setupSimProviderDropdown();
     updateSimModelDropdown('openai');
@@ -1444,10 +1482,23 @@ async function loadActivity() {
         // Get selected instance filter
         const filterInput = document.getElementById('activityInstanceValue');
         const selectedHubId = filterInput ? filterInput.value : '';
+        // Build URL with filters
         let url = '/tools/api/executions?tool_type=group_management&limit=20';
         if (selectedHubId) {
-            url += `&hub_id=${selectedHubId}`;
+            url += `&hub_id=${encodeURIComponent(selectedHubId)}`;
         }
+
+        const q = document.getElementById('activitySearch')?.value?.trim();
+        const status = document.getElementById('activityStatus')?.value;
+        const operation = document.getElementById('activityOperation')?.value;
+        const start = document.getElementById('activityStart')?.value;
+        const end = document.getElementById('activityEnd')?.value;
+
+        if (q) url += `&q=${encodeURIComponent(q)}`;
+        if (status) url += `&status=${encodeURIComponent(status)}`;
+        if (operation) url += `&operation=${encodeURIComponent(operation)}`;
+        if (start) url += `&start=${encodeURIComponent(start)}`;
+        if (end) url += `&end=${encodeURIComponent(end)}`;
         const response = await fetch(url);
         const data = await response.json();
         const container = document.getElementById('activityLog');
