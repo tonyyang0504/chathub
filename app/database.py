@@ -710,6 +710,32 @@ class ClaudeCodeSettings(Base):
 
 # ============== ChatHub Agent Models ==============
 
+class AIUsage(Base):
+    """AI Usage - tracks token usage and cost for every AI API call."""
+    __tablename__ = "ai_usage"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    bot_id = Column(Integer, ForeignKey("bot_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id", ondelete="SET NULL"), nullable=True, index=True)
+    agent_id = Column(Integer, ForeignKey("ai_agents.id", ondelete="SET NULL"), nullable=True)
+    provider = Column(String(50), nullable=False)  # 'openai', 'anthropic', 'google', etc.
+    model = Column(String(100), nullable=False)  # 'gpt-4o-mini', 'claude-3-5-sonnet', etc.
+    operation = Column(String(100))  # 'chat', 'image_analysis', 'classification', 'routing', 'content_generation', etc.
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    cost_usd = Column(Float, default=0.0)  # Estimated cost in USD
+    source = Column(String(50))  # 'bot_chat', 'hub_routing', 'tool', 'agent', 'scheduler'
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    user = relationship("User", backref="ai_usage_records")
+    bot = relationship("BotProfile", backref="ai_usage_records")
+    hub = relationship("Hub", backref="ai_usage_records")
+    agent = relationship("AIAgent", backref="ai_usage_records")
+
+
 class ChatHubAgentSettings(Base):
     """ChatHub Agent settings - per-user configuration."""
     __tablename__ = "chathub_agent_settings"
@@ -1330,6 +1356,37 @@ def run_migrations():
                 print("Created script_executions table")
             except Exception as e:
                 print(f"Could not create script_executions table: {e}")
+
+        # ============== Create ai_usage table ==============
+        if 'ai_usage' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE ai_usage (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        bot_id INTEGER REFERENCES bot_profiles(id) ON DELETE SET NULL,
+                        hub_id INTEGER REFERENCES hubs(id) ON DELETE SET NULL,
+                        agent_id INTEGER REFERENCES ai_agents(id) ON DELETE SET NULL,
+                        provider VARCHAR(50) NOT NULL,
+                        model VARCHAR(100) NOT NULL,
+                        operation VARCHAR(100),
+                        prompt_tokens INTEGER DEFAULT 0,
+                        completion_tokens INTEGER DEFAULT 0,
+                        total_tokens INTEGER DEFAULT 0,
+                        cost_usd REAL DEFAULT 0.0,
+                        source VARCHAR(50),
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+                conn.execute(text('CREATE INDEX ix_ai_usage_user_id ON ai_usage(user_id)'))
+                conn.execute(text('CREATE INDEX ix_ai_usage_bot_id ON ai_usage(bot_id)'))
+                conn.execute(text('CREATE INDEX ix_ai_usage_hub_id ON ai_usage(hub_id)'))
+                conn.execute(text('CREATE INDEX ix_ai_usage_created_at ON ai_usage(created_at)'))
+                conn.execute(text('CREATE INDEX ix_ai_usage_provider ON ai_usage(provider)'))
+                conn.commit()
+                print("Created ai_usage table")
+            except Exception as e:
+                print(f"Could not create ai_usage table: {e}")
 
         # ============== Add AI analysis fields to contacts table ==============
         if 'contacts' in existing_tables:
