@@ -49,9 +49,11 @@ from .platforms.registry import platform_registry
 from .platforms.whatsapp import WhatsAppAdapter
 from .platforms.discord import DiscordAdapter
 from .platforms.linkedin import LinkedInAdapter
+from .platforms.telegram import TelegramAdapter
 platform_registry.register(PlatformType.WHATSAPP, WhatsAppAdapter)
 platform_registry.register(PlatformType.DISCORD, DiscordAdapter)
 platform_registry.register(PlatformType.LINKEDIN, LinkedInAdapter)
+platform_registry.register(PlatformType.TELEGRAM, TelegramAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
