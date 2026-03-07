@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent  # python_bot directory
 SESSIONS_DIR = BASE_DIR / "data" / "sessions"
 
+from pydantic import BaseModel as PydanticBaseModel
 from app.config import settings
 from app.database import get_db, User, BotProfile, Conversation, Message
 from app.auth.utils import get_current_user, encrypt_string, decrypt_string, get_websocket_user
@@ -974,6 +975,46 @@ async def websocket_qr(
                 pass
     finally:
         db.close()
+
+
+# ============== Create WhatsApp Group ==============
+
+class CreateGroupRequest(PydanticBaseModel):
+    group_name: str
+    phone_numbers: list
+
+@router.post("/{bot_id}/create-group")
+async def create_group(
+    bot_id: int,
+    request: CreateGroupRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a WhatsApp group using the specified bot."""
+    bot = db.query(BotProfile).filter(
+        BotProfile.id == bot_id,
+        BotProfile.user_id == current_user.id
+    ).first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    bot_instance = bot_manager.get_instance(bot.id)
+    if not bot_instance or not bot_instance.is_running:
+        raise HTTPException(status_code=400, detail="Bot is not running")
+    if not bot_instance.whatsapp_connected:
+        raise HTTPException(status_code=400, detail="WhatsApp is not connected")
+
+    from app.bots.whatsapp_bot import create_whatsapp_group
+    result = await create_whatsapp_group(
+        bot_profile_id=bot.id,
+        group_name=request.group_name,
+        phone_numbers=request.phone_numbers
+    )
+
+    if result['success']:
+        return {"success": True, "message": f"Group '{request.group_name}' created successfully"}
+    else:
+        raise HTTPException(status_code=500, detail=result.get('error', 'Failed to create group'))
 
 
 # ============== Bot Contacts and Groups for Schedule Content ==============

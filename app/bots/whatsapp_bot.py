@@ -117,6 +117,11 @@ _outgoing_queues_lock = threading.Lock()
 _outgoing_file_queues: Dict[int, queue.Queue] = {}
 _outgoing_file_queues_lock = threading.Lock()
 
+# Create group queue
+# Maps bot_profile_id -> Queue of (group_name, phone_numbers, result_event, result_holder)
+_create_group_queues: Dict[int, queue.Queue] = {}
+_create_group_queues_lock = threading.Lock()
+
 
 def _get_outgoing_queue(bot_profile_id: int) -> queue.Queue:
     """Get or create the outgoing message queue for a bot."""
@@ -134,6 +139,14 @@ def _get_outgoing_file_queue(bot_profile_id: int) -> queue.Queue:
         return _outgoing_file_queues[bot_profile_id]
 
 
+def _get_create_group_queue(bot_profile_id: int) -> queue.Queue:
+    """Get or create the create-group queue for a bot."""
+    with _create_group_queues_lock:
+        if bot_profile_id not in _create_group_queues:
+            _create_group_queues[bot_profile_id] = queue.Queue()
+        return _create_group_queues[bot_profile_id]
+
+
 def cleanup_bot_queues(bot_profile_id: int) -> None:
     """
     Clean up queues for a bot when it's stopped.
@@ -145,6 +158,9 @@ def cleanup_bot_queues(bot_profile_id: int) -> None:
     with _outgoing_file_queues_lock:
         if bot_profile_id in _outgoing_file_queues:
             del _outgoing_file_queues[bot_profile_id]
+    with _create_group_queues_lock:
+        if bot_profile_id in _create_group_queues:
+            del _create_group_queues[bot_profile_id]
 
 
 def _is_valid_whatsapp_id(chat_id: str) -> bool:
@@ -307,6 +323,171 @@ async def send_whatsapp_file(bot_profile_id: int, chat_id: str, file_path: str, 
     else:
         logger.error(f"send_whatsapp_file: Timeout waiting for file to be sent")
         return False
+
+
+async def create_whatsapp_group(bot_profile_id: int, group_name: str, phone_numbers: list) -> dict:
+    """
+    Create a WhatsApp group by adding to the bot's create-group queue.
+    The bot's main loop will pick up and create the group.
+
+    Args:
+        bot_profile_id: The bot profile ID
+        group_name: Name for the new group
+        phone_numbers: List of phone numbers to add as members
+
+    Returns:
+        dict with 'success' and optional 'error' keys
+    """
+    with _bot_pages_lock:
+        page = _bot_pages.get(bot_profile_id)
+
+    if not page:
+        logger.error(f"create_whatsapp_group: No page found for bot {bot_profile_id}")
+        return {'success': False, 'error': 'Bot page not found'}
+
+    result_event = threading.Event()
+    result_holder = {'success': False, 'error': None}
+
+    create_group_queue = _get_create_group_queue(bot_profile_id)
+    create_group_queue.put((group_name, phone_numbers, result_event, result_holder))
+
+    logger.info(f"create_whatsapp_group: Queued group creation '{group_name}' with {len(phone_numbers)} members")
+
+    wait_result = await asyncio.to_thread(result_event.wait, timeout=60)
+
+    if wait_result:
+        if result_holder['success']:
+            logger.info(f"create_whatsapp_group: Successfully created group '{group_name}'")
+            return {'success': True}
+        else:
+            error_msg = result_holder.get('error', 'Unknown error')
+            logger.error(f"create_whatsapp_group: Failed - {error_msg}")
+            return {'success': False, 'error': error_msg}
+    else:
+        logger.error(f"create_whatsapp_group: Timeout waiting for group creation")
+        return {'success': False, 'error': 'Timeout waiting for group creation'}
+
+
+def _process_create_group(page, bot_profile_id: int):
+    """
+    Process any pending create-group requests in the queue.
+    Called from the bot's main message loop.
+    """
+    create_group_queue = _get_create_group_queue(bot_profile_id)
+
+    try:
+        group_name, phone_numbers, result_event, result_holder = create_group_queue.get_nowait()
+    except queue.Empty:
+        return
+
+    try:
+        logger.info(f"Bot {bot_profile_id}: Creating group '{group_name}' with members: {phone_numbers}")
+
+        # Step 1: Click the "New chat" / compose button
+        new_chat_btn = page.query_selector('[data-testid="chat-list-header-menu-new-chat"]') or \
+                       page.query_selector('[aria-label="New chat"]') or \
+                       page.query_selector('[data-testid="menu-bar-new-chat"]')
+        if not new_chat_btn:
+            raise Exception("Could not find 'New chat' button")
+        new_chat_btn.click()
+        time.sleep(1)
+
+        # Step 2: Click "New group"
+        new_group_btn = page.query_selector('[data-testid="btn-new-group"]') or \
+                        page.query_selector('[aria-label="New group"]')
+        if not new_group_btn:
+            # Try finding by text
+            elements = page.query_selector_all('div[role="button"], div[tabindex]')
+            for el in elements:
+                try:
+                    text = el.inner_text()
+                    if 'New group' in text or 'new group' in text.lower():
+                        new_group_btn = el
+                        break
+                except:
+                    pass
+        if not new_group_btn:
+            raise Exception("Could not find 'New group' button")
+        new_group_btn.click()
+        time.sleep(1.5)
+
+        # Step 3: Add members by phone number
+        for phone in phone_numbers:
+            # Find the search/add participants input
+            search_input = page.query_selector('[data-testid="search-input"]') or \
+                          page.query_selector('input[placeholder*="contact"]') or \
+                          page.query_selector('input[placeholder*="name"]') or \
+                          page.query_selector('[contenteditable="true"][data-tab="3"]')
+            if not search_input:
+                # Try broader search for input in the add participants panel
+                search_input = page.query_selector('[title="Search input textbox"]') or \
+                              page.query_selector('div[contenteditable="true"]')
+            if not search_input:
+                raise Exception(f"Could not find search input to add member {phone}")
+
+            search_input.click()
+            time.sleep(0.3)
+            search_input.fill(str(phone))
+            time.sleep(2)
+
+            # Click on the search result
+            result = page.query_selector(f'span[title*="{phone}"]')
+            if not result:
+                # Try clicking the first search result
+                result = page.query_selector('[data-testid="cell-frame-container"]') or \
+                        page.query_selector('[role="row"]') or \
+                        page.query_selector('[role="listitem"]')
+            if result:
+                result.click()
+                time.sleep(0.5)
+            else:
+                logger.warning(f"Bot {bot_profile_id}: Could not find contact for phone {phone}")
+
+        # Step 4: Click the forward/next arrow button
+        next_btn = page.query_selector('[data-testid="arrow-forward"]') or \
+                   page.query_selector('[aria-label="Next"]') or \
+                   page.query_selector('span[data-icon="arrow-forward"]')
+        if not next_btn:
+            raise Exception("Could not find 'Next' button after adding members")
+        next_btn.click()
+        time.sleep(1.5)
+
+        # Step 5: Enter group name
+        group_name_input = page.query_selector('[data-testid="group-name-input"]') or \
+                          page.query_selector('div[contenteditable="true"][role="textbox"]') or \
+                          page.query_selector('div[contenteditable="true"]')
+        if not group_name_input:
+            raise Exception("Could not find group name input")
+        group_name_input.click()
+        time.sleep(0.3)
+        group_name_input.fill(group_name)
+        time.sleep(0.5)
+
+        # Step 6: Click the create/checkmark button
+        create_btn = page.query_selector('[data-testid="create-group-btn"]') or \
+                    page.query_selector('[data-testid="arrow-forward"]') or \
+                    page.query_selector('span[data-icon="checkmark-medium"]') or \
+                    page.query_selector('[aria-label="Create group"]')
+        if not create_btn:
+            raise Exception("Could not find 'Create group' button")
+        create_btn.click()
+        time.sleep(2)
+
+        result_holder['success'] = True
+        logger.info(f"Bot {bot_profile_id}: Successfully created group '{group_name}'")
+
+    except Exception as e:
+        logger.error(f"Bot {bot_profile_id}: Error creating group: {e}")
+        result_holder['error'] = str(e)
+        # Try to close any open panels by pressing Escape
+        try:
+            page.keyboard.press('Escape')
+            time.sleep(0.3)
+            page.keyboard.press('Escape')
+        except:
+            pass
+    finally:
+        result_event.set()
 
 
 def _process_outgoing_files(page, bot_profile_id: int):
@@ -3133,6 +3314,12 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                     _process_outgoing_files(page, bot_profile_id)
                 except Exception as e:
                     logger.error(f"Bot {bot_profile_id}: Error processing outgoing files: {e}")
+
+                # Process any pending create-group requests
+                try:
+                    _process_create_group(page, bot_profile_id)
+                except Exception as e:
+                    logger.error(f"Bot {bot_profile_id}: Error processing create group: {e}")
 
                 # === Only check unreads + AI respond if toggle is ON ===
                 if not instance.ai_response_enabled:

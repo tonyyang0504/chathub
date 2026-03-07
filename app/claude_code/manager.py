@@ -633,6 +633,10 @@ class ClaudeCodeManager:
                     except Exception as e:
                         logger.error(f"Failed to persist message: {e}")
 
+                # Skip system/init event (large session metadata, no user value)
+                if msg_type == "system" and data.get("subtype") == "init":
+                    continue
+
                 # Broadcast to WebSocket clients
                 await session.broadcast(data)
 

@@ -476,6 +476,212 @@
         transform: translateX(-100%);
     }
 }
+
+/* Artifacts panel */
+.claude-artifacts {
+    width: 420px;
+    min-width: 420px;
+    height: 100%;
+    background: var(--card-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: margin-right 0.25s ease, opacity 0.25s ease;
+    z-index: 10;
+}
+.claude-artifacts.collapsed {
+    margin-right: -420px;
+    opacity: 0;
+    pointer-events: none;
+}
+.artifacts-header {
+    padding: 0.6rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.artifacts-header h6 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+.btn-artifact-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 0.7rem;
+    transition: all 0.15s;
+}
+.btn-artifact-close:hover {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.3);
+    color: #ef4444;
+}
+.artifact-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 0.6rem;
+    overflow: hidden;
+    transition: border-color 0.3s;
+}
+.artifact-card.highlight {
+    border-color: #06b6d4;
+}
+.artifact-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.45rem 0.7rem;
+    background: rgba(6,182,212,0.05);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+.artifact-card-header i { color: #06b6d4; font-size: 0.7rem; }
+.artifact-card-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artifact-card-time { font-size: 0.65rem; opacity: 0.6; flex-shrink: 0; }
+.artifact-card-content { padding: 0.5rem 0.7rem; }
+.artifacts-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+    min-height: 0;
+    font-size: 0.8rem;
+}
+.artifact-section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+}
+.artifact-code {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    line-height: 1.55;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+.artifact-terminal {
+    background: #0d1117;
+    color: #3fb950;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    line-height: 1.55;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-bottom: 0.5rem;
+}
+.artifact-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #cdd6f4;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.artifact-code:hover .artifact-copy-btn { opacity: 1; }
+.artifact-copy-btn:hover { background: rgba(255,255,255,0.2); }
+.artifact-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+    gap: 0.5rem;
+}
+.artifact-empty i { font-size: 2rem; opacity: 0.2; }
+.artifact-empty span { font-size: 0.8rem; }
+
+/* Compact tool pill in chat */
+.msg-tool-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    background: rgba(6,182,212,0.08);
+    border: 1px solid rgba(6,182,212,0.2);
+    color: #06b6d4;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin: 2px 0;
+}
+.msg-tool-pill:hover {
+    background: rgba(6,182,212,0.15);
+    border-color: rgba(6,182,212,0.4);
+}
+.msg-tool-pill i { font-size: 0.7rem; }
+.msg-tool-pill .pill-hint {
+    font-size: 0.62rem;
+    opacity: 0.6;
+    font-weight: 400;
+}
+.msg-tool-pill.has-result {
+    border-color: rgba(16,185,129,0.3);
+}
+.msg-tool-pill.has-result .pill-status {
+    color: #10b981;
+}
+
+@media (max-width: 991px) {
+    .claude-artifacts {
+        position: fixed;
+        top: 56px;
+        right: 0;
+        bottom: 0;
+        z-index: 25;
+        margin-right: 0;
+        transform: translateX(100%);
+        transition: transform 0.25s ease;
+        opacity: 1;
+        pointer-events: auto;
+        width: 85vw;
+        min-width: 0;
+        max-width: 420px;
+    }
+    .claude-artifacts:not(.collapsed) {
+        transform: translateX(0);
+        box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    }
+    .claude-artifacts.collapsed {
+        margin-right: 0;
+        transform: translateX(100%);
+        opacity: 1;
+    }
+}
 </style>
 {% endblock %}
 
@@ -514,6 +720,11 @@
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn"
+                        onclick="toggleArtifacts()" style="display: none;">
+                    <i class="bi bi-layout-sidebar-inset-reverse me-1"></i>Artifacts
+                    <span class="badge bg-info bg-opacity-25 text-info ms-1" id="artifactCount">0</span>
+                </button>
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
                     <i class="bi bi-gear me-1"></i>Settings
                 </button>
@@ -542,6 +753,22 @@
                 <button id="sendBtn" onclick="handleSend()" title="Send">
                     <i class="bi bi-arrow-up" style="font-size: 1.1rem;"></i>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Artifacts Panel -->
+    <div class="claude-artifacts collapsed" id="claudeArtifacts">
+        <div class="artifacts-header">
+            <h6><i class="bi bi-layers me-2"></i>Artifacts</h6>
+            <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close artifacts">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="artifacts-body" id="artifactsBody">
+            <div class="artifact-empty">
+                <i class="bi bi-layers"></i>
+                <span>Tool calls will appear here</span>
             </div>
         </div>
     </div>
@@ -669,6 +896,12 @@ let isRunning = false;
 let isWaiting = false;  // True when session finished responding, awaiting follow-up
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
+
+// Artifacts state
+let artifacts = [];
+let activeArtifactId = null;
+let artifactsPanelOpen = false;
+let artifactIdCounter = 0;
 
 // Token from cookie
 function getToken() {
@@ -1242,9 +1475,19 @@ function renderStreamEvent(data) {
                 scrollToBottom();
             }
         } else if (delta.type === 'input_json_delta' && delta.partial_json) {
-            if (currentToolUseEl) {
-                const body = currentToolUseEl.querySelector('.tool-block-body');
-                if (body) body.textContent += delta.partial_json;
+            // Stream into the last artifact card's input
+            if (artifacts.length > 0) {
+                const last = artifacts[artifacts.length - 1];
+                last.input += delta.partial_json;
+                const cardEl = document.getElementById(`artifact-${last.id}`);
+                if (cardEl) {
+                    const codeEl = cardEl.querySelector('.artifact-code, .artifact-terminal');
+                    if (codeEl) {
+                        const copyBtn = codeEl.querySelector('.artifact-copy-btn');
+                        const btnHtml = copyBtn ? copyBtn.outerHTML : '';
+                        codeEl.innerHTML = btnHtml + escapeHtml(last.input);
+                    }
+                }
             }
         }
     } else if (type === 'content_block_stop') {
@@ -1283,6 +1526,7 @@ function renderStreamEvent(data) {
         document.getElementById('stopBtn').style.display = 'none';
         document.getElementById('sendBtn').disabled = false;
     } else if (type === 'system') {
+        if (data.subtype === 'init') return;  // Skip session init metadata
         appendSystemMessage(data.message || data.content || '');
     }
 }
@@ -1325,19 +1569,24 @@ function appendToolUse(content) {
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = { tool: 'unknown', input: content }; }
 
+    const toolName = parsed.tool || 'Tool';
+    const inputData = parsed.input || {};
+    const inputStr = typeof inputData === 'object' ? JSON.stringify(inputData, null, 2) : (inputData || '');
+
+    // Create artifact
+    const artifact = createArtifact(toolName, inputData, inputStr);
+
+    // Render compact pill in chat
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-tool';
-
-    const inputStr = typeof parsed.input === 'object' ? JSON.stringify(parsed.input, null, 2) : (parsed.input || '');
-    div.innerHTML = `<div class="tool-block">
-        <div class="tool-block-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.style.display = this.classList.contains('collapsed') ? 'none' : 'block';">
-            <i class="bi bi-chevron-down chevron"></i>
-            <i class="bi bi-wrench me-1" style="color: #06b6d4;"></i>
-            ${escapeHtml(parsed.tool || 'Tool')}
-        </div>
-        <div class="tool-block-body">${escapeHtml(inputStr)}</div>
-    </div>`;
+    const icon = getToolIcon(toolName);
+    const title = getArtifactTitle(toolName, inputData);
+    div.innerHTML = `<span class="msg-tool-pill" data-artifact-id="${artifact.id}" onclick="selectArtifact(${artifact.id})">
+        <i class="bi ${icon}"></i>
+        <span>${escapeHtml(title)}</span>
+        <span class="pill-hint">click to view</span>
+    </span>`;
     chatBody.appendChild(div);
     currentToolUseEl = div;
     scrollToBottom();
@@ -1351,21 +1600,250 @@ function appendToolResult(content) {
     } catch {
         text = content;
     }
-    const displayText = text.length > 2000 ? text.substring(0, 2000) + '\n... (truncated)' : text;
 
-    const chatBody = document.getElementById('chatBody');
-    const div = document.createElement('div');
-    div.className = 'msg msg-tool';
-    div.innerHTML = `<div class="tool-block">
-        <div class="tool-block-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.style.display = this.classList.contains('collapsed') ? 'none' : 'block';">
-            <i class="bi bi-chevron-down chevron"></i>
-            <i class="bi bi-check-circle me-1" style="color: #10b981;"></i>
-            Result
-        </div>
-        <div class="tool-block-body" style="display: none;">${escapeHtml(displayText)}</div>
-    </div>`;
-    chatBody.appendChild(div);
+    // Update last artifact with result
+    updateArtifactResult(text);
+
+    // Mark the pill in chat as having a result
+    const pills = document.querySelectorAll('.msg-tool-pill:not(.has-result)');
+    if (pills.length > 0) {
+        const lastPill = pills[pills.length - 1];
+        lastPill.classList.add('has-result');
+        const hint = lastPill.querySelector('.pill-hint');
+        if (hint) hint.innerHTML = '<i class="bi bi-check-circle pill-status"></i>';
+    }
     scrollToBottom();
+}
+
+// --- Artifacts ---
+function getToolIcon(toolName) {
+    const icons = {
+        'Bash': 'bi-terminal',
+        'Read': 'bi-file-earmark-text',
+        'Edit': 'bi-pencil-square',
+        'Write': 'bi-file-earmark-plus',
+        'Grep': 'bi-search',
+        'Glob': 'bi-folder-check',
+        'ToolSearch': 'bi-search',
+        'Agent': 'bi-robot',
+        'WebSearch': 'bi-globe',
+        'WebFetch': 'bi-cloud-download',
+    };
+    return icons[toolName] || 'bi-wrench';
+}
+
+function getArtifactTitle(toolName, input) {
+    if (!input || typeof input !== 'object') return toolName;
+    if (toolName === 'Bash' && input.command) {
+        const cmd = input.command.length > 40 ? input.command.substring(0, 40) + '...' : input.command;
+        return `$ ${cmd}`;
+    }
+    if (toolName === 'Read' && input.file_path) {
+        return input.file_path.split('/').pop();
+    }
+    if (toolName === 'Edit' && input.file_path) {
+        return `Edit: ${input.file_path.split('/').pop()}`;
+    }
+    if (toolName === 'Write' && input.file_path) {
+        return `New: ${input.file_path.split('/').pop()}`;
+    }
+    if (toolName === 'Grep' && input.pattern) {
+        return `Search: ${input.pattern.length > 30 ? input.pattern.substring(0, 30) + '...' : input.pattern}`;
+    }
+    if (toolName === 'Glob' && input.pattern) {
+        return `Files: ${input.pattern}`;
+    }
+    return toolName;
+}
+
+function createArtifact(toolName, inputData, inputStr) {
+    const id = ++artifactIdCounter;
+    const artifact = {
+        id,
+        toolName,
+        title: getArtifactTitle(toolName, inputData),
+        input: inputStr || '',
+        inputData,
+        result: null,
+        timestamp: new Date()
+    };
+    artifacts.push(artifact);
+
+    // Show toggle button and update count
+    const toggleBtn = document.getElementById('artifactsToggleBtn');
+    toggleBtn.style.display = 'inline-flex';
+    document.getElementById('artifactCount').textContent = artifacts.length;
+
+    // Auto-open panel on first artifact
+    if (!artifactsPanelOpen) {
+        toggleArtifacts();
+    }
+
+    // Append card to body and scroll to it
+    appendArtifactToBody(artifact);
+
+    return artifact;
+}
+
+function updateArtifactResult(resultText) {
+    if (artifacts.length === 0) return;
+    const last = artifacts[artifacts.length - 1];
+    last.result = resultText;
+    // Update the specific artifact card
+    const cardEl = document.getElementById(`artifact-${last.id}`);
+    if (cardEl) {
+        const contentEl = cardEl.querySelector('.artifact-card-content');
+        if (contentEl) {
+            // Remove waiting placeholder
+            const waiting = contentEl.querySelector('.artifact-waiting');
+            if (waiting) waiting.remove();
+            // Append result section
+            contentEl.insertAdjacentHTML('beforeend', renderArtifactResultHtml(last.toolName, resultText));
+        }
+    }
+}
+
+function toggleArtifacts() {
+    const panel = document.getElementById('claudeArtifacts');
+    artifactsPanelOpen = panel.classList.contains('collapsed');
+    panel.classList.toggle('collapsed');
+}
+
+function selectArtifact(id) {
+    activeArtifactId = id;
+    const cardEl = document.getElementById(`artifact-${id}`);
+    if (!cardEl) return;
+
+    // Scroll card into view
+    cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Briefly highlight
+    cardEl.classList.add('highlight');
+    setTimeout(() => cardEl.classList.remove('highlight'), 1500);
+
+    // On mobile, ensure panel is open
+    if (!artifactsPanelOpen) {
+        const panel = document.getElementById('claudeArtifacts');
+        panel.classList.remove('collapsed');
+        artifactsPanelOpen = true;
+    }
+}
+
+function renderSingleArtifactCard(artifact) {
+    const icon = getToolIcon(artifact.toolName);
+    const time = artifact.timestamp ? new Date(artifact.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    let inputHtml = renderArtifactInputHtml(artifact);
+    let resultHtml = '';
+    if (artifact.result !== null) {
+        resultHtml = renderArtifactResultHtml(artifact.toolName, artifact.result);
+    } else {
+        resultHtml = `<div class="artifact-waiting" style="color: var(--text-secondary); font-size: 0.78rem; font-style: italic; margin-top: 0.5rem;">
+            <i class="bi bi-hourglass-split me-1"></i>Waiting for result...
+        </div>`;
+    }
+    return `<div class="artifact-card" id="artifact-${artifact.id}">
+        <div class="artifact-card-header">
+            <i class="bi ${icon}"></i>
+            <span class="artifact-card-title">${escapeHtml(artifact.title)}</span>
+            <span class="artifact-card-time">${time}</span>
+        </div>
+        <div class="artifact-card-content">${inputHtml}${resultHtml}</div>
+    </div>`;
+}
+
+function renderArtifactInputHtml(artifact) {
+    const toolName = artifact.toolName;
+    let html = '';
+    if (artifact.input) {
+        if (toolName === 'Bash') {
+            html += `<div class="artifact-section-label">Command</div>`;
+            let cmd = artifact.input;
+            try { cmd = JSON.parse(artifact.input).command || artifact.input; } catch {}
+            html += `<div class="artifact-terminal">$ ${escapeHtml(typeof cmd === 'string' ? cmd : JSON.stringify(cmd, null, 2))}</div>`;
+        } else if (toolName === 'Edit') {
+            html += `<div class="artifact-section-label">Edit Operation</div>`;
+            html += renderEditArtifact(artifact.inputData);
+        } else if (toolName === 'Read' || toolName === 'Write') {
+            html += `<div class="artifact-section-label">${toolName === 'Write' ? 'File Content' : 'Parameters'}</div>`;
+            if (toolName === 'Write' && artifact.inputData && artifact.inputData.content) {
+                const fname = artifact.inputData.file_path || '';
+                html += `<div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px;">${escapeHtml(fname)}</div>`;
+                html += `<div class="artifact-code"><button class="artifact-copy-btn" onclick="copyArtifactContent(this)">Copy</button>${escapeHtml(artifact.inputData.content)}</div>`;
+            } else {
+                html += `<div class="artifact-code">${escapeHtml(artifact.input)}</div>`;
+            }
+        } else {
+            html += `<div class="artifact-section-label">Input</div>`;
+            html += `<div class="artifact-code">${escapeHtml(artifact.input)}</div>`;
+        }
+    }
+    return html;
+}
+
+function renderArtifactResultHtml(toolName, resultText) {
+    if (toolName === 'Bash') {
+        return `<div class="artifact-section-label">Output</div>
+            <div class="artifact-terminal">${escapeHtml(resultText)}</div>`;
+    } else if (toolName === 'Read') {
+        return `<div class="artifact-section-label">File Content</div>
+            <div class="artifact-code"><button class="artifact-copy-btn" onclick="copyArtifactContent(this)">Copy</button>${escapeHtml(resultText)}</div>`;
+    } else {
+        return `<div class="artifact-section-label">Result</div>
+            <div class="artifact-code">${escapeHtml(resultText)}</div>`;
+    }
+}
+
+function appendArtifactToBody(artifact) {
+    const body = document.getElementById('artifactsBody');
+    // Remove empty state if present
+    const empty = body.querySelector('.artifact-empty');
+    if (empty) empty.remove();
+    // Append card
+    body.insertAdjacentHTML('beforeend', renderSingleArtifactCard(artifact));
+    // Scroll to new card
+    const cardEl = document.getElementById(`artifact-${artifact.id}`);
+    if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderEditArtifact(inputData) {
+    if (!inputData || typeof inputData !== 'object') return '<div class="artifact-code">No data</div>';
+    let html = '';
+    if (inputData.file_path) {
+        html += `<div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px;">${escapeHtml(inputData.file_path)}</div>`;
+    }
+    if (inputData.old_string !== undefined) {
+        html += `<div style="font-size:0.68rem; font-weight:600; color:#ef4444; margin-bottom:2px;">- Old</div>`;
+        html += `<div class="artifact-code" style="border-left: 3px solid #ef4444;">${escapeHtml(inputData.old_string)}</div>`;
+    }
+    if (inputData.new_string !== undefined) {
+        html += `<div style="font-size:0.68rem; font-weight:600; color:#10b981; margin-bottom:2px;">+ New</div>`;
+        html += `<div class="artifact-code" style="border-left: 3px solid #10b981;">${escapeHtml(inputData.new_string)}</div>`;
+    }
+    return html;
+}
+
+function copyArtifactContent(btn) {
+    const codeBlock = btn.parentElement;
+    // Get text content excluding the button text
+    const text = codeBlock.textContent.replace('Copy', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+}
+
+function resetArtifacts() {
+    artifacts = [];
+    activeArtifactId = null;
+    artifactIdCounter = 0;
+    artifactsPanelOpen = false;
+    document.getElementById('claudeArtifacts').classList.add('collapsed');
+    document.getElementById('artifactsBody').innerHTML = `<div class="artifact-empty">
+        <i class="bi bi-layers"></i>
+        <span>Tool calls will appear here</span>
+    </div>`;
+    document.getElementById('artifactsToggleBtn').style.display = 'none';
+    document.getElementById('artifactCount').textContent = '0';
 }
 
 function appendSystemMessage(text) {
@@ -1384,6 +1862,7 @@ function clearChat() {
     currentAssistantEl = null;
     currentToolUseEl = null;
     assistantBuffer = '';
+    resetArtifacts();
 }
 
 // --- UI Helpers ---

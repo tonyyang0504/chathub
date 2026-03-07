@@ -33,39 +33,30 @@ class BotInstance:
         # Platform type (defaults to whatsapp for backward compatibility)
         self.platform_type: str = config.get("platform_type", "whatsapp")
 
-    @property
-    def platform_connected(self) -> bool:
-        """Alias for whatsapp_connected (platform-agnostic name)."""
-        return self.whatsapp_connected
-
-    @platform_connected.setter
-    def platform_connected(self, value: bool):
-        self.whatsapp_connected = value
-
         # AI Response toggle (OFF by default after connection)
         self.ai_response_enabled = False
 
         # Browser state tracking
-        self.browser_connected = False  # True when browser is open and responsive
-        self.browser_recovery_attempts = 0  # Count of recovery attempts
-        self.max_browser_recovery_attempts = 3  # Max attempts before giving up
+        self.browser_connected = False
+        self.browser_recovery_attempts = 0
+        self.max_browser_recovery_attempts = 3
 
         # History sync state
-        self.history_sync_active = False       # Currently running
-        self.history_sync_requested = False    # Signal to main loop to start
-        self.history_sync_stop_requested = False  # Signal to stop sync
-        self.history_sync_count = 50           # Messages per conversation
-        self.history_sync_progress = {         # Progress tracking for UI
+        self.history_sync_active = False
+        self.history_sync_requested = False
+        self.history_sync_stop_requested = False
+        self.history_sync_count = 50
+        self.history_sync_progress = {
             "total": 0,
             "completed": 0,
             "current_chat": "",
-            "status": "idle"                   # idle | running | completed
+            "status": "idle"
         }
 
         # Auto browser restart for memory management
-        self.browser_started_at: Optional[datetime] = None  # When browser was launched
-        self.auto_restart_hours: float = 12.0  # Restart browser every N hours (default 12)
-        self.browser_restart_requested: bool = False  # Signal to main loop to restart browser
+        self.browser_started_at: Optional[datetime] = None
+        self.auto_restart_hours: float = 12.0
+        self.browser_restart_requested: bool = False
 
     @property
     def platform_connected(self) -> bool:
