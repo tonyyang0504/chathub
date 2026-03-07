@@ -14,6 +14,9 @@
     height: 100%;
     overflow: hidden;
     position: relative;
+    gap: 6px;
+    padding: 6px;
+    background: #f0f2f5;
 }
 
 /* Left sidebar */
@@ -22,17 +25,18 @@
     min-width: 260px;
     height: 100%;
     background: var(--card-bg);
-    border-right: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     transition: margin-left 0.25s ease, opacity 0.25s ease;
     z-index: 20;
 }
 .claude-sidebar.collapsed {
-    margin-left: -260px;
+    margin-left: -266px;
 }
 .claude-sidebar-header {
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -153,11 +157,14 @@
     flex-direction: column;
     min-width: 0;
     height: 100%;
+    border-radius: 12px;
+    background: var(--card-bg);
+    overflow: hidden;
 }
 
 /* Top bar */
 .claude-topbar {
-    padding: 0.5rem 1rem;
+    padding: 0.65rem 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -498,19 +505,20 @@
     min-width: 420px;
     height: 100%;
     background: var(--card-bg);
-    border-left: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     transition: margin-right 0.25s ease, opacity 0.25s ease;
     z-index: 10;
 }
 .claude-artifacts.collapsed {
-    margin-right: -420px;
+    margin-right: -426px;
     opacity: 0;
     pointer-events: none;
 }
 .artifacts-header {
-    padding: 0.6rem 0.85rem;
+    padding: 0.65rem 0.85rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1302,6 +1310,8 @@ async function viewSession(sessionId) {
             } else if (msg.role === 'tool_result') {
                 appendToolResult(msg.content);
             } else if (msg.role === 'system') {
+                // Skip old raw JSON user events that leaked into DB
+                if (msg.message_type === 'user' || (msg.content && msg.content.startsWith('{"type":"user"'))) continue;
                 appendSystemMessage(msg.content);
             }
         }
@@ -1782,10 +1792,12 @@ function createArtifact(toolName, inputData, inputStr, timestamp) {
 
 function updateArtifactResult(resultText) {
     if (artifacts.length === 0) return;
-    const last = artifacts[artifacts.length - 1];
-    last.result = resultText;
+    // Find first artifact still waiting for a result (results arrive in order)
+    const pending = artifacts.find(a => a.result === null);
+    if (!pending) return;
+    pending.result = resultText;
     // Update the specific artifact card
-    const cardEl = document.getElementById(`artifact-${last.id}`);
+    const cardEl = document.getElementById(`artifact-${pending.id}`);
     if (cardEl) {
         const contentEl = cardEl.querySelector('.artifact-card-content');
         if (contentEl) {
@@ -1793,7 +1805,7 @@ function updateArtifactResult(resultText) {
             const waiting = contentEl.querySelector('.artifact-waiting');
             if (waiting) waiting.remove();
             // Append result section
-            contentEl.insertAdjacentHTML('beforeend', renderArtifactResultHtml(last.toolName, resultText));
+            contentEl.insertAdjacentHTML('beforeend', renderArtifactResultHtml(pending.toolName, resultText));
         }
     }
 }

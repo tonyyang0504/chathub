@@ -660,7 +660,7 @@ class ClaudeCodeManager:
                     role = "system"
                     content = data.get("message", data.get("content", str(data)))
                 elif msg_type == "user":
-                    skip_db = True  # Auto-submitted tool_result content, not user prompts
+                    continue  # Auto-submitted tool_result content, skip entirely
                 else:
                     content = line_str
 
