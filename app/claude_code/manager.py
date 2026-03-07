@@ -28,13 +28,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 class ActiveSession:
     """Represents an active Claude Code CLI session."""
 
-    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key"):
+    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key", oauth_token: Optional[str] = None):
         self.session_id = session_id
         self.user_id = user_id
         self.claude_session_id = str(uuid.uuid4())  # UUID for Claude CLI --session-id/--resume
         self._api_key = api_key
         self._model = model
         self._auth_method = auth_method
+        self._oauth_token = oauth_token
         self.process: Optional[asyncio.subprocess.Process] = None
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []

@@ -702,6 +702,7 @@ class ClaudeCodeSettings(Base):
     auto_backup_db = Column(Boolean, default=True)
     max_session_minutes = Column(Integer, default=30)
     auth_method = Column(String(20), default="api_key")  # "api_key" or "membership"
+    oauth_token_encrypted = Column(Text)  # Fernet-encrypted setup-token for membership
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
