@@ -33,7 +33,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 class ActiveSession:
     """Represents an active Claude Code CLI session."""
 
-    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key", oauth_token: Optional[str] = None):
+    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key", oauth_token: Optional[str] = None, user_email: Optional[str] = None, user_name: Optional[str] = None):
         self.session_id = session_id
         self.user_id = user_id
         self.claude_session_id = str(uuid.uuid4())  # UUID for Claude CLI --session-id/--resume
@@ -41,6 +41,8 @@ class ActiveSession:
         self._model = model
         self._auth_method = auth_method
         self._oauth_token = oauth_token
+        self._user_email = user_email
+        self._user_name = user_name
         self.process: Optional[asyncio.subprocess.Process] = None
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []
@@ -435,7 +437,9 @@ class ClaudeCodeManager:
         api_key: str,
         model: Optional[str] = None,
         auth_method: str = "api_key",
-        oauth_token: Optional[str] = None
+        oauth_token: Optional[str] = None,
+        user_email: Optional[str] = None,
+        user_name: Optional[str] = None
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
         # Enforce one session per user
@@ -444,7 +448,7 @@ class ClaudeCodeManager:
             logger.warning(f"User {user_id} already has an active session {existing.session_id}")
             return None
 
-        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token)
+        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
         self._sessions[user_id] = session
 
         try:
@@ -469,6 +473,19 @@ class ClaudeCodeManager:
             "--verbose",
             "--dangerously-skip-permissions"
         ]
+
+        # Inject user context so CLI operates on behalf of the logged-in user
+        system_context = (
+            f"You are running inside the ChatHub project on behalf of user: "
+            f"{session._user_name} (email: {session._user_email}, user_id: {session.user_id}). "
+            f"You have direct access to the project codebase and SQLite database. "
+            f"IMPORTANT: When performing operations on ChatHub data (creating bots, modifying settings, "
+            f"managing conversations, etc.), ALWAYS use direct database access via Python scripts with "
+            f"SQLAlchemy models from app/database.py — NEVER use HTTP API calls that require authentication. "
+            f"The database connection can be obtained with: from app.database import SessionLocal; db = SessionLocal(). "
+            f"All models are in app/database.py. Always filter by user_id={session.user_id} for user-scoped resources."
+        )
+        cmd.extend(["--append-system-prompt", system_context])
 
         if session._model:
             cmd.extend(["--model", session._model])

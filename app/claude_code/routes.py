@@ -266,7 +266,9 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         api_key=api_key,
         model=model,
         auth_method=auth_method,
-        oauth_token=oauth_token
+        oauth_token=oauth_token,
+        user_email=user.email,
+        user_name=user.name
     )
 
     if not active_session:
