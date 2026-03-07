@@ -48,7 +48,7 @@
 .btn-new-session {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--border-color);
     background: transparent;
     color: var(--text-secondary);
@@ -75,7 +75,7 @@
 }
 .session-item {
     padding: 0.6rem 0.75rem;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     margin-bottom: 0.25rem;
     transition: background 0.15s;
@@ -122,6 +122,20 @@
     white-space: nowrap;
 }
 .btn-rollback:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+.btn-delete-session {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #ef4444;
+    background: transparent;
+    flex-shrink: 0;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+}
+.session-item:hover .btn-delete-session { opacity: 1; }
+.btn-delete-session:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 
 #noSessions {
     position: absolute;
@@ -154,7 +168,7 @@
 .btn-sidebar-toggle {
     width: 34px;
     height: 34px;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--border-color);
     background: transparent;
     color: var(--text-secondary);
@@ -228,7 +242,7 @@
     background: linear-gradient(135deg, #06b6d4, #0284c7);
     color: white;
     padding: 0.65rem 1rem;
-    border-radius: 18px 18px 4px 18px;
+    border-radius: 18px;
     max-width: 85%;
     font-size: 0.9rem;
     line-height: 1.5;
@@ -284,7 +298,7 @@
 }
 .tool-block {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
 }
 .tool-block-header {
@@ -361,10 +375,11 @@
 #promptInput {
     flex: 1;
     resize: none;
-    border-radius: 12px;
+    border-radius: 22px;
     border: 1px solid var(--border-color);
-    padding: 0.6rem 0.85rem;
+    padding: 0.75rem 1rem;
     font-size: 0.9rem;
+    min-height: 48px;
     max-height: 150px;
     background: var(--body-bg, var(--card-bg));
     color: var(--text-primary);
@@ -414,7 +429,7 @@
 .membership-status-panel {
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 12px;
     background: rgba(0,0,0,0.05);
 }
 .membership-logged-in { color: #10b981; }
@@ -509,23 +524,56 @@
     color: var(--text-primary);
 }
 .btn-artifact-close {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+    position: relative;
     padding: 0;
-    font-size: 0.7rem;
-    transition: all 0.15s;
 }
 .btn-artifact-close:hover {
-    background: rgba(239,68,68,0.1);
-    border-color: rgba(239,68,68,0.3);
-    color: #ef4444;
+    background: rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+}
+.btn-artifact-close:active {
+    transform: scale(0.95);
+}
+.btn-artifact-close::before,
+.btn-artifact-close::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background-color: #636363;
+    border-radius: 1px;
+    transition: background-color 0.2s ease;
+}
+.btn-artifact-close::before { transform: rotate(45deg); }
+.btn-artifact-close::after { transform: rotate(-45deg); }
+.btn-artifact-close:hover::before,
+.btn-artifact-close:hover::after {
+    background-color: #1a1a1a;
+}
+[data-bs-theme="dark"] .btn-artifact-close {
+    background: rgba(255, 255, 255, 0.1);
+}
+[data-bs-theme="dark"] .btn-artifact-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+[data-bs-theme="dark"] .btn-artifact-close::before,
+[data-bs-theme="dark"] .btn-artifact-close::after {
+    background-color: #a0a0a0;
+}
+[data-bs-theme="dark"] .btn-artifact-close:hover::before,
+[data-bs-theme="dark"] .btn-artifact-close:hover::after {
+    background-color: #ffffff;
 }
 .artifact-card {
     border: 1px solid var(--border-color);
@@ -761,9 +809,7 @@
     <div class="claude-artifacts collapsed" id="claudeArtifacts">
         <div class="artifacts-header">
             <h6><i class="bi bi-layers me-2"></i>Artifacts</h6>
-            <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close artifacts">
-                <i class="bi bi-x-lg"></i>
-            </button>
+            <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close artifacts"></button>
         </div>
         <div class="artifacts-body" id="artifactsBody">
             <div class="artifact-empty">
@@ -1212,12 +1258,15 @@ async function loadSessions() {
                 ? `<button class="btn-rollback" onclick="event.stopPropagation(); rollbackSession(${s.id})" title="Rollback changes"><i class="bi bi-arrow-counterclockwise"></i></button>`
                 : s.rolled_back ? '<span class="text-muted" style="font-size:0.6rem;">rolled back</span>' : '';
 
+            const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id})" title="Delete session"><i class="bi bi-trash3"></i></button>`;
+
             return `<div class="session-item ${active}" onclick="viewSession(${s.id})">
                 <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
                 <div class="session-meta">
                     <span class="${statusClass}">${s.status}</span>
                     <span>${date}</span>
                     ${rollbackBtn}
+                    ${deleteBtn}
                 </div>
             </div>`;
         }).join('');
@@ -1388,6 +1437,35 @@ async function rollbackSession(sessionId) {
         } else {
             const err = await res.json();
             showToast(err.detail || 'Rollback failed', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+}
+
+async function deleteSession(sessionId) {
+    if (!confirm('Delete this session and all its messages?')) return;
+
+    try {
+        const res = await fetch(`/tools/api/claude-code/sessions/${sessionId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            showToast('Session deleted', 'success');
+            if (currentSessionId === sessionId) {
+                if (ws) { ws.close(); ws = null; }
+                currentSessionId = null;
+                isRunning = false;
+                isWaiting = false;
+                clearChat();
+                setStatus('idle');
+                document.getElementById('stopBtn').style.display = 'none';
+            }
+            loadSessions();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Delete failed', 'error');
         }
     } catch (e) {
         showToast('Network error', 'error');

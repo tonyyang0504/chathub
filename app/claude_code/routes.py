@@ -377,6 +377,32 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
     }
 
 
+@router.delete("/api/claude-code/sessions/{session_id}")
+async def delete_session(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Delete a session and its messages."""
+    user = await get_current_user(request, None, db)
+    session = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.id == session_id,
+        ClaudeCodeSession.user_id == user.id
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # If session is running, stop it first
+    if session.status in ("running", "pending"):
+        await claude_code_manager.stop_session(user.id)
+        session.status = "stopped"
+        session.ended_at = datetime.utcnow()
+
+    # Delete messages first, then session
+    db.query(ClaudeCodeMessage).filter(ClaudeCodeMessage.session_id == session_id).delete()
+    db.delete(session)
+    db.commit()
+
+    return {"status": "ok"}
+
+
 @router.post("/api/claude-code/sessions/{session_id}/message")
 async def send_message(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Send a follow-up message to an active session."""
