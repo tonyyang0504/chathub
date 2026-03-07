@@ -356,6 +356,10 @@ class ChatHubAgentManager:
                         })
                     # Skip system, approval_request roles
 
+                # Pop the last user message if present — handle_followup() will re-append it
+                if len(conversation) > 1 and conversation[-1].get("role") == "user":
+                    conversation.pop()
+
                 agent_loop.set_conversation(conversation)
             finally:
                 db.close()

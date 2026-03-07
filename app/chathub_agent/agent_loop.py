@@ -71,7 +71,6 @@ class AgentLoop:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": initial_prompt},
         ]
-        await self._persist_message("user", initial_prompt)
         await self._agent_loop()
 
     async def handle_followup(self, message: str):
@@ -79,7 +78,6 @@ class AgentLoop:
         self.is_waiting = False
         self._stop_requested = False
         self.conversation.append({"role": "user", "content": message})
-        await self._persist_message("user", message)
         await self._agent_loop()
 
     async def _agent_loop(self):
