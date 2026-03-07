@@ -337,6 +337,44 @@
     background: rgba(0,0,0,0.08);
 }
 
+/* AskUserQuestion inline rendering */
+.ask-question-block {
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(6,182,212,0.06);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 12px;
+}
+.ask-question-text {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+}
+.ask-question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.ask-option {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+.ask-option-label {
+    font-weight: 500;
+    color: #06b6d4;
+}
+.ask-option-desc {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
 .msg-system {
     align-self: center;
     color: var(--text-secondary);
@@ -1701,11 +1739,33 @@ function appendToolUse(content, timestamp) {
     div.className = 'msg msg-tool';
     const icon = getToolIcon(toolName);
     const title = getArtifactTitle(toolName, inputData);
+    let extraHtml = '';
+    // AskUserQuestion: render question inline so the user can see what's being asked
+    if (toolName === 'AskUserQuestion' && inputData.questions) {
+        const questions = Array.isArray(inputData.questions) ? inputData.questions : [inputData.questions];
+        const parts = questions.map(q => {
+            let html = `<div class="ask-question-block">`;
+            html += `<div class="ask-question-text">${escapeHtml(q.question || q.header || '')}</div>`;
+            if (q.options && q.options.length) {
+                html += `<div class="ask-question-options">`;
+                for (const opt of q.options) {
+                    const label = typeof opt === 'string' ? opt : (opt.label || opt.value || '');
+                    const desc = (typeof opt === 'object' && opt.description) ? ` — ${opt.description}` : '';
+                    html += `<div class="ask-option"><span class="ask-option-label">${escapeHtml(label)}</span>${desc ? `<span class="ask-option-desc">${escapeHtml(desc)}</span>` : ''}</div>`;
+                }
+                html += `</div>`;
+            }
+            html += `</div>`;
+            return html;
+        });
+        extraHtml = parts.join('');
+    }
+
     div.innerHTML = `<span class="msg-tool-pill" data-artifact-id="${artifact.id}" onclick="selectArtifact(${artifact.id})">
         <i class="bi ${icon}"></i>
         <span>${escapeHtml(title)}</span>
         <span class="pill-hint">click to view</span>
-    </span>`;
+    </span>${extraHtml}`;
     chatBody.appendChild(div);
     currentToolUseEl = div;
     scrollToBottom();
