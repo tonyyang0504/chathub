@@ -138,7 +138,23 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     # Check for existing active session
     active = claude_code_manager.get_active_session(user.id)
     if active:
-        raise HTTPException(status_code=409, detail="You already have an active session")
+        if active.is_waiting and not active.is_running:
+            # Old session is idle/waiting — clean it up so user can start fresh
+            logger.info(f"Cleaning up idle waiting session {active.session_id} for user {user.id}")
+            try:
+                db_old = db.query(ClaudeCodeSession).filter(
+                    ClaudeCodeSession.id == active.session_id
+                ).first()
+                if db_old and db_old.status == "running":
+                    db_old.status = "completed"
+                    db_old.ended_at = datetime.utcnow()
+                    db.commit()
+            except Exception:
+                pass
+            if user.id in claude_code_manager._sessions:
+                del claude_code_manager._sessions[user.id]
+        else:
+            raise HTTPException(status_code=409, detail="You already have an active session")
 
     # Get settings
     settings = db.query(ClaudeCodeSettings).filter(
@@ -226,6 +242,21 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         "git_commit_hash": git_hash,
         "db_backup_path": db_backup_path
     }
+
+
+@router.get("/api/claude-code/active-session")
+async def get_active_session(request: Request, db: Session = Depends(get_db)):
+    """Check if user has an active (running or waiting) session."""
+    user = await get_current_user(request, None, db)
+    active = claude_code_manager.get_active_session(user.id)
+    if active:
+        return {
+            "active": True,
+            "session_id": active.session_id,
+            "is_running": active.is_running,
+            "is_waiting": active.is_waiting
+        }
+    return {"active": False}
 
 
 @router.get("/api/claude-code/sessions")

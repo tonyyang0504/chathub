@@ -2355,7 +2355,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
 
                 # Now extract the name and profile pic from profile screen
                 # This handles both Personal and Business WhatsApp profiles
-                profile_data = page.evaluate('''() => {
+                profile_data = page.evaluate(r'''() => {
                     const result = { debug: {} };
 
                     // Check if profile panel is open by looking for "Profile" header or close button
@@ -3271,7 +3271,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                 last_msg = incoming_msgs[-1]
 
                                 # Check for media content in the message
-                                media_info_open = page.evaluate('''(msgEl) => {
+                                media_info_open = page.evaluate(r'''(msgEl) => {
                                     let mediaUrl = null;
                                     let mediaType = null;
                                     let mediaFilename = null;
@@ -4288,7 +4288,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
 
                                 # Search page for data-ids and extract phone/group info
                                 if not chat_data_id:
-                                    extracted_info = page.evaluate('''() => {
+                                    extracted_info = page.evaluate(r'''() => {
                                         // Search entire page for any data-id with WhatsApp format
                                         const elements = document.querySelectorAll('[data-id]');
                                         let phone = null;
@@ -4448,7 +4448,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
 
                                 # IMPORTANT: Re-extract data-id from the page after opening the chat
                                 # We search the whole page but validate against the detected chat type
-                                active_chat_info = page.evaluate('''(isGroupVisual) => {
+                                active_chat_info = page.evaluate(r'''(isGroupVisual) => {
                                     let phone = null;
                                     let groupId = null;
                                     let isGroup = isGroupVisual;  // Start with visual detection
@@ -4690,7 +4690,7 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
                                     logger.warning(f"Bot {bot_profile_id}: Could not extract profile pic for '{chat_name}'")
 
                                 # Get messages from the conversation - WhatsApp Business compatible
-                                messages_data = page.evaluate('''() => {
+                                messages_data = page.evaluate(r'''() => {
                                     const result = [];
 
                                     // Find message containers - multiple approaches for WhatsApp Business
@@ -11518,7 +11518,7 @@ def _update_all_profile_pics(page, bot_profile_id):
 
     # Extract all profile pictures from sidebar - include both name and phone number
     logger.info(f"Bot {bot_profile_id}: Extracting profile pictures from sidebar...")
-    all_pics = page.evaluate('''async () => {
+    all_pics = page.evaluate(r'''async () => {
         const results = {
             byName: {},      // name -> base64
             byPhone: {}      // phone -> base64

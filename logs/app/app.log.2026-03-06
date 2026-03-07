@@ -1,0 +1,756 @@
+2026-03-06 19:34:04,300 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:34:04,301 - root - INFO - === Server Starting ===
+2026-03-06 19:34:05,077 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:34:05,077 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:34:05,077 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:34:05,077 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:34:05,077 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:34:05,078 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:34:05,078 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:34:05,078 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:34:05,078 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:34:05,078 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:34:05,165 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:34:05,168 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:34:05,192 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:34:05,192 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:34:05,192 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:34:05,192 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:35:05,251 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:35:05,295 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:35:16,290 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-03-06 19:36:05,333 - app.chathub_agent.manager - INFO - Safety commit created: 1e6495901a61bdcdf0e0d7d214ae0c3e069d0c48
+2026-03-06 19:36:05,336 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_153605.db
+2026-03-06 19:36:05,373 - app.chathub_agent.manager - ERROR - Failed to start ChatHub Agent session: ToolExecutor.__init__() got an unexpected keyword argument 'workspace_path'
+2026-03-06 19:36:05,378 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:36:05,393 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:36:44,692 - app.claude_code.manager - INFO - Safety commit created: 0f4148d84d5c15e2a2ee94b23157426f55036efe
+2026-03-06 19:36:44,694 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_153644.db
+2026-03-06 19:36:44,704 - app.claude_code.manager - INFO - Started Claude Code session 23 for user 1, PID=30559
+2026-03-06 19:37:05,443 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:37:05,480 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:37:33,851 - app.claude_code.manager - INFO - Session 23 ended with exit code 0
+2026-03-06 19:37:34,026 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 19:37:34,026 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 19:37:34,027 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 19:37:34,027 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 19:37:34,027 - app.bots.manager - INFO - All bots stopped
+2026-03-06 19:37:36,052 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:37:36,052 - root - INFO - === Server Starting ===
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:37:36,722 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:37:36,812 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:37:36,814 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:37:36,838 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:37:36,838 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:37:36,839 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:37:36,839 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:38:36,894 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:38:36,938 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:39:36,995 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:39:37,034 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:40:03,474 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 19:40:03,474 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 19:40:03,475 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 19:40:03,475 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 19:40:03,475 - app.bots.manager - INFO - All bots stopped
+2026-03-06 19:40:24,221 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:40:24,221 - root - INFO - === Server Starting ===
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:40:24,915 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:40:25,007 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:40:25,010 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:40:25,034 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:40:25,034 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:40:25,035 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:40:25,035 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:40:33,976 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 19:40:33,989 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 19:40:34,489 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 19:40:34,489 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 19:41:14,080 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 19:41:14,082 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 19:41:14,082 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 19:41:14,082 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 19:41:14,082 - app.bots.manager - INFO - All bots stopped
+2026-03-06 19:43:19,583 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:43:19,584 - root - INFO - === Server Starting ===
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:43:20,274 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:43:20,361 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:43:20,363 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:43:20,387 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:43:20,387 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:43:20,387 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:43:20,387 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:43:41,767 - app.chathub_agent.manager - INFO - Safety commit created: 4e62d2a682b0315a6d4aa0cabf7b7626200d6e87
+2026-03-06 19:43:41,768 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_154341.db
+2026-03-06 19:43:41,805 - app.chathub_agent.manager - ERROR - Failed to start ChatHub Agent session: ToolExecutor.__init__() got an unexpected keyword argument 'workspace_path'
+2026-03-06 19:44:20,440 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:44:20,477 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:44:42,536 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_154442.db
+2026-03-06 19:44:42,546 - app.claude_code.manager - INFO - Started Claude Code session 24 for user 1, PID=30859
+2026-03-06 19:45:01,722 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_154501.db
+2026-03-06 19:45:01,736 - app.chathub_agent.manager - ERROR - Failed to start ChatHub Agent session: ToolExecutor.__init__() got an unexpected keyword argument 'workspace_path'
+2026-03-06 19:45:20,523 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:45:20,561 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:46:20,613 - app.hubs.analysis_scheduler - INFO - Running auto-analysis check for hub 4 (Contact Analyzer)
+2026-03-06 19:46:20,648 - app.hubs.analysis_scheduler - INFO - Auto-analysis check for hub 4: queued 0 contacts
+2026-03-06 19:46:58,418 - app.claude_code.manager - INFO - Session 24 ended with exit code 0
+2026-03-06 19:46:58,589 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 19:46:58,589 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 19:46:58,590 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 19:46:58,590 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 19:46:58,590 - app.bots.manager - INFO - All bots stopped
+2026-03-06 19:47:02,702 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:47:02,702 - root - INFO - === Server Starting ===
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:47:03,378 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:47:03,482 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:47:03,484 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:47:03,510 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:47:03,510 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:47:03,510 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:47:03,510 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:47:11,492 - app.chathub_agent.manager - INFO - Safety commit created: a7443d8d269e111de6e557e48a18e5bc1e18a40d
+2026-03-06 19:47:11,493 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_154711.db
+2026-03-06 19:47:11,528 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 4 for user 1
+2026-03-06 19:47:12,485 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 19:47:45,533 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 19:48:32,415 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 19:51:30,157 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 19:51:30,158 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 19:51:30,158 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 19:51:30,159 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 19:51:30,166 - app.chathub_agent.manager - INFO - Stopped session 4 for user 1
+2026-03-06 19:51:30,166 - app.bots.manager - INFO - All bots stopped
+2026-03-06 19:51:32,056 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:51:32,056 - root - INFO - === Server Starting ===
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:51:32,806 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:51:32,895 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:51:32,897 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:51:32,922 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:51:32,922 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:51:32,922 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:51:32,922 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:51:41,824 - app.chathub_agent.manager - INFO - Safety commit created: ebcb4ae2254484ee7d8f60628ad246913f564a1b
+2026-03-06 19:51:41,825 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_155141.db
+2026-03-06 19:51:41,861 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 5 for user 1
+2026-03-06 19:51:47,511 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 19:53:48,420 - app.claude_code.manager - INFO - Safety commit created: ae6f2c6a5203781dfe2a1181abb4a83771ff6afb
+2026-03-06 19:53:48,421 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_155348.db
+2026-03-06 19:53:48,435 - app.claude_code.manager - INFO - Started Claude Code session 25 for user 1, PID=31194
+2026-03-06 19:58:31,857 - app.claude_code.manager - INFO - Session 25 ended with exit code 0
+2026-03-06 19:58:31,992 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 19:58:31,992 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 19:58:31,992 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 19:58:31,992 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 19:58:31,998 - app.chathub_agent.manager - INFO - Stopped session 5 for user 1
+2026-03-06 19:58:31,999 - app.bots.manager - INFO - All bots stopped
+2026-03-06 19:58:34,626 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:58:34,627 - root - INFO - === Server Starting ===
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 19:58:35,363 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 19:58:35,454 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 19:58:35,456 - root - INFO - Enhanced logging system initialized
+2026-03-06 19:58:35,480 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 19:58:35,480 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 19:58:35,480 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 19:58:35,480 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 19:58:52,644 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_155852.db
+2026-03-06 19:58:52,690 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 6 for user 1
+2026-03-06 19:58:52,695 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 2 messages
+2026-03-06 19:58:56,753 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 19:58:56,760 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=518
+2026-03-06 19:59:42,659 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 4 messages
+2026-03-06 19:59:45,701 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 19:59:45,703 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=589
+2026-03-06 20:05:53,042 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_160553.db
+2026-03-06 20:05:53,058 - app.claude_code.manager - INFO - Started Claude Code session 26 for user 1, PID=31836
+2026-03-06 20:08:06,737 - app.claude_code.manager - INFO - Session 26 ended with exit code 0
+2026-03-06 20:08:06,888 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 20:08:06,889 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 20:08:06,889 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 20:08:06,889 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 20:08:06,895 - app.chathub_agent.manager - INFO - Stopped session 6 for user 1
+2026-03-06 20:08:06,895 - app.bots.manager - INFO - All bots stopped
+2026-03-06 20:08:11,361 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:08:11,361 - root - INFO - === Server Starting ===
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 20:08:12,069 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 20:08:12,159 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 20:08:12,161 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:08:12,185 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 20:08:12,185 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 20:08:12,185 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 20:08:12,185 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 20:09:41,252 - app.claude_code.manager - INFO - Safety commit created: 9d9e87dea91b5c11f328a6a9a35b3010a0daf15e
+2026-03-06 20:09:41,254 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_160941.db
+2026-03-06 20:09:41,265 - app.claude_code.manager - INFO - Started Claude Code session 27 for user 1, PID=32007
+2026-03-06 20:10:21,049 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_161021.db
+2026-03-06 20:10:21,109 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 7 for user 1
+2026-03-06 20:10:21,113 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 2 messages
+2026-03-06 20:10:24,270 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:10:24,278 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=126
+2026-03-06 20:10:32,144 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 4 messages
+2026-03-06 20:10:33,057 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:10:33,062 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:10:35,502 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 6 messages
+2026-03-06 20:10:36,531 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:10:36,532 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:10:37,668 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 8 messages
+2026-03-06 20:10:38,604 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:10:38,606 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:10:40,552 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 10 messages
+2026-03-06 20:10:42,466 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:10:42,471 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=204
+2026-03-06 20:25:08,004 - app.claude_code.manager - INFO - Session 27 ended with exit code 0
+2026-03-06 20:25:08,089 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 20:25:08,090 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 20:25:08,090 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 20:25:08,090 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 20:25:08,094 - app.chathub_agent.manager - INFO - Stopped session 7 for user 1
+2026-03-06 20:25:08,094 - app.bots.manager - INFO - All bots stopped
+2026-03-06 20:25:10,099 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:25:10,099 - root - INFO - === Server Starting ===
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 20:25:10,848 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 20:25:10,944 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 20:25:10,946 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:25:10,971 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 20:25:10,971 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 20:25:10,971 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 20:25:10,971 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 20:26:49,424 - app.chathub_agent.manager - INFO - Safety commit created: a9402d55bd2cc4316e6fcbee01e551580e5faf1e
+2026-03-06 20:26:49,426 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_162649.db
+2026-03-06 20:26:49,465 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 8 for user 1
+2026-03-06 20:26:49,471 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 2 messages
+2026-03-06 20:26:50,799 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:26:50,807 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:26:54,870 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 4 messages
+2026-03-06 20:26:56,070 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:26:56,073 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=53
+2026-03-06 20:27:08,826 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 6 messages
+2026-03-06 20:27:10,048 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:27:10,050 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:27:12,273 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 8 messages
+2026-03-06 20:27:13,284 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:27:13,286 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=56
+2026-03-06 20:27:25,922 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 10 messages
+2026-03-06 20:27:28,064 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:27:28,066 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:27:32,344 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 12 messages
+2026-03-06 20:27:34,048 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:27:34,051 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:27:37,197 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 14 messages
+2026-03-06 20:27:38,444 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:27:38,445 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=167
+2026-03-06 20:29:07,620 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 20:29:07,638 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 20:29:10,440 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 20:29:10,441 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 20:29:11,884 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 20:29:11,903 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 20:29:12,387 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 20:29:12,387 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 20:29:49,912 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 20:29:49,914 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 20:29:49,914 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 20:29:49,914 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 20:29:49,921 - app.chathub_agent.manager - INFO - Stopped session 8 for user 1
+2026-03-06 20:29:49,921 - app.bots.manager - INFO - All bots stopped
+2026-03-06 20:29:51,827 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:29:51,827 - root - INFO - === Server Starting ===
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 20:29:52,576 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 20:29:52,666 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 20:29:52,668 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:29:52,692 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 20:29:52,692 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 20:29:52,692 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 20:29:52,692 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 20:30:20,632 - app.chathub_agent.manager - INFO - Safety commit created: 281d7a4912411ca2a770edea31b00d859f5d307c
+2026-03-06 20:30:20,633 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_163020.db
+2026-03-06 20:30:20,671 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 9 for user 1
+2026-03-06 20:30:20,677 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 2 messages
+2026-03-06 20:30:21,779 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:21,788 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:21,812 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 4 messages
+2026-03-06 20:30:23,789 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:23,792 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-03-06 20:30:23,813 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 8 messages
+2026-03-06 20:30:25,543 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:25,546 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:25,582 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 10 messages
+2026-03-06 20:30:27,169 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:27,172 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:27,197 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 12 messages
+2026-03-06 20:30:29,217 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:29,219 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:29,243 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 14 messages
+2026-03-06 20:30:30,761 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:30,764 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:30,771 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 16 messages
+2026-03-06 20:30:34,366 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:34,369 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:37,384 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 18 messages
+2026-03-06 20:30:39,421 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:39,424 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:30:42,927 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 20 messages
+2026-03-06 20:30:45,786 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:30:45,790 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=507
+2026-03-06 20:30:56,972 - app.conversations.routes - INFO - WebSocket connected for bot 3 chat list
+2026-03-06 20:30:56,985 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 20:30:56,999 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 20:30:57,589 - app.conversations.routes - INFO - WebSocket disconnected for bot 3 chat list
+2026-03-06 20:30:57,590 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 20:30:57,590 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 20:33:58,304 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_163358.db
+2026-03-06 20:33:58,317 - app.claude_code.manager - INFO - Started Claude Code session 28 for user 1, PID=33555
+2026-03-06 20:43:28,106 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 22 messages
+2026-03-06 20:43:30,165 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:30,168 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-03-06 20:43:30,311 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 26 messages
+2026-03-06 20:43:31,760 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:31,762 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:31,770 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 28 messages
+2026-03-06 20:43:33,424 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:33,426 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:33,433 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 30 messages
+2026-03-06 20:43:34,994 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:34,996 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:35,096 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 32 messages
+2026-03-06 20:43:36,365 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:36,366 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:36,432 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 34 messages
+2026-03-06 20:43:38,526 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:38,527 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:38,546 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 36 messages
+2026-03-06 20:43:39,702 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:39,705 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:39,730 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 38 messages
+2026-03-06 20:43:40,978 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:40,981 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:40,989 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 40 messages
+2026-03-06 20:43:42,323 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:42,325 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:45,110 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 42 messages
+2026-03-06 20:43:46,685 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:46,688 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:48,241 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 44 messages
+2026-03-06 20:43:51,008 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:43:51,011 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:43:53,008 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 46 messages
+2026-03-06 20:44:01,998 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:44:02,002 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=2388
+2026-03-06 20:44:39,335 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 48 messages
+2026-03-06 20:44:40,666 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:44:40,668 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:44:40,678 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 50 messages
+2026-03-06 20:44:56,859 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:44:56,861 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=5330
+2026-03-06 20:45:55,752 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 52 messages
+2026-03-06 20:46:01,832 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:46:01,834 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=1138
+2026-03-06 20:48:04,361 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 54 messages
+2026-03-06 20:48:18,618 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:48:18,620 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=3377
+2026-03-06 20:53:38,091 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 56 messages
+2026-03-06 20:53:41,040 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:53:41,044 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-03-06 20:53:41,076 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 60 messages
+2026-03-06 20:53:46,066 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:53:46,069 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:53:46,076 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 62 messages
+2026-03-06 20:53:54,892 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:53:54,894 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:53:54,902 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 64 messages
+2026-03-06 20:53:56,212 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:53:56,215 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:53:56,242 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 66 messages
+2026-03-06 20:53:57,737 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:53:57,740 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:53:57,747 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 68 messages
+2026-03-06 20:54:08,131 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:08,136 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:08,143 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 70 messages
+2026-03-06 20:54:10,025 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:10,028 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:10,054 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 72 messages
+2026-03-06 20:54:11,664 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:11,667 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:11,674 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 74 messages
+2026-03-06 20:54:19,871 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:19,874 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:19,881 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 76 messages
+2026-03-06 20:54:24,783 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:24,786 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:24,793 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 78 messages
+2026-03-06 20:54:27,228 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:27,230 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:27,255 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 80 messages
+2026-03-06 20:54:29,485 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:29,487 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:29,494 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 82 messages
+2026-03-06 20:54:34,293 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:34,295 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:34,303 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 84 messages
+2026-03-06 20:54:39,620 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:39,621 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:46,530 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 86 messages
+2026-03-06 20:54:48,836 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:48,838 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:52,676 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 88 messages
+2026-03-06 20:54:54,391 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:54,393 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:54:56,354 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 90 messages
+2026-03-06 20:54:58,261 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:54:58,263 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:55:00,982 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 92 messages
+2026-03-06 20:55:03,420 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:55:03,423 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:55:05,094 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 94 messages
+2026-03-06 20:55:09,347 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:55:09,350 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:55:57,444 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 96 messages
+2026-03-06 20:55:59,902 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:55:59,905 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:58:27,431 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 98 messages
+2026-03-06 20:58:29,408 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:58:29,411 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:58:32,913 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 100 messages
+2026-03-06 20:58:34,629 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:58:34,631 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 20:58:45,132 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 102 messages
+2026-03-06 20:58:51,628 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 20:58:51,630 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=1497
+2026-03-06 20:59:54,848 - app.claude_code.manager - INFO - Session 28 ended with exit code 0
+2026-03-06 20:59:54,945 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 20:59:54,945 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 20:59:54,945 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 20:59:54,946 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 20:59:54,950 - app.chathub_agent.manager - INFO - Stopped session 9 for user 1
+2026-03-06 20:59:54,950 - app.bots.manager - INFO - All bots stopped
+2026-03-06 20:59:58,535 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:59:58,535 - root - INFO - === Server Starting ===
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 20:59:59,209 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 20:59:59,298 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 20:59:59,301 - root - INFO - Enhanced logging system initialized
+2026-03-06 20:59:59,325 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 20:59:59,325 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 20:59:59,325 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 20:59:59,325 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 21:04:01,751 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_170401.db
+2026-03-06 21:04:01,795 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 10 for user 1
+2026-03-06 21:04:01,800 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 2 messages
+2026-03-06 21:04:02,961 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:02,969 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:03,095 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 4 messages
+2026-03-06 21:04:04,629 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:04,632 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:04,640 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 6 messages
+2026-03-06 21:04:06,099 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:06,101 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:06,128 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 8 messages
+2026-03-06 21:04:07,738 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:07,741 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:07,750 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 10 messages
+2026-03-06 21:04:11,527 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:11,529 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:11,538 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 12 messages
+2026-03-06 21:04:15,071 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:15,073 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:15,081 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 14 messages
+2026-03-06 21:04:17,251 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:17,254 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:17,262 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 16 messages
+2026-03-06 21:04:18,570 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:18,572 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:18,599 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 18 messages
+2026-03-06 21:04:20,231 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:20,233 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:20,258 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 20 messages
+2026-03-06 21:04:21,491 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:21,493 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:25,061 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 22 messages
+2026-03-06 21:04:26,373 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:26,376 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:04:28,925 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 24 messages
+2026-03-06 21:04:34,536 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:04:34,539 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=599
+2026-03-06 21:04:47,515 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 21:04:47,516 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 21:04:47,516 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 21:04:47,516 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 21:04:47,523 - app.chathub_agent.manager - INFO - Stopped session 10 for user 1
+2026-03-06 21:04:47,523 - app.bots.manager - INFO - All bots stopped
+2026-03-06 21:04:49,598 - root - INFO - Enhanced logging system initialized
+2026-03-06 21:04:49,598 - root - INFO - === Server Starting ===
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 21:04:50,327 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 21:04:50,418 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 21:04:50,420 - root - INFO - Enhanced logging system initialized
+2026-03-06 21:04:50,445 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 21:04:50,445 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 21:04:50,445 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 21:04:50,445 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 21:08:25,965 - app.chathub_agent.manager - INFO - Safety commit created: 0372846e53492dc5bf9aba5d3d0ffa626488ff59
+2026-03-06 21:08:25,966 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260306_170825.db
+2026-03-06 21:08:26,008 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 11 for user 1
+2026-03-06 21:08:26,012 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 2 messages
+2026-03-06 21:08:28,328 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:28,336 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=4, content_len=0
+2026-03-06 21:08:28,418 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 7 messages
+2026-03-06 21:08:29,657 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:29,660 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:29,669 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 9 messages
+2026-03-06 21:08:31,323 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:31,325 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:31,357 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 11 messages
+2026-03-06 21:08:32,749 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:32,752 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:32,780 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 13 messages
+2026-03-06 21:08:34,411 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:34,414 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:34,455 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 15 messages
+2026-03-06 21:08:35,720 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:35,723 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:35,735 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 17 messages
+2026-03-06 21:08:37,535 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:37,537 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:37,567 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 19 messages
+2026-03-06 21:08:38,941 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:38,944 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:38,975 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 21 messages
+2026-03-06 21:08:46,472 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:46,474 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:46,481 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 23 messages
+2026-03-06 21:08:48,034 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:48,036 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:48,048 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 25 messages
+2026-03-06 21:08:54,971 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:54,973 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:54,982 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 27 messages
+2026-03-06 21:08:58,766 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:08:58,768 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:08:58,775 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 29 messages
+2026-03-06 21:09:03,165 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:09:03,167 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:09:03,175 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 31 messages
+2026-03-06 21:09:07,774 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:09:07,776 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:09:07,785 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 33 messages
+2026-03-06 21:09:10,124 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:09:10,127 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-06 21:09:10,155 - app.chathub_agent.agent_loop - INFO - Calling provider with 6 tools, 35 messages
+2026-03-06 21:09:14,119 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:09:14,121 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=776
+2026-03-06 21:12:52,234 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-06 21:12:52,238 - app.tools.routes - INFO - Message routing - Model: gpt-4o-mini, Response length: 430
+2026-03-06 21:12:52,238 - app.tools.routes - INFO - Message routing - Raw response: {
+    "category": "support",
+    "urgency": "medium",
+    "sentiment": "neutral",
+    "suggested_expertise": ["support", "orders", "help"],
+    "assigned_bot": "Support Bot",
+    "confidence": 0.95,
+    "reason": "The message indicates a need for assistance with an order, which falls under the Support Bot's expertise.",
+    "bot_scores": {
+        "Sales Bot": 0.1,
+        "Support Bot": 0.9,
+        "General Bot": 0.0
+    }
+}
+2026-03-06 21:25:17,181 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 21:25:17,194 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 21:25:18,517 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 21:25:18,519 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 21:25:19,556 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 21:25:19,573 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 21:25:20,313 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 21:25:20,314 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 21:26:04,640 - app.claude_code.manager - INFO - Safety commit created: 6404084949ac7a10021fc1ad987a73c216229391
+2026-03-06 21:26:04,641 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_172604.db
+2026-03-06 21:26:04,649 - app.claude_code.manager - INFO - Started Claude Code session 29 for user 1, PID=36021
+2026-03-06 21:28:52,087 - app.claude_code.manager - INFO - Session 29 ended with exit code 0
+2026-03-06 21:28:52,171 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 21:28:52,171 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 21:28:52,171 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 21:28:52,171 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 21:28:52,176 - app.chathub_agent.manager - INFO - Stopped session 11 for user 1
+2026-03-06 21:28:52,176 - app.bots.manager - INFO - All bots stopped
+2026-03-06 21:28:54,563 - root - INFO - Enhanced logging system initialized
+2026-03-06 21:28:54,563 - root - INFO - === Server Starting ===
+2026-03-06 21:28:55,301 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 21:28:55,302 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 21:28:55,389 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 21:28:55,391 - root - INFO - Enhanced logging system initialized
+2026-03-06 21:28:55,415 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 21:28:55,415 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 21:28:55,415 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 21:28:55,415 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 21:29:08,958 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_172908.db
+2026-03-06 21:29:08,967 - app.claude_code.manager - INFO - Started Claude Code session 30 for user 1, PID=36199
+2026-03-06 21:39:07,601 - app.claude_code.manager - INFO - Session 30 ended with exit code 0
+2026-03-06 21:39:07,729 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-06 21:39:07,730 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-06 21:39:07,730 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-06 21:39:07,730 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-06 21:39:07,730 - app.bots.manager - INFO - All bots stopped
+2026-03-06 21:39:09,882 - root - INFO - Enhanced logging system initialized
+2026-03-06 21:39:09,882 - root - INFO - === Server Starting ===
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: wechat
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-06 21:39:10,621 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-06 21:39:10,709 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-06 21:39:10,711 - root - INFO - Enhanced logging system initialized
+2026-03-06 21:39:10,736 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-06 21:39:10,736 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-06 21:39:10,736 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-06 21:39:10,736 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-06 21:39:27,169 - app.claude_code.manager - INFO - Safety commit created: 79dfecb72610b4f7d7e9631bd563741a60ae53de
+2026-03-06 21:39:27,170 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_173927.db
+2026-03-06 21:39:27,178 - app.claude_code.manager - INFO - Turn started for session 31, PID=36679, first=True
+2026-03-06 21:39:43,789 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:40:46,620 - app.claude_code.manager - INFO - Turn started for session 31, PID=36834, first=False
+2026-03-06 21:40:46,620 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:40:55,416 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:41:19,904 - app.claude_code.manager - INFO - Turn started for session 31, PID=36966, first=False
+2026-03-06 21:41:19,905 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:41:36,809 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:42:16,413 - app.claude_code.manager - INFO - Turn started for session 31, PID=37086, first=False
+2026-03-06 21:42:16,414 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:42:37,366 - app.auth.routes - WARNING - Login attempt with invalid password for: test@test.com
+2026-03-06 21:42:40,284 - app.auth.routes - WARNING - Login attempt with invalid password for: test@test.com
+2026-03-06 21:43:00,114 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:44:02,853 - app.claude_code.manager - INFO - Turn started for session 31, PID=37281, first=False
+2026-03-06 21:44:02,854 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:44:25,543 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:45:11,289 - app.claude_code.manager - INFO - Turn started for session 31, PID=37431, first=False
+2026-03-06 21:45:11,290 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:45:16,200 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:45:43,019 - app.claude_code.manager - INFO - Turn started for session 31, PID=37552, first=False
+2026-03-06 21:45:43,019 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:46:01,213 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:47:04,678 - app.claude_code.manager - INFO - Turn started for session 31, PID=37706, first=False
+2026-03-06 21:47:04,679 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:47:13,928 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:48:18,347 - app.claude_code.manager - INFO - Turn started for session 31, PID=37830, first=False
+2026-03-06 21:48:18,347 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:48:29,583 - app.claude_code.manager - INFO - Turn completed for session 31, waiting for follow-up
+2026-03-06 21:49:01,384 - app.claude_code.manager - INFO - Turn started for session 31, PID=37945, first=False
+2026-03-06 21:49:01,384 - app.claude_code.manager - INFO - Sent follow-up to session 31
+2026-03-06 21:50:44,278 - app.claude_code.manager - ERROR - Error reading output for session 31: Separator is found, but chunk is longer than limit
+2026-03-06 21:51:31,733 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-06 21:51:31,746 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-06 21:51:32,775 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-06 21:51:32,775 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-06 21:52:49,934 - app.claude_code.manager - INFO - Safety commit created: d75e2fc59a31919f4eef7351d923f2dea26a8eab
+2026-03-06 21:52:49,936 - app.claude_code.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/claude_code/app_db_backup_20260306_175249.db
+2026-03-06 21:52:49,944 - app.claude_code.manager - INFO - Turn started for session 32, PID=38271, first=True
+2026-03-06 21:53:34,241 - app.claude_code.manager - INFO - Turn completed for session 32, waiting for follow-up

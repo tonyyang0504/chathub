@@ -1147,7 +1147,7 @@ async def list_contacts(
 @router.get("/{hub_id}/contacts/export")
 async def export_contacts(
     hub_id: int,
-    format: str = Query("csv", regex="^(csv|json)$"),
+    format: str = Query("csv", pattern="^(csv|json)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

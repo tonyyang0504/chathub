@@ -1005,9 +1005,34 @@ function showToast(message, type = 'info') {
 }
 
 // --- Init ---
+async function checkActiveSession() {
+    try {
+        const res = await fetch('/tools/api/claude-code/active-session', { credentials: 'include' });
+        const data = await res.json();
+        if (data.active) {
+            currentSessionId = data.session_id;
+            if (data.is_waiting) {
+                // Session is waiting for follow-up — restore state
+                isWaiting = true;
+                isRunning = true;  // logically alive
+                await viewSession(data.session_id);
+                setStatus('ready');
+                connectWebSocket(data.session_id);
+            } else if (data.is_running) {
+                // Session is actively running — reconnect
+                await viewSession(data.session_id);
+                connectWebSocket(data.session_id);
+            }
+        }
+    } catch (e) {
+        console.error('Failed to check active session:', e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     loadSessions();
+    checkActiveSession();
 
     // Configure marked
     if (typeof marked !== 'undefined') {
