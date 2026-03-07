@@ -3,13 +3,52 @@ AI Cost Tracker
 
 Tracks token usage and estimates costs for all AI API calls.
 Pricing is per 1M tokens (input/output) in USD.
+
+Usage context is set via thread-local storage so providers can auto-log:
+    from app.ai.cost_tracker import usage_context
+    usage_context.set(user_id=1, bot_id=5, source='bot_chat')
+    response = ai_provider.chat_completion(...)
+    # Usage is automatically logged after the call
 """
 
 import logging
+import threading
 from datetime import datetime
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+
+class _UsageContext(threading.local):
+    """Thread-local context for AI usage tracking."""
+
+    def __init__(self):
+        super().__init__()
+        self.user_id = None
+        self.bot_id = None
+        self.hub_id = None
+        self.agent_id = None
+        self.source = None
+        self.operation = None
+
+    def set(self, user_id=None, bot_id=None, hub_id=None, agent_id=None, source=None, operation=None):
+        self.user_id = user_id
+        self.bot_id = bot_id
+        self.hub_id = hub_id
+        self.agent_id = agent_id
+        self.source = source
+        self.operation = operation
+
+    def clear(self):
+        self.user_id = None
+        self.bot_id = None
+        self.hub_id = None
+        self.agent_id = None
+        self.source = None
+        self.operation = None
+
+
+usage_context = _UsageContext()
 
 # Pricing per 1M tokens (input_price, output_price) in USD
 # Updated pricing as of early 2026

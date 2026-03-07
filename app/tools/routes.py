@@ -20,6 +20,7 @@ from app.auth.utils import get_current_user_optional
 from app.auth.ownership import get_user_hub_ids
 from sqlalchemy import func, case
 from .monitoring import ToolMonitor
+from app.ai.cost_tracker import usage_context
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -735,6 +736,7 @@ async def simulate_content_generator(
     try:
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
+        usage_context.set(user_id=user.id, source='tool', operation='content_generation')
 
         # Reasoning models (GPT-5, o1, o3) need more tokens as they use tokens for internal reasoning
         is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
@@ -807,6 +809,7 @@ async def simulate_contact_analyzer(
     try:
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
+        usage_context.set(user_id=user.id, source='tool', operation='contact_analysis')
 
         # Reasoning models (GPT-5, o1, o3) need more tokens as they use tokens for internal reasoning
         is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
@@ -955,6 +958,7 @@ Only return valid JSON, no other text."""
         # Use the appropriate AI provider
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
+        usage_context.set(user_id=user.id, source='tool', operation='message_routing')
 
         # Reasoning models (GPT-5, o1, o3) need more tokens as they use tokens for internal reasoning
         is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
@@ -1739,6 +1743,7 @@ Return only the message text, no explanations or quotes."""
     try:
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
+        usage_context.set(user_id=user.id, hub_id=hub_id, source='tool', operation='followup_generation')
 
         # Reasoning models need more tokens
         is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))
@@ -2139,6 +2144,7 @@ Return only the message text, no explanations or quotes."""
     try:
         from app.ai.providers import get_ai_provider
         provider = get_ai_provider(ai_provider, api_key, ai_model)
+        usage_context.set(user_id=user.id, hub_id=hub_id, source='tool', operation='followup_simulation')
 
         # Reasoning models need more tokens
         is_reasoning_model = ai_model.startswith(('gpt-5', 'o1', 'o3'))

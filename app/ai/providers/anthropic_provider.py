@@ -72,7 +72,7 @@ class AnthropicProvider(AIProvider):
         use_model = model or self.model
         return self.MODEL_ALIASES.get(use_model, use_model)
 
-    def chat_completion(
+    def _chat_completion_impl(
         self,
         messages: List[Union[AIMessage, Dict[str, str]]],
         model: Optional[str] = None,

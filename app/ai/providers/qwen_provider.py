@@ -57,7 +57,7 @@ class QwenProvider(AIProvider):
         )
         logger.debug(f"Qwen provider initialized with model: {self.model}")
 
-    def chat_completion(
+    def _chat_completion_impl(
         self,
         messages: List[Union[AIMessage, Dict[str, str]]],
         model: Optional[str] = None,

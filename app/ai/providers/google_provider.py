@@ -59,7 +59,7 @@ class GoogleProvider(AIProvider):
             self._model_instance = self._genai.GenerativeModel(use_model)
         return self._model_instance
 
-    def chat_completion(
+    def _chat_completion_impl(
         self,
         messages: List[Union[AIMessage, Dict[str, str]]],
         model: Optional[str] = None,

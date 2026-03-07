@@ -1996,6 +1996,20 @@ def _run_whatsapp_bot_sync(instance, config, bot_profile_id, notify_status, noti
             model=config.get('model')
         )
 
+        # Set AI cost tracking context for this bot
+        try:
+            from app.ai.cost_tracker import usage_context
+            with get_db_session() as ctx_db:
+                bot_profile = ctx_db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+                if bot_profile:
+                    usage_context.set(
+                        user_id=bot_profile.user_id,
+                        bot_id=bot_profile_id,
+                        source='bot_chat'
+                    )
+        except Exception as ctx_err:
+            logger.debug(f"Bot {bot_profile_id}: Could not set usage context: {ctx_err}")
+
         print(f"Bot {bot_profile_id}: AI provider ({config.get('ai_provider', 'openai')}) initialized, launching browser...", flush=True)
         notify_status({"status": "launching", "message": "Launching browser..."})
 

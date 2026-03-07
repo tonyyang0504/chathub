@@ -53,7 +53,7 @@ class GrokProvider(AIProvider):
         )
         logger.debug(f"Grok provider initialized with model: {self.model}")
 
-    def chat_completion(
+    def _chat_completion_impl(
         self,
         messages: List[Union[AIMessage, Dict[str, str]]],
         model: Optional[str] = None,

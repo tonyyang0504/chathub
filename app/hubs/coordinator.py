@@ -2272,6 +2272,19 @@ class HubCoordinator:
             provider_name = agent.ai_provider or self.hub.ai_provider or "openai"
             model = agent.model or self.hub.model or "gpt-4o-mini"
 
+            # Set AI cost tracking context
+            try:
+                from app.ai.cost_tracker import usage_context
+                usage_context.set(
+                    user_id=self.hub.user_id,
+                    hub_id=self.hub.id,
+                    agent_id=agent.id,
+                    source='hub_routing',
+                    operation=agent.agent_type or 'routing'
+                )
+            except Exception:
+                pass
+
             return get_ai_provider(
                 provider_name=provider_name,
                 api_key=api_key,

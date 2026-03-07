@@ -100,7 +100,45 @@ class AIProvider(ABC):
         self.base_url = base_url
         self._config = kwargs
 
+    def _log_usage(self, response: 'AIResponse', operation: Optional[str] = None):
+        """Log token usage and cost after an AI call using thread-local context."""
+        try:
+            from app.ai.cost_tracker import usage_context, log_ai_usage
+            if usage_context.user_id:
+                log_ai_usage(
+                    user_id=usage_context.user_id,
+                    provider=self.provider_name,
+                    model=response.model or self.model or "unknown",
+                    prompt_tokens=response.usage.get("prompt_tokens", 0),
+                    completion_tokens=response.usage.get("completion_tokens", 0),
+                    total_tokens=response.usage.get("total_tokens", 0),
+                    operation=operation or usage_context.operation,
+                    source=usage_context.source,
+                    bot_id=usage_context.bot_id,
+                    hub_id=usage_context.hub_id,
+                    agent_id=usage_context.agent_id,
+                )
+        except Exception as e:
+            logger.debug(f"Failed to log AI usage: {e}")
+
     @abstractmethod
+    def _chat_completion_impl(
+        self,
+        messages: List[Union[AIMessage, Dict[str, str]]],
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        top_p: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        tools: Optional[List[Dict]] = None,
+        tool_choice: Optional[Union[str, Dict]] = None,
+        json_mode: bool = False,
+        **kwargs
+    ) -> AIResponse:
+        """Implementation of chat completion. Override in subclasses."""
+        pass
+
     def chat_completion(
         self,
         messages: List[Union[AIMessage, Dict[str, str]]],
@@ -134,7 +172,14 @@ class AIProvider(ABC):
         Returns:
             AIResponse with the generated content
         """
-        pass
+        response = self._chat_completion_impl(
+            messages=messages, model=model, temperature=temperature,
+            max_tokens=max_tokens, top_p=top_p, frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty, tools=tools, tool_choice=tool_choice,
+            json_mode=json_mode, **kwargs
+        )
+        self._log_usage(response, operation="chat")
+        return response
 
     def analyze_image(
         self,
@@ -164,7 +209,9 @@ class AIProvider(ABC):
             raise NotImplementedError(
                 f"{self.provider_name} does not support image analysis"
             )
-        return self._analyze_image_impl(image_data, prompt, model, detail, **kwargs)
+        response = self._analyze_image_impl(image_data, prompt, model, detail, **kwargs)
+        self._log_usage(response, operation="image_analysis")
+        return response
 
     def _analyze_image_impl(
         self,

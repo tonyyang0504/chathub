@@ -51,7 +51,7 @@ class OpenAIProvider(AIProvider):
         self.client = OpenAI(**client_kwargs)
         logger.debug(f"OpenAI provider initialized with model: {self.model}")
 
-    def chat_completion(
+    def _chat_completion_impl(
         self,
         messages: List[Union[AIMessage, Dict[str, str]]],
         model: Optional[str] = None,
