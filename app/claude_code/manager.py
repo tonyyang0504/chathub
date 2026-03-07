@@ -659,6 +659,8 @@ class ClaudeCodeManager:
                 elif msg_type == "system":
                     role = "system"
                     content = data.get("message", data.get("content", str(data)))
+                elif msg_type == "user":
+                    skip_db = True  # Auto-submitted tool_result content, not user prompts
                 else:
                     content = line_str
 

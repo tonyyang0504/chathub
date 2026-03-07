@@ -1583,10 +1583,18 @@ function renderStreamEvent(data, timestamp) {
         currentToolUseEl = null;
     } else if (type === 'tool_use') {
         flushAssistantBuffer();
-        appendToolUse(JSON.stringify({
-            tool: data.tool?.name || data.name || 'tool',
-            input: data.tool?.input || data.input || {}
-        }), timestamp);
+        const toolName = data.tool?.name || data.name || 'tool';
+        // During live streaming, artifact already exists from content_block_start + deltas
+        // Only create if no matching pending artifact (e.g., during replay from DB)
+        const last = artifacts.length > 0 ? artifacts[artifacts.length - 1] : null;
+        if (last && last.toolName === toolName && !last.result) {
+            // Already created by content_block_start — skip duplicate
+        } else {
+            appendToolUse(JSON.stringify({
+                tool: toolName,
+                input: data.tool?.input || data.input || {}
+            }), timestamp);
+        }
     } else if (type === 'tool_result') {
         appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
     } else if (type === 'result') {
