@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import uuid
@@ -166,19 +167,94 @@ class ClaudeCodeManager:
             return {"loggedIn": False, "email": "", "subscriptionType": "", "error": str(e)}
 
     async def trigger_membership_login(self) -> dict:
-        """Trigger `claude auth login` which opens browser for OAuth."""
+        """Trigger `claude auth login` which opens browser for OAuth.
+
+        Captures stdout looking for the OAuth URL so it can be displayed
+        in the UI for cross-device login (e.g. headless servers).
+        """
         try:
+            # Kill any existing login process
+            if hasattr(self, '_login_process') and self._login_process:
+                try:
+                    self._login_process.kill()
+                except ProcessLookupError:
+                    pass
+                self._login_process = None
+
             process = await asyncio.create_subprocess_exec(
                 "claude", "auth", "login",
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.STDOUT  # Merge stderr into stdout
             )
-            # Don't wait for completion — login happens in browser
-            return {"status": "ok", "message": "Browser opened for login"}
+            self._login_process = process
+
+            # Read output for up to 10 seconds looking for the OAuth URL
+            oauth_url = None
+            url_pattern = re.compile(r'https://\S*oauth\S*authorize\S+|https://\S*claude\S+/authorize\S+|https://\S+/login\S*\?[^\s]+')
+            try:
+                deadline = asyncio.get_event_loop().time() + 10.0
+                buffer = ""
+                while asyncio.get_event_loop().time() < deadline:
+                    remaining = deadline - asyncio.get_event_loop().time()
+                    if remaining <= 0:
+                        break
+                    try:
+                        chunk = await asyncio.wait_for(
+                            process.stdout.read(4096),
+                            timeout=min(remaining, 1.0)
+                        )
+                        if not chunk:
+                            break  # EOF
+                        buffer += chunk.decode("utf-8", errors="replace")
+                        logger.info(f"Login output so far: {buffer[:500]}")
+                        # Look for any OAuth/authorize URL
+                        match = url_pattern.search(buffer)
+                        if match:
+                            oauth_url = match.group(0)
+                            break
+                        # Also try generic https URL after "visit" or "open"
+                        visit_match = re.search(r'(?:visit|open|go to|navigate to|browser)[:\s]+(https://\S+)', buffer, re.IGNORECASE)
+                        if visit_match:
+                            oauth_url = visit_match.group(1)
+                            break
+                    except asyncio.TimeoutError:
+                        continue
+            except Exception as e:
+                logger.warning(f"Error reading login output: {e}")
+
+            if buffer and not oauth_url:
+                logger.info(f"Full login output (no URL found): {buffer[:1000]}")
+
+            if oauth_url:
+                return {"status": "ok", "oauth_url": oauth_url}
+            else:
+                return {"status": "ok", "message": "Browser opened for login"}
         except FileNotFoundError:
             return {"status": "error", "message": "Claude CLI not installed"}
         except Exception as e:
             logger.error(f"Failed to trigger membership login: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def submit_login_code(self, code: str) -> dict:
+        """Send the OAuth authorization code to the running login process stdin."""
+        if not hasattr(self, '_login_process') or not self._login_process:
+            return {"status": "error", "message": "No login process running. Click 'Login with Claude' first."}
+        process = self._login_process
+        if process.returncode is not None:
+            self._login_process = None
+            return {"status": "error", "message": "Login process already exited. Click 'Login with Claude' to restart."}
+        try:
+            process.stdin.write((code.strip() + "\n").encode("utf-8"))
+            await process.stdin.drain()
+            # Wait briefly for the process to complete
+            try:
+                await asyncio.wait_for(process.wait(), timeout=10.0)
+            except asyncio.TimeoutError:
+                pass
+            return {"status": "ok", "message": "Authorization code submitted"}
+        except Exception as e:
+            logger.error(f"Failed to submit login code: {e}")
             return {"status": "error", "message": str(e)}
 
     async def trigger_membership_logout(self) -> dict:
@@ -204,7 +280,8 @@ class ClaudeCodeManager:
         prompt: str,
         api_key: str,
         model: Optional[str] = None,
-        auth_method: str = "api_key"
+        auth_method: str = "api_key",
+        oauth_token: Optional[str] = None
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
         # Enforce one session per user
@@ -213,7 +290,7 @@ class ClaudeCodeManager:
             logger.warning(f"User {user_id} already has an active session {existing.session_id}")
             return None
 
-        session = ActiveSession(session_id, user_id, api_key, model, auth_method)
+        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token)
         self._sessions[user_id] = session
 
         try:
@@ -254,6 +331,8 @@ class ClaudeCodeManager:
         if session._auth_method == "membership":
             # Don't set ANTHROPIC_API_KEY — let CLI use stored membership credentials
             env.pop("ANTHROPIC_API_KEY", None)
+            if session._oauth_token:
+                env["CLAUDE_CODE_OAUTH_TOKEN"] = session._oauth_token
         else:
             env["ANTHROPIC_API_KEY"] = session._api_key
 

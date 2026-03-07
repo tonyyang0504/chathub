@@ -77,8 +77,19 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "auto_commit": True,
             "auto_backup_db": True,
             "max_session_minutes": 30,
-            "auth_method": "api_key"
+            "auth_method": "api_key",
+            "oauth_token_set": False,
+            "oauth_token_masked": ""
         }
+
+    oauth_set = bool(settings.oauth_token_encrypted)
+    oauth_masked = ""
+    if oauth_set:
+        try:
+            token_val = decrypt_string(settings.oauth_token_encrypted)
+            oauth_masked = "****" + token_val[-4:]
+        except Exception:
+            oauth_masked = "****"
 
     return {
         "api_key_set": bool(settings.anthropic_api_key_encrypted),
@@ -87,7 +98,9 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
         "max_session_minutes": settings.max_session_minutes or 30,
-        "auth_method": settings.auth_method or "api_key"
+        "auth_method": settings.auth_method or "api_key",
+        "oauth_token_set": oauth_set,
+        "oauth_token_masked": oauth_masked
     }
 
 
@@ -121,6 +134,14 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
     if "auth_method" in data and data["auth_method"] in ("api_key", "membership"):
         settings.auth_method = data["auth_method"]
 
+    # Handle setup-token (oauth_token)
+    oauth_token = data.get("oauth_token")
+    if oauth_token and oauth_token.strip() and not oauth_token.startswith("****"):
+        settings.oauth_token_encrypted = encrypt_string(oauth_token.strip())
+    elif oauth_token == "":
+        # Explicitly cleared
+        settings.oauth_token_encrypted = None
+
     db.commit()
     return {"status": "ok"}
 
@@ -144,6 +165,20 @@ async def membership_login(request: Request, db: Session = Depends(get_db)):
     result = await claude_code_manager.trigger_membership_login()
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@router.post("/api/claude-code/membership-login-code")
+async def membership_login_code(request: Request, db: Session = Depends(get_db)):
+    """Submit OAuth authorization code to the running login process."""
+    await get_current_user(request, None, db)
+    body = await request.json()
+    code = body.get("code", "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code is required")
+    result = await claude_code_manager.submit_login_code(code)
+    if result["status"] == "error":
+        raise HTTPException(status_code=400, detail=result["message"])
     return result
 
 
@@ -199,12 +234,15 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
 
     auth_method = (settings.auth_method if settings else None) or "api_key"
 
+    oauth_token = None
     if auth_method == "api_key":
         if not settings or not settings.anthropic_api_key_encrypted:
             raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
         api_key = decrypt_string(settings.anthropic_api_key_encrypted)
     else:
         api_key = ""  # Membership mode — CLI uses stored credentials
+        if settings and settings.oauth_token_encrypted:
+            oauth_token = decrypt_string(settings.oauth_token_encrypted)
 
     model = data.get("model") or (settings.default_model if settings else "sonnet")
 
@@ -248,7 +286,8 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         prompt=prompt,
         api_key=api_key,
         model=model,
-        auth_method=auth_method
+        auth_method=auth_method,
+        oauth_token=oauth_token
     )
 
     if not active_session:

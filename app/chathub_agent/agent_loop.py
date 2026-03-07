@@ -241,6 +241,8 @@ class AgentLoop:
 
     def _needs_approval(self, tool_name: str) -> bool:
         """Check if a tool requires user approval before execution."""
+        if self.agent_config.get("auto_approve_all", True):
+            return False
         from app.chathub_agent.tool_defs import READ_ONLY_TOOLS
         if tool_name in READ_ONLY_TOOLS and self.agent_config.get("auto_approve_read", True):
             return False

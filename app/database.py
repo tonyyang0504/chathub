@@ -748,6 +748,7 @@ class ChatHubAgentSettings(Base):
     api_key_encrypted = Column(Text)
     default_model = Column(String(100), default="gpt-4o")
     default_agent_id = Column(Integer, ForeignKey("chathub_agent_configs.id", ondelete="SET NULL"), nullable=True)
+    auto_approve_all = Column(Boolean, default=True)
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
     max_session_minutes = Column(Integer, default=60)
@@ -778,6 +779,7 @@ class ChatHubAgentConfig(Base):
     allowed_tools = Column(Text)  # JSON list
     dangerous_tools = Column(Text, default='["exec_command"]')  # JSON list
     auto_approve_read = Column(Boolean, default=True)
+    auto_approve_all = Column(Boolean, default=True)
     workspace_path = Column(String(500))
     enabled_skills = Column(Text)  # JSON list
     routing_rules = Column(Text)  # JSON object

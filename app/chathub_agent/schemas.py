@@ -116,6 +116,7 @@ class AgentConfigCreate(BaseModel):
     allowed_tools: Optional[List[str]] = None
     dangerous_tools: Optional[List[str]] = Field(default_factory=lambda: ["exec_command"])
     auto_approve_read: bool = True
+    auto_approve_all: bool = True
     workspace_path: Optional[str] = None
     enabled_skills: Optional[List[str]] = None
     routing_rules: Optional[Dict[str, Any]] = None
@@ -134,6 +135,7 @@ class AgentConfigUpdate(BaseModel):
     allowed_tools: Optional[List[str]] = None
     dangerous_tools: Optional[List[str]] = None
     auto_approve_read: Optional[bool] = None
+    auto_approve_all: Optional[bool] = None
     workspace_path: Optional[str] = None
     enabled_skills: Optional[List[str]] = None
     routing_rules: Optional[Dict[str, Any]] = None
@@ -154,6 +156,7 @@ class AgentConfigResponse(BaseModel):
     allowed_tools: Optional[List[str]] = None
     dangerous_tools: Optional[List[str]] = None
     auto_approve_read: bool
+    auto_approve_all: bool
     workspace_path: Optional[str] = None
     enabled_skills: Optional[List[str]] = None
     routing_rules: Optional[Dict[str, Any]] = None

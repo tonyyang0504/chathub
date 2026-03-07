@@ -81,6 +81,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "api_key_set": False,
             "ai_provider": "openai",
             "default_model": "gpt-4o",
+            "auto_approve_all": True,
             "auto_commit": True,
             "auto_backup_db": True,
             "max_session_minutes": 30,
@@ -101,6 +102,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "ai_provider": settings.ai_provider or "openai",
         "default_model": settings.default_model or "gpt-4o",
         "default_agent_id": settings.default_agent_id,
+        "auto_approve_all": settings.auto_approve_all if settings.auto_approve_all is not None else True,
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
         "max_session_minutes": settings.max_session_minutes or 30,
@@ -130,8 +132,8 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.api_key_encrypted = encrypt_string(api_key.strip())
 
     for field in ["ai_provider", "default_model", "default_agent_id",
-                  "auto_commit", "auto_backup_db", "max_session_minutes",
-                  "queue_mode", "workspace_path"]:
+                  "auto_approve_all", "auto_commit", "auto_backup_db",
+                  "max_session_minutes", "queue_mode", "workspace_path"]:
         if field in data:
             setattr(settings, field, data[field])
 
@@ -183,6 +185,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         "allowed_tools": None,
         "dangerous_tools": ["exec_command"],
         "auto_approve_read": True,
+        "auto_approve_all": True,
         "workspace_path": settings.workspace_path,
         "enabled_skills": None,
     }
@@ -203,6 +206,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
                 "allowed_tools": json.loads(agent_config.allowed_tools) if agent_config.allowed_tools else None,
                 "dangerous_tools": json.loads(agent_config.dangerous_tools) if agent_config.dangerous_tools else ["exec_command"],
                 "auto_approve_read": agent_config.auto_approve_read,
+                "auto_approve_all": agent_config.auto_approve_all if agent_config.auto_approve_all is not None else True,
                 "workspace_path": agent_config.workspace_path or settings.workspace_path,
                 "enabled_skills": json.loads(agent_config.enabled_skills) if agent_config.enabled_skills else None,
             })
@@ -430,6 +434,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
             "allowed_tools": None,
             "dangerous_tools": ["exec_command"],
             "auto_approve_read": True,
+            "auto_approve_all": True,
             "workspace_path": settings.workspace_path,
             "enabled_skills": None,
         }
@@ -450,6 +455,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
                     "allowed_tools": json.loads(agent_config.allowed_tools) if agent_config.allowed_tools else None,
                     "dangerous_tools": json.loads(agent_config.dangerous_tools) if agent_config.dangerous_tools else ["exec_command"],
                     "auto_approve_read": agent_config.auto_approve_read,
+                    "auto_approve_all": agent_config.auto_approve_all if agent_config.auto_approve_all is not None else True,
                     "workspace_path": agent_config.workspace_path or settings.workspace_path,
                     "enabled_skills": json.loads(agent_config.enabled_skills) if agent_config.enabled_skills else None,
                 })
@@ -612,6 +618,7 @@ async def list_agent_configs(request: Request, db: Session = Depends(get_db)):
             "allowed_tools": json.loads(c.allowed_tools) if c.allowed_tools else None,
             "dangerous_tools": json.loads(c.dangerous_tools) if c.dangerous_tools else None,
             "auto_approve_read": c.auto_approve_read,
+            "auto_approve_all": c.auto_approve_all if c.auto_approve_all is not None else True,
             "workspace_path": c.workspace_path,
             "enabled_skills": json.loads(c.enabled_skills) if c.enabled_skills else None,
             "routing_rules": json.loads(c.routing_rules) if c.routing_rules else None,
@@ -642,6 +649,7 @@ async def create_agent_config(request: Request, db: Session = Depends(get_db)):
         allowed_tools=json.dumps(data["allowed_tools"]) if data.get("allowed_tools") else None,
         dangerous_tools=json.dumps(data.get("dangerous_tools", ["exec_command"])),
         auto_approve_read=data.get("auto_approve_read", True),
+        auto_approve_all=data.get("auto_approve_all", True),
         workspace_path=data.get("workspace_path"),
         enabled_skills=json.dumps(data["enabled_skills"]) if data.get("enabled_skills") else None,
         routing_rules=json.dumps(data["routing_rules"]) if data.get("routing_rules") else None,
@@ -683,7 +691,7 @@ async def update_agent_config(config_id: int, request: Request, db: Session = De
 
     # Simple fields
     for field in ["name", "description", "ai_provider", "model", "system_prompt",
-                  "temperature", "max_tokens", "auto_approve_read", "workspace_path",
+                  "temperature", "max_tokens", "auto_approve_read", "auto_approve_all", "workspace_path",
                   "is_active"]:
         if field in data:
             setattr(config, field, data[field])

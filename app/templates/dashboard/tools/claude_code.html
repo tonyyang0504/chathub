@@ -363,6 +363,36 @@
                                 </button>
                             </div>
                         </div>
+                        <div id="oauthUrlPanel" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.75rem; background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 0.5rem;">
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                                <small class="text-muted"><i class="bi bi-link-45deg me-1"></i>Open this URL on any device to authorize:</small>
+                                <button type="button" class="btn-close" style="font-size: 0.6rem;" onclick="document.getElementById('oauthUrlPanel').style.display='none'" aria-label="Close"></button>
+                            </div>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control form-control-sm" id="oauthUrlInput" readonly style="font-size: 0.75rem; background: rgba(255,255,255,0.5);">
+                                <button class="btn btn-sm btn-outline-info" type="button" onclick="copyOAuthUrl()" title="Copy URL">
+                                    <i class="bi bi-clipboard" id="copyOAuthIcon"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mb-1"><i class="bi bi-key me-1"></i>Paste the authorization code you received:</small>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control form-control-sm" id="oauthCodeInput" placeholder="Paste authorization code here" style="font-size: 0.75rem;">
+                                <button class="btn btn-sm btn-outline-info" type="button" onclick="submitLoginCode()" id="submitCodeBtn">
+                                    <i class="bi bi-check-lg me-1"></i>Submit
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 my-2">
+                            <hr class="flex-grow-1 m-0"><span class="text-muted small">or</span><hr class="flex-grow-1 m-0">
+                        </div>
+                        <label class="form-label mb-1">Setup Token</label>
+                        <div class="input-group input-group-sm">
+                            <input type="password" class="form-control" id="oauthTokenInput" placeholder="Paste setup-token here">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleTokenVisibility()" title="Show/Hide">
+                                <i class="bi bi-eye" id="tokenToggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="oauthTokenStatus">For headless servers. Generate with <code>claude setup-token</code> on a machine with a browser.</small>
                     </div>
 
                     <div class="col-md-3">
@@ -494,6 +524,18 @@ function toggleKeyVisibility() {
     }
 }
 
+function toggleTokenVisibility() {
+    const input = document.getElementById('oauthTokenInput');
+    const icon = document.getElementById('tokenToggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
 let currentAuthMethod = 'api_key';
 let membershipPollTimer = null;
 
@@ -511,6 +553,11 @@ async function loadSettings() {
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         document.getElementById('maxMinutesInput').value = data.max_session_minutes || 30;
         setAuthMethod(data.auth_method || 'api_key', true);
+        if (data.oauth_token_set) {
+            document.getElementById('oauthTokenInput').placeholder = data.oauth_token_masked || '****';
+            document.getElementById('oauthTokenStatus').textContent = 'Setup token configured';
+            document.getElementById('oauthTokenStatus').className = 'text-success small';
+        }
     } catch (e) {
         console.error('Failed to load settings:', e);
     }
@@ -528,6 +575,10 @@ async function saveSettings() {
     if (apiKey && !apiKey.startsWith('****')) {
         payload.anthropic_api_key = apiKey;
     }
+    const oauthToken = document.getElementById('oauthTokenInput').value;
+    if (oauthToken && !oauthToken.startsWith('****')) {
+        payload.oauth_token = oauthToken;
+    }
 
     try {
         const res = await fetch('/tools/api/claude-code/settings', {
@@ -539,6 +590,7 @@ async function saveSettings() {
         if (res.ok) {
             showToast('Settings saved', 'success');
             document.getElementById('apiKeyInput').value = '';
+            document.getElementById('oauthTokenInput').value = '';
             loadSettings();
         } else {
             const err = await res.json();
@@ -608,7 +660,7 @@ async function checkMembershipStatus() {
 async function membershipLogin() {
     const loginBtn = document.getElementById('membershipLoginBtn');
     loginBtn.disabled = true;
-    loginBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Opening browser...';
+    loginBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Starting login...';
 
     try {
         const res = await fetch('/tools/api/claude-code/membership-login', {
@@ -616,7 +668,16 @@ async function membershipLogin() {
             credentials: 'include'
         });
         if (res.ok) {
-            showToast('Browser opened for login. Complete the login there.', 'success');
+            const data = await res.json();
+            if (data.oauth_url) {
+                // Show OAuth URL panel for cross-device login
+                const panel = document.getElementById('oauthUrlPanel');
+                document.getElementById('oauthUrlInput').value = data.oauth_url;
+                panel.style.display = 'block';
+                showToast('OAuth URL ready — open it on any device to authorize.', 'success');
+            } else {
+                showToast('Browser opened for login. Complete the login there.', 'success');
+            }
             // Poll for login completion
             startMembershipPoll();
         } else {
@@ -628,6 +689,54 @@ async function membershipLogin() {
     } finally {
         loginBtn.disabled = false;
         loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i>Login with Claude';
+    }
+}
+
+function copyOAuthUrl() {
+    const input = document.getElementById('oauthUrlInput');
+    navigator.clipboard.writeText(input.value).then(() => {
+        const icon = document.getElementById('copyOAuthIcon');
+        icon.className = 'bi bi-check-lg';
+        setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 1500);
+        showToast('URL copied to clipboard', 'success');
+    }).catch(() => {
+        input.select();
+        showToast('Press Ctrl+C to copy', 'info');
+    });
+}
+
+async function submitLoginCode() {
+    const codeInput = document.getElementById('oauthCodeInput');
+    const btn = document.getElementById('submitCodeBtn');
+    const code = codeInput.value.trim();
+    if (!code) {
+        showToast('Please paste the authorization code', 'warning');
+        return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Submitting...';
+    try {
+        const res = await fetch('/tools/api/claude-code/membership-login-code', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        if (res.ok) {
+            showToast('Authorization code submitted. Checking login status...', 'success');
+            codeInput.value = '';
+            document.getElementById('oauthUrlPanel').style.display = 'none';
+            // Check status after a moment
+            setTimeout(() => checkMembershipStatus(), 2000);
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to submit code', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Submit';
     }
 }
 
@@ -657,6 +766,7 @@ function startMembershipPoll() {
             const data = await res.json();
             if (data.loggedIn) {
                 stopMembershipPoll();
+                document.getElementById('oauthUrlPanel').style.display = 'none';
                 checkMembershipStatus();
                 showToast('Login successful!', 'success');
             }
