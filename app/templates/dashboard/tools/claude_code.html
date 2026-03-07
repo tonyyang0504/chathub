@@ -950,6 +950,7 @@ let isRunning = false;
 let isWaiting = false;  // True when session finished responding, awaiting follow-up
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
+let turnHasStreamedText = false;  // Track if text was shown via deltas (live) vs needs result (replay)
 
 // Artifacts state
 let artifacts = [];
@@ -1546,6 +1547,7 @@ function renderStreamEvent(data, timestamp) {
 
     if (type === 'assistant' && data.message) {
         flushAssistantBuffer();
+        turnHasStreamedText = false;  // New turn starting
         const blocks = data.message.content || [];
         for (const block of blocks) {
             if (block.type === 'text' && block.text) {
@@ -1567,6 +1569,7 @@ function renderStreamEvent(data, timestamp) {
         const delta = data.delta || {};
         if (delta.type === 'text_delta' && delta.text) {
             assistantBuffer += delta.text;
+            turnHasStreamedText = true;
             if (currentAssistantEl) {
                 currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
                 scrollToBottom();
@@ -1609,6 +1612,17 @@ function renderStreamEvent(data, timestamp) {
         appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
     } else if (type === 'result') {
         flushAssistantBuffer();
+        // During replay, content_block_delta events aren't in DB so text was never streamed.
+        // Render the result text only if deltas didn't already show it (live streaming).
+        if (!turnHasStreamedText && data.result) {
+            let text = '';
+            if (typeof data.result === 'string') text = data.result;
+            else if (Array.isArray(data.result)) {
+                text = data.result.filter(b => b.type === 'text').map(b => b.text).join('\n');
+            }
+            if (text.trim()) appendAssistantMessage(text);
+        }
+        turnHasStreamedText = false;
     } else if (type === 'result_done') {
         isWaiting = true;
         setStatus('ready');
@@ -1969,6 +1983,7 @@ function clearChat() {
     currentAssistantEl = null;
     currentToolUseEl = null;
     assistantBuffer = '';
+    turnHasStreamedText = false;
     resetArtifacts();
 }
 

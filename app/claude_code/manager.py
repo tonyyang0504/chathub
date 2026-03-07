@@ -652,7 +652,6 @@ class ClaudeCodeManager:
                         content = "\n".join(text_parts)
                     elif isinstance(result_content, str):
                         content = result_content
-                    skip_db = True  # Duplicates the assistant message content
                 elif msg_type == "error":
                     role = "system"
                     content = data.get("error", {}).get("message", str(data))
@@ -672,12 +671,15 @@ class ClaudeCodeManager:
                 if not skip_db:
                     try:
                         db = SessionLocal()
+                        event_json = json.dumps(data)
+                        # Result events carry final assistant text needed for replay
+                        max_event = 50000 if msg_type == "result" else 5000
                         msg = ClaudeCodeMessage(
                             session_id=session.session_id,
                             role=role,
                             content=content[:10000] if content else "",
                             message_type=msg_type,
-                            event_data=json.dumps(data)[:5000]
+                            event_data=event_json[:max_event]
                         )
                         db.add(msg)
                         db.commit()
