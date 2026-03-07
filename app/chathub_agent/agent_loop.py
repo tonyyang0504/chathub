@@ -265,6 +265,12 @@ class AgentLoop:
         self._approval_granted = granted
         self._approval_event.set()
 
+    def set_conversation(self, conversation: list[dict]):
+        """Set conversation history (for session resume)."""
+        self.conversation = conversation
+        self.is_running = True
+        self.is_waiting = True
+
     def stop(self):
         """Request the agent loop to stop."""
         self._stop_requested = True

@@ -154,10 +154,13 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required")
 
-    # Check for existing active session
+    # Check for existing active session — auto-stop idle sessions
     active = chathub_agent_manager.get_active_session(user.id)
     if active:
-        raise HTTPException(status_code=409, detail="You already have an active session")
+        if active.is_waiting or (active.agent_loop and active.agent_loop.is_waiting):
+            await chathub_agent_manager.stop_session(user.id)
+        else:
+            raise HTTPException(status_code=409, detail="You already have an active session")
 
     # Get settings
     settings = db.query(ChatHubAgentSettings).filter(
@@ -406,7 +409,86 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     # Send via manager
     sent = await chathub_agent_manager.send_message(user.id, prompt)
     if not sent:
-        raise HTTPException(status_code=400, detail="Session is not ready for input")
+        # Session not in memory — attempt to resume from DB
+        from app.database import ChatHubAgentSettings, ChatHubAgentConfig
+        settings = db.query(ChatHubAgentSettings).filter(
+            ChatHubAgentSettings.user_id == user.id
+        ).first()
+
+        if not settings or not settings.api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Session is not ready for input")
+
+        api_key = decrypt_string(settings.api_key_encrypted)
+
+        # Build agent config
+        agent_config_dict = {
+            "ai_provider": session.ai_provider or settings.ai_provider or "openai",
+            "model": session.model or settings.default_model or "gpt-4o",
+            "system_prompt": None,
+            "temperature": 0.3,
+            "max_tokens": 8192,
+            "allowed_tools": None,
+            "dangerous_tools": ["exec_command"],
+            "auto_approve_read": True,
+            "workspace_path": settings.workspace_path,
+            "enabled_skills": None,
+        }
+
+        if session.agent_config_id:
+            agent_config = db.query(ChatHubAgentConfig).filter(
+                ChatHubAgentConfig.id == session.agent_config_id,
+                ChatHubAgentConfig.user_id == user.id,
+                ChatHubAgentConfig.is_active == True,
+            ).first()
+            if agent_config:
+                agent_config_dict.update({
+                    "ai_provider": agent_config.ai_provider or agent_config_dict["ai_provider"],
+                    "model": agent_config.model or agent_config_dict["model"],
+                    "system_prompt": agent_config.system_prompt,
+                    "temperature": agent_config.temperature,
+                    "max_tokens": agent_config.max_tokens,
+                    "allowed_tools": json.loads(agent_config.allowed_tools) if agent_config.allowed_tools else None,
+                    "dangerous_tools": json.loads(agent_config.dangerous_tools) if agent_config.dangerous_tools else ["exec_command"],
+                    "auto_approve_read": agent_config.auto_approve_read,
+                    "workspace_path": agent_config.workspace_path or settings.workspace_path,
+                    "enabled_skills": json.loads(agent_config.enabled_skills) if agent_config.enabled_skills else None,
+                })
+                if agent_config.api_key_encrypted:
+                    try:
+                        api_key = decrypt_string(agent_config.api_key_encrypted)
+                    except Exception:
+                        pass
+
+        agent_config_dict["user_context"] = {
+            "user_id": user.id,
+            "email": user.email,
+            "name": user.name or user.email,
+        }
+
+        settings_dict = {
+            "api_key": api_key,
+            "ai_provider": agent_config_dict["ai_provider"],
+            "default_model": agent_config_dict["model"],
+            "workspace_path": agent_config_dict.get("workspace_path"),
+        }
+
+        resumed = await chathub_agent_manager.resume_session(
+            user_id=user.id,
+            session_id=session.id,
+            settings_dict=settings_dict,
+            agent_config_dict=agent_config_dict,
+        )
+
+        if not resumed:
+            raise HTTPException(status_code=400, detail="Session is not ready for input")
+
+        # Update DB session status back to running
+        session.status = "running"
+        db.commit()
+
+        sent = await chathub_agent_manager.send_message(user.id, prompt)
+        if not sent:
+            raise HTTPException(status_code=400, detail="Session is not ready for input")
 
     return {"status": "ok"}
 

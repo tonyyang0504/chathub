@@ -701,6 +701,7 @@ class ClaudeCodeSettings(Base):
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
     max_session_minutes = Column(Integer, default=30)
+    auth_method = Column(String(20), default="api_key")  # "api_key" or "membership"
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

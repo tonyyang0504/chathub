@@ -76,7 +76,8 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "default_model": "sonnet",
             "auto_commit": True,
             "auto_backup_db": True,
-            "max_session_minutes": 30
+            "max_session_minutes": 30,
+            "auth_method": "api_key"
         }
 
     return {
@@ -85,7 +86,8 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "default_model": settings.default_model or "sonnet",
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
-        "max_session_minutes": settings.max_session_minutes or 30
+        "max_session_minutes": settings.max_session_minutes or 30,
+        "auth_method": settings.auth_method or "api_key"
     }
 
 
@@ -116,9 +118,43 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.auto_backup_db = data["auto_backup_db"]
     if "max_session_minutes" in data:
         settings.max_session_minutes = data["max_session_minutes"]
+    if "auth_method" in data and data["auth_method"] in ("api_key", "membership"):
+        settings.auth_method = data["auth_method"]
 
     db.commit()
     return {"status": "ok"}
+
+
+# ============================================================================
+# Membership Auth API
+# ============================================================================
+
+@router.get("/api/claude-code/membership-status")
+async def membership_status(request: Request, db: Session = Depends(get_db)):
+    """Check Claude membership auth status."""
+    await get_current_user(request, None, db)
+    result = await claude_code_manager.check_membership_status()
+    return result
+
+
+@router.post("/api/claude-code/membership-login")
+async def membership_login(request: Request, db: Session = Depends(get_db)):
+    """Trigger Claude membership login (opens browser)."""
+    await get_current_user(request, None, db)
+    result = await claude_code_manager.trigger_membership_login()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@router.post("/api/claude-code/membership-logout")
+async def membership_logout(request: Request, db: Session = Depends(get_db)):
+    """Trigger Claude membership logout."""
+    await get_current_user(request, None, db)
+    result = await claude_code_manager.trigger_membership_logout()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
 
 
 # ============================================================================
@@ -161,11 +197,16 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         ClaudeCodeSettings.user_id == user.id
     ).first()
 
-    if not settings or not settings.anthropic_api_key_encrypted:
-        raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+    auth_method = (settings.auth_method if settings else None) or "api_key"
 
-    api_key = decrypt_string(settings.anthropic_api_key_encrypted)
-    model = data.get("model") or settings.default_model
+    if auth_method == "api_key":
+        if not settings or not settings.anthropic_api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+        api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+    else:
+        api_key = ""  # Membership mode — CLI uses stored credentials
+
+    model = data.get("model") or (settings.default_model if settings else "sonnet")
 
     # Safety commit and backup
     git_hash = None
@@ -206,7 +247,8 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         session_id=session.id,
         prompt=prompt,
         api_key=api_key,
-        model=model
+        model=model,
+        auth_method=auth_method
     )
 
     if not active_session:

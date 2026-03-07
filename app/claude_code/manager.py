@@ -28,12 +28,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 class ActiveSession:
     """Represents an active Claude Code CLI session."""
 
-    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None):
+    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key"):
         self.session_id = session_id
         self.user_id = user_id
         self.claude_session_id = str(uuid.uuid4())  # UUID for Claude CLI --session-id/--resume
         self._api_key = api_key
         self._model = model
+        self._auth_method = auth_method
         self.process: Optional[asyncio.subprocess.Process] = None
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []
@@ -132,13 +133,77 @@ class ClaudeCodeManager:
             logger.error(f"Failed to create DB backup: {e}")
             return None
 
+    async def check_membership_status(self) -> dict:
+        """Check Claude membership auth status via `claude auth status --json`."""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "claude", "auth", "status", "--json",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=10.0)
+            output = stdout.decode("utf-8", errors="replace").strip()
+            if output:
+                try:
+                    data = json.loads(output)
+                    return {
+                        "loggedIn": data.get("loggedIn", data.get("authenticated", False)),
+                        "email": data.get("email", ""),
+                        "subscriptionType": data.get("subscriptionType", data.get("planType", ""))
+                    }
+                except json.JSONDecodeError:
+                    # Some versions output non-JSON — check for keywords
+                    logged_in = "logged in" in output.lower() or "authenticated" in output.lower()
+                    return {"loggedIn": logged_in, "email": "", "subscriptionType": "", "raw": output}
+            return {"loggedIn": False, "email": "", "subscriptionType": ""}
+        except FileNotFoundError:
+            return {"loggedIn": False, "email": "", "subscriptionType": "", "error": "Claude CLI not installed"}
+        except asyncio.TimeoutError:
+            return {"loggedIn": False, "email": "", "subscriptionType": "", "error": "Timeout checking status"}
+        except Exception as e:
+            logger.error(f"Failed to check membership status: {e}")
+            return {"loggedIn": False, "email": "", "subscriptionType": "", "error": str(e)}
+
+    async def trigger_membership_login(self) -> dict:
+        """Trigger `claude auth login` which opens browser for OAuth."""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "claude", "auth", "login",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            # Don't wait for completion — login happens in browser
+            return {"status": "ok", "message": "Browser opened for login"}
+        except FileNotFoundError:
+            return {"status": "error", "message": "Claude CLI not installed"}
+        except Exception as e:
+            logger.error(f"Failed to trigger membership login: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def trigger_membership_logout(self) -> dict:
+        """Run `claude auth logout`."""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "claude", "auth", "logout",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            await asyncio.wait_for(process.communicate(), timeout=10.0)
+            return {"status": "ok"}
+        except FileNotFoundError:
+            return {"status": "error", "message": "Claude CLI not installed"}
+        except Exception as e:
+            logger.error(f"Failed to trigger membership logout: {e}")
+            return {"status": "error", "message": str(e)}
+
     async def start_session(
         self,
         user_id: int,
         session_id: int,
         prompt: str,
         api_key: str,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        auth_method: str = "api_key"
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
         # Enforce one session per user
@@ -147,7 +212,7 @@ class ClaudeCodeManager:
             logger.warning(f"User {user_id} already has an active session {existing.session_id}")
             return None
 
-        session = ActiveSession(session_id, user_id, api_key, model)
+        session = ActiveSession(session_id, user_id, api_key, model, auth_method)
         self._sessions[user_id] = session
 
         try:
@@ -185,7 +250,11 @@ class ClaudeCodeManager:
         env = os.environ.copy()
         env.pop("CLAUDECODE", None)
         env.pop("CLAUDE_CODE_ENTRYPOINT", None)
-        env["ANTHROPIC_API_KEY"] = session._api_key
+        if session._auth_method == "membership":
+            # Don't set ANTHROPIC_API_KEY — let CLI use stored membership credentials
+            env.pop("ANTHROPIC_API_KEY", None)
+        else:
+            env["ANTHROPIC_API_KEY"] = session._api_key
 
         process = await asyncio.create_subprocess_exec(
             *cmd,

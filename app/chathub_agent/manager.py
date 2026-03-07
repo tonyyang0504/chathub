@@ -237,6 +237,138 @@ class ChatHubAgentManager:
             logger.error(f"Follow-up error for session {session.session_id}: {e}")
             await session.broadcast({"type": "error", "content": str(e)})
 
+    async def resume_session(
+        self,
+        user_id: int,
+        session_id: int,
+        settings_dict: dict,
+        agent_config_dict: dict,
+    ) -> Optional[AgentSession]:
+        """Reconstruct an AgentSession from DB-persisted messages (e.g. after server restart)."""
+        # Don't resume if user already has an active session
+        existing = self.get_active_session(user_id)
+        if existing:
+            logger.warning(f"User {user_id} already has an active session {existing.session_id}")
+            return None
+
+        try:
+            from app.ai.factory import get_ai_provider
+            from app.chathub_agent.tool_executor import ToolExecutor
+            from app.chathub_agent.agent_loop import AgentLoop
+            from app.chathub_agent.skills import SkillRegistry
+            from app.database import SessionLocal, ChatHubAgentMessage
+
+            # Create AI provider
+            provider = get_ai_provider(
+                provider_name=agent_config_dict.get("ai_provider", settings_dict.get("ai_provider", "openai")),
+                api_key=settings_dict["api_key"],
+                model=agent_config_dict.get("model", settings_dict.get("default_model")),
+            )
+
+            # Create tool executor
+            workspace = agent_config_dict.get("workspace_path") or settings_dict.get("workspace_path") or str(PROJECT_ROOT)
+            tool_executor = ToolExecutor(workspace_root=workspace)
+
+            # Create session object
+            session = AgentSession(session_id, user_id, None)
+            self._sessions[user_id] = session
+
+            # Create agent loop
+            agent_loop = AgentLoop(
+                session_id=session_id,
+                provider=provider,
+                tool_executor=tool_executor,
+                agent_config=agent_config_dict,
+                broadcast_fn=session.broadcast,
+                db_factory=SessionLocal,
+            )
+
+            # Inject skill instructions
+            registry = SkillRegistry()
+            registry.load_all(workspace)
+            enabled_skills = agent_config_dict.get("enabled_skills")
+            if isinstance(enabled_skills, str):
+                enabled_skills = json.loads(enabled_skills)
+            agent_loop.skill_instructions = registry.get_system_prompt_injection(enabled_skills)
+
+            session.agent_loop = agent_loop
+
+            # Rebuild conversation from DB messages
+            db = SessionLocal()
+            try:
+                db_messages = db.query(ChatHubAgentMessage).filter(
+                    ChatHubAgentMessage.session_id == session_id
+                ).order_by(ChatHubAgentMessage.created_at.asc()).all()
+
+                # Build system prompt (same as AgentLoop.run)
+                system_prompt = agent_config_dict.get("system_prompt") or agent_loop._default_system_prompt()
+                user_ctx = agent_config_dict.get("user_context")
+                if user_ctx:
+                    system_prompt += (
+                        f"\n\n## Current User\n"
+                        f"- User ID: {user_ctx.get('user_id')}\n"
+                        f"- Email: {user_ctx.get('email')}\n"
+                        f"- Name: {user_ctx.get('name')}\n"
+                        f"When querying the database for user-specific data, use user_id = {user_ctx.get('user_id')}."
+                    )
+                if agent_loop.skill_instructions:
+                    system_prompt += "\n\n" + agent_loop.skill_instructions
+
+                conversation = [{"role": "system", "content": system_prompt}]
+
+                for msg in db_messages:
+                    if msg.role == "user":
+                        conversation.append({"role": "user", "content": msg.content or ""})
+                    elif msg.role == "assistant":
+                        conversation.append({"role": "assistant", "content": msg.content or ""})
+                    elif msg.role == "tool_call":
+                        # Append as tool_calls on the last assistant message
+                        if conversation and conversation[-1]["role"] == "assistant":
+                            if "tool_calls" not in conversation[-1]:
+                                conversation[-1]["tool_calls"] = []
+                            conversation[-1]["tool_calls"].append({
+                                "id": msg.tool_call_id,
+                                "type": "function",
+                                "function": {
+                                    "name": msg.tool_name,
+                                    "arguments": msg.content or "{}",
+                                },
+                            })
+                        else:
+                            # No preceding assistant message — create one
+                            conversation.append({
+                                "role": "assistant",
+                                "content": "",
+                                "tool_calls": [{
+                                    "id": msg.tool_call_id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": msg.tool_name,
+                                        "arguments": msg.content or "{}",
+                                    },
+                                }],
+                            })
+                    elif msg.role == "tool_result":
+                        conversation.append({
+                            "role": "tool",
+                            "tool_call_id": msg.tool_call_id,
+                            "content": msg.content or "",
+                        })
+                    # Skip system, approval_request roles
+
+                agent_loop.set_conversation(conversation)
+            finally:
+                db.close()
+
+            logger.info(f"Resumed ChatHub Agent session {session_id} for user {user_id} with {len(agent_loop.conversation)} messages")
+            return session
+
+        except Exception as e:
+            logger.exception(f"Failed to resume ChatHub Agent session: {e}")
+            if user_id in self._sessions:
+                del self._sessions[user_id]
+            return None
+
     def approve_tool(self, user_id: int, approved: bool) -> bool:
         """Approve or deny a pending tool call."""
         session = self.get_active_session(user_id)
