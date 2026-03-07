@@ -336,8 +336,8 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
         "model": s.model,
         "git_commit_hash": s.git_commit_hash,
         "rolled_back": s.rolled_back,
-        "created_at": s.created_at.isoformat() if s.created_at else None,
-        "ended_at": s.ended_at.isoformat() if s.ended_at else None
+        "created_at": (s.created_at.isoformat() + "Z") if s.created_at else None,
+        "ended_at": (s.ended_at.isoformat() + "Z") if s.ended_at else None
     } for s in sessions]
 
 
@@ -365,17 +365,17 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         "git_commit_hash": session.git_commit_hash,
         "db_backup_path": session.db_backup_path,
         "rolled_back": session.rolled_back,
-        "created_at": session.created_at.isoformat() if session.created_at else None,
-        "started_at": session.started_at.isoformat() if session.started_at else None,
-        "ended_at": session.ended_at.isoformat() if session.ended_at else None,
+        "created_at": (session.created_at.isoformat() + "Z") if session.created_at else None,
+        "started_at": (session.started_at.isoformat() + "Z") if session.started_at else None,
+        "ended_at": (session.ended_at.isoformat() + "Z") if session.ended_at else None,
         "messages": [{
             "id": m.id,
             "role": m.role,
             "content": m.content,
             "message_type": m.message_type,
             "event_data": m.event_data,
-            "created_at": m.created_at.isoformat() if m.created_at else None
-        } for m in messages]
+            "created_at": (m.created_at.isoformat() + "Z") if m.created_at else None
+        } for m in messages if not (m.message_type == 'system' and m.event_data and '"subtype": "init"' in m.event_data)]
     }
 
 
@@ -575,6 +575,9 @@ async def stream_session(websocket: WebSocket, session_id: int):
             ).order_by(ClaudeCodeMessage.created_at.asc()).all()
 
             for m in messages:
+                # Skip system/init events (large session metadata)
+                if m.message_type == 'system' and m.event_data and '"subtype": "init"' in m.event_data:
+                    continue
                 try:
                     if m.event_data:
                         data = json.loads(m.event_data)

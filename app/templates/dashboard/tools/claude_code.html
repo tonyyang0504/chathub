@@ -1283,8 +1283,16 @@ async function viewSession(sessionId) {
         currentSessionId = sessionId;
         clearChat();
 
-        // Render stored messages
+        // Render stored messages using event_data for full artifact support
         for (const msg of session.messages) {
+            if (msg.event_data) {
+                try {
+                    const data = JSON.parse(msg.event_data);
+                    renderStreamEvent(data, msg.created_at);
+                    continue;
+                } catch {}
+            }
+            // Fallback for messages without event_data
             if (msg.role === 'user') {
                 appendUserMessage(msg.content);
             } else if (msg.role === 'assistant') {
@@ -1297,6 +1305,7 @@ async function viewSession(sessionId) {
                 appendSystemMessage(msg.content);
             }
         }
+        flushAssistantBuffer();
 
         setStatus(session.status);
 
@@ -1520,7 +1529,7 @@ function connectWebSocket(sessionId) {
 let currentAssistantEl = null;
 let currentToolUseEl = null;
 
-function renderStreamEvent(data) {
+function renderStreamEvent(data, timestamp) {
     const type = data.type;
 
     if (type === 'pong' || type === 'ping') return;
@@ -1532,7 +1541,7 @@ function renderStreamEvent(data) {
             if (block.type === 'text' && block.text) {
                 appendAssistantMessage(block.text);
             } else if (block.type === 'tool_use') {
-                appendToolUse(JSON.stringify({ tool: block.name, input: block.input }));
+                appendToolUse(JSON.stringify({ tool: block.name, input: block.input }), timestamp);
             }
         }
     } else if (type === 'content_block_start') {
@@ -1542,7 +1551,7 @@ function renderStreamEvent(data) {
             currentAssistantEl = createAssistantBubble();
         } else if (block.type === 'tool_use') {
             flushAssistantBuffer();
-            appendToolUse(JSON.stringify({ tool: block.name, id: block.id }));
+            appendToolUse(JSON.stringify({ tool: block.name, id: block.id }), timestamp);
         }
     } else if (type === 'content_block_delta') {
         const delta = data.delta || {};
@@ -1577,7 +1586,7 @@ function renderStreamEvent(data) {
         appendToolUse(JSON.stringify({
             tool: data.tool?.name || data.name || 'tool',
             input: data.tool?.input || data.input || {}
-        }));
+        }), timestamp);
     } else if (type === 'tool_result') {
         appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
     } else if (type === 'result') {
@@ -1643,7 +1652,7 @@ function appendAssistantMessage(text) {
     scrollToBottom();
 }
 
-function appendToolUse(content) {
+function appendToolUse(content, timestamp) {
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = { tool: 'unknown', input: content }; }
 
@@ -1652,7 +1661,7 @@ function appendToolUse(content) {
     const inputStr = typeof inputData === 'object' ? JSON.stringify(inputData, null, 2) : (inputData || '');
 
     // Create artifact
-    const artifact = createArtifact(toolName, inputData, inputStr);
+    const artifact = createArtifact(toolName, inputData, inputStr, timestamp);
 
     // Render compact pill in chat
     const chatBody = document.getElementById('chatBody');
@@ -1734,7 +1743,7 @@ function getArtifactTitle(toolName, input) {
     return toolName;
 }
 
-function createArtifact(toolName, inputData, inputStr) {
+function createArtifact(toolName, inputData, inputStr, timestamp) {
     const id = ++artifactIdCounter;
     const artifact = {
         id,
@@ -1743,7 +1752,7 @@ function createArtifact(toolName, inputData, inputStr) {
         input: inputStr || '',
         inputData,
         result: null,
-        timestamp: new Date()
+        timestamp: timestamp ? new Date(timestamp) : new Date()
     };
     artifacts.push(artifact);
 

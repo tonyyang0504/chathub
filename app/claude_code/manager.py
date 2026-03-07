@@ -16,7 +16,7 @@ import subprocess
 import threading
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Optional, Set
 
@@ -479,11 +479,28 @@ class ClaudeCodeManager:
             f"You are running inside the ChatHub project on behalf of user: "
             f"{session._user_name} (email: {session._user_email}, user_id: {session.user_id}). "
             f"You have direct access to the project codebase and SQLite database. "
-            f"IMPORTANT: When performing operations on ChatHub data (creating bots, modifying settings, "
-            f"managing conversations, etc.), ALWAYS use direct database access via Python scripts with "
-            f"SQLAlchemy models from app/database.py — NEVER use HTTP API calls that require authentication. "
-            f"The database connection can be obtained with: from app.database import SessionLocal; db = SessionLocal(). "
-            f"All models are in app/database.py. Always filter by user_id={session.user_id} for user-scoped resources."
+            f"\n\n"
+            f"DATABASE ACCESS (for reading/writing data):\n"
+            f"Use direct database access via Python scripts with SQLAlchemy models from app/database.py. "
+            f"Connection: from app.database import SessionLocal; db = SessionLocal(). "
+            f"All models are in app/database.py. Always filter by user_id={session.user_id} for user-scoped resources.\n\n"
+            f"SERVER API ACCESS (for actions requiring running bots):\n"
+            f"Some operations (sending messages, starting/stopping bots) require the running server process. "
+            f"Use curl with the auth token from $CHATHUB_API_TOKEN environment variable.\n"
+            f"Base URL: $CHATHUB_API_URL\n"
+            f"Auth header: -H 'Authorization: Bearer $CHATHUB_API_TOKEN'\n"
+            f"Or use cookie: -b 'access_token=$CHATHUB_API_TOKEN'\n\n"
+            f"KEY API ENDPOINTS:\n"
+            f"- Send message: POST /api/conversations/{{conversation_id}}/send  Body: {{\"message\": \"text\"}}\n"
+            f"- List bots: GET /api/bots\n"
+            f"- Start bot: POST /api/bots/{{bot_id}}/start\n"
+            f"- Stop bot: POST /api/bots/{{bot_id}}/stop\n"
+            f"- List conversations: GET /api/conversations/bot/{{bot_id}}\n\n"
+            f"WHEN TO USE WHICH:\n"
+            f"- Reading data (contacts, conversations, settings, history): Use direct DB access\n"
+            f"- Sending WhatsApp messages: Use the server API (requires running bot's browser session)\n"
+            f"- Starting/stopping bots: Use the server API\n"
+            f"- Creating/modifying DB records (bots, hubs, agents, settings): Use direct DB access"
         )
         cmd.extend(["--append-system-prompt", system_context])
 
@@ -506,6 +523,16 @@ class ClaudeCodeManager:
                 env["CLAUDE_CODE_OAUTH_TOKEN"] = session._oauth_token
         else:
             env["ANTHROPIC_API_KEY"] = session._api_key
+
+        # Generate auth token so CLI can call server API for runtime operations
+        from app.auth.utils import create_access_token
+        from app.config import settings
+        api_token = create_access_token(
+            data={"sub": str(session.user_id)},
+            expires_delta=timedelta(hours=24)
+        )
+        env["CHATHUB_API_TOKEN"] = api_token
+        env["CHATHUB_API_URL"] = f"http://localhost:{settings.PORT}"
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -599,6 +626,7 @@ class ClaudeCodeManager:
                     if block.get("type") == "tool_use":
                         role = "tool_use"
                         content = json.dumps({"tool": block.get("name", ""), "id": block.get("id", "")})
+                    skip_db = True  # Duplicates assistant/tool_use events during replay
                 elif msg_type == "content_block_delta":
                     # High-frequency streaming event — skip DB persistence
                     skip_db = True
@@ -624,6 +652,7 @@ class ClaudeCodeManager:
                         content = "\n".join(text_parts)
                     elif isinstance(result_content, str):
                         content = result_content
+                    skip_db = True  # Duplicates the assistant message content
                 elif msg_type == "error":
                     role = "system"
                     content = data.get("error", {}).get("message", str(data))
@@ -632,6 +661,10 @@ class ClaudeCodeManager:
                     content = data.get("message", data.get("content", str(data)))
                 else:
                     content = line_str
+
+                # Skip system/init event (large session metadata, no user value)
+                if msg_type == "system" and data.get("subtype") == "init":
+                    continue
 
                 # Persist to database (skip high-frequency delta events)
                 if not skip_db:
@@ -649,10 +682,6 @@ class ClaudeCodeManager:
                         db.close()
                     except Exception as e:
                         logger.error(f"Failed to persist message: {e}")
-
-                # Skip system/init event (large session metadata, no user value)
-                if msg_type == "system" and data.get("subtype") == "init":
-                    continue
 
                 # Broadcast to WebSocket clients
                 await session.broadcast(data)

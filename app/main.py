@@ -133,10 +133,17 @@ async def lifespan(app: FastAPI):
     # Start the follow-up send scheduler
     await followup_send_scheduler.start()
 
+    # Start the message scheduler
+    from app.bots.message_scheduler import message_scheduler
+    await message_scheduler.start()
+
     yield
 
     # Shutdown
     print("Shutting down ChatHub...")
+
+    # Stop the message scheduler
+    await message_scheduler.stop()
 
     # Stop the follow-up send scheduler
     await followup_send_scheduler.stop()
