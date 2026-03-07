@@ -13,10 +13,14 @@ import os
 import re
 import shutil
 import subprocess
+import threading
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Set
+
+import pexpect
 
 from fastapi import WebSocket
 
@@ -167,64 +171,89 @@ class ClaudeCodeManager:
             return {"loggedIn": False, "email": "", "subscriptionType": "", "error": str(e)}
 
     async def trigger_membership_login(self) -> dict:
-        """Trigger `claude auth login` which opens browser for OAuth.
+        """Trigger `claude auth login` using pexpect for reliable PTY interaction.
 
-        Captures stdout looking for the OAuth URL so it can be displayed
-        in the UI for cross-device login (e.g. headless servers).
+        pexpect handles all PTY details — terminal settings, controlling terminal,
+        input/output buffering — so the Ink UI properly accepts keyboard input.
         """
         try:
             # Kill any existing login process
-            if hasattr(self, '_login_process') and self._login_process:
-                try:
-                    self._login_process.kill()
-                except ProcessLookupError:
-                    pass
-                self._login_process = None
+            self._cleanup_login_pty()
 
-            process = await asyncio.create_subprocess_exec(
-                "claude", "auth", "login",
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT  # Merge stderr into stdout
+            # Find claude binary path
+            claude_path = shutil.which("claude")
+            if not claude_path:
+                return {"status": "error", "message": "Claude CLI not installed"}
+
+            # Spawn via pexpect — handles PTY setup, controlling terminal, etc.
+            child = pexpect.spawn(
+                claude_path, ["auth", "login"],
+                encoding="utf-8",
+                timeout=15,
+                dimensions=(24, 120),
             )
-            self._login_process = process
 
-            # Read output for up to 10 seconds looking for the OAuth URL
+            # Wait for the OAuth URL to appear in the output
+            loop = asyncio.get_event_loop()
             oauth_url = None
-            url_pattern = re.compile(r'https://\S*oauth\S*authorize\S+|https://\S*claude\S+/authorize\S+|https://\S+/login\S*\?[^\s]+')
-            try:
-                deadline = asyncio.get_event_loop().time() + 10.0
-                buffer = ""
-                while asyncio.get_event_loop().time() < deadline:
-                    remaining = deadline - asyncio.get_event_loop().time()
-                    if remaining <= 0:
-                        break
-                    try:
-                        chunk = await asyncio.wait_for(
-                            process.stdout.read(4096),
-                            timeout=min(remaining, 1.0)
-                        )
-                        if not chunk:
-                            break  # EOF
-                        buffer += chunk.decode("utf-8", errors="replace")
-                        logger.info(f"Login output so far: {buffer[:500]}")
-                        # Look for any OAuth/authorize URL
-                        match = url_pattern.search(buffer)
-                        if match:
-                            oauth_url = match.group(0)
-                            break
-                        # Also try generic https URL after "visit" or "open"
-                        visit_match = re.search(r'(?:visit|open|go to|navigate to|browser)[:\s]+(https://\S+)', buffer, re.IGNORECASE)
-                        if visit_match:
-                            oauth_url = visit_match.group(1)
-                            break
-                    except asyncio.TimeoutError:
-                        continue
-            except Exception as e:
-                logger.warning(f"Error reading login output: {e}")
+            url_pattern = re.compile(
+                r'https://\S*oauth\S*authorize\S+|'
+                r'https://\S*claude\S+/authorize\S+|'
+                r'https://\S+/login\S*\?[^\s]+'
+            )
 
-            if buffer and not oauth_url:
-                logger.info(f"Full login output (no URL found): {buffer[:1000]}")
+            def _wait_for_url():
+                """Read pexpect output until we find the OAuth URL."""
+                nonlocal oauth_url
+                buf = ""
+                deadline = time.time() + 15.0
+                while time.time() < deadline:
+                    try:
+                        # Read available data with short timeout
+                        chunk = child.read_nonblocking(4096, timeout=0.5)
+                        if chunk:
+                            buf += chunk
+                            # Strip ANSI escape codes for matching
+                            clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', buf)
+                            match = url_pattern.search(clean)
+                            if match:
+                                oauth_url = match.group(0)
+                                return
+                            visit_match = re.search(
+                                r'(?:visit|open|go to|navigate to|browser)[:\s]+(https://\S+)',
+                                clean, re.IGNORECASE
+                            )
+                            if visit_match:
+                                oauth_url = visit_match.group(1)
+                                return
+                    except pexpect.TIMEOUT:
+                        continue
+                    except pexpect.EOF:
+                        break
+                if buf:
+                    clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', buf)
+                    logger.info(f"Login output (no URL found): {clean[:1000]}")
+
+            await loop.run_in_executor(None, _wait_for_url)
+
+            if oauth_url:
+                logger.info(f"OAuth URL captured: {oauth_url[:80]}...")
+
+            # Start a background thread to continuously drain PTY output.
+            # Ink renders spinners, cursor blinks, etc. to stdout. If nobody reads
+            # from the PTY master, the buffer fills up and blocks Node.js's event
+            # loop — preventing stdin (our code input) from being processed.
+            stop_event = threading.Event()
+            drain_thread = threading.Thread(
+                target=self._drain_pexpect, args=(child, stop_event), daemon=True
+            )
+            drain_thread.start()
+
+            self._login_pty = {
+                "child": child,
+                "drain_stop": stop_event,
+                "drain_thread": drain_thread,
+            }
 
             if oauth_url:
                 return {"status": "ok", "oauth_url": oauth_url}
@@ -236,25 +265,150 @@ class ClaudeCodeManager:
             logger.error(f"Failed to trigger membership login: {e}")
             return {"status": "error", "message": str(e)}
 
-    async def submit_login_code(self, code: str) -> dict:
-        """Send the OAuth authorization code to the running login process stdin."""
-        if not hasattr(self, '_login_process') or not self._login_process:
-            return {"status": "error", "message": "No login process running. Click 'Login with Claude' first."}
-        process = self._login_process
-        if process.returncode is not None:
-            self._login_process = None
-            return {"status": "error", "message": "Login process already exited. Click 'Login with Claude' to restart."}
-        try:
-            process.stdin.write((code.strip() + "\n").encode("utf-8"))
-            await process.stdin.drain()
-            # Wait briefly for the process to complete
+    def _drain_pexpect(self, child: pexpect.spawn, stop_event: threading.Event):
+        """Background thread: continuously read pexpect output to prevent PTY buffer fill.
+
+        Ink renders animations/spinners to stdout. If nobody reads from the PTY
+        master, the buffer fills and blocks Node.js's single-threaded event loop,
+        preventing stdin processing (our auth code input).
+        """
+        total_drained = 0
+        while not stop_event.is_set():
             try:
-                await asyncio.wait_for(process.wait(), timeout=10.0)
-            except asyncio.TimeoutError:
+                data = child.read_nonblocking(4096, timeout=0.5)
+                if data:
+                    total_drained += len(data)
+            except pexpect.TIMEOUT:
+                continue
+            except (pexpect.EOF, OSError):
+                break
+        logger.info(f"Drain thread exiting, total bytes drained: {total_drained}")
+
+    def _cleanup_login_pty(self):
+        """Terminate login process, stop drain thread, and clean up."""
+        if not hasattr(self, '_login_pty') or not self._login_pty:
+            return
+        pty_info = self._login_pty
+        self._login_pty = None
+        # Stop drain thread first
+        stop = pty_info.get("drain_stop")
+        if stop:
+            stop.set()
+        thread = pty_info.get("drain_thread")
+        if thread:
+            thread.join(timeout=2.0)
+        # Kill child process
+        child = pty_info.get("child")
+        if child and child.isalive():
+            try:
+                child.terminate(force=True)
+            except Exception:
                 pass
+
+    async def submit_login_code(self, code: str) -> dict:
+        """Send the OAuth authorization code to the pexpect-managed login process.
+
+        Uses pexpect.sendline() which properly writes through the PTY so Ink's
+        TextInput component receives the characters as keyboard input.
+        """
+        if not hasattr(self, '_login_pty') or not self._login_pty:
+            return {"status": "error", "message": "No login process running. Click 'Login with Claude' first."}
+
+        child = self._login_pty.get("child")
+        if not child or not child.isalive():
+            self._cleanup_login_pty()
+            return {"status": "error", "message": "Login process already exited. Click 'Login with Claude' to restart."}
+
+        try:
+            loop = asyncio.get_event_loop()
+
+            def _send_and_wait():
+                import termios
+
+                # Stop the drain thread so we can read output after sending
+                stop = self._login_pty.get("drain_stop") if self._login_pty else None
+                if stop:
+                    stop.set()
+                thread = self._login_pty.get("drain_thread") if self._login_pty else None
+                if thread:
+                    thread.join(timeout=2.0)
+                    logger.info(f"Drain thread stopped: {not thread.is_alive()}")
+
+                # Check child process state
+                logger.info(f"Child alive before send: {child.isalive()}, pid: {child.pid}")
+
+                # Log PTY termios settings to detect raw mode
+                try:
+                    attrs = termios.tcgetattr(child.child_fd)
+                    logger.info(f"PTY termios: iflag={hex(attrs[0])}, oflag={hex(attrs[1])}, cflag={hex(attrs[2])}, lflag={hex(attrs[3])}")
+                except Exception as e:
+                    logger.warning(f"Could not read PTY termios: {e}")
+
+                # Flush any remaining buffered output
+                flushed = ""
+                try:
+                    flushed = child.read_nonblocking(65536, timeout=0.5)
+                except (pexpect.TIMEOUT, pexpect.EOF):
+                    pass
+                if flushed:
+                    clean_flushed = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', flushed)
+                    logger.info(f"Flushed {len(flushed)} bytes: {clean_flushed[:300]}")
+
+                # Send auth code character-by-character with delays.
+                # Ink's TextInput uses useInput which processes stdin data events
+                # in Node.js's event loop. Bulk writes may not be processed correctly
+                # — sending one char at a time simulates real keyboard input.
+                stripped_code = code.strip()
+                logger.info(f"Sending auth code char-by-char ({len(stripped_code)} chars)")
+                for char in stripped_code:
+                    child.send(char)
+                    time.sleep(0.01)  # 10ms between characters
+                time.sleep(0.1)  # 100ms pause before Enter
+                child.send("\r")
+                logger.info(f"Auth code sent, child alive: {child.isalive()}")
+
+                # Wait for the process to finish (success or error)
+                try:
+                    # Look for success, error, or process exit
+                    child.expect(
+                        [pexpect.EOF, r'success', r'error', r'failed', r'invalid'],
+                        timeout=20
+                    )
+                    before_text = repr(child.before[:200]) if child.before else None
+                    after_text = repr(child.after[:200]) if child.after else None
+                    logger.info(f"Login expect matched — before={before_text}, after={after_text}")
+                except pexpect.TIMEOUT:
+                    before_text = repr(child.before[:200]) if child.before else None
+                    logger.warning(f"Timeout waiting for login response. child.before={before_text}")
+                except pexpect.EOF:
+                    before_text = repr(child.before[:200]) if child.before else None
+                    logger.info(f"Login process EOF after code submission. child.before={before_text}")
+
+                # Capture any remaining output
+                try:
+                    remaining = child.read_nonblocking(65536, timeout=1.0)
+                    if remaining:
+                        clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', remaining)
+                        logger.info(f"Remaining output: {clean[:500]}")
+                except (pexpect.TIMEOUT, pexpect.EOF):
+                    pass
+
+            await asyncio.wait_for(
+                loop.run_in_executor(None, _send_and_wait),
+                timeout=25.0
+            )
+
+            # Clean up
+            self._cleanup_login_pty()
+
             return {"status": "ok", "message": "Authorization code submitted"}
+        except asyncio.TimeoutError:
+            logger.warning("Timeout in submit_login_code")
+            self._cleanup_login_pty()
+            return {"status": "ok", "message": "Authorization code submitted (processing may still be in progress)"}
         except Exception as e:
             logger.error(f"Failed to submit login code: {e}")
+            self._cleanup_login_pty()
             return {"status": "error", "message": str(e)}
 
     async def trigger_membership_logout(self) -> dict:
