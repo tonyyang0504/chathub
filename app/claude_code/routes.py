@@ -78,18 +78,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "auto_backup_db": True,
             "max_session_minutes": 30,
             "auth_method": "api_key",
-            "oauth_token_set": False,
-            "oauth_token_masked": ""
         }
-
-    oauth_set = bool(settings.oauth_token_encrypted)
-    oauth_masked = ""
-    if oauth_set:
-        try:
-            token_val = decrypt_string(settings.oauth_token_encrypted)
-            oauth_masked = "****" + token_val[-4:]
-        except Exception:
-            oauth_masked = "****"
 
     return {
         "api_key_set": bool(settings.anthropic_api_key_encrypted),
@@ -99,8 +88,6 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
         "max_session_minutes": settings.max_session_minutes or 30,
         "auth_method": settings.auth_method or "api_key",
-        "oauth_token_set": oauth_set,
-        "oauth_token_masked": oauth_masked
     }
 
 
@@ -133,14 +120,6 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.max_session_minutes = data["max_session_minutes"]
     if "auth_method" in data and data["auth_method"] in ("api_key", "membership"):
         settings.auth_method = data["auth_method"]
-
-    # Handle setup-token (oauth_token)
-    oauth_token = data.get("oauth_token")
-    if oauth_token and oauth_token.strip() and not oauth_token.startswith("****"):
-        settings.oauth_token_encrypted = encrypt_string(oauth_token.strip())
-    elif oauth_token == "":
-        # Explicitly cleared
-        settings.oauth_token_encrypted = None
 
     db.commit()
     return {"status": "ok"}
