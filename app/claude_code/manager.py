@@ -577,7 +577,8 @@ class ClaudeCodeManager:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=str(PROJECT_ROOT),
-            env=env
+            env=env,
+            limit=10 * 1024 * 1024,  # 10MB buffer — Claude can output very long JSON lines
         )
 
         session.process = process
