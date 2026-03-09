@@ -1536,10 +1536,10 @@ async function resumeSession(prompt) {
         }
 
         const data = await res.json();
-        currentSessionId = data.session_id;
+        // session_id is the same as oldSessionId — no switch needed
         currentSessionStatus = 'running';
         setStatus('running');
-        connectWebSocket(data.session_id);
+        connectWebSocket(oldSessionId);
         loadSessions();
 
         if (data.git_commit_hash) {

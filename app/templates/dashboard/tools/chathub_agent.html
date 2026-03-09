@@ -933,29 +933,6 @@
                         <small class="text-muted" id="modelHint">Default model for selected provider</small>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Agent Config</label>
-                        <select class="form-select" id="agentConfigSelect">
-                            <option value="">Default (no config)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Queue Mode</label>
-                        <div class="d-flex gap-3 mt-1">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="queueMode" id="queueCollect" value="collect" checked>
-                                <label class="form-check-label" for="queueCollect" style="font-size: 0.85rem;">Collect</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="queueMode" id="queueSteer" value="steer">
-                                <label class="form-check-label" for="queueSteer" style="font-size: 0.85rem;">Steer</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="queueMode" id="queueFollowup" value="followup">
-                                <label class="form-check-label" for="queueFollowup" style="font-size: 0.85rem;">Follow-up</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
                         <div class="form-check form-switch mt-4">
                             <input class="form-check-input" type="checkbox" id="autoApproveAllToggle" checked>
                             <label class="form-check-label" for="autoApproveAllToggle">Auto-approve all tools</label>
@@ -1194,10 +1171,6 @@ async function loadSettings() {
         document.getElementById('autoApproveAllToggle').checked = data.auto_approve_all !== false;
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
-        if (data.queue_mode) {
-            const radio = document.querySelector(`input[name="queueMode"][value="${data.queue_mode}"]`);
-            if (radio) radio.checked = true;
-        }
         updateProviderInfo(data.ai_provider, data.default_model);
     } catch (e) {
         console.error('Failed to load settings:', e);
@@ -1211,8 +1184,7 @@ async function saveSettings() {
         default_model: document.getElementById('modelSelect').value,
         auto_approve_all: document.getElementById('autoApproveAllToggle').checked,
         auto_commit: document.getElementById('autoCommitToggle').checked,
-        auto_backup_db: document.getElementById('autoBackupToggle').checked,
-        queue_mode: document.querySelector('input[name="queueMode"]:checked').value
+        auto_backup_db: document.getElementById('autoBackupToggle').checked
     };
     if (apiKey && !apiKey.startsWith('****')) {
         payload.api_key = apiKey;
@@ -1244,21 +1216,6 @@ function updateProviderInfo(provider, model) {
     const el = document.getElementById('providerInfo');
     if (provider && model) {
         el.innerHTML = `<i class="bi bi-cpu"></i> ${provider} / ${model}`;
-    }
-}
-
-async function loadAgentConfigs() {
-    try {
-        const res = await fetch(`${API_BASE}/agents`, { credentials: 'include' });
-        if (!res.ok) return;
-        const configs = await res.json();
-        const select = document.getElementById('agentConfigSelect');
-        select.innerHTML = '<option value="">Default (no config)</option>';
-        for (const c of configs) {
-            select.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
-        }
-    } catch (e) {
-        console.error('Failed to load agent configs:', e);
     }
 }
 
@@ -1396,7 +1353,6 @@ async function startSession(prompt) {
     appendUserMessage(prompt);
     setStatus('pending');
 
-    const agentConfigId = document.getElementById('agentConfigSelect').value;
     const model = document.getElementById('modelSelect').value;
 
     try {
@@ -1406,7 +1362,6 @@ async function startSession(prompt) {
             credentials: 'include',
             body: JSON.stringify({
                 prompt: prompt,
-                agent_config_id: agentConfigId ? parseInt(agentConfigId) : null,
                 model: model || null
             })
         });
@@ -2041,7 +1996,6 @@ function showToast(message, type = 'info') {
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     loadSessions();
-    loadAgentConfigs();
 
     if (typeof marked !== 'undefined') {
         marked.setOptions({

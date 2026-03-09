@@ -476,23 +476,16 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     if settings and settings.auto_backup_db:
         db_backup_path = claude_code_manager.create_db_backup()
 
-    # Create new session record linked to the old one via claude_session_uuid
-    new_session = ClaudeCodeSession(
-        user_id=user.id,
-        prompt=prompt,
-        git_commit_hash=git_hash,
-        db_backup_path=db_backup_path,
-        model=model,
-        claude_session_uuid=old_session.claude_session_uuid,
-        status="pending"
-    )
-    db.add(new_session)
+    # Reuse the existing session — update it back to running
+    old_session.status = "pending"
+    old_session.git_commit_hash = git_hash
+    old_session.db_backup_path = db_backup_path
+    old_session.ended_at = None
     db.commit()
-    db.refresh(new_session)
 
-    # Add user prompt as a message
+    # Add user prompt as a message to the SAME session
     user_msg = ClaudeCodeMessage(
-        session_id=new_session.id,
+        session_id=old_session.id,
         role="user",
         content=prompt,
         message_type="text"
@@ -503,8 +496,7 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     # Spawn CLI subprocess with --resume
     active_session = await claude_code_manager.resume_session(
         user_id=user.id,
-        old_session_id=session_id,
-        new_session_id=new_session.id,
+        session_id=session_id,
         prompt=prompt,
         api_key=api_key,
         model=model,
@@ -516,13 +508,13 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     )
 
     if not active_session:
-        new_session.status = "failed"
+        old_session.status = "failed"
         db.commit()
         raise HTTPException(status_code=500, detail="Failed to resume Claude Code session")
 
-    new_session.status = "running"
-    new_session.pid = active_session.process.pid if active_session.process else None
-    new_session.started_at = datetime.utcnow()
+    old_session.status = "running"
+    old_session.pid = active_session.process.pid if active_session.process else None
+    old_session.started_at = datetime.utcnow()
     db.commit()
 
     # Log to tool monitor
@@ -531,20 +523,19 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
             db=db,
             tool_type="claude_code",
             operation="session_resume",
-            input_data={"prompt": prompt[:200], "model": model, "resumed_from": session_id},
-            output_data={"session_id": new_session.id, "git_hash": git_hash},
+            input_data={"prompt": prompt[:200], "model": model},
+            output_data={"session_id": old_session.id, "git_hash": git_hash},
             user_id=user.id
         )
     except Exception:
         pass
 
     return {
-        "session_id": new_session.id,
+        "session_id": old_session.id,
         "status": "running",
         "pid": active_session.process.pid,
         "git_commit_hash": git_hash,
-        "db_backup_path": db_backup_path,
-        "resumed_from": session_id
+        "db_backup_path": db_backup_path
     }
 
 

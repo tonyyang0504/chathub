@@ -748,50 +748,16 @@ class ChatHubAgentSettings(Base):
     ai_provider = Column(String(50), default="openai")
     api_key_encrypted = Column(Text)
     default_model = Column(String(100), default="gpt-4o")
-    default_agent_id = Column(Integer, ForeignKey("chathub_agent_configs.id", ondelete="SET NULL"), nullable=True)
     auto_approve_all = Column(Boolean, default=True)
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
     max_session_minutes = Column(Integer, default=60)
-    queue_mode = Column(String(20), default="collect")
     workspace_path = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user = relationship("User", backref="chathub_agent_settings")
-    default_agent = relationship("ChatHubAgentConfig", foreign_keys=[default_agent_id])
-
-
-class ChatHubAgentConfig(Base):
-    """ChatHub Agent config - reusable agent configurations."""
-    __tablename__ = "chathub_agent_configs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    name = Column(String(200), nullable=False)
-    description = Column(Text)
-    ai_provider = Column(String(50), default="openai")
-    api_key_encrypted = Column(Text)
-    model = Column(String(100), default="gpt-4o")
-    system_prompt = Column(Text)
-    temperature = Column(Float, default=0.3)
-    max_tokens = Column(Integer, default=8192)
-    allowed_tools = Column(Text)  # JSON list
-    dangerous_tools = Column(Text, default='["exec_command"]')  # JSON list
-    auto_approve_read = Column(Boolean, default=True)
-    auto_approve_all = Column(Boolean, default=True)
-    workspace_path = Column(String(500))
-    enabled_skills = Column(Text)  # JSON list
-    routing_rules = Column(Text)  # JSON object
-    is_default = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user = relationship("User", backref="chathub_agent_configs")
-    sessions = relationship("ChatHubAgentSession", back_populates="agent_config")
 
 
 class ChatHubAgentSession(Base):
@@ -800,7 +766,6 @@ class ChatHubAgentSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    agent_config_id = Column(Integer, ForeignKey("chathub_agent_configs.id", ondelete="SET NULL"), nullable=True)
     parent_session_id = Column(Integer, ForeignKey("chathub_agent_sessions.id", ondelete="SET NULL"), nullable=True)
     status = Column(String(20), default="pending", index=True)  # pending, running, completed, failed, stopped
     prompt = Column(Text, nullable=False)
@@ -819,7 +784,6 @@ class ChatHubAgentSession(Base):
 
     # Relationships
     user = relationship("User", backref="chathub_agent_sessions")
-    agent_config = relationship("ChatHubAgentConfig", back_populates="sessions")
     parent_session = relationship("ChatHubAgentSession", remote_side="ChatHubAgentSession.id", backref="child_sessions")
     messages = relationship("ChatHubAgentMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatHubAgentMessage.created_at")
 

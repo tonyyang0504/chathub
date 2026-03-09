@@ -765,8 +765,7 @@ class ClaudeCodeManager:
     async def resume_session(
         self,
         user_id: int,
-        old_session_id: int,
-        new_session_id: int,
+        session_id: int,
         prompt: str,
         api_key: str,
         model: Optional[str] = None,
@@ -783,25 +782,13 @@ class ClaudeCodeManager:
             return None
 
         if not claude_session_uuid:
-            logger.error(f"No claude_session_uuid for old session {old_session_id}")
+            logger.error(f"No claude_session_uuid for session {session_id}")
             return None
 
-        session = ActiveSession(new_session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
+        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
         # Reuse the old CLI session UUID so --resume picks up the conversation
         session.claude_session_id = claude_session_uuid
         self._sessions[user_id] = session
-
-        # Persist UUID to new DB record
-        try:
-            from app.database import SessionLocal, ClaudeCodeSession
-            db = SessionLocal()
-            db_session = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == new_session_id).first()
-            if db_session:
-                db_session.claude_session_uuid = claude_session_uuid
-                db.commit()
-            db.close()
-        except Exception as e:
-            logger.error(f"Failed to persist claude_session_uuid on resume: {e}")
 
         try:
             # is_first=False triggers --resume instead of --session-id

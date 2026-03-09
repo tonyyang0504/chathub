@@ -22,8 +22,7 @@ from app.auth.utils import (
 )
 from .manager import chathub_agent_manager
 from .schemas import (
-    SessionCreate, MessageCreate, ApprovalRequest,
-    AgentConfigCreate, AgentConfigUpdate, SkillToggle,
+    SessionCreate, MessageCreate, ApprovalRequest, SkillToggle,
 )
 
 logger = logging.getLogger(__name__)
@@ -84,7 +83,6 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "auto_approve_all": True,
             "auto_commit": True,
             "auto_backup_db": True,
-            "queue_mode": "fifo",
         }
 
     api_key_masked = ""
@@ -100,11 +98,9 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "api_key_masked": api_key_masked,
         "ai_provider": settings.ai_provider or "openai",
         "default_model": settings.default_model or "gpt-4o",
-        "default_agent_id": settings.default_agent_id,
         "auto_approve_all": settings.auto_approve_all if settings.auto_approve_all is not None else True,
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
-        "queue_mode": settings.queue_mode or "fifo",
         "workspace_path": settings.workspace_path,
     }
 
@@ -129,9 +125,9 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
     if api_key and api_key.strip() and not api_key.startswith("****"):
         settings.api_key_encrypted = encrypt_string(api_key.strip())
 
-    for field in ["ai_provider", "default_model", "default_agent_id",
+    for field in ["ai_provider", "default_model",
                   "auto_approve_all", "auto_commit", "auto_backup_db",
-                  "queue_mode", "workspace_path"]:
+                  "workspace_path"]:
         if field in data:
             setattr(settings, field, data[field])
 
@@ -146,7 +142,7 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
 @router.post("/api/chathub-agent/sessions")
 async def create_session(request: Request, db: Session = Depends(get_db)):
     """Create a new ChatHub Agent session."""
-    from app.database import ChatHubAgentSettings, ChatHubAgentSession, ChatHubAgentMessage, ChatHubAgentConfig
+    from app.database import ChatHubAgentSettings, ChatHubAgentSession, ChatHubAgentMessage
     user = await get_current_user(request, None, db)
     data = await request.json()
     prompt = data.get("prompt", "").strip()
@@ -172,8 +168,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
 
     api_key = decrypt_string(settings.api_key_encrypted)
 
-    # Build agent config from selected agent or defaults
-    agent_config_id = data.get("agent_config_id") or settings.default_agent_id
+    # Build agent config from settings defaults
     agent_config_dict = {
         "ai_provider": settings.ai_provider or "openai",
         "model": data.get("model") or settings.default_model or "gpt-4o",
@@ -188,33 +183,6 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         "enabled_skills": None,
     }
 
-    if agent_config_id:
-        agent_config = db.query(ChatHubAgentConfig).filter(
-            ChatHubAgentConfig.id == agent_config_id,
-            ChatHubAgentConfig.user_id == user.id,
-            ChatHubAgentConfig.is_active == True,
-        ).first()
-        if agent_config:
-            agent_config_dict.update({
-                "ai_provider": agent_config.ai_provider or agent_config_dict["ai_provider"],
-                "model": agent_config.model or agent_config_dict["model"],
-                "system_prompt": agent_config.system_prompt,
-                "temperature": agent_config.temperature,
-                "max_tokens": agent_config.max_tokens,
-                "allowed_tools": json.loads(agent_config.allowed_tools) if agent_config.allowed_tools else None,
-                "dangerous_tools": json.loads(agent_config.dangerous_tools) if agent_config.dangerous_tools else ["exec_command"],
-                "auto_approve_read": agent_config.auto_approve_read,
-                "auto_approve_all": agent_config.auto_approve_all if agent_config.auto_approve_all is not None else True,
-                "workspace_path": agent_config.workspace_path or settings.workspace_path,
-                "enabled_skills": json.loads(agent_config.enabled_skills) if agent_config.enabled_skills else None,
-            })
-            # Use agent-specific API key if set
-            if agent_config.api_key_encrypted:
-                try:
-                    api_key = decrypt_string(agent_config.api_key_encrypted)
-                except Exception:
-                    pass
-
     # Safety commit and backup
     git_hash = None
     db_backup_path = None
@@ -227,7 +195,6 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     # Create session record
     session = ChatHubAgentSession(
         user_id=user.id,
-        agent_config_id=agent_config_id,
         prompt=prompt,
         ai_provider=agent_config_dict["ai_provider"],
         model=agent_config_dict["model"],
@@ -354,7 +321,6 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         "prompt": session.prompt,
         "ai_provider": session.ai_provider,
         "model": session.model,
-        "agent_config_id": session.agent_config_id,
         "total_turns": session.total_turns,
         "total_tool_calls": session.total_tool_calls,
         "total_tokens": session.total_tokens,
@@ -412,7 +378,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     sent = await chathub_agent_manager.send_message(user.id, prompt)
     if not sent:
         # Session not in memory — attempt to resume from DB
-        from app.database import ChatHubAgentSettings, ChatHubAgentConfig
+        from app.database import ChatHubAgentSettings
         settings = db.query(ChatHubAgentSettings).filter(
             ChatHubAgentSettings.user_id == user.id
         ).first()
@@ -436,32 +402,6 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
             "workspace_path": settings.workspace_path,
             "enabled_skills": None,
         }
-
-        if session.agent_config_id:
-            agent_config = db.query(ChatHubAgentConfig).filter(
-                ChatHubAgentConfig.id == session.agent_config_id,
-                ChatHubAgentConfig.user_id == user.id,
-                ChatHubAgentConfig.is_active == True,
-            ).first()
-            if agent_config:
-                agent_config_dict.update({
-                    "ai_provider": agent_config.ai_provider or agent_config_dict["ai_provider"],
-                    "model": agent_config.model or agent_config_dict["model"],
-                    "system_prompt": agent_config.system_prompt,
-                    "temperature": agent_config.temperature,
-                    "max_tokens": agent_config.max_tokens,
-                    "allowed_tools": json.loads(agent_config.allowed_tools) if agent_config.allowed_tools else None,
-                    "dangerous_tools": json.loads(agent_config.dangerous_tools) if agent_config.dangerous_tools else ["exec_command"],
-                    "auto_approve_read": agent_config.auto_approve_read,
-                    "auto_approve_all": agent_config.auto_approve_all if agent_config.auto_approve_all is not None else True,
-                    "workspace_path": agent_config.workspace_path or settings.workspace_path,
-                    "enabled_skills": json.loads(agent_config.enabled_skills) if agent_config.enabled_skills else None,
-                })
-                if agent_config.api_key_encrypted:
-                    try:
-                        api_key = decrypt_string(agent_config.api_key_encrypted)
-                    except Exception:
-                        pass
 
         agent_config_dict["user_context"] = {
             "user_id": user.id,
@@ -586,155 +526,6 @@ async def approve_tool(session_id: int, request: Request, db: Session = Depends(
         raise HTTPException(status_code=400, detail="No pending approval request")
 
     return {"status": "ok", "approved": approved}
-
-
-# ============================================================================
-# Agent Config CRUD
-# ============================================================================
-
-@router.get("/api/chathub-agent/agents")
-async def list_agent_configs(request: Request, db: Session = Depends(get_db)):
-    """List agent configurations."""
-    from app.database import ChatHubAgentConfig
-    user = await get_current_user(request, None, db)
-
-    configs = db.query(ChatHubAgentConfig).filter(
-        ChatHubAgentConfig.user_id == user.id
-    ).order_by(ChatHubAgentConfig.created_at.desc()).all()
-
-    results = []
-    for c in configs:
-        results.append({
-            "id": c.id,
-            "name": c.name,
-            "description": c.description,
-            "ai_provider": c.ai_provider,
-            "model": c.model,
-            "system_prompt": c.system_prompt,
-            "temperature": c.temperature,
-            "max_tokens": c.max_tokens,
-            "allowed_tools": json.loads(c.allowed_tools) if c.allowed_tools else None,
-            "dangerous_tools": json.loads(c.dangerous_tools) if c.dangerous_tools else None,
-            "auto_approve_read": c.auto_approve_read,
-            "auto_approve_all": c.auto_approve_all if c.auto_approve_all is not None else True,
-            "workspace_path": c.workspace_path,
-            "enabled_skills": json.loads(c.enabled_skills) if c.enabled_skills else None,
-            "routing_rules": json.loads(c.routing_rules) if c.routing_rules else None,
-            "is_default": c.is_default,
-            "is_active": c.is_active,
-            "created_at": c.created_at.isoformat() if c.created_at else None,
-            "updated_at": c.updated_at.isoformat() if c.updated_at else None,
-        })
-    return results
-
-
-@router.post("/api/chathub-agent/agents")
-async def create_agent_config(request: Request, db: Session = Depends(get_db)):
-    """Create a new agent configuration."""
-    from app.database import ChatHubAgentConfig
-    user = await get_current_user(request, None, db)
-    data = await request.json()
-
-    config = ChatHubAgentConfig(
-        user_id=user.id,
-        name=data.get("name", "Default Agent"),
-        description=data.get("description"),
-        ai_provider=data.get("ai_provider", "openai"),
-        model=data.get("model", "gpt-4o"),
-        system_prompt=data.get("system_prompt"),
-        temperature=data.get("temperature", 0.3),
-        max_tokens=data.get("max_tokens", 8192),
-        allowed_tools=json.dumps(data["allowed_tools"]) if data.get("allowed_tools") else None,
-        dangerous_tools=json.dumps(data.get("dangerous_tools", ["exec_command"])),
-        auto_approve_read=data.get("auto_approve_read", True),
-        auto_approve_all=data.get("auto_approve_all", True),
-        workspace_path=data.get("workspace_path"),
-        enabled_skills=json.dumps(data["enabled_skills"]) if data.get("enabled_skills") else None,
-        routing_rules=json.dumps(data["routing_rules"]) if data.get("routing_rules") else None,
-        is_default=data.get("is_default", False),
-    )
-
-    # Handle API key encryption
-    if data.get("api_key"):
-        config.api_key_encrypted = encrypt_string(data["api_key"])
-
-    # If marking as default, unmark other defaults
-    if config.is_default:
-        db.query(ChatHubAgentConfig).filter(
-            ChatHubAgentConfig.user_id == user.id,
-            ChatHubAgentConfig.is_default == True,
-        ).update({"is_default": False})
-
-    db.add(config)
-    db.commit()
-    db.refresh(config)
-
-    return {"status": "ok", "id": config.id}
-
-
-@router.put("/api/chathub-agent/agents/{config_id}")
-async def update_agent_config(config_id: int, request: Request, db: Session = Depends(get_db)):
-    """Update an agent configuration."""
-    from app.database import ChatHubAgentConfig
-    user = await get_current_user(request, None, db)
-    data = await request.json()
-
-    config = db.query(ChatHubAgentConfig).filter(
-        ChatHubAgentConfig.id == config_id,
-        ChatHubAgentConfig.user_id == user.id,
-    ).first()
-
-    if not config:
-        raise HTTPException(status_code=404, detail="Agent config not found")
-
-    # Simple fields
-    for field in ["name", "description", "ai_provider", "model", "system_prompt",
-                  "temperature", "max_tokens", "auto_approve_read", "auto_approve_all", "workspace_path",
-                  "is_active"]:
-        if field in data:
-            setattr(config, field, data[field])
-
-    # JSON fields
-    for field in ["allowed_tools", "dangerous_tools", "enabled_skills", "routing_rules"]:
-        if field in data:
-            val = data[field]
-            setattr(config, field, json.dumps(val) if val is not None else None)
-
-    # API key
-    if data.get("api_key") and not data["api_key"].startswith("****"):
-        config.api_key_encrypted = encrypt_string(data["api_key"])
-
-    # Default handling
-    if data.get("is_default"):
-        db.query(ChatHubAgentConfig).filter(
-            ChatHubAgentConfig.user_id == user.id,
-            ChatHubAgentConfig.id != config_id,
-            ChatHubAgentConfig.is_default == True,
-        ).update({"is_default": False})
-        config.is_default = True
-
-    config.updated_at = datetime.utcnow()
-    db.commit()
-    return {"status": "ok"}
-
-
-@router.delete("/api/chathub-agent/agents/{config_id}")
-async def delete_agent_config(config_id: int, request: Request, db: Session = Depends(get_db)):
-    """Delete an agent configuration."""
-    from app.database import ChatHubAgentConfig
-    user = await get_current_user(request, None, db)
-
-    config = db.query(ChatHubAgentConfig).filter(
-        ChatHubAgentConfig.id == config_id,
-        ChatHubAgentConfig.user_id == user.id,
-    ).first()
-
-    if not config:
-        raise HTTPException(status_code=404, detail="Agent config not found")
-
-    db.delete(config)
-    db.commit()
-    return {"status": "ok"}
 
 
 # ============================================================================
