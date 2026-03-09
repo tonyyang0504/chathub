@@ -1732,13 +1732,22 @@ async function viewSession(sessionId) {
         flushAssistantBuffer();
 
         currentSessionStatus = session.status;
-        setStatus(session.status);
 
         // If session is running, connect WebSocket (skip already-rendered buffer)
         if (session.status === 'running') {
-            wsSkipCount = dbEventCount;
-            connectWebSocket(sessionId);
+            if (session.is_waiting) {
+                // Session is waiting for follow-up — set ready state
+                isWaiting = true;
+                setStatus('ready');
+                connectWebSocket(sessionId);
+            } else {
+                // Session is actively running — connect and stream
+                setStatus(session.status);
+                wsSkipCount = dbEventCount;
+                connectWebSocket(sessionId);
+            }
         } else {
+            setStatus(session.status);
             isWaiting = false;
             // Show resume hint for resumable sessions
             if (session.resumable) {

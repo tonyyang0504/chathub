@@ -508,6 +508,12 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         ClaudeCodeMessage.session_id == session_id
     ).order_by(ClaudeCodeMessage.created_at.asc()).all()
 
+    # Check if this session is actively waiting for follow-up
+    active = claude_code_manager.get_active_session(user.id)
+    session_is_waiting = bool(
+        active and active.session_id == session.id and active.is_waiting and not active.is_running
+    )
+
     return {
         "id": session.id,
         "status": session.status,
@@ -517,6 +523,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         "db_backup_path": session.db_backup_path,
         "rolled_back": session.rolled_back,
         "resumable": bool(session.claude_session_uuid) and session.status in ("stopped", "completed", "failed"),
+        "is_waiting": session_is_waiting,
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else None,
         "started_at": (session.started_at.isoformat() + "Z") if session.started_at else None,
         "ended_at": (session.ended_at.isoformat() + "Z") if session.ended_at else None,
