@@ -83,7 +83,9 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "exec_command",
-            "description": "Execute a shell command and return its output. Use for running scripts, git commands, package managers, etc.",
+            "description": "Execute any shell command and return its output. Use for ALL system operations: "
+"listing files, reading data, running scripts, git, python, package managers, system info, "
+"opening apps, curl requests, and anything else the user needs done.",
             "parameters": {
                 "type": "object",
                 "properties": {

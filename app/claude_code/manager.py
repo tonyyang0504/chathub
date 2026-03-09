@@ -593,9 +593,10 @@ class ClaudeCodeManager:
 
     async def _read_stderr(self, session: ActiveSession):
         """Read stderr line-by-line to prevent pipe deadlock and log debug output."""
+        process = session.process  # Capture reference — may be overwritten by follow-up
         try:
             while True:
-                line = await session.process.stderr.readline()
+                line = await process.stderr.readline()
                 if not line:
                     break
                 line_str = line.decode("utf-8", errors="replace").strip()
@@ -632,9 +633,13 @@ class ClaudeCodeManager:
         """Read stdout line-by-line, parse JSON, persist to DB, broadcast to WebSockets."""
         from app.database import SessionLocal, ClaudeCodeSession, ClaudeCodeMessage
 
+        # Capture process reference at start — session.process may be overwritten by a follow-up turn
+        process = session.process
+        stderr_task = session._stderr_task
+
         try:
             while True:
-                line = await session.process.stdout.readline()
+                line = await process.stdout.readline()
                 if not line:
                     break
 
@@ -733,14 +738,20 @@ class ClaudeCodeManager:
                     await session.broadcast({"type": "result_done"})
 
             # Wait for stderr reader to finish
-            if session._stderr_task and not session._stderr_task.done():
+            if stderr_task and not stderr_task.done():
                 try:
-                    await asyncio.wait_for(session._stderr_task, timeout=5.0)
+                    await asyncio.wait_for(stderr_task, timeout=5.0)
                 except (asyncio.TimeoutError, asyncio.CancelledError):
                     pass
 
             # Wait for exit code
-            exit_code = await session.process.wait()
+            exit_code = await process.wait()
+
+            # Only update session state if this process is still the active one
+            # (a follow-up turn may have already started a new process)
+            if session.process is not process:
+                logger.info(f"Skipping state update for superseded process in session {session.session_id}")
+                return
 
             if exit_code == 0:
                 # Turn completed successfully — session stays alive for follow-ups
