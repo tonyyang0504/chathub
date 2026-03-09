@@ -1739,6 +1739,7 @@ async function viewSession(sessionId) {
                 // Session is waiting for follow-up — set ready state
                 isWaiting = true;
                 setStatus('ready');
+                wsSkipCount = dbEventCount;
                 connectWebSocket(sessionId);
             } else {
                 // Session is actively running — connect and stream
