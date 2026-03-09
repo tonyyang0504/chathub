@@ -298,6 +298,29 @@
 .msg-assistant h1 { font-size: 1.3rem; }
 .msg-assistant h2 { font-size: 1.15rem; }
 .msg-assistant h3 { font-size: 1.05rem; }
+.msg-assistant table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.msg-assistant th,
+.msg-assistant td {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    text-align: left;
+    white-space: nowrap;
+}
+.msg-assistant th {
+    background: rgba(255,255,255,0.05);
+    font-weight: 600;
+}
+.msg-assistant tr:hover {
+    background: rgba(255,255,255,0.03);
+}
 
 .msg-tool {
     align-self: flex-start;
@@ -2581,7 +2604,15 @@ function handleScopeRequest(cardId, approved) {
     const actionsDiv = card.querySelector('.scope-request-actions');
     if (approved) {
         actionsDiv.innerHTML = '<span class="scope-request-badge approved"><i class="bi bi-check-circle"></i> Approved</span>';
-        sendFollowUp('Approved. Proceed with the requested action.');
+        // Send approval without showing a user bubble — the badge is sufficient
+        setStatus('running');
+        isWaiting = false;
+        fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ prompt: 'Approved. Proceed with the requested action.' })
+        });
     } else {
         actionsDiv.innerHTML = '<span class="scope-request-badge denied"><i class="bi bi-x-circle"></i> Denied</span>';
         appendSystemMessage('Access denied by user.');
