@@ -361,6 +361,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         "git_commit_hash": session.git_commit_hash,
         "db_backup_path": session.db_backup_path,
         "rolled_back": session.rolled_back,
+        "resumable": bool(session.claude_session_uuid) and session.status in ("stopped", "completed", "failed"),
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else None,
         "started_at": (session.started_at.isoformat() + "Z") if session.started_at else None,
         "ended_at": (session.ended_at.isoformat() + "Z") if session.ended_at else None,
@@ -399,6 +400,152 @@ async def delete_session(session_id: int, request: Request, db: Session = Depend
     db.commit()
 
     return {"status": "ok"}
+
+
+@router.post("/api/claude-code/sessions/{session_id}/resume")
+async def resume_session(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Resume a stopped/completed session with a new prompt."""
+    user = await get_current_user(request, None, db)
+    data = await request.json()
+    prompt = data.get("prompt", "").strip()
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Prompt is required")
+
+    # Check for existing active session
+    active = claude_code_manager.get_active_session(user.id)
+    if active:
+        if active.is_waiting and not active.is_running:
+            # Clean up idle waiting session
+            try:
+                db_old = db.query(ClaudeCodeSession).filter(
+                    ClaudeCodeSession.id == active.session_id
+                ).first()
+                if db_old and db_old.status == "running":
+                    db_old.status = "completed"
+                    db_old.ended_at = datetime.utcnow()
+                    db.commit()
+            except Exception:
+                pass
+            if user.id in claude_code_manager._sessions:
+                del claude_code_manager._sessions[user.id]
+        else:
+            raise HTTPException(status_code=409, detail="You already have an active session")
+
+    # Verify the old session belongs to user and is resumable
+    old_session = db.query(ClaudeCodeSession).filter(
+        ClaudeCodeSession.id == session_id,
+        ClaudeCodeSession.user_id == user.id
+    ).first()
+
+    if not old_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if old_session.status not in ("stopped", "completed", "failed"):
+        raise HTTPException(status_code=400, detail=f"Cannot resume session with status '{old_session.status}'")
+
+    if not old_session.claude_session_uuid:
+        raise HTTPException(status_code=400, detail="Session does not have a CLI session UUID (created before resume support)")
+
+    # Get settings
+    settings = db.query(ClaudeCodeSettings).filter(
+        ClaudeCodeSettings.user_id == user.id
+    ).first()
+
+    auth_method = (settings.auth_method if settings else None) or "api_key"
+
+    oauth_token = None
+    if auth_method == "api_key":
+        if not settings or not settings.anthropic_api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+        api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+    else:
+        api_key = ""
+        if settings and settings.oauth_token_encrypted:
+            oauth_token = decrypt_string(settings.oauth_token_encrypted)
+
+    model = data.get("model") or (settings.default_model if settings else "sonnet")
+
+    # Safety commit and backup
+    git_hash = None
+    db_backup_path = None
+
+    if settings and settings.auto_commit:
+        git_hash = claude_code_manager.create_safety_commit()
+
+    if settings and settings.auto_backup_db:
+        db_backup_path = claude_code_manager.create_db_backup()
+
+    # Create new session record linked to the old one via claude_session_uuid
+    new_session = ClaudeCodeSession(
+        user_id=user.id,
+        prompt=prompt,
+        git_commit_hash=git_hash,
+        db_backup_path=db_backup_path,
+        model=model,
+        claude_session_uuid=old_session.claude_session_uuid,
+        status="pending"
+    )
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+
+    # Add user prompt as a message
+    user_msg = ClaudeCodeMessage(
+        session_id=new_session.id,
+        role="user",
+        content=prompt,
+        message_type="text"
+    )
+    db.add(user_msg)
+    db.commit()
+
+    # Spawn CLI subprocess with --resume
+    active_session = await claude_code_manager.resume_session(
+        user_id=user.id,
+        old_session_id=session_id,
+        new_session_id=new_session.id,
+        prompt=prompt,
+        api_key=api_key,
+        model=model,
+        auth_method=auth_method,
+        oauth_token=oauth_token,
+        user_email=user.email,
+        user_name=user.name,
+        claude_session_uuid=old_session.claude_session_uuid
+    )
+
+    if not active_session:
+        new_session.status = "failed"
+        db.commit()
+        raise HTTPException(status_code=500, detail="Failed to resume Claude Code session")
+
+    new_session.status = "running"
+    new_session.pid = active_session.process.pid if active_session.process else None
+    new_session.started_at = datetime.utcnow()
+    db.commit()
+
+    # Log to tool monitor
+    try:
+        ToolMonitor.log_execution(
+            db=db,
+            tool_type="claude_code",
+            operation="session_resume",
+            input_data={"prompt": prompt[:200], "model": model, "resumed_from": session_id},
+            output_data={"session_id": new_session.id, "git_hash": git_hash},
+            user_id=user.id
+        )
+    except Exception:
+        pass
+
+    return {
+        "session_id": new_session.id,
+        "status": "running",
+        "pid": active_session.process.pid,
+        "git_commit_hash": git_hash,
+        "db_backup_path": db_backup_path,
+        "resumed_from": session_id
+    }
 
 
 @router.post("/api/claude-code/sessions/{session_id}/message")

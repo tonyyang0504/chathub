@@ -451,6 +451,18 @@ class ClaudeCodeManager:
         session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
         self._sessions[user_id] = session
 
+        # Persist the CLI session UUID to DB for future --resume
+        try:
+            from app.database import SessionLocal, ClaudeCodeSession
+            db = SessionLocal()
+            db_session = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == session_id).first()
+            if db_session:
+                db_session.claude_session_uuid = session.claude_session_id
+                db.commit()
+            db.close()
+        except Exception as e:
+            logger.error(f"Failed to persist claude_session_uuid: {e}")
+
         try:
             await self._run_turn(session, prompt, is_first=True)
             return session
@@ -749,6 +761,57 @@ class ClaudeCodeManager:
             session.is_waiting = False
             if session.user_id in self._sessions and self._sessions[session.user_id] is session:
                 del self._sessions[session.user_id]
+
+    async def resume_session(
+        self,
+        user_id: int,
+        old_session_id: int,
+        new_session_id: int,
+        prompt: str,
+        api_key: str,
+        model: Optional[str] = None,
+        auth_method: str = "api_key",
+        oauth_token: Optional[str] = None,
+        user_email: Optional[str] = None,
+        user_name: Optional[str] = None,
+        claude_session_uuid: Optional[str] = None
+    ) -> Optional[ActiveSession]:
+        """Resume a stopped session by reusing its Claude CLI session UUID."""
+        existing = self.get_active_session(user_id)
+        if existing:
+            logger.warning(f"User {user_id} already has an active session {existing.session_id}")
+            return None
+
+        if not claude_session_uuid:
+            logger.error(f"No claude_session_uuid for old session {old_session_id}")
+            return None
+
+        session = ActiveSession(new_session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
+        # Reuse the old CLI session UUID so --resume picks up the conversation
+        session.claude_session_id = claude_session_uuid
+        self._sessions[user_id] = session
+
+        # Persist UUID to new DB record
+        try:
+            from app.database import SessionLocal, ClaudeCodeSession
+            db = SessionLocal()
+            db_session = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == new_session_id).first()
+            if db_session:
+                db_session.claude_session_uuid = claude_session_uuid
+                db.commit()
+            db.close()
+        except Exception as e:
+            logger.error(f"Failed to persist claude_session_uuid on resume: {e}")
+
+        try:
+            # is_first=False triggers --resume instead of --session-id
+            await self._run_turn(session, prompt, is_first=False)
+            return session
+        except Exception as e:
+            logger.error(f"Failed to resume session: {e}")
+            if user_id in self._sessions and self._sessions[user_id] is session:
+                del self._sessions[user_id]
+            return None
 
     async def stop_session(self, user_id: int) -> bool:
         """Stop a running or waiting session."""

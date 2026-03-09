@@ -6,6 +6,7 @@ import os
 import sys
 import asyncio
 import time
+from datetime import datetime
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -118,6 +119,9 @@ async def lifespan(app: FastAPI):
     setup_logging()
     print("Logging system initialized.")
 
+    # Clean up stale Claude Code / ChatHub Agent sessions from previous crash
+    await cleanup_stale_sessions()
+
     # Auto-recover bots that were marked as running
     await auto_recover_bots()
 
@@ -168,6 +172,37 @@ async def lifespan(app: FastAPI):
     # Stop all running bots
     await bot_manager.stop_all_bots()
     print("All bots stopped.")
+
+
+async def cleanup_stale_sessions():
+    """Mark orphaned running sessions as stopped on startup (from previous crash)."""
+    from .database import SessionLocal, ClaudeCodeSession, ChatHubAgentSession
+
+    db = SessionLocal()
+    try:
+        stale_claude = db.query(ClaudeCodeSession).filter(
+            ClaudeCodeSession.status.in_(["running", "pending"])
+        ).all()
+        for s in stale_claude:
+            s.status = "stopped"
+            s.ended_at = datetime.utcnow() if not s.ended_at else s.ended_at
+        if stale_claude:
+            db.commit()
+            print(f"Cleaned up {len(stale_claude)} stale Claude Code session(s).")
+
+        stale_agent = db.query(ChatHubAgentSession).filter(
+            ChatHubAgentSession.status.in_(["running", "pending"])
+        ).all()
+        for s in stale_agent:
+            s.status = "stopped"
+            s.ended_at = datetime.utcnow() if not s.ended_at else s.ended_at
+        if stale_agent:
+            db.commit()
+            print(f"Cleaned up {len(stale_agent)} stale ChatHub Agent session(s).")
+    except Exception as e:
+        print(f"Error cleaning up stale sessions: {e}")
+    finally:
+        db.close()
 
 
 async def auto_recover_bots():

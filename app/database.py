@@ -663,6 +663,7 @@ class ClaudeCodeSession(Base):
     db_backup_path = Column(String(500))  # Backup file path
     pid = Column(Integer)  # OS process ID
     model = Column(String(100))
+    claude_session_uuid = Column(String(36))  # Claude CLI session UUID for --resume
     rolled_back = Column(Boolean, default=False)
     rolled_back_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)

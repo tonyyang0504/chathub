@@ -441,7 +441,10 @@
     background: transparent;
     color: var(--text-primary);
     line-height: 1.4;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+}
+#promptInput::-webkit-scrollbar {
+    display: none;
 }
 #promptInput:focus {
     box-shadow: none;
@@ -1016,6 +1019,7 @@ let currentSessionId = null;
 let ws = null;
 let isRunning = false;
 let isWaiting = false;  // True when session finished responding, awaiting follow-up
+let currentSessionStatus = null;  // Track viewed session status for resume detection
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
 let turnHasStreamedText = false;  // Track if text was shown via deltas (live) vs needs result (replay)
@@ -1044,6 +1048,7 @@ function toggleSidebar() {
 
 function newSession() {
     currentSessionId = null;
+    currentSessionStatus = null;
     clearChat();
     document.getElementById('emptyState').style.display = 'flex';
     document.getElementById('promptInput').placeholder = 'Describe what you need...';
@@ -1384,6 +1389,7 @@ async function viewSession(sessionId) {
         }
         flushAssistantBuffer();
 
+        currentSessionStatus = session.status;
         setStatus(session.status);
 
         // If session is running, connect WebSocket
@@ -1391,6 +1397,10 @@ async function viewSession(sessionId) {
             connectWebSocket(sessionId);
         } else {
             isWaiting = false;
+            // Show resume hint for resumable sessions
+            if (session.resumable) {
+                document.getElementById('promptInput').placeholder = 'Continue this conversation...';
+            }
         }
 
         loadSessions();
@@ -1426,6 +1436,9 @@ function handleSend() {
 
     if (currentSessionId && isWaiting) {
         sendFollowUp(prompt);
+    } else if (currentSessionId && !isRunning && !isWaiting && currentSessionStatus && ['stopped', 'completed', 'failed'].includes(currentSessionStatus)) {
+        // Session is stopped/completed — resume it
+        resumeSession(prompt);
     } else if (!isRunning) {
         startSession(prompt);
     }
@@ -1494,6 +1507,47 @@ async function sendFollowUp(prompt) {
         appendSystemMessage('Network error: ' + e.message);
         setStatus('ready');
         isWaiting = true;
+    }
+}
+
+async function resumeSession(prompt) {
+    const oldSessionId = currentSessionId;
+    document.getElementById('promptInput').value = '';
+    appendUserMessage(prompt);
+    appendSystemMessage('Resuming session...');
+    setStatus('pending');
+
+    try {
+        const res = await fetch(`/tools/api/claude-code/sessions/${oldSessionId}/resume`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                prompt: prompt,
+                model: document.getElementById('modelSelect').value
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            appendSystemMessage(err.detail || 'Failed to resume session');
+            setStatus('failed');
+            return;
+        }
+
+        const data = await res.json();
+        currentSessionId = data.session_id;
+        currentSessionStatus = 'running';
+        setStatus('running');
+        connectWebSocket(data.session_id);
+        loadSessions();
+
+        if (data.git_commit_hash) {
+            appendSystemMessage(`Safety commit: ${data.git_commit_hash.substring(0, 8)}`);
+        }
+    } catch (e) {
+        appendSystemMessage('Network error: ' + e.message);
+        setStatus('failed');
     }
 }
 
@@ -2100,7 +2154,13 @@ function setStatus(status) {
         sendBtn.disabled = false;
         isRunning = false;
         isWaiting = false;
-        document.getElementById('promptInput').placeholder = 'Describe what you need...';
+        currentSessionStatus = status;
+        // Show resume hint for stopped/completed sessions
+        if (currentSessionId && ['stopped', 'completed', 'failed'].includes(status)) {
+            document.getElementById('promptInput').placeholder = 'Continue this conversation...';
+        } else {
+            document.getElementById('promptInput').placeholder = 'Describe what you need...';
+        }
     }
 }
 
