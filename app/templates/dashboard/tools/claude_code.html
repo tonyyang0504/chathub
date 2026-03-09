@@ -1815,9 +1815,6 @@ async function startSession(prompt) {
         connectWebSocket(data.session_id);
         loadSessions();
 
-        if (data.git_commit_hash) {
-            appendSystemMessage(`Safety commit: ${data.git_commit_hash.substring(0, 8)}`);
-        }
     } catch (e) {
         appendSystemMessage('Network error: ' + e.message);
         setStatus('failed');
@@ -1859,7 +1856,6 @@ async function resumeSession(prompt) {
     const filePaths = getFilePaths();
     clearPendingFiles();
     appendUserMessage(prompt);
-    appendSystemMessage('Resuming session...');
     setStatus('pending');
 
     try {
@@ -1888,9 +1884,6 @@ async function resumeSession(prompt) {
         connectWebSocket(oldSessionId);
         loadSessions();
 
-        if (data.git_commit_hash) {
-            appendSystemMessage(`Safety commit: ${data.git_commit_hash.substring(0, 8)}`);
-        }
     } catch (e) {
         appendSystemMessage('Network error: ' + e.message);
         setStatus('failed');
