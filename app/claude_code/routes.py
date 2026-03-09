@@ -336,20 +336,13 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     active = claude_code_manager.get_active_session(user.id)
     if active:
         if active.is_waiting and not active.is_running:
-            # Old session is idle/waiting — clean it up so user can start fresh
-            logger.info(f"Cleaning up idle waiting session {active.session_id} for user {user.id}")
-            try:
-                db_old = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == active.session_id
-                ).first()
-                if db_old and db_old.status == "running":
-                    db_old.status = "completed"
-                    db_old.ended_at = datetime.utcnow()
-                    db.commit()
-            except Exception:
-                pass
-            if user.id in claude_code_manager._sessions:
-                del claude_code_manager._sessions[user.id]
+            # Return existing waiting session instead of destroying it
+            return {
+                "id": active.session_id,
+                "session_id": active.session_id,
+                "status": "waiting",
+                "redirect": True
+            }
         else:
             raise HTTPException(status_code=409, detail="You already have an active session")
 
