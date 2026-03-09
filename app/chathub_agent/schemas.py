@@ -16,7 +16,6 @@ class SettingsUpdate(BaseModel):
     default_agent_id: Optional[int] = None
     auto_commit: Optional[bool] = None
     auto_backup_db: Optional[bool] = None
-    max_session_minutes: Optional[int] = None
     queue_mode: Optional[str] = None
     workspace_path: Optional[str] = None
 
@@ -29,7 +28,6 @@ class SettingsResponse(BaseModel):
     default_agent_id: Optional[int] = None
     auto_commit: bool
     auto_backup_db: bool
-    max_session_minutes: int
     queue_mode: str
     workspace_path: Optional[str] = None
     created_at: datetime

@@ -417,21 +417,33 @@
     align-items: flex-end;
     gap: 0.5rem;
 }
-#promptInput {
+.prompt-wrapper {
     flex: 1;
-    resize: none;
     border-radius: 22px;
     border: 1px solid var(--border-color);
+    overflow: hidden;
+    background: var(--body-bg, var(--card-bg));
+}
+.prompt-wrapper:focus-within {
+    border-color: #06b6d4;
+}
+#promptInput {
+    width: 100%;
+    resize: none;
+    border: none;
+    border-radius: 0;
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
     min-height: 48px;
     max-height: 150px;
-    background: var(--body-bg, var(--card-bg));
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: transparent;
     color: var(--text-primary);
     line-height: 1.4;
+    scrollbar-width: thin;
 }
 #promptInput:focus {
-    border-color: #06b6d4;
     box-shadow: none;
     outline: none;
 }
@@ -861,9 +873,11 @@
         <!-- Input bar -->
         <div class="claude-input-bar">
             <div class="claude-input-inner">
-                <textarea class="form-control" id="promptInput" rows="1"
-                    placeholder="Describe what you need..."
-                    onkeydown="handleKeydown(event)"></textarea>
+                <div class="prompt-wrapper">
+                    <textarea class="form-control" id="promptInput" rows="1"
+                        placeholder="Describe what you need..."
+                        onkeydown="handleKeydown(event)"></textarea>
+                </div>
                 <button id="sendBtn" onclick="handleSend()" title="Send">
                     <i class="bi bi-arrow-up" style="font-size: 1.1rem;"></i>
                 </button>
@@ -959,7 +973,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label class="form-label">Model</label>
                         <select class="form-select" id="modelSelect">
                             <option value="opus">Opus 4.6 - Most capable</option>
@@ -968,10 +982,6 @@
                             <option value="sonnet-1m">Sonnet (1M context)</option>
                             <option value="haiku">Haiku 4.5 - Fastest</option>
                         </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Max Minutes</label>
-                        <input type="number" class="form-control" id="maxMinutesInput" value="30" min="5" max="120">
                     </div>
                     <div class="col-md-3">
                         <div class="form-check form-switch mt-4">
@@ -1083,7 +1093,6 @@ async function loadSettings() {
         document.getElementById('modelSelect').value = data.default_model || 'sonnet';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
-        document.getElementById('maxMinutesInput').value = data.max_session_minutes || 30;
         setAuthMethod(data.auth_method || 'api_key', true);
     } catch (e) {
         console.error('Failed to load settings:', e);
@@ -1096,7 +1105,6 @@ async function saveSettings() {
         default_model: document.getElementById('modelSelect').value,
         auto_commit: document.getElementById('autoCommitToggle').checked,
         auto_backup_db: document.getElementById('autoBackupToggle').checked,
-        max_session_minutes: parseInt(document.getElementById('maxMinutesInput').value) || 30,
         auth_method: currentAuthMethod
     };
     if (apiKey && !apiKey.startsWith('****')) {
@@ -1163,7 +1171,7 @@ async function checkMembershipStatus() {
 
         if (data.loggedIn) {
             const email = data.email ? ` (${data.email})` : '';
-            const plan = data.subscriptionType ? `<span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size: 0.7rem;">${data.subscriptionType}</span>` : '';
+            const plan = data.subscriptionType && data.subscriptionType.trim() ? `<span class="badge ms-1" style="font-size: 0.7rem; background: #10b981; color: #fff; border-radius: 20px; padding: 3px 10px;">${data.subscriptionType}</span>` : '';
             content.innerHTML = `<i class="bi bi-check-circle-fill membership-logged-in"></i><span class="membership-logged-in fw-medium">Logged in${escapeHtml(email)}</span>${plan}`;
             loginBtn.style.display = 'none';
             logoutBtn.style.display = 'inline-flex';

@@ -84,7 +84,6 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "auto_approve_all": True,
             "auto_commit": True,
             "auto_backup_db": True,
-            "max_session_minutes": 30,
             "queue_mode": "fifo",
         }
 
@@ -105,7 +104,6 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "auto_approve_all": settings.auto_approve_all if settings.auto_approve_all is not None else True,
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
-        "max_session_minutes": settings.max_session_minutes or 30,
         "queue_mode": settings.queue_mode or "fifo",
         "workspace_path": settings.workspace_path,
     }
@@ -133,7 +131,7 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
 
     for field in ["ai_provider", "default_model", "default_agent_id",
                   "auto_approve_all", "auto_commit", "auto_backup_db",
-                  "max_session_minutes", "queue_mode", "workspace_path"]:
+                  "queue_mode", "workspace_path"]:
         if field in data:
             setattr(settings, field, data[field])
 

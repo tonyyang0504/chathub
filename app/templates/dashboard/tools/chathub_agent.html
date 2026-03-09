@@ -394,10 +394,6 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Max Minutes</label>
-                        <input type="number" class="form-control" id="maxMinutesInput" value="60" min="5" max="180">
-                    </div>
-                    <div class="col-md-4">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="autoApproveAllToggle" checked>
                             <label class="form-check-label" for="autoApproveAllToggle">Auto-approve all tools</label>
@@ -663,7 +659,6 @@ async function loadSettings() {
         document.getElementById('autoApproveAllToggle').checked = data.auto_approve_all !== false;
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
-        document.getElementById('maxMinutesInput').value = data.max_session_minutes || 60;
         if (data.queue_mode) {
             const radio = document.querySelector(`input[name="queueMode"][value="${data.queue_mode}"]`);
             if (radio) radio.checked = true;
@@ -682,7 +677,6 @@ async function saveSettings() {
         auto_approve_all: document.getElementById('autoApproveAllToggle').checked,
         auto_commit: document.getElementById('autoCommitToggle').checked,
         auto_backup_db: document.getElementById('autoBackupToggle').checked,
-        max_session_minutes: parseInt(document.getElementById('maxMinutesInput').value) || 60,
         queue_mode: document.querySelector('input[name="queueMode"]:checked').value
     };
     if (apiKey && !apiKey.startsWith('****')) {
