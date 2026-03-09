@@ -1714,6 +1714,7 @@ function appendUserMessage(text) {
 }
 
 function appendAssistantMessage(text) {
+    turnHasStreamedText = true;  // Mark that text was rendered (prevents result event duplicate)
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-assistant';
