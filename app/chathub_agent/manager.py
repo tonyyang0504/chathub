@@ -362,6 +362,36 @@ class ChatHubAgentManager:
                 if len(conversation) > 1 and conversation[-1].get("role") == "user":
                     conversation.pop()
 
+                # Fix conversation ordering for OpenAI: tool results must immediately
+                # follow the assistant message with tool_calls. Messages may be interleaved
+                # in the DB (e.g., user sent messages while tool was executing).
+                # Strategy: pull tool results out, then re-insert them right after their
+                # parent assistant message, adding placeholders for any missing ones.
+
+                # Collect all tool results by tool_call_id
+                tool_results_by_id = {}
+                for msg in conversation:
+                    if msg.get("role") == "tool" and msg.get("tool_call_id"):
+                        tool_results_by_id[msg["tool_call_id"]] = msg
+
+                # Rebuild: skip inline tool results, insert them after their parent assistant msg
+                fixed = []
+                for msg in conversation:
+                    if msg.get("role") == "tool":
+                        continue  # Will be re-inserted after parent assistant message
+                    fixed.append(msg)
+                    if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                        for tc in msg["tool_calls"]:
+                            if tc["id"] in tool_results_by_id:
+                                fixed.append(tool_results_by_id[tc["id"]])
+                            else:
+                                fixed.append({
+                                    "role": "tool",
+                                    "tool_call_id": tc["id"],
+                                    "content": "[Session interrupted — tool was not executed]",
+                                })
+                conversation = fixed
+
                 agent_loop.set_conversation(conversation)
             finally:
                 db.close()
