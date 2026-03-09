@@ -996,6 +996,7 @@
 <script>
 // State
 let currentSessionId = null;
+let currentSessionStatus = null;
 let ws = null;
 let isRunning = false;
 let isWaiting = false;
@@ -1313,6 +1314,7 @@ async function viewSession(sessionId) {
         }
 
         setStatus(session.status);
+        currentSessionStatus = session.status;
         if (session.ai_provider) {
             updateProviderInfo(session.ai_provider, session.model);
         }
@@ -1321,6 +1323,9 @@ async function viewSession(sessionId) {
             connectWebSocket(sessionId);
         } else {
             isWaiting = false;
+            if (['completed', 'stopped'].includes(session.status)) {
+                document.getElementById('promptInput').placeholder = 'Continue this conversation...';
+            }
         }
 
         loadSessions();
@@ -1370,6 +1375,10 @@ function handleSend() {
 
     if (currentSessionId && isWaiting) {
         sendFollowUp(prompt);
+    } else if (currentSessionId && !isRunning && !isWaiting &&
+               currentSessionStatus && ['completed', 'stopped'].includes(currentSessionStatus)) {
+        // Session ended but user wants to continue — backend will auto-resume
+        sendFollowUp(prompt);
     } else if (!isRunning) {
         startSession(prompt);
     }
@@ -1380,6 +1389,7 @@ async function startSession(prompt) {
     clearChat();
     appendUserMessage(prompt);
     setStatus('pending');
+    currentSessionStatus = null;
 
     const model = document.getElementById('modelSelect').value;
 
@@ -1435,6 +1445,11 @@ async function sendFollowUp(prompt) {
             appendSystemMessage(err.detail || 'Failed to send message');
             setStatus('ready');
             isWaiting = true;
+        } else {
+            // Reconnect WebSocket if not connected (e.g., resuming completed session)
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                connectWebSocket(currentSessionId);
+            }
         }
     } catch (e) {
         appendSystemMessage('Network error: ' + e.message);
@@ -1579,7 +1594,8 @@ function renderStreamEvent(data) {
     } else if (type === 'session_end') {
         isRunning = false;
         isWaiting = false;
-        setStatus(data.status || 'completed');
+        currentSessionStatus = data.status || 'completed';
+        setStatus(currentSessionStatus);
     } else if (type === 'system') {
         appendSystemMessage(data.content || data.message || '');
     }
