@@ -2,6 +2,7 @@
 Scripted Conversations API Routes
 """
 
+import asyncio
 import json
 import logging
 from typing import List, Optional
@@ -661,16 +662,26 @@ async def execute_script(
         script.schedule_type = data.schedule_type
 
     # Create execution record
+    is_immediate = not script.scheduled_for
     execution = ScriptExecution(
         script_id=script_id,
-        status="pending" if script.scheduled_for else "running"
+        status="running" if is_immediate else "pending"
     )
     db.add(execution)
+
+    if is_immediate:
+        script.status = "running"
+
     db.commit()
     db.refresh(execution)
 
-    # TODO: Trigger scheduler to execute script
-    # For now, just return the execution record
+    # If immediate execution, trigger the scheduler to run it now
+    if is_immediate:
+        from app.scripts.scheduler import script_scheduler
+        task = asyncio.create_task(
+            script_scheduler._execute_script(script_id, execution.id)
+        )
+        script_scheduler._active_executions[script_id] = task
 
     return ScriptExecutionResponse(
         id=execution.id,
