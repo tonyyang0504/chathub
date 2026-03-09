@@ -345,6 +345,35 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
     }
 
 
+@router.delete("/api/chathub-agent/sessions/{session_id}")
+async def delete_session(session_id: int, request: Request, db: Session = Depends(get_db)):
+    """Delete a session and all its messages."""
+    from app.database import ChatHubAgentSession, ChatHubAgentMessage
+    user = await get_current_user(request, None, db)
+
+    session = db.query(ChatHubAgentSession).filter(
+        ChatHubAgentSession.id == session_id,
+        ChatHubAgentSession.user_id == user.id,
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Stop if running
+    active = chathub_agent_manager.get_active_session(user.id)
+    if active and active.session_id == session_id:
+        await chathub_agent_manager.stop_session(user.id)
+
+    # Delete messages first, then session
+    db.query(ChatHubAgentMessage).filter(
+        ChatHubAgentMessage.session_id == session_id
+    ).delete()
+    db.delete(session)
+    db.commit()
+
+    return {"status": "ok"}
+
+
 @router.post("/api/chathub-agent/sessions/{session_id}/message")
 async def send_message(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Send a follow-up message to an active session."""

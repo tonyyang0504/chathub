@@ -160,6 +160,7 @@
     border-radius: 12px;
     background: var(--card-bg);
     overflow: hidden;
+    position: relative;
 }
 
 /* Top bar */
@@ -427,14 +428,201 @@
 .prompt-wrapper:focus-within {
     border-color: #06b6d4;
 }
+
+/* Toolbar row inside prompt-wrapper */
+.input-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0.35rem 0.6rem 0;
+}
+.input-toolbar .toolbar-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+}
+.input-toolbar .toolbar-btn:hover {
+    background: rgba(6,182,212,0.1);
+    color: #06b6d4;
+}
+.input-toolbar .toolbar-btn.recording {
+    color: #ef4444;
+    animation: pulse-mic 1s ease-in-out infinite;
+}
+@keyframes pulse-mic {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.toolbar-spacer { flex: 1; }
+
+/* Connector dropdown */
+.connector-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 4px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    min-width: 200px;
+    z-index: 50;
+    display: none;
+    overflow: hidden;
+}
+.connector-dropdown.show { display: block; }
+.connector-dropdown .connector-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    transition: background 0.1s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+.connector-dropdown .connector-item:hover {
+    background: rgba(6,182,212,0.08);
+}
+.connector-dropdown .connector-item i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* URL input bar (inline) */
+.url-input-bar {
+    display: none;
+    padding: 0.4rem 0.6rem;
+    gap: 0.4rem;
+    align-items: center;
+}
+.url-input-bar.show { display: flex; }
+.url-input-bar input {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    outline: none;
+}
+.url-input-bar input:focus { border-color: #06b6d4; }
+.url-input-bar .btn-fetch {
+    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.url-input-bar .btn-cancel-url {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.35rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+/* File chips */
+.file-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+}
+.file-chips:empty { display: none; }
+.file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(6,182,212,0.1);
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 16px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75rem;
+    color: #06b6d4;
+    max-width: 180px;
+}
+.file-chip .chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-chip .chip-remove {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 0.65rem;
+    transition: opacity 0.1s;
+    flex-shrink: 0;
+}
+.file-chip .chip-remove:hover { opacity: 1; }
+.file-chip.uploading {
+    opacity: 0.6;
+    border-style: dashed;
+}
+.file-chip .chip-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(6,182,212,0.3);
+    border-top-color: #06b6d4;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Drag-drop overlay */
+.drag-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(6,182,212,0.08);
+    border: 2px dashed #06b6d4;
+    border-radius: 12px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+}
+.drag-overlay.show {
+    display: flex;
+}
+.drag-overlay span {
+    background: rgba(6,182,212,0.15);
+    color: #06b6d4;
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
 #promptInput {
     width: 100%;
     resize: none;
     border: none;
     border-radius: 0;
-    padding: 0.75rem 1rem;
+    padding: 0.4rem 1rem 0.75rem;
     font-size: 0.9rem;
-    min-height: 48px;
+    min-height: 40px;
     max-height: 150px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -877,15 +1065,54 @@
         <div class="claude-input-bar">
             <div class="claude-input-inner">
                 <div class="prompt-wrapper">
+                    <!-- Toolbar -->
+                    <div class="input-toolbar">
+                        <button class="toolbar-btn" id="attachBtn" onclick="triggerFileInput()" title="Attach files">
+                            <i class="bi bi-paperclip"></i>
+                        </button>
+                        <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectorDropdown()" title="Import from URL">
+                            <i class="bi bi-link-45deg"></i>
+                            <div class="connector-dropdown" id="connectorDropdown">
+                                <button class="connector-item" onclick="openUrlInput('url')">
+                                    <i class="bi bi-globe"></i> From URL
+                                </button>
+                                <button class="connector-item" onclick="openUrlInput('gdrive')">
+                                    <i class="bi bi-google"></i> Google Drive
+                                </button>
+                                <button class="connector-item" onclick="openUrlInput('dropbox')">
+                                    <i class="bi bi-dropbox"></i> Dropbox
+                                </button>
+                            </div>
+                        </button>
+                        <button class="toolbar-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input" style="display:none;">
+                            <i class="bi bi-mic"></i>
+                        </button>
+                        <span class="toolbar-spacer"></span>
+                    </div>
+                    <!-- URL input (inline, hidden by default) -->
+                    <div class="url-input-bar" id="urlInputBar">
+                        <input type="text" id="urlInput" placeholder="Paste URL here..." onkeydown="if(event.key==='Enter'){fetchUrlFile();event.preventDefault();}">
+                        <button class="btn-fetch" onclick="fetchUrlFile()" id="fetchUrlBtn">Fetch</button>
+                        <button class="btn-cancel-url" onclick="closeUrlInput()" title="Cancel"><i class="bi bi-x"></i></button>
+                    </div>
+                    <!-- File chips -->
+                    <div class="file-chips" id="fileChips"></div>
+                    <!-- Textarea -->
                     <textarea class="form-control" id="promptInput" rows="1"
                         placeholder="Describe what you need..."
-                        onkeydown="handleKeydown(event)"></textarea>
+                        onkeydown="handleKeydown(event)"
+                        onpaste="handlePaste(event)"></textarea>
                 </div>
                 <button id="sendBtn" onclick="handleSend()" title="Send">
                     <i class="bi bi-arrow-up" style="font-size: 1.1rem;"></i>
                 </button>
             </div>
         </div>
+        <!-- Hidden file input -->
+        <input type="file" id="fileInput" multiple style="display:none;" onchange="handleFileSelect(event)"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.csv,.py,.js,.ts,.html,.css,.json,.yaml,.yml,.toml,.xml,.md,.txt,.sh,.java,.go,.rs,.c,.cpp,.h,.rb,.php,.sql,.log,.zip,.tar,.gz">
+        <!-- Drag overlay -->
+        <div class="drag-overlay" id="dragOverlay"><span><i class="bi bi-cloud-upload me-2"></i>Drop files to attach</span></div>
     </div>
 
     <!-- Artifacts Panel -->
@@ -1023,6 +1250,13 @@ let currentSessionStatus = null;  // Track viewed session status for resume dete
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
 let turnHasStreamedText = false;  // Track if text was shown via deltas (live) vs needs result (replay)
+
+// File upload state
+let pendingFiles = [];  // { id, filename, path, size, type, uploading }
+
+// Voice recognition
+let recognition = null;
+let isRecording = false;
 
 // Artifacts state
 let artifacts = [];
@@ -1446,6 +1680,8 @@ function handleSend() {
 
 async function startSession(prompt) {
     document.getElementById('promptInput').value = '';
+    const filePaths = getFilePaths();
+    clearPendingFiles();
     clearChat();
     appendUserMessage(prompt);
     setStatus('pending');
@@ -1457,7 +1693,8 @@ async function startSession(prompt) {
             credentials: 'include',
             body: JSON.stringify({
                 prompt: prompt,
-                model: document.getElementById('modelSelect').value
+                model: document.getElementById('modelSelect').value,
+                file_paths: filePaths
             })
         });
 
@@ -1485,6 +1722,8 @@ async function startSession(prompt) {
 
 async function sendFollowUp(prompt) {
     document.getElementById('promptInput').value = '';
+    const filePaths = getFilePaths();
+    clearPendingFiles();
     appendUserMessage(prompt);
     setStatus('running');
     isWaiting = false;
@@ -1494,7 +1733,7 @@ async function sendFollowUp(prompt) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ prompt: prompt })
+            body: JSON.stringify({ prompt: prompt, file_paths: filePaths })
         });
 
         if (!res.ok) {
@@ -1513,6 +1752,8 @@ async function sendFollowUp(prompt) {
 async function resumeSession(prompt) {
     const oldSessionId = currentSessionId;
     document.getElementById('promptInput').value = '';
+    const filePaths = getFilePaths();
+    clearPendingFiles();
     appendUserMessage(prompt);
     appendSystemMessage('Resuming session...');
     setStatus('pending');
@@ -1524,7 +1765,8 @@ async function resumeSession(prompt) {
             credentials: 'include',
             body: JSON.stringify({
                 prompt: prompt,
-                model: document.getElementById('modelSelect').value
+                model: document.getElementById('modelSelect').value,
+                file_paths: filePaths
             })
         });
 
@@ -2177,6 +2419,303 @@ function handleKeydown(e) {
     }
 }
 
+// ============================================================================
+// File Upload, Voice Input & Connectors
+// ============================================================================
+
+function getFilePaths() {
+    return pendingFiles.filter(f => f.path && !f.uploading).map(f => f.path);
+}
+
+function triggerFileInput() {
+    document.getElementById('fileInput').click();
+}
+
+async function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    if (files.length) await uploadFiles(files);
+    event.target.value = '';  // reset so same file can be re-selected
+}
+
+function handlePaste(event) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    const files = [];
+    for (const item of items) {
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file) files.push(file);
+        }
+    }
+    if (files.length) {
+        event.preventDefault();
+        uploadFiles(files);
+    }
+}
+
+async function uploadFiles(fileList) {
+    const formData = new FormData();
+    const tempIds = [];
+
+    for (const file of fileList) {
+        if (file.size > 10 * 1024 * 1024) {
+            showToast(`${file.name} exceeds 10MB limit`, 'error');
+            continue;
+        }
+        formData.append('files', file);
+        const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        tempIds.push(tempId);
+        pendingFiles.push({ id: tempId, filename: file.name, path: null, size: file.size, type: file.name.split('.').pop(), uploading: true });
+    }
+
+    renderFileChips();
+
+    if (tempIds.length === 0) return;
+
+    try {
+        const res = await fetch('/tools/api/claude-code/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+        const data = await res.json();
+
+        let idx = 0;
+        for (const result of (data.files || [])) {
+            const tempId = tempIds[idx++];
+            const pf = pendingFiles.find(f => f.id === tempId);
+            if (!pf) continue;
+
+            if (result.error) {
+                pendingFiles = pendingFiles.filter(f => f.id !== tempId);
+                showToast(`${result.filename}: ${result.error}`, 'error');
+            } else {
+                pf.path = result.path;
+                pf.uploading = false;
+                pf.filename = result.filename;
+                pf.size = result.size;
+            }
+        }
+    } catch (e) {
+        // Remove temp entries on error
+        for (const id of tempIds) {
+            pendingFiles = pendingFiles.filter(f => f.id !== id);
+        }
+        showToast('Upload failed: ' + e.message, 'error');
+    }
+
+    renderFileChips();
+}
+
+function removeFile(fileId) {
+    pendingFiles = pendingFiles.filter(f => f.id !== fileId);
+    renderFileChips();
+}
+
+function renderFileChips() {
+    const container = document.getElementById('fileChips');
+    if (!pendingFiles.length) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = pendingFiles.map(f => `
+        <span class="file-chip ${f.uploading ? 'uploading' : ''}" title="${escapeHtml(f.filename)}">
+            ${f.uploading ? '<span class="chip-spinner"></span>' : '<i class="bi bi-file-earmark" style="font-size:0.7rem;"></i>'}
+            <span class="chip-name">${escapeHtml(f.filename)}</span>
+            <span class="chip-remove" onclick="removeFile('${f.id}')"><i class="bi bi-x"></i></span>
+        </span>
+    `).join('');
+}
+
+function clearPendingFiles() {
+    pendingFiles = [];
+    renderFileChips();
+}
+
+// --- Connector / URL Fetch ---
+let connectorType = null;
+
+function toggleConnectorDropdown() {
+    const dd = document.getElementById('connectorDropdown');
+    dd.classList.toggle('show');
+    // Close on outside click
+    if (dd.classList.contains('show')) {
+        setTimeout(() => {
+            document.addEventListener('click', closeConnectorOnOutside, { once: true });
+        }, 0);
+    }
+}
+
+function closeConnectorOnOutside(e) {
+    const dd = document.getElementById('connectorDropdown');
+    if (!document.getElementById('connectBtn').contains(e.target)) {
+        dd.classList.remove('show');
+    }
+}
+
+function openUrlInput(type) {
+    connectorType = type;
+    document.getElementById('connectorDropdown').classList.remove('show');
+    const bar = document.getElementById('urlInputBar');
+    const input = document.getElementById('urlInput');
+    bar.classList.add('show');
+    const placeholders = {
+        'url': 'Paste any file URL...',
+        'gdrive': 'Paste Google Drive share link...',
+        'dropbox': 'Paste Dropbox share link...'
+    };
+    input.placeholder = placeholders[type] || 'Paste URL...';
+    input.value = '';
+    input.focus();
+}
+
+function closeUrlInput() {
+    document.getElementById('urlInputBar').classList.remove('show');
+    document.getElementById('urlInput').value = '';
+    connectorType = null;
+}
+
+async function fetchUrlFile() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+
+    const fetchBtn = document.getElementById('fetchUrlBtn');
+    fetchBtn.textContent = 'Fetching...';
+    fetchBtn.disabled = true;
+
+    // Add temp chip
+    const tempId = 'url_' + Date.now();
+    const urlFilename = url.split('/').pop().split('?')[0] || 'remote_file';
+    pendingFiles.push({ id: tempId, filename: urlFilename, path: null, size: 0, type: '?', uploading: true });
+    renderFileChips();
+
+    try {
+        const res = await fetch('/tools/api/claude-code/fetch-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ url })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Fetch failed');
+        }
+
+        const data = await res.json();
+        const pf = pendingFiles.find(f => f.id === tempId);
+        if (pf && data.file) {
+            pf.path = data.file.path;
+            pf.uploading = false;
+            pf.filename = data.file.filename;
+            pf.size = data.file.size;
+            pf.type = data.file.type;
+        }
+        closeUrlInput();
+    } catch (e) {
+        pendingFiles = pendingFiles.filter(f => f.id !== tempId);
+        showToast(e.message, 'error');
+    }
+
+    fetchBtn.textContent = 'Fetch';
+    fetchBtn.disabled = false;
+    renderFileChips();
+}
+
+// --- Voice Input ---
+function initVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    document.getElementById('micBtn').style.display = '';
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interim += event.results[i][0].transcript;
+            }
+        }
+        const textarea = document.getElementById('promptInput');
+        textarea.value = finalTranscript + interim;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    };
+
+    recognition.onend = () => {
+        if (isRecording) {
+            // Insert final transcript
+            const textarea = document.getElementById('promptInput');
+            textarea.value = finalTranscript;
+            finalTranscript = '';
+        }
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic';
+    };
+
+    recognition.onerror = (event) => {
+        if (event.error !== 'no-speech') {
+            console.error('Speech recognition error:', event.error);
+        }
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic';
+    };
+}
+
+function toggleVoiceRecording() {
+    if (!recognition) return;
+
+    if (isRecording) {
+        recognition.stop();
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic';
+    } else {
+        recognition.start();
+        isRecording = true;
+        document.getElementById('micBtn').classList.add('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic-fill';
+    }
+}
+
+// --- Drag & Drop ---
+function initDragDrop() {
+    const chatArea = document.querySelector('.claude-main');
+    if (!chatArea) return;
+    let dragCounter = 0;
+    const overlay = document.getElementById('dragOverlay');
+
+    chatArea.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        dragCounter++;
+        if (dragCounter === 1) overlay.classList.add('show');
+    });
+    chatArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) { dragCounter = 0; overlay.classList.remove('show'); }
+    });
+    chatArea.addEventListener('dragover', (e) => e.preventDefault());
+    chatArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        overlay.classList.remove('show');
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length) uploadFiles(files);
+    });
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -2230,6 +2769,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     loadSessions();
     checkActiveSession();
+    initVoiceRecognition();
+    initDragDrop();
 
     // Configure marked
     if (typeof marked !== 'undefined') {

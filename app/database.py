@@ -1453,5 +1453,17 @@ def run_migrations():
                     print(f"Could not add followup_last_attempt_at column: {e}")
 
 
+        # ============== Migrate auto_approve_all -> approval_mode in chathub_agent_settings ==============
+        if 'chathub_agent_settings' in existing_tables:
+            columns = [col['name'] for col in inspector.get_columns('chathub_agent_settings')]
+            if 'auto_approve_all' in columns and 'approval_mode' not in columns:
+                try:
+                    conn.execute(text("ALTER TABLE chathub_agent_settings ADD COLUMN approval_mode VARCHAR(30) DEFAULT 'auto_approve_all'"))
+                    conn.commit()
+                    print("Added approval_mode column to chathub_agent_settings")
+                except Exception as e:
+                    print(f"Could not add approval_mode column: {e}")
+
+
 # Run migrations on import
 run_migrations()

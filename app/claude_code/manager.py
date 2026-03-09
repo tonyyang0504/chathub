@@ -439,7 +439,8 @@ class ClaudeCodeManager:
         auth_method: str = "api_key",
         oauth_token: Optional[str] = None,
         user_email: Optional[str] = None,
-        user_name: Optional[str] = None
+        user_name: Optional[str] = None,
+        file_paths: list = None
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
         # Enforce one session per user
@@ -464,7 +465,7 @@ class ClaudeCodeManager:
             logger.error(f"Failed to persist claude_session_uuid: {e}")
 
         try:
-            await self._run_turn(session, prompt, is_first=True)
+            await self._run_turn(session, prompt, is_first=True, file_paths=file_paths)
             return session
         except FileNotFoundError:
             logger.error("Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code")
@@ -476,11 +477,21 @@ class ClaudeCodeManager:
                 del self._sessions[user_id]
             return None
 
-    async def _run_turn(self, session: ActiveSession, prompt: str, is_first: bool = False):
+    async def _run_turn(self, session: ActiveSession, prompt: str, is_first: bool = False, file_paths: list = None):
         """Spawn one CLI process for a single turn (prompt on command line)."""
+        # Prepend file context if files are attached
+        effective_prompt = prompt
+        if file_paths:
+            file_lines = "\n".join(f"  - {p}" for p in file_paths)
+            effective_prompt = (
+                f"The user has attached the following files (available on the server filesystem):\n"
+                f"{file_lines}\n\n"
+                f"User's message: {prompt}"
+            )
+
         cmd = [
             "claude",
-            "-p", prompt,
+            "-p", effective_prompt,
             "--output-format", "stream-json",
             "--verbose",
             "--dangerously-skip-permissions"
@@ -580,7 +591,7 @@ class ClaudeCodeManager:
         except Exception as e:
             logger.error(f"Error reading stderr for session {session.session_id}: {e}")
 
-    async def send_message(self, user_id: int, message: str) -> bool:
+    async def send_message(self, user_id: int, message: str, file_paths: list = None) -> bool:
         """Send a follow-up message by spawning a new CLI process with --resume."""
         session = self._sessions.get(user_id)
         if not session:
@@ -595,7 +606,7 @@ class ClaudeCodeManager:
             await session.broadcast({"type": "user_message", "content": message})
 
             # Spawn a new turn
-            await self._run_turn(session, message, is_first=False)
+            await self._run_turn(session, message, is_first=False, file_paths=file_paths)
             logger.info(f"Sent follow-up to session {session.session_id}")
             return True
         except Exception as e:
@@ -773,7 +784,8 @@ class ClaudeCodeManager:
         oauth_token: Optional[str] = None,
         user_email: Optional[str] = None,
         user_name: Optional[str] = None,
-        claude_session_uuid: Optional[str] = None
+        claude_session_uuid: Optional[str] = None,
+        file_paths: list = None
     ) -> Optional[ActiveSession]:
         """Resume a stopped session by reusing its Claude CLI session UUID."""
         existing = self.get_active_session(user_id)
@@ -792,7 +804,7 @@ class ClaudeCodeManager:
 
         try:
             # is_first=False triggers --resume instead of --session-id
-            await self._run_turn(session, prompt, is_first=False)
+            await self._run_turn(session, prompt, is_first=False, file_paths=file_paths)
             return session
         except Exception as e:
             logger.error(f"Failed to resume session: {e}")
