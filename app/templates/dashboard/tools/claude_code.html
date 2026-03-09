@@ -397,21 +397,11 @@
 .scope-request-header i {
     font-size: 1.1rem;
 }
-.scope-request-detail {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
+.scope-request-description {
     font-size: 0.8rem;
-    line-height: 1.4;
-}
-.scope-request-detail .scope-label {
-    font-weight: 600;
-    color: var(--text-secondary);
-    min-width: 65px;
-    flex-shrink: 0;
-}
-.scope-request-detail .scope-value {
+    line-height: 1.5;
     color: var(--text-primary);
+    margin-bottom: 0.25rem;
 }
 .scope-request-actions {
     display: flex;
@@ -2510,15 +2500,18 @@ function appendSystemMessage(text) {
 }
 
 function renderScopeRequestCard(jsonStr, chatBody) {
-    let resource = '', action = '', reason = '';
+    let description = '';
     try {
         const data = JSON.parse(jsonStr);
-        resource = data.resource || '';
-        action = data.action || '';
-        reason = data.reason || '';
+        if (data.description) {
+            description = data.description;
+        } else if (data.resource || data.action || data.reason) {
+            description = [data.action, data.resource, data.reason].filter(Boolean).join(' — ');
+        }
     } catch {
-        action = jsonStr;
+        description = jsonStr;
     }
+    if (!description) description = jsonStr;
 
     const cardId = 'scope-req-' + Date.now();
     const card = document.createElement('div');
@@ -2528,9 +2521,7 @@ function renderScopeRequestCard(jsonStr, chatBody) {
             <div class="scope-request-header">
                 <i class="bi bi-shield-lock"></i> Permission Required
             </div>
-            ${resource ? `<div class="scope-request-detail"><span class="scope-label">Resource</span><span class="scope-value">${escapeHtml(resource)}</span></div>` : ''}
-            ${action ? `<div class="scope-request-detail"><span class="scope-label">Action</span><span class="scope-value">${escapeHtml(action)}</span></div>` : ''}
-            ${reason ? `<div class="scope-request-detail"><span class="scope-label">Reason</span><span class="scope-value">${escapeHtml(reason)}</span></div>` : ''}
+            <div class="scope-request-description">${escapeHtml(description)}</div>
             <div class="scope-request-actions">
                 <button class="btn-scope-allow" onclick="handleScopeRequest('${cardId}', true)"><i class="bi bi-check-lg me-1"></i>Allow</button>
                 <button class="btn-scope-deny" onclick="handleScopeRequest('${cardId}', false)"><i class="bi bi-x-lg me-1"></i>Deny</button>

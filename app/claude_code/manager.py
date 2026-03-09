@@ -531,8 +531,9 @@ class ClaudeCodeManager:
             f"not related to this codebase), you MUST first output a scope request block in this "
             f"EXACT format before attempting the action:\n\n"
             f":::SCOPE_REQUEST:::\n"
-            f'{{"resource": "<what system resource>", "action": "<what you will do>", "reason": "<why>"}}\n'
+            f'{{"description": "<a single human-readable sentence describing what you need to access and why>"}}\n'
             f":::END_SCOPE_REQUEST:::\n\n"
+            f"Example: {{\"description\": \"I need to access your system audio/music player to check what you're currently listening to.\"}}\n\n"
             f"After outputting this block, STOP and wait for the user's next message. "
             f"Do NOT proceed with the action until you receive approval. "
             f"If the user approves, execute the action immediately. If denied, acknowledge gracefully. "
