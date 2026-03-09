@@ -420,10 +420,13 @@
 }
 .prompt-wrapper {
     flex: 1;
+    min-width: 0;
     border-radius: 22px;
     border: 1px solid var(--border-color);
     overflow: hidden;
     background: var(--body-bg, var(--card-bg));
+    display: flex;
+    flex-direction: column;
 }
 .prompt-wrapper:focus-within {
     border-color: #06b6d4;
@@ -435,6 +438,7 @@
     align-items: center;
     gap: 2px;
     padding: 0.35rem 0.6rem 0;
+    flex-shrink: 0;
 }
 .input-toolbar .toolbar-btn {
     background: none;
@@ -620,9 +624,9 @@
     resize: none;
     border: none;
     border-radius: 0;
-    padding: 0.4rem 1rem 0.75rem;
+    padding: 0.75rem 1rem;
     font-size: 0.9rem;
-    min-height: 40px;
+    min-height: 48px;
     max-height: 150px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -642,6 +646,7 @@
     width: 40px;
     height: 40px;
     min-width: 40px;
+    flex-shrink: 0;
     border-radius: 50%;
     border: none;
     background: linear-gradient(135deg, #06b6d4, #0284c7);
@@ -1108,11 +1113,6 @@
                 </button>
             </div>
         </div>
-        <!-- Hidden file input -->
-        <input type="file" id="fileInput" multiple style="display:none;" onchange="handleFileSelect(event)"
-            accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.csv,.py,.js,.ts,.html,.css,.json,.yaml,.yml,.toml,.xml,.md,.txt,.sh,.java,.go,.rs,.c,.cpp,.h,.rb,.php,.sql,.log,.zip,.tar,.gz">
-        <!-- Drag overlay -->
-        <div class="drag-overlay" id="dragOverlay"><span><i class="bi bi-cloud-upload me-2"></i>Drop files to attach</span></div>
     </div>
 
     <!-- Artifacts Panel -->
@@ -1128,6 +1128,11 @@
             </div>
         </div>
     </div>
+    <!-- Hidden file input (outside flex layout) -->
+    <input type="file" id="fileInput" multiple style="display:none;" onchange="handleFileSelect(event)"
+        accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.csv,.py,.js,.ts,.html,.css,.json,.yaml,.yml,.toml,.xml,.md,.txt,.sh,.java,.go,.rs,.c,.cpp,.h,.rb,.php,.sql,.log,.zip,.tar,.gz">
+    <!-- Drag overlay -->
+    <div class="drag-overlay" id="dragOverlay"><span><i class="bi bi-cloud-upload me-2"></i>Drop files to attach</span></div>
 </div>
 
 <!-- Settings Modal -->

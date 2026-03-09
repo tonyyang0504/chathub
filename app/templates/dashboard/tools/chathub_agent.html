@@ -1544,7 +1544,7 @@ function renderStreamEvent(data) {
         isWaiting = true;
         setStatus('ready');
     } else if (type === 'user_message') {
-        appendUserMessage(data.content);
+        // Ignored — user message already rendered optimistically by sendFollowUp/startSession
     } else if (type === 'error') {
         appendSystemMessage('Error: ' + (data.content || data.message || JSON.stringify(data)));
         setStatus('failed');
