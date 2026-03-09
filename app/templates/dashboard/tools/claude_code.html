@@ -2036,22 +2036,27 @@ async function deleteSession(sessionId) {
 // --- WebSocket ---
 function connectWebSocket(sessionId) {
     if (ws) {
+        // Detach old handlers before closing to prevent stale onclose from resetting state
+        ws.onclose = null;
+        ws.onerror = null;
+        ws.onmessage = null;
         try { ws.close(); } catch(e) {}
     }
 
     isRunning = true;
     assistantBuffer = '';
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${protocol}//${location.host}/tools/api/claude-code/stream/${sessionId}`);
+    const newWs = new WebSocket(`${protocol}//${location.host}/tools/api/claude-code/stream/${sessionId}`);
+    ws = newWs;
 
-    ws.onopen = () => {
+    newWs.onopen = () => {
         console.log('WebSocket connected');
-        ws._pingInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) ws.send('ping');
+        newWs._pingInterval = setInterval(() => {
+            if (newWs.readyState === WebSocket.OPEN) newWs.send('ping');
         }, 30000);
     };
 
-    ws.onmessage = (event) => {
+    newWs.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
             // Skip events already rendered from DB
@@ -2065,11 +2070,21 @@ function connectWebSocket(sessionId) {
         }
     };
 
-    ws.onclose = () => {
+    newWs.onclose = () => {
+        if (ws !== newWs) return;  // Stale socket, ignore
+        clearInterval(newWs._pingInterval);
+        flushAssistantBuffer();
+        removeThinkingIndicator();
+        // Retry once if closed before opening (server not ready yet)
+        if (!newWs._opened && isRunning) {
+            console.log('WebSocket closed before open, retrying in 1s...');
+            setTimeout(() => {
+                if (ws === newWs && isRunning) connectWebSocket(sessionId);
+            }, 1000);
+            return;
+        }
         isRunning = false;
         isWaiting = false;
-        clearInterval(ws._pingInterval);
-        flushAssistantBuffer();
         document.getElementById('stopBtn').style.display = 'none';
         document.getElementById('sendBtn').disabled = false;
         if (currentSessionId) {
@@ -2077,8 +2092,15 @@ function connectWebSocket(sessionId) {
         }
     };
 
-    ws.onerror = (e) => {
+    newWs.onerror = (e) => {
         console.error('WebSocket error:', e);
+    };
+
+    // Track whether onopen ever fired
+    const origOnOpen = newWs.onopen;
+    newWs.onopen = (e) => {
+        newWs._opened = true;
+        origOnOpen(e);
     };
 }
 
