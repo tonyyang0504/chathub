@@ -860,7 +860,7 @@ class ClaudeCodeManager:
                 logger.error(f"Failed to update stopped session: {e}")
 
             # Notify clients
-            await session.broadcast({"type": "session_end", "exit_code": -1, "stopped": True})
+            await session.broadcast({"type": "session_end", "exit_code": -1, "stopped": True, "status": "stopped"})
 
             logger.info(f"Stopped session {session.session_id} for user {user_id}")
             return True
