@@ -523,7 +523,20 @@ class ClaudeCodeManager:
             f"- Reading data (contacts, conversations, settings, history): Use direct DB access\n"
             f"- Sending WhatsApp messages: Use the server API (requires running bot's browser session)\n"
             f"- Starting/stopping bots: Use the server API\n"
-            f"- Creating/modifying DB records (bots, hubs, agents, settings): Use direct DB access"
+            f"- Creating/modifying DB records (bots, hubs, agents, settings): Use direct DB access\n\n"
+            f"SCOPE CONFIRMATION PROTOCOL:\n"
+            f"When the user asks you to do something that requires accessing system resources "
+            f"outside this project (e.g., checking running applications, reading files outside "
+            f"the project, accessing music players, calendars, browsers, or any OS-level operation "
+            f"not related to this codebase), you MUST first output a scope request block in this "
+            f"EXACT format before attempting the action:\n\n"
+            f":::SCOPE_REQUEST:::\n"
+            f'{{"resource": "<what system resource>", "action": "<what you will do>", "reason": "<why>"}}\n'
+            f":::END_SCOPE_REQUEST:::\n\n"
+            f"After outputting this block, STOP and wait for the user's next message. "
+            f"Do NOT proceed with the action until you receive approval. "
+            f"If the user approves, execute the action immediately. If denied, acknowledge gracefully. "
+            f"For tasks entirely within this ChatHub project, proceed normally without a scope request."
         )
         cmd.extend(["--append-system-prompt", system_context])
 

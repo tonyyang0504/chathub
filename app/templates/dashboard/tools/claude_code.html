@@ -376,6 +376,102 @@
     font-size: 0.75rem;
 }
 
+/* Scope request confirmation card */
+.scope-request-card {
+    background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%);
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0.5rem 0;
+    max-width: 480px;
+}
+.scope-request-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #06b6d4;
+}
+.scope-request-header i {
+    font-size: 1.1rem;
+}
+.scope-request-detail {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+.scope-request-detail .scope-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 65px;
+    flex-shrink: 0;
+}
+.scope-request-detail .scope-value {
+    color: var(--text-primary);
+}
+.scope-request-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+.scope-request-actions .btn-scope-allow {
+    background: #06b6d4;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.scope-request-actions .btn-scope-allow:hover {
+    background: #0891b2;
+}
+.scope-request-actions .btn-scope-deny {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.scope-request-actions .btn-scope-deny:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+.scope-request-card.resolved {
+    opacity: 0.6;
+}
+.scope-request-card.resolved .scope-request-actions .btn-scope-allow,
+.scope-request-card.resolved .scope-request-actions .btn-scope-deny {
+    pointer-events: none;
+}
+.scope-request-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.scope-request-badge.approved {
+    background: rgba(16,185,129,0.15);
+    color: #10b981;
+}
+.scope-request-badge.denied {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+}
+
 .msg-system {
     align-self: center;
     color: var(--text-secondary);
@@ -472,16 +568,13 @@
 
 /* Connector dropdown */
 .connector-dropdown {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    margin-bottom: 4px;
+    position: fixed;
+    z-index: 1050;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     min-width: 200px;
-    z-index: 50;
     display: none;
     overflow: hidden;
 }
@@ -1075,7 +1168,7 @@
                         <button class="toolbar-btn" id="attachBtn" onclick="triggerFileInput()" title="Attach files">
                             <i class="bi bi-paperclip"></i>
                         </button>
-                        <span class="toolbar-btn-wrap" style="position:relative;">
+                        <span class="toolbar-btn-wrap">
                             <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectorDropdown()" title="Import from URL">
                                 <i class="bi bi-link-45deg"></i>
                             </button>
@@ -1257,6 +1350,7 @@ let currentSessionStatus = null;  // Track viewed session status for resume dete
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
 let turnHasStreamedText = false;  // Track if text was shown via deltas (live) vs needs result (replay)
+let wsSkipCount = 0;  // Skip buffered WS events already rendered from DB
 
 // File upload state
 let pendingFiles = [];  // { id, filename, path, size, type, uploading }
@@ -1605,8 +1699,10 @@ async function viewSession(sessionId) {
         clearChat();
 
         // Render stored messages using event_data for full artifact support
+        let dbEventCount = 0;
         for (const msg of session.messages) {
             if (msg.event_data) {
+                dbEventCount++;
                 try {
                     const data = JSON.parse(msg.event_data);
                     renderStreamEvent(data, msg.created_at);
@@ -1633,8 +1729,9 @@ async function viewSession(sessionId) {
         currentSessionStatus = session.status;
         setStatus(session.status);
 
-        // If session is running, connect WebSocket
+        // If session is running, connect WebSocket (skip already-rendered buffer)
         if (session.status === 'running') {
+            wsSkipCount = dbEventCount;
             connectWebSocket(sessionId);
         } else {
             isWaiting = false;
@@ -1882,6 +1979,11 @@ function connectWebSocket(sessionId) {
     ws.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+            // Skip events already rendered from DB
+            if (wsSkipCount > 0) {
+                wsSkipCount--;
+                return;
+            }
             renderStreamEvent(data);
         } catch (e) {
             console.error('Parse error:', e);
@@ -1921,6 +2023,7 @@ function renderStreamEvent(data, timestamp) {
         for (const block of blocks) {
             if (block.type === 'text' && block.text) {
                 appendAssistantMessage(block.text);
+                turnHasStreamedText = true;  // Prevent result event from duplicating
             } else if (block.type === 'tool_use') {
                 appendToolUse(JSON.stringify({ tool: block.name, input: block.input }), timestamp);
             }
@@ -2020,8 +2123,20 @@ function renderStreamEvent(data, timestamp) {
 }
 
 function flushAssistantBuffer() {
-    if (assistantBuffer && !currentAssistantEl) {
-        appendAssistantMessage(assistantBuffer);
+    if (assistantBuffer) {
+        // Check if streamed content contains a scope request
+        const scopeStart = assistantBuffer.indexOf(':::SCOPE_REQUEST:::');
+        const scopeEnd = assistantBuffer.indexOf(':::END_SCOPE_REQUEST:::');
+        if (scopeStart !== -1 && scopeEnd !== -1) {
+            // Remove the live-streamed element and re-render with card
+            if (currentAssistantEl) {
+                currentAssistantEl.remove();
+                currentAssistantEl = null;
+            }
+            appendAssistantMessage(assistantBuffer);
+        } else if (!currentAssistantEl) {
+            appendAssistantMessage(assistantBuffer);
+        }
     }
     assistantBuffer = '';
 }
@@ -2045,8 +2160,34 @@ function appendUserMessage(text) {
 }
 
 function appendAssistantMessage(text) {
-    turnHasStreamedText = true;  // Mark that text was rendered (prevents result event duplicate)
+    turnHasStreamedText = true;
     const chatBody = document.getElementById('chatBody');
+
+    // Check for scope request marker
+    const scopeStart = text.indexOf(':::SCOPE_REQUEST:::');
+    const scopeEnd = text.indexOf(':::END_SCOPE_REQUEST:::');
+    if (scopeStart !== -1 && scopeEnd !== -1) {
+        const before = text.substring(0, scopeStart).trim();
+        const jsonStr = text.substring(scopeStart + ':::SCOPE_REQUEST:::'.length, scopeEnd).trim();
+        const after = text.substring(scopeEnd + ':::END_SCOPE_REQUEST:::'.length).trim();
+
+        if (before) {
+            const div = document.createElement('div');
+            div.className = 'msg msg-assistant';
+            div.innerHTML = marked.parse(before);
+            chatBody.appendChild(div);
+        }
+        renderScopeRequestCard(jsonStr, chatBody);
+        if (after) {
+            const div = document.createElement('div');
+            div.className = 'msg msg-assistant';
+            div.innerHTML = marked.parse(after);
+            chatBody.appendChild(div);
+        }
+        scrollToBottom();
+        return;
+    }
+
     const div = document.createElement('div');
     div.className = 'msg msg-assistant';
     div.innerHTML = marked.parse(text);
@@ -2369,6 +2510,51 @@ function appendSystemMessage(text) {
     scrollToBottom();
 }
 
+function renderScopeRequestCard(jsonStr, chatBody) {
+    let resource = '', action = '', reason = '';
+    try {
+        const data = JSON.parse(jsonStr);
+        resource = data.resource || '';
+        action = data.action || '';
+        reason = data.reason || '';
+    } catch {
+        action = jsonStr;
+    }
+
+    const cardId = 'scope-req-' + Date.now();
+    const card = document.createElement('div');
+    card.className = 'msg msg-assistant';
+    card.innerHTML = `
+        <div class="scope-request-card" id="${cardId}">
+            <div class="scope-request-header">
+                <i class="bi bi-shield-lock"></i> Permission Required
+            </div>
+            ${resource ? `<div class="scope-request-detail"><span class="scope-label">Resource</span><span class="scope-value">${escapeHtml(resource)}</span></div>` : ''}
+            ${action ? `<div class="scope-request-detail"><span class="scope-label">Action</span><span class="scope-value">${escapeHtml(action)}</span></div>` : ''}
+            ${reason ? `<div class="scope-request-detail"><span class="scope-label">Reason</span><span class="scope-value">${escapeHtml(reason)}</span></div>` : ''}
+            <div class="scope-request-actions">
+                <button class="btn-scope-allow" onclick="handleScopeRequest('${cardId}', true)"><i class="bi bi-check-lg me-1"></i>Allow</button>
+                <button class="btn-scope-deny" onclick="handleScopeRequest('${cardId}', false)"><i class="bi bi-x-lg me-1"></i>Deny</button>
+            </div>
+        </div>`;
+    chatBody.appendChild(card);
+}
+
+function handleScopeRequest(cardId, approved) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card.classList.add('resolved');
+
+    const actionsDiv = card.querySelector('.scope-request-actions');
+    if (approved) {
+        actionsDiv.innerHTML = '<span class="scope-request-badge approved"><i class="bi bi-check-circle"></i> Approved</span>';
+        sendFollowUp('Approved. Proceed with the requested action.');
+    } else {
+        actionsDiv.innerHTML = '<span class="scope-request-badge denied"><i class="bi bi-x-circle"></i> Denied</span>';
+        appendSystemMessage('Access denied by user.');
+    }
+}
+
 function clearChat() {
     document.getElementById('chatBody').innerHTML = '';
     document.getElementById('emptyState').style.display = 'none';
@@ -2545,8 +2731,13 @@ let connectorType = null;
 function toggleConnectorDropdown() {
     const dd = document.getElementById('connectorDropdown');
     dd.classList.toggle('show');
-    // Close on outside click
     if (dd.classList.contains('show')) {
+        // Position dropdown above the connect button
+        const btn = document.getElementById('connectBtn');
+        const rect = btn.getBoundingClientRect();
+        dd.style.left = rect.left + 'px';
+        dd.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+        // Close on outside click
         setTimeout(() => {
             document.addEventListener('click', closeConnectorOnOutside, { once: true });
         }, 0);
