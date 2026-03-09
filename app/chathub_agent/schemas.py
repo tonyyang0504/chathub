@@ -13,6 +13,7 @@ class SettingsUpdate(BaseModel):
     ai_provider: Optional[str] = None
     api_key: Optional[str] = None
     default_model: Optional[str] = None
+    approval_mode: Optional[str] = None
     auto_commit: Optional[bool] = None
     auto_backup_db: Optional[bool] = None
     workspace_path: Optional[str] = None

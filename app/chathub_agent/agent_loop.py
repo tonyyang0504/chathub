@@ -246,7 +246,11 @@ class AgentLoop:
         from app.chathub_agent.tool_defs import READ_ONLY_TOOLS
         if tool_name in READ_ONLY_TOOLS and self.agent_config.get("auto_approve_read", True):
             return False
-        dangerous = self.agent_config.get("dangerous_tools") or ["exec_command"]
+        # "ask every tool" mode: auto_approve_read=False means ask for everything
+        if not self.agent_config.get("auto_approve_read", True):
+            return True
+        # "auto_approve_reads" mode: only dangerous tools need approval
+        dangerous = self.agent_config.get("dangerous_tools") or ["exec_command", "write_file", "edit_file"]
         if isinstance(dangerous, str):
             dangerous = json.loads(dangerous)
         return tool_name in dangerous

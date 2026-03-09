@@ -3,14 +3,18 @@ Claude Code Routes - HTTP + WebSocket endpoints for Claude Code CLI integration
 """
 
 import json
+import os
+import re
 import sys
 import asyncio
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect
+import httpx
+from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session

@@ -902,11 +902,11 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>ChatHub Agent Settings</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">AI Provider</label>
                         <select class="form-select" id="providerSelect" onchange="onProviderChange()">
                             <option value="openai">OpenAI</option>
@@ -916,7 +916,7 @@
                             <option value="qwen">Qwen</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">API Key</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="apiKeyInput" placeholder="Enter API key...">
@@ -926,26 +926,28 @@
                         </div>
                         <small class="text-muted" id="apiKeyStatus"></small>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Model</label>
                         <select class="form-select" id="modelSelect">
                         </select>
                         <small class="text-muted" id="modelHint">Default model for selected provider</small>
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-check form-switch mt-4">
-                            <input class="form-check-input" type="checkbox" id="autoApproveAllToggle" checked>
-                            <label class="form-check-label" for="autoApproveAllToggle">Auto-approve all tools</label>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tool Approval</label>
+                        <select class="form-select" id="approvalModeSelect">
+                            <option value="auto_approve_all">Auto-approve all</option>
+                            <option value="auto_approve_reads">Auto-approve reads only</option>
+                            <option value="ask_every_tool">Ask before each tool</option>
+                        </select>
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-check form-switch">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-2">
                             <input class="form-check-input" type="checkbox" id="autoCommitToggle" checked>
                             <label class="form-check-label" for="autoCommitToggle">Auto safety commit</label>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-check form-switch">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-2">
                             <input class="form-check-input" type="checkbox" id="autoBackupToggle" checked>
                             <label class="form-check-label" for="autoBackupToggle">Auto DB backup</label>
                         </div>
@@ -1168,7 +1170,7 @@ async function loadSettings() {
         document.getElementById('providerSelect').value = data.ai_provider || 'openai';
         onProviderChange();
         document.getElementById('modelSelect').value = data.default_model || (PROVIDER_MODELS[data.ai_provider || 'openai'] || {}).defaultModel || '';
-        document.getElementById('autoApproveAllToggle').checked = data.auto_approve_all !== false;
+        document.getElementById('approvalModeSelect').value = data.approval_mode || 'auto_approve_all';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         updateProviderInfo(data.ai_provider, data.default_model);
@@ -1182,7 +1184,7 @@ async function saveSettings() {
     const payload = {
         ai_provider: document.getElementById('providerSelect').value,
         default_model: document.getElementById('modelSelect').value,
-        auto_approve_all: document.getElementById('autoApproveAllToggle').checked,
+        approval_mode: document.getElementById('approvalModeSelect').value,
         auto_commit: document.getElementById('autoCommitToggle').checked,
         auto_backup_db: document.getElementById('autoBackupToggle').checked
     };

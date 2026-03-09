@@ -748,7 +748,7 @@ class ChatHubAgentSettings(Base):
     ai_provider = Column(String(50), default="openai")
     api_key_encrypted = Column(Text)
     default_model = Column(String(100), default="gpt-4o")
-    auto_approve_all = Column(Boolean, default=True)
+    approval_mode = Column(String(30), default="auto_approve_all")
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
     max_session_minutes = Column(Integer, default=60)

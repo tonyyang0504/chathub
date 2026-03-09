@@ -80,7 +80,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "api_key_set": False,
             "ai_provider": "openai",
             "default_model": "gpt-4o",
-            "auto_approve_all": True,
+            "approval_mode": "auto_approve_all",
             "auto_commit": True,
             "auto_backup_db": True,
         }
@@ -98,7 +98,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "api_key_masked": api_key_masked,
         "ai_provider": settings.ai_provider or "openai",
         "default_model": settings.default_model or "gpt-4o",
-        "auto_approve_all": settings.auto_approve_all if settings.auto_approve_all is not None else True,
+        "approval_mode": settings.approval_mode or "auto_approve_all",
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
         "workspace_path": settings.workspace_path,
@@ -126,7 +126,7 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.api_key_encrypted = encrypt_string(api_key.strip())
 
     for field in ["ai_provider", "default_model",
-                  "auto_approve_all", "auto_commit", "auto_backup_db",
+                  "approval_mode", "auto_commit", "auto_backup_db",
                   "workspace_path"]:
         if field in data:
             setattr(settings, field, data[field])
@@ -169,6 +169,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     api_key = decrypt_string(settings.api_key_encrypted)
 
     # Build agent config from settings defaults
+    approval_mode = settings.approval_mode or "auto_approve_all"
     agent_config_dict = {
         "ai_provider": settings.ai_provider or "openai",
         "model": data.get("model") or settings.default_model or "gpt-4o",
@@ -176,9 +177,9 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         "temperature": 0.3,
         "max_tokens": 8192,
         "allowed_tools": None,
-        "dangerous_tools": ["exec_command"],
-        "auto_approve_read": True,
-        "auto_approve_all": True,
+        "dangerous_tools": ["exec_command", "write_file", "edit_file"],
+        "auto_approve_all": approval_mode == "auto_approve_all",
+        "auto_approve_read": approval_mode in ("auto_approve_all", "auto_approve_reads"),
         "workspace_path": settings.workspace_path,
         "enabled_skills": None,
     }
@@ -389,6 +390,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
         api_key = decrypt_string(settings.api_key_encrypted)
 
         # Build agent config
+        approval_mode = settings.approval_mode or "auto_approve_all"
         agent_config_dict = {
             "ai_provider": session.ai_provider or settings.ai_provider or "openai",
             "model": session.model or settings.default_model or "gpt-4o",
@@ -396,9 +398,9 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
             "temperature": 0.3,
             "max_tokens": 8192,
             "allowed_tools": None,
-            "dangerous_tools": ["exec_command"],
-            "auto_approve_read": True,
-            "auto_approve_all": True,
+            "dangerous_tools": ["exec_command", "write_file", "edit_file"],
+            "auto_approve_all": approval_mode == "auto_approve_all",
+            "auto_approve_read": approval_mode in ("auto_approve_all", "auto_approve_reads"),
             "workspace_path": settings.workspace_path,
             "enabled_skills": None,
         }
