@@ -232,10 +232,12 @@ class ChatHubAgentManager:
         """Run a follow-up message through the agent loop."""
         try:
             await session.agent_loop.handle_followup(message)
-            session.is_waiting = True
         except Exception as e:
             logger.error(f"Follow-up error for session {session.session_id}: {e}")
             await session.broadcast({"type": "error", "content": str(e)})
+        finally:
+            session.is_waiting = True
+            session.agent_loop.is_waiting = True
 
     async def resume_session(
         self,

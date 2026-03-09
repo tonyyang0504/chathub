@@ -1375,9 +1375,8 @@ function handleSend() {
 
     if (currentSessionId && isWaiting) {
         sendFollowUp(prompt);
-    } else if (currentSessionId && !isRunning && !isWaiting &&
-               currentSessionStatus && ['completed', 'stopped'].includes(currentSessionStatus)) {
-        // Session ended but user wants to continue — backend will auto-resume
+    } else if (currentSessionId && !isRunning && !isWaiting) {
+        // Session ended or stale — backend will auto-resume if needed
         sendFollowUp(prompt);
     } else if (!isRunning) {
         startSession(prompt);
@@ -1548,12 +1547,20 @@ function connectWebSocket(sessionId, noReplay = false) {
     };
 
     ws.onclose = () => {
-        isRunning = false;
-        isWaiting = false;
         clearInterval(ws._pingInterval);
         flushAssistantBuffer();
-        document.getElementById('stopBtn').style.display = 'none';
-        document.getElementById('sendBtn').disabled = false;
+        // If we were still "running" when WS closed, the session is stale (e.g. server restarted)
+        // Allow user to send follow-up messages — backend will auto-resume
+        if (isRunning && !isWaiting) {
+            isRunning = false;
+            setStatus('ready');
+            isWaiting = true;
+        } else {
+            isRunning = false;
+            isWaiting = false;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('sendBtn').disabled = false;
+        }
         if (currentSessionId) {
             setTimeout(() => loadSessions(), 500);
         }
