@@ -537,7 +537,9 @@ class ClaudeCodeManager:
             f"After outputting this block, STOP and wait for the user's next message. "
             f"Do NOT proceed with the action until you receive approval. "
             f"If the user approves, execute the action immediately. If denied, acknowledge gracefully. "
-            f"For tasks entirely within this ChatHub project, proceed normally without a scope request."
+            f"For tasks entirely within this ChatHub project, proceed normally without a scope request.\n\n"
+            f"TABLE OUTPUT: When displaying tabular data (CSV, DB results, etc.), show at most 5 rows by default "
+            f"plus a summary (e.g., 'Showing 5 of 145 rows'). Show all rows only if the user explicitly asks for the full data."
         )
         cmd.extend(["--append-system-prompt", system_context])
 
