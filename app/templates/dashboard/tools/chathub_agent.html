@@ -1448,7 +1448,7 @@ async function sendFollowUp(prompt) {
         } else {
             // Reconnect WebSocket if not connected (e.g., resuming completed session)
             if (!ws || ws.readyState !== WebSocket.OPEN) {
-                connectWebSocket(currentSessionId);
+                connectWebSocket(currentSessionId, true);
             }
         }
     } catch (e) {
@@ -1520,7 +1520,7 @@ async function approveToolCall(toolCallId, approved) {
 }
 
 // --- WebSocket ---
-function connectWebSocket(sessionId) {
+function connectWebSocket(sessionId, noReplay = false) {
     if (ws) {
         try { ws.close(); } catch(e) {}
     }
@@ -1528,7 +1528,8 @@ function connectWebSocket(sessionId) {
     isRunning = true;
     assistantBuffer = '';
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${protocol}//${location.host}${API_BASE}/stream/${sessionId}`);
+    const replayParam = noReplay ? '?no_replay=1' : '';
+    ws = new WebSocket(`${protocol}//${location.host}${API_BASE}/stream/${sessionId}${replayParam}`);
 
     ws.onopen = () => {
         console.log('WebSocket connected');

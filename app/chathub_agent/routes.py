@@ -639,7 +639,7 @@ async def toggle_skill(skill_name: str, request: Request, db: Session = Depends(
 # ============================================================================
 
 @router.websocket("/api/chathub-agent/stream/{session_id}")
-async def stream_session(websocket: WebSocket, session_id: int):
+async def stream_session(websocket: WebSocket, session_id: int, no_replay: int = 0):
     """WebSocket for real-time session output streaming."""
     await websocket.accept()
 
@@ -663,12 +663,22 @@ async def stream_session(websocket: WebSocket, session_id: int):
             await websocket.close(code=4004, reason="Session not found")
             return
 
-        # Get active session
+        # Get active session (with retry for resume race condition)
         active = chathub_agent_manager.get_active_session(user.id)
+
+        # If no_replay and session not yet active, wait briefly for resume to register
+        if no_replay and (not active or active.session_id != session_id):
+            for _ in range(10):  # Wait up to 5 seconds
+                await asyncio.sleep(0.5)
+                active = chathub_agent_manager.get_active_session(user.id)
+                if active and active.session_id == session_id:
+                    break
+
         if active and active.session_id == session_id:
-            # Send buffered output first
-            for data in active.output_buffer:
-                await websocket.send_text(json.dumps(data))
+            # Send buffered output first (skip if reconnecting after resume)
+            if not no_replay:
+                for data in active.output_buffer:
+                    await websocket.send_text(json.dumps(data))
 
             # Register for live broadcasts
             active.websockets.add(websocket)
@@ -692,28 +702,35 @@ async def stream_session(websocket: WebSocket, session_id: int):
             finally:
                 active.websockets.discard(websocket)
         else:
-            # Session not active, send historical messages
-            messages = db.query(ChatHubAgentMessage).filter(
-                ChatHubAgentMessage.session_id == session_id
-            ).order_by(ChatHubAgentMessage.created_at.asc()).all()
+            if no_replay:
+                # Resume didn't activate in time, just close gracefully
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "content": "Session resume timed out. Please try again.",
+                }))
+            else:
+                # Session not active, send historical messages
+                messages = db.query(ChatHubAgentMessage).filter(
+                    ChatHubAgentMessage.session_id == session_id
+                ).order_by(ChatHubAgentMessage.created_at.asc()).all()
 
-            for m in messages:
-                try:
-                    data = {
-                        "type": m.message_type or m.role,
-                        "role": m.role,
-                        "content": m.content,
-                        "tool_name": m.tool_name,
-                        "tool_call_id": m.tool_call_id,
-                    }
-                    await websocket.send_text(json.dumps(data))
-                except Exception:
-                    pass
+                for m in messages:
+                    try:
+                        data = {
+                            "type": m.message_type or m.role,
+                            "role": m.role,
+                            "content": m.content,
+                            "tool_name": m.tool_name,
+                            "tool_call_id": m.tool_call_id,
+                        }
+                        await websocket.send_text(json.dumps(data))
+                    except Exception:
+                        pass
 
-            await websocket.send_text(json.dumps({
-                "type": "session_end",
-                "status": session.status or "completed",
-            }))
+                await websocket.send_text(json.dumps({
+                    "type": "session_end",
+                    "status": session.status or "completed",
+                }))
 
     except WebSocketDisconnect:
         pass
