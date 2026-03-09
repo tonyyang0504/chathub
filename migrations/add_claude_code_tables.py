@@ -94,7 +94,6 @@ def migrate():
                 default_model VARCHAR(100) DEFAULT 'sonnet',
                 auto_commit BOOLEAN DEFAULT 1,
                 auto_backup_db BOOLEAN DEFAULT 1,
-                max_session_minutes INTEGER DEFAULT 30,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )

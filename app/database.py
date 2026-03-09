@@ -701,7 +701,6 @@ class ClaudeCodeSettings(Base):
     default_model = Column(String(100), default="sonnet")
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
-    max_session_minutes = Column(Integer, default=30)
     auth_method = Column(String(20), default="api_key")  # "api_key" or "membership"
     oauth_token_encrypted = Column(Text)  # Fernet-encrypted setup-token for membership
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -751,7 +750,6 @@ class ChatHubAgentSettings(Base):
     approval_mode = Column(String(30), default="auto_approve_all")
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
-    max_session_minutes = Column(Integer, default=60)
     workspace_path = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

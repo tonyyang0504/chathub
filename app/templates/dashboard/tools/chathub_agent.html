@@ -313,7 +313,8 @@
     margin: 0.6rem 0;
     color: var(--text-secondary);
 }
-.msg-assistant table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; background: rgba(255,255,255,0.03); border-radius: 6px; overflow: hidden; }
+.msg-assistant .table-wrapper { overflow-x: auto; margin: 0.75rem 0; border-radius: 6px; }
+.msg-assistant table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: rgba(255,255,255,0.03); border-radius: 6px; overflow: hidden; }
 .msg-assistant th, .msg-assistant td { padding: 0.4rem 0.75rem; border: 1px solid rgba(255,255,255,0.1); text-align: left; white-space: nowrap; }
 .msg-assistant th { background: rgba(255,255,255,0.05); font-weight: 600; }
 .msg-assistant tr:hover { background: rgba(255,255,255,0.03); }
@@ -993,6 +994,9 @@
 {% block extra_js %}
 <!-- Marked.js for markdown rendering -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark-dimmed.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
 <script>
 // State
 let currentSessionId = null;
@@ -1629,7 +1633,15 @@ function appendAssistantMessage(text) {
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-assistant';
-    div.innerHTML = marked.parse(text);
+    const html = marked.parse(text);
+    div.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+    // Wrap tables in scrollable container
+    div.querySelectorAll('table').forEach(table => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrapper';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+    });
     chatBody.appendChild(div);
     scrollToBottom();
 }
@@ -2070,7 +2082,12 @@ document.addEventListener('DOMContentLoaded', () => {
         marked.setOptions({
             breaks: true,
             gfm: true,
-            highlight: null
+            highlight: function(code, lang) {
+                if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return code;
+            }
         });
     }
 
