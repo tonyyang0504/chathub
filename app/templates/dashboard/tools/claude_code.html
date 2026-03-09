@@ -1075,20 +1075,22 @@
                         <button class="toolbar-btn" id="attachBtn" onclick="triggerFileInput()" title="Attach files">
                             <i class="bi bi-paperclip"></i>
                         </button>
-                        <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectorDropdown()" title="Import from URL">
-                            <i class="bi bi-link-45deg"></i>
+                        <span class="toolbar-btn-wrap" style="position:relative;">
+                            <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectorDropdown()" title="Import from URL">
+                                <i class="bi bi-link-45deg"></i>
+                            </button>
                             <div class="connector-dropdown" id="connectorDropdown">
-                                <button class="connector-item" onclick="openUrlInput('url')">
+                                <div class="connector-item" onclick="openUrlInput('url')">
                                     <i class="bi bi-globe"></i> From URL
-                                </button>
-                                <button class="connector-item" onclick="openUrlInput('gdrive')">
+                                </div>
+                                <div class="connector-item" onclick="openUrlInput('gdrive')">
                                     <i class="bi bi-google"></i> Google Drive
-                                </button>
-                                <button class="connector-item" onclick="openUrlInput('dropbox')">
+                                </div>
+                                <div class="connector-item" onclick="openUrlInput('dropbox')">
                                     <i class="bi bi-dropbox"></i> Dropbox
-                                </button>
+                                </div>
                             </div>
-                        </button>
+                        </span>
                         <button class="toolbar-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input" style="display:none;">
                             <i class="bi bi-mic"></i>
                         </button>
