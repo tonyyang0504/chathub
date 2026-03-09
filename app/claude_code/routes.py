@@ -834,8 +834,8 @@ async def stream_session(websocket: WebSocket, session_id: int):
         # Get active session
         active = claude_code_manager.get_active_session(user.id)
         if active and active.session_id == session_id:
-            # Send buffered output first (skip for waiting sessions — client already loaded from DB)
-            if active.is_running:
+            # Send buffered output first
+            if active.output_buffer:
                 for data in active.output_buffer:
                     await websocket.send_text(json.dumps(data))
 

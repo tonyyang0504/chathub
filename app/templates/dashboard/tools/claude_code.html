@@ -1962,6 +1962,7 @@ async function resumeSession(prompt) {
         // session_id is the same as oldSessionId — no switch needed
         currentSessionStatus = 'running';
         setStatus('running');
+        wsSkipCount = 0;  // Don't skip any events — buffer only has new turn's events
         connectWebSocket(oldSessionId);
         loadSessions();
 
