@@ -1716,6 +1716,8 @@ async function viewSession(sessionId) {
             }
             // Fallback for messages without event_data
             if (msg.role === 'user') {
+                // Skip internal scope-request approval messages during replay
+                if (msg.content === 'Approved. Proceed with the requested action.') continue;
                 appendUserMessage(msg.content);
             } else if (msg.role === 'assistant') {
                 if (msg.content) appendAssistantMessage(msg.content);
@@ -1730,6 +1732,16 @@ async function viewSession(sessionId) {
             }
         }
         flushAssistantBuffer();
+
+        // Auto-resolve scope request cards from history — if they exist in past messages,
+        // the session continued past them, meaning they were approved
+        document.querySelectorAll('.scope-request-card:not(.resolved)').forEach(card => {
+            card.classList.add('resolved');
+            const actionsDiv = card.querySelector('.scope-request-actions');
+            if (actionsDiv) {
+                actionsDiv.innerHTML = '<span class="scope-request-badge approved"><i class="bi bi-check-circle"></i> Approved</span>';
+            }
+        });
 
         currentSessionStatus = session.status;
 
