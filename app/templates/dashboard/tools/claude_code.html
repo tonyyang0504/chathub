@@ -2036,7 +2036,13 @@ function renderStreamEvent(data, timestamp) {
             assistantBuffer += delta.text;
             turnHasStreamedText = true;
             if (currentAssistantEl) {
-                currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
+                // Hide scope request markers during streaming
+                let displayText = assistantBuffer;
+                const srStart = displayText.indexOf(':::SCOPE_REQUEST:::');
+                if (srStart !== -1) {
+                    displayText = displayText.substring(0, srStart);
+                }
+                currentAssistantEl.innerHTML = marked.parse(displayText);
                 scrollToBottom();
             }
         } else if (delta.type === 'input_json_delta' && delta.partial_json) {
