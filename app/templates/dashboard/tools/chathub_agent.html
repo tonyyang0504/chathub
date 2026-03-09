@@ -313,6 +313,10 @@
     margin: 0.6rem 0;
     color: var(--text-secondary);
 }
+.msg-assistant table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; background: rgba(255,255,255,0.03); border-radius: 6px; overflow: hidden; }
+.msg-assistant th, .msg-assistant td { padding: 0.4rem 0.75rem; border: 1px solid rgba(255,255,255,0.1); text-align: left; white-space: nowrap; }
+.msg-assistant th { background: rgba(255,255,255,0.05); font-weight: 600; }
+.msg-assistant tr:hover { background: rgba(255,255,255,0.03); }
 
 .msg-tool {
     align-self: flex-start;
@@ -363,16 +367,23 @@
 
 /* Approval card */
 .approval-card {
-    background: rgba(245,158,11,0.08);
-    border: 1px solid rgba(245,158,11,0.3);
-    border-radius: 10px;
-    padding: 1rem;
-    width: 100%;
+    background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%);
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    max-width: 480px;
 }
+.approval-card.resolved { opacity: 0.6; }
+.approval-card.resolved button { pointer-events: none; }
 .approval-card .tool-name {
     font-weight: 600;
-    color: #f59e0b;
+    color: #06b6d4;
     font-size: 0.9rem;
+}
+.approval-card .tool-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
 }
 .approval-card .tool-args {
     background: rgba(0,0,0,0.15);
@@ -387,21 +398,36 @@
     word-break: break-all;
 }
 .approval-card .btn-approve {
-    background: #10b981;
+    background: #06b6d4;
     border: none;
     color: white;
     font-size: 0.8rem;
     padding: 4px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
+    transition: background 0.15s;
 }
+.approval-card .btn-approve:hover { background: #0891b2; }
 .approval-card .btn-deny {
-    background: #ef4444;
-    border: none;
-    color: white;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-secondary);
     font-size: 0.8rem;
     padding: 4px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
+    transition: all 0.15s;
 }
+.approval-card .btn-deny:hover { border-color: #ef4444; color: #ef4444; }
+.approval-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.approval-badge.approved { background: rgba(16,185,129,0.15); color: #10b981; }
+.approval-badge.denied { background: rgba(239,68,68,0.15); color: #ef4444; }
 
 /* Typing indicator */
 .typing-indicator {
@@ -1464,10 +1490,12 @@ async function approveToolCall(toolCallId, approved) {
             body: JSON.stringify({ tool_call_id: toolCallId, approved: approved })
         });
         if (card) {
+            card.classList.add('resolved');
             const statusEl = card.querySelector('.approval-status');
             if (statusEl) {
-                statusEl.textContent = approved ? 'Approved' : 'Denied';
-                statusEl.className = `approval-status ${approved ? 'text-success' : 'text-danger'}`;
+                statusEl.innerHTML = approved
+                    ? '<span class="approval-badge approved"><i class="bi bi-check-circle"></i> Approved</span>'
+                    : '<span class="approval-badge denied"><i class="bi bi-x-circle"></i> Denied</span>';
             }
         }
     } catch (e) {
@@ -1876,14 +1904,15 @@ function appendApprovalRequest(toolCallId, toolName, args) {
     div.style.width = '100%';
     const argsStr = typeof args === 'object' ? JSON.stringify(args, null, 2) : (args || '');
     div.innerHTML = `<div class="approval-card" id="approval-${escapeHtml(toolCallId)}">
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="bi bi-shield-exclamation" style="color: #f59e0b; font-size: 1.1rem;"></i>
-            <span class="tool-name">Approval Required: ${escapeHtml(toolName)}</span>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-shield-lock" style="color: #06b6d4; font-size: 1.1rem;"></i>
+            <span class="tool-name">Permission Required</span>
         </div>
+        <div class="tool-desc">${escapeHtml(toolName)}</div>
         <div class="tool-args">${escapeHtml(argsStr)}</div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 approval-actions">
             <button class="btn-approve" onclick="approveToolCall('${escapeHtml(toolCallId)}', true)">
-                <i class="bi bi-check-lg me-1"></i>Approve
+                <i class="bi bi-check-lg me-1"></i>Allow
             </button>
             <button class="btn-deny" onclick="approveToolCall('${escapeHtml(toolCallId)}', false)">
                 <i class="bi bi-x-lg me-1"></i>Deny
@@ -1898,8 +1927,22 @@ function appendApprovalRequest(toolCallId, toolName, args) {
 function appendApprovalResolved(content, toolName) {
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'msg msg-system';
-    div.textContent = `${toolName ? toolName + ': ' : ''}${content}`;
+    div.className = 'msg';
+    div.style.width = '100%';
+    const isApproved = /approved/i.test(content);
+    const badgeClass = isApproved ? 'approved' : 'denied';
+    const badgeIcon = isApproved ? 'bi-check-circle' : 'bi-x-circle';
+    const badgeText = isApproved ? 'Approved' : 'Denied';
+    div.innerHTML = `<div class="approval-card resolved">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-shield-lock" style="color: #06b6d4; font-size: 1.1rem;"></i>
+            <span class="tool-name">Permission Required</span>
+        </div>
+        ${toolName ? `<div class="tool-desc">${escapeHtml(toolName)}</div>` : ''}
+        <div class="d-flex align-items-center gap-2">
+            <span class="approval-badge ${badgeClass}"><i class="bi ${badgeIcon}"></i> ${badgeText}</span>
+        </div>
+    </div>`;
     chatBody.appendChild(div);
     scrollToBottom();
 }
