@@ -403,6 +403,21 @@
     color: var(--text-primary);
     margin-bottom: 0.25rem;
 }
+.scope-request-detail {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin-bottom: 0.25rem;
+}
+.scope-label {
+    color: var(--text-secondary);
+    min-width: 65px;
+    font-weight: 500;
+}
+.scope-value {
+    color: var(--text-primary);
+}
 .scope-request-actions {
     display: flex;
     gap: 0.5rem;
@@ -2500,18 +2515,24 @@ function appendSystemMessage(text) {
 }
 
 function renderScopeRequestCard(jsonStr, chatBody) {
-    let description = '';
+    let contentHtml = '';
     try {
         const data = JSON.parse(jsonStr);
         if (data.description) {
-            description = data.description;
+            // New format: single description paragraph
+            contentHtml = `<div class="scope-request-description">${escapeHtml(data.description)}</div>`;
         } else if (data.resource || data.action || data.reason) {
-            description = [data.action, data.resource, data.reason].filter(Boolean).join(' — ');
+            // Old format: 3 labeled rows
+            let rows = '';
+            if (data.action) rows += `<div class="scope-request-detail"><span class="scope-label">Action</span><span class="scope-value">${escapeHtml(data.action)}</span></div>`;
+            if (data.resource) rows += `<div class="scope-request-detail"><span class="scope-label">Resource</span><span class="scope-value">${escapeHtml(data.resource)}</span></div>`;
+            if (data.reason) rows += `<div class="scope-request-detail"><span class="scope-label">Reason</span><span class="scope-value">${escapeHtml(data.reason)}</span></div>`;
+            contentHtml = rows;
         }
     } catch {
-        description = jsonStr;
+        contentHtml = `<div class="scope-request-description">${escapeHtml(jsonStr)}</div>`;
     }
-    if (!description) description = jsonStr;
+    if (!contentHtml) contentHtml = `<div class="scope-request-description">${escapeHtml(jsonStr)}</div>`;
 
     const cardId = 'scope-req-' + Date.now();
     const card = document.createElement('div');
@@ -2521,7 +2542,7 @@ function renderScopeRequestCard(jsonStr, chatBody) {
             <div class="scope-request-header">
                 <i class="bi bi-shield-lock"></i> Permission Required
             </div>
-            <div class="scope-request-description">${escapeHtml(description)}</div>
+            ${contentHtml}
             <div class="scope-request-actions">
                 <button class="btn-scope-allow" onclick="handleScopeRequest('${cardId}', true)"><i class="bi bi-check-lg me-1"></i>Allow</button>
                 <button class="btn-scope-deny" onclick="handleScopeRequest('${cardId}', false)"><i class="bi bi-x-lg me-1"></i>Deny</button>
