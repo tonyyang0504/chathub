@@ -288,7 +288,7 @@ For toggle switches that match the bot card style:
 - **Scheduled Content**: Purple-blue gradient (`#667eea` to `#764ba2`)
 - **Message Routing**: Purple gradient (`#a855f7` to `#7c3aed`)
 - **Scripted Conversations**: Indigo gradient (`#6366f1` to `#4f46e5`)
-- **Claude Code**: Cyan gradient (`#06b6d4` to `#0284c7`)
+- **Claude Code**: Orange/coral gradient (`#da6a46` to `#d4562a`)
 
 ### Card Grid Layout (Equal Height)
 When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:

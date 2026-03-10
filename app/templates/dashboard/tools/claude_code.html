@@ -63,9 +63,9 @@
     padding: 0;
 }
 .btn-new-session:hover {
-    background: rgba(6,182,212,0.1);
-    border-color: #06b6d4;
-    color: #06b6d4;
+    background: rgba(218,106,70,0.1);
+    border-color: #da6a46;
+    color: #da6a46;
 }
 
 /* Session list */
@@ -83,29 +83,9 @@
     cursor: pointer;
     margin-bottom: 0.25rem;
     transition: background 0.15s;
-    display: flex;
-    align-items: flex-start;
-}
-.session-item-icon {
-    flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #06b6d4, #0284c7);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    margin-right: 0.5rem;
-    margin-top: 1px;
-}
-.session-item-content {
-    flex: 1;
-    min-width: 0;
 }
 .session-item:hover { background: var(--border-color); }
-.session-item.active { background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); }
+.session-item.active { background: rgba(218,106,70,0.12); border: 1px solid rgba(218,106,70,0.25); }
 .session-item .prompt-preview {
     font-size: 0.8rem;
     font-weight: 500;
@@ -222,8 +202,8 @@
     font-weight: 500;
 }
 .status-idle { background: var(--border-color); color: var(--text-secondary); }
-.status-running { background: rgba(6,182,212,0.15); color: #06b6d4; }
-.status-pending { background: rgba(6,182,212,0.15); color: #06b6d4; }
+.status-running { background: rgba(218,106,70,0.15); color: #da6a46; }
+.status-pending { background: rgba(218,106,70,0.15); color: #da6a46; }
 .status-ready { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-completed { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
@@ -255,9 +235,7 @@
     text-align: center;
     padding: 2rem;
 }
-.claude-empty-state i {
-    font-size: 3rem;
-    opacity: 0.25;
+.claude-code-logo {
     margin-bottom: 0.75rem;
 }
 .claude-empty-state p { margin: 0; font-size: 0.95rem; }
@@ -267,7 +245,7 @@
 .msg { max-width: 95%; }
 .msg-user {
     align-self: flex-end;
-    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    background: linear-gradient(135deg, #da6a46, #d4562a);
     color: white;
     padding: 0.65rem 1rem;
     border-radius: 18px;
@@ -336,7 +314,7 @@
     overflow: hidden;
 }
 .tool-block-header {
-    background: rgba(6,182,212,0.06);
+    background: rgba(218,106,70,0.06);
     padding: 0.4rem 0.75rem;
     cursor: pointer;
     display: flex;
@@ -347,7 +325,7 @@
     user-select: none;
     color: var(--text-secondary);
 }
-.tool-block-header:hover { background: rgba(6,182,212,0.12); }
+.tool-block-header:hover { background: rgba(218,106,70,0.12); }
 .tool-block-header .chevron {
     transition: transform 0.2s;
     font-size: 0.65rem;
@@ -368,8 +346,8 @@
 .ask-question-block {
     margin-top: 0.5rem;
     padding: 0.75rem 1rem;
-    background: rgba(6,182,212,0.06);
-    border: 1px solid rgba(6,182,212,0.2);
+    background: rgba(218,106,70,0.06);
+    border: 1px solid rgba(218,106,70,0.2);
     border-radius: 12px;
 }
 .ask-question-text {
@@ -395,7 +373,7 @@
 }
 .ask-option-label {
     font-weight: 500;
-    color: #06b6d4;
+    color: #da6a46;
 }
 .ask-option-desc {
     color: var(--text-secondary);
@@ -404,8 +382,8 @@
 
 /* Scope request confirmation card */
 .scope-request-card {
-    background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%);
-    border: 1px solid rgba(6,182,212,0.25);
+    background: linear-gradient(135deg, rgba(218,106,70,0.08) 0%, rgba(218,106,70,0.03) 100%);
+    border: 1px solid rgba(218,106,70,0.25);
     border-radius: 12px;
     padding: 1rem 1.2rem;
     margin: 0.5rem 0;
@@ -418,7 +396,7 @@
     margin-bottom: 0.75rem;
     font-weight: 600;
     font-size: 0.85rem;
-    color: #06b6d4;
+    color: #da6a46;
 }
 .scope-request-header i {
     font-size: 1.1rem;
@@ -450,7 +428,7 @@
     margin-top: 0.75rem;
 }
 .scope-request-actions .btn-scope-allow {
-    background: #06b6d4;
+    background: #da6a46;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -521,7 +499,7 @@
 .typing-indicator span {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: #06b6d4;
+    background: #da6a46;
     animation: typing 1.2s infinite ease-in-out;
 }
 .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
@@ -551,7 +529,7 @@
     flex-direction: column;
 }
 .prompt-wrapper:focus-within {
-    border-color: #06b6d4;
+    border-color: #da6a46;
 }
 
 /* Bottom toolbar row inside prompt-wrapper */
@@ -584,8 +562,8 @@
     position: relative;
 }
 .input-toolbar .toolbar-btn:hover {
-    background: rgba(6,182,212,0.1);
-    color: #06b6d4;
+    background: rgba(218,106,70,0.1);
+    color: #da6a46;
 }
 .input-toolbar .toolbar-btn.recording {
     color: #ef4444;
@@ -625,7 +603,7 @@
     text-align: left;
 }
 .connector-dropdown .connector-item:hover {
-    background: rgba(6,182,212,0.08);
+    background: rgba(218,106,70,0.08);
 }
 .connector-dropdown .connector-item i {
     font-size: 1rem;
@@ -651,9 +629,9 @@
     color: var(--text-primary);
     outline: none;
 }
-.url-input-bar input:focus { border-color: #06b6d4; }
+.url-input-bar input:focus { border-color: #da6a46; }
 .url-input-bar .btn-fetch {
-    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    background: linear-gradient(135deg, #da6a46, #d4562a);
     color: white;
     border: none;
     border-radius: 8px;
@@ -683,12 +661,12 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    background: rgba(6,182,212,0.1);
-    border: 1px solid rgba(6,182,212,0.25);
+    background: rgba(218,106,70,0.1);
+    border: 1px solid rgba(218,106,70,0.25);
     border-radius: 16px;
     padding: 0.2rem 0.55rem;
     font-size: 0.75rem;
-    color: #06b6d4;
+    color: #da6a46;
     max-width: 180px;
 }
 .file-chip .chip-name {
@@ -711,8 +689,8 @@
 .file-chip .chip-spinner {
     width: 12px;
     height: 12px;
-    border: 2px solid rgba(6,182,212,0.3);
-    border-top-color: #06b6d4;
+    border: 2px solid rgba(218,106,70,0.3);
+    border-top-color: #da6a46;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -722,8 +700,8 @@
 .drag-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(6,182,212,0.08);
-    border: 2px dashed #06b6d4;
+    background: rgba(218,106,70,0.08);
+    border: 2px dashed #da6a46;
     border-radius: 12px;
     display: none;
     align-items: center;
@@ -735,8 +713,8 @@
     display: flex;
 }
 .drag-overlay span {
-    background: rgba(6,182,212,0.15);
-    color: #06b6d4;
+    background: rgba(218,106,70,0.15);
+    color: #da6a46;
     padding: 0.5rem 1.2rem;
     border-radius: 20px;
     font-size: 0.9rem;
@@ -773,7 +751,7 @@
     flex-shrink: 0;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    background: linear-gradient(135deg, #da6a46, #d4562a);
     color: white;
     display: flex;
     align-items: center;
@@ -794,13 +772,13 @@
     transition: all 0.15s;
 }
 .auth-method-btn.active {
-    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    background: linear-gradient(135deg, #da6a46, #d4562a);
     color: white;
     border-color: transparent;
 }
 .auth-method-btn:not(.active):hover {
-    border-color: #06b6d4;
-    color: #06b6d4;
+    border-color: #da6a46;
+    color: #da6a46;
 }
 
 /* Membership status panel */
@@ -836,7 +814,7 @@
 }
 #settingsModal .form-control:focus,
 #settingsModal .form-select:focus {
-    border-color: #06b6d4;
+    border-color: #da6a46;
     box-shadow: none;
 }
 #settingsModal .form-switch .form-check-input {
@@ -847,8 +825,8 @@
     cursor: pointer;
 }
 #settingsModal .form-switch .form-check-input:checked {
-    background-color: #06b6d4;
-    border-color: #06b6d4;
+    background-color: #da6a46;
+    border-color: #da6a46;
 }
 #settingsModal .form-switch .form-check-input:focus {
     box-shadow: none;
@@ -982,20 +960,20 @@
     transition: border-color 0.3s;
 }
 .artifact-card.highlight {
-    border-color: #06b6d4;
+    border-color: #da6a46;
 }
 .artifact-card-header {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 0.45rem 0.7rem;
-    background: rgba(6,182,212,0.05);
+    background: rgba(218,106,70,0.05);
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-color);
 }
-.artifact-card-header i { color: #06b6d4; font-size: 0.7rem; }
+.artifact-card-header i { color: #da6a46; font-size: 0.7rem; }
 .artifact-card-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .artifact-card-time { font-size: 0.65rem; opacity: 0.6; flex-shrink: 0; }
 .artifact-card-content { padding: 0.5rem 0.7rem; }
@@ -1077,9 +1055,9 @@
     gap: 5px;
     padding: 4px 12px;
     border-radius: 16px;
-    background: rgba(6,182,212,0.08);
-    border: 1px solid rgba(6,182,212,0.2);
-    color: #06b6d4;
+    background: rgba(218,106,70,0.08);
+    border: 1px solid rgba(218,106,70,0.2);
+    color: #da6a46;
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
@@ -1087,8 +1065,8 @@
     margin: 2px 0;
 }
 .msg-tool-pill:hover {
-    background: rgba(6,182,212,0.15);
-    border-color: rgba(6,182,212,0.4);
+    background: rgba(218,106,70,0.15);
+    border-color: rgba(218,106,70,0.4);
 }
 .msg-tool-pill i { font-size: 0.7rem; }
 .msg-tool-pill .pill-hint {
@@ -1184,7 +1162,19 @@
         <!-- Messages -->
         <div class="claude-messages" id="chatBodyWrapper">
             <div class="claude-empty-state" id="emptyState">
-                <i class="bi bi-terminal"></i>
+                <div class="claude-code-logo">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="64" height="64" rx="16" fill="url(#cc-grad)"/>
+                        <path d="M16 40L28 28L16 16" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M32 44H48" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="cc-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#da6a46"/>
+                                <stop offset="1" stop-color="#d4562a"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <p>Describe what you need and Claude Code will work on it.</p>
                 <small>Configure your API key or membership in Settings first.</small>
             </div>
@@ -1307,7 +1297,7 @@
                                 <span class="text-muted">Checking status...</span>
                             </div>
                             <div id="membershipActions">
-                                <button class="btn btn-sm rounded-pill" id="membershipLoginBtn" onclick="membershipLogin()" style="background: linear-gradient(135deg, #06b6d4, #0284c7); color: white; display: none;">
+                                <button class="btn btn-sm rounded-pill" id="membershipLoginBtn" onclick="membershipLogin()" style="background: linear-gradient(135deg, #da6a46, #d4562a); color: white; display: none;">
                                     <i class="bi bi-box-arrow-in-right me-1"></i>Login with Claude
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary rounded-pill" id="membershipLogoutBtn" onclick="membershipLogout()" style="display: none;">
@@ -1361,7 +1351,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm rounded-pill" onclick="saveSettings()" style="background: linear-gradient(135deg, #06b6d4, #0284c7); color: white; padding: 6px 20px;">
+                <button class="btn btn-sm rounded-pill" onclick="saveSettings()" style="background: linear-gradient(135deg, #da6a46, #d4562a); color: white; padding: 6px 20px;">
                     <i class="bi bi-check-lg me-1"></i>Save Settings
                 </button>
             </div>
@@ -1710,8 +1700,6 @@ async function loadSessions() {
             const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id})" title="Delete session"><i class="bi bi-trash3"></i></button>`;
 
             return `<div class="session-item ${active}" onclick="viewSession(${s.id})">
-                <div class="session-item-icon"><i class="bi bi-terminal-fill"></i></div>
-                <div class="session-item-content">
                     <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
                     <div class="session-meta">
                         <span class="${statusClass}">${s.status}</span>
@@ -1719,7 +1707,6 @@ async function loadSessions() {
                         ${rollbackBtn}
                         ${deleteBtn}
                     </div>
-                </div>
             </div>`;
         }).join('');
     } catch (e) {
