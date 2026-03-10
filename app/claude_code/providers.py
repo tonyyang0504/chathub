@@ -164,7 +164,7 @@ class GeminiProvider(CLIProvider):
     brand_color = "#4285f4"
 
     def build_command(self, prompt, session_uuid, is_first, model=None, system_context=None):
-        cmd = ["gemini", "--sandbox=false"]
+        cmd = ["gemini", "--yolo", "--output-format", "stream-json"]
         if model:
             cmd.extend(["--model", model])
         effective_prompt = prompt
@@ -180,24 +180,52 @@ class GeminiProvider(CLIProvider):
         return env
 
     def normalize_event(self, raw):
-        """Normalize Gemini CLI events to Claude stream-json format."""
+        """Normalize Gemini CLI stream-json events to Claude stream-json format.
+
+        Gemini CLI stream-json events:
+        - {"type": "init", "session_id": ..., "model": ...} → skip
+        - {"type": "message", "role": "user", "content": ...} → skip (echo)
+        - {"type": "message", "role": "assistant", "content": ..., "delta": true} → content_block_delta
+        - {"type": "action", "tool_name": ..., "input": ...} → tool_use
+        - {"type": "action_result", "tool_name": ..., "output": ...} → tool_result
+        - {"type": "result", "status": ..., "stats": ...} → result
+        - {"type": "error", ...} → error
+        """
         evt_type = raw.get("type", "")
 
-        # Gemini's stream-json is similar to Claude's format
-        if evt_type in ("content_block_start", "content_block_delta", "content_block_stop",
-                        "assistant", "tool_use", "tool_result", "result", "error", "system"):
-            return raw  # Pass through compatible events
+        # Skip init and user echo events
+        if evt_type == "init":
+            return None
+        if evt_type == "message" and raw.get("role") == "user":
+            return None
 
-        # Text content
-        if evt_type == "message" or evt_type == "text":
-            content = raw.get("content", raw.get("text", ""))
+        # Assistant message → content_block_delta
+        if evt_type == "message" and raw.get("role") == "assistant":
+            content = raw.get("content", "")
             if content:
                 return {
                     "type": "content_block_delta",
                     "delta": {"type": "text_delta", "text": content}
                 }
+            return None
 
-        # Function/tool calls
+        # Tool/action calls
+        if evt_type == "action":
+            name = raw.get("tool_name", raw.get("name", "tool"))
+            inp = raw.get("input", raw.get("arguments", {}))
+            return {
+                "type": "tool_use",
+                "tool": {"name": name},
+                "input": inp if isinstance(inp, dict) else {"command": str(inp)}
+            }
+
+        if evt_type == "action_result":
+            return {
+                "type": "tool_result",
+                "content": raw.get("output", raw.get("content", ""))
+            }
+
+        # Function call variants
         if evt_type in ("function_call", "tool_call"):
             name = raw.get("name", raw.get("function", {}).get("name", "tool"))
             args = raw.get("arguments", raw.get("args", raw.get("function", {}).get("arguments", "")))
@@ -214,23 +242,26 @@ class GeminiProvider(CLIProvider):
             }
 
         # Final result
-        if evt_type == "done" or evt_type == "final":
+        if evt_type == "result":
+            stats = raw.get("stats", {})
             return {
                 "type": "result",
                 "result": raw.get("content", raw.get("text", "")),
-                "cost_usd": raw.get("cost_usd"),
-                "duration_ms": raw.get("duration_ms"),
-                "duration_api_ms": raw.get("duration_api_ms")
+                "duration_ms": stats.get("duration_ms"),
+                "stats": stats
             }
 
-        # Pass through anything with content
-        if "content" in raw or "text" in raw:
-            text = raw.get("content", raw.get("text", ""))
-            if text:
-                return {
-                    "type": "content_block_delta",
-                    "delta": {"type": "text_delta", "text": text}
-                }
+        # Error events
+        if evt_type == "error":
+            return {
+                "type": "error",
+                "error": {"message": raw.get("message", raw.get("error", str(raw)))}
+            }
+
+        # Pass through Claude-compatible events
+        if evt_type in ("content_block_start", "content_block_delta", "content_block_stop",
+                        "assistant", "tool_use", "tool_result", "system"):
+            return raw
 
         return None
 
