@@ -377,7 +377,8 @@
     max-width: 480px;
 }
 .approval-card.resolved { opacity: 0.6; }
-.approval-card.resolved button { pointer-events: none; }
+.approval-card.resolved .approval-actions .btn-approve,
+.approval-card.resolved .approval-actions .btn-deny { pointer-events: none; }
 .approval-header {
     display: flex;
     align-items: center;
@@ -388,21 +389,11 @@
     color: #06b6d4;
 }
 .approval-header i { font-size: 1.1rem; }
-.approval-detail {
-    display: flex;
-    gap: 0.5rem;
+.approval-description {
     font-size: 0.8rem;
     line-height: 1.5;
-    margin-bottom: 0.25rem;
-}
-.approval-label {
-    color: var(--text-secondary);
-    min-width: 65px;
-    font-weight: 500;
-}
-.approval-value {
     color: var(--text-primary);
-    word-break: break-word;
+    margin-bottom: 0.25rem;
 }
 .approval-actions {
     display: flex;
@@ -2183,32 +2174,32 @@ function appendToolResult(content, toolName, denied) {
     scrollToBottom();
 }
 
+function describeToolAction(toolName, args) {
+    const a = typeof args === 'object' ? args : (() => { try { return JSON.parse(args); } catch { return {}; } })();
+    switch (toolName) {
+        case 'exec_command':
+            return `I need to run a shell command: ${a.command || '(unknown)'}`;
+        case 'write_file':
+            return `I need to create or overwrite a file: ${a.path || '(unknown)'}`;
+        case 'edit_file':
+            return `I need to edit a file: ${a.path || '(unknown)'}`;
+        default:
+            return `I need to use ${toolName}` + (a.path ? `: ${a.path}` : '');
+    }
+}
+
 function appendApprovalRequest(toolCallId, toolName, args) {
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-assistant';
 
-    // Build detail rows from args
-    let detailHtml = '';
-    const argsObj = typeof args === 'object' ? args : (() => { try { return JSON.parse(args); } catch { return null; } })();
-
-    if (argsObj && typeof argsObj === 'object') {
-        for (const [key, val] of Object.entries(argsObj)) {
-            const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-            const value = typeof val === 'string' ? val : JSON.stringify(val);
-            detailHtml += `<div class="approval-detail"><span class="approval-label">${escapeHtml(label)}</span><span class="approval-value">${escapeHtml(value)}</span></div>`;
-        }
-    } else {
-        const fallback = typeof args === 'string' ? args : JSON.stringify(args || '');
-        detailHtml = `<div class="approval-detail"><span class="approval-value">${escapeHtml(fallback)}</span></div>`;
-    }
+    const description = describeToolAction(toolName, args);
 
     div.innerHTML = `<div class="approval-card" id="approval-${escapeHtml(toolCallId)}">
         <div class="approval-header">
             <i class="bi bi-shield-lock"></i> Permission Required
         </div>
-        <div class="approval-detail"><span class="approval-label">Tool</span><span class="approval-value">${escapeHtml(toolName)}</span></div>
-        ${detailHtml}
+        <div class="approval-description">${escapeHtml(description)}</div>
         <div class="approval-actions">
             <button class="btn-approve" onclick="approveToolCall('${escapeHtml(toolCallId)}', true)">
                 <i class="bi bi-check-lg me-1"></i>Allow

@@ -2084,10 +2084,12 @@ async function sendFollowUp(prompt) {
             return;
         }
 
-        // Reconnect WebSocket to ensure fresh connection for new turn
-        // The WS may have closed between turns or be in a stale state
-        wsSkipCount = wsEventsReceived;
-        connectWebSocket(currentSessionId);
+        // Only reconnect WebSocket if not already connected
+        // The WS from the previous turn is still alive (session is in is_waiting state)
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            wsSkipCount = 0;
+            connectWebSocket(currentSessionId);
+        }
     } catch (e) {
         removeThinkingIndicator();
         appendSystemMessage('Network error: ' + e.message);
