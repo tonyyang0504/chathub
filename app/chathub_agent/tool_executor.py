@@ -44,6 +44,8 @@ class ToolExecutor:
             "list_files": self._list_files,
             "search_files": self._search_files,
             "read_url": self._read_url,
+            "web_search": self._web_search,
+            "browser_read": self._browser_read,
         }
 
         handler = handlers.get(tool_name)

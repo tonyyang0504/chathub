@@ -162,6 +162,59 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "web_search",
+            "description": "Search Google and return the top results with titles, URLs, and snippets. "
+"Uses a real browser (Playwright) so it works with JavaScript-heavy pages. "
+"Use this for any web search query instead of trying to curl Google.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default 10)",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "browser_read",
+            "description": "Navigate to a URL in a real browser and return the visible page text. "
+"Use this for pages that require JavaScript rendering (Google results, dynamic web apps, SPAs). "
+"More powerful than read_url because it executes JavaScript and renders the page like a real browser.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL to navigate to and read"
+                    },
+                    "wait_seconds": {
+                        "type": "number",
+                        "description": "Seconds to wait for page to load (default 3)",
+                        "default": 3
+                    },
+                    "max_length": {
+                        "type": "integer",
+                        "description": "Maximum characters to return (default 15000)",
+                        "default": 15000
+                    }
+                },
+                "required": ["url"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "search_files",
             "description": "Search for a text pattern in files. Returns matching lines with file paths and line numbers.",
             "parameters": {
@@ -196,7 +249,7 @@ TOOL_DEFINITIONS = [
 TOOLS_REQUIRING_APPROVAL = {"exec_command", "write_file", "edit_file"}
 
 # Tools that only read data and are safe to auto-approve
-READ_ONLY_TOOLS = {"read_file", "list_files", "search_files", "read_url"}
+READ_ONLY_TOOLS = {"read_file", "list_files", "search_files", "read_url", "web_search", "browser_read"}
 
 
 def get_tool_definitions(allowed_tools: list[str] | None = None) -> list[dict]:
