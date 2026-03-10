@@ -1377,6 +1377,7 @@ let ws = null;
 let autoApproveScope = false;
 let isRunning = false;
 let isWaiting = false;  // True when session finished responding, awaiting follow-up
+let pendingAutoApproval = false;  // Deferred auto-approve when scope request arrives during streaming
 let currentSessionStatus = null;  // Track viewed session status for resume detection
 let autoScroll = true;
 let assistantBuffer = '';  // Buffer for streaming assistant text
@@ -1421,6 +1422,7 @@ function newSession() {
     document.getElementById('promptInput').placeholder = 'Describe what you need...';
     isRunning = false;
     isWaiting = false;
+    pendingAutoApproval = false;
     setStatus('idle');
     loadSessions();
     if (window.innerWidth < 992) {
@@ -2263,9 +2265,17 @@ function renderStreamEvent(data, timestamp) {
     } else if (type === 'result_done') {
         isWaiting = true;
         setStatus('ready');
+        if (pendingAutoApproval) {
+            pendingAutoApproval = false;
+            sendApprovalMessage();
+        }
     } else if (type === 'turn_end') {
         isWaiting = true;
         setStatus('ready');
+        if (pendingAutoApproval) {
+            pendingAutoApproval = false;
+            sendApprovalMessage();
+        }
     } else if (type === 'user_message') {
         // Follow-up user message broadcast from server — skip since frontend already appended it
     } else if (type === 'error') {
@@ -2275,6 +2285,7 @@ function renderStreamEvent(data, timestamp) {
     } else if (type === 'session_end') {
         isRunning = false;
         isWaiting = false;
+        pendingAutoApproval = false;
         const endStatus = data.status || (data.exit_code === 0 ? 'completed' : 'failed');
         currentSessionStatus = endStatus;
         setStatus(endStatus);
@@ -2714,11 +2725,30 @@ function renderScopeRequestCard(jsonStr, chatBody) {
                 <button class="btn-scope-deny" onclick="handleScopeRequest('${cardId}', false)"><i class="bi bi-x-lg me-1"></i>Deny</button>
             </div>
         </div>`;
-    chatBody.appendChild(card);
-
+    // Auto-approve: don't render the card, defer if turn is still running
     if (autoApproveScope && (isRunning || isWaiting)) {
-        handleScopeRequest(cardId, true);
+        if (isWaiting) {
+            // Turn already ended — approve immediately
+            sendApprovalMessage();
+        } else {
+            // Turn still running — defer until turn_end
+            pendingAutoApproval = true;
+        }
+        return;
     }
+
+    chatBody.appendChild(card);
+}
+
+function sendApprovalMessage() {
+    setStatus('running');
+    isWaiting = false;
+    fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ prompt: 'Approved. Proceed with the requested action.' })
+    });
 }
 
 function handleScopeRequest(cardId, approved) {
@@ -2729,15 +2759,7 @@ function handleScopeRequest(cardId, approved) {
     const actionsDiv = card.querySelector('.scope-request-actions');
     if (approved) {
         actionsDiv.innerHTML = '<span class="scope-request-badge approved"><i class="bi bi-check-circle"></i> Approved</span>';
-        // Send approval without showing a user bubble — the badge is sufficient
-        setStatus('running');
-        isWaiting = false;
-        fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ prompt: 'Approved. Proceed with the requested action.' })
-        });
+        sendApprovalMessage();
     } else {
         actionsDiv.innerHTML = '<span class="scope-request-badge denied"><i class="bi bi-x-circle"></i> Denied</span>';
         appendSystemMessage('Access denied by user.');
