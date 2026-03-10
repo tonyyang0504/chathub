@@ -1246,6 +1246,8 @@ let currentSessionStatus = null;
 let ws = null;
 let isRunning = false;
 let isWaiting = false;
+let lastWsActivity = 0;
+let inactivityTimer = null;
 let autoScroll = true;
 let assistantBuffer = '';
 
@@ -1826,6 +1828,34 @@ async function approveToolCall(toolCallId, approved) {
     }
 }
 
+// --- Inactivity Watchdog ---
+function startInactivityWatchdog() {
+    clearInterval(inactivityTimer);
+    inactivityTimer = setInterval(async () => {
+        if (!isRunning || !currentSessionId) {
+            clearInterval(inactivityTimer);
+            return;
+        }
+        if (Date.now() - lastWsActivity > 15000) {
+            try {
+                const res = await fetch(`${API_BASE}/sessions/${currentSessionId}`, { credentials: 'include' });
+                if (res.ok) {
+                    const session = await res.json();
+                    if (['completed', 'stopped', 'failed'].includes(session.status)) {
+                        removeThinkingIndicator();
+                        isRunning = false;
+                        isWaiting = false;
+                        currentSessionStatus = session.status;
+                        setStatus(session.status);
+                        loadSessions();
+                        clearInterval(inactivityTimer);
+                    }
+                }
+            } catch (e) { /* ignore polling errors */ }
+        }
+    }, 10000);
+}
+
 // --- WebSocket ---
 function connectWebSocket(sessionId, noReplay = false) {
     if (ws) {
@@ -1843,6 +1873,7 @@ function connectWebSocket(sessionId, noReplay = false) {
         ws._pingInterval = setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) ws.send('ping');
         }, 30000);
+        startInactivityWatchdog();
     };
 
     ws.onmessage = (event) => {
@@ -1857,6 +1888,7 @@ function connectWebSocket(sessionId, noReplay = false) {
     const thisWs = ws;
     ws.onclose = () => {
         clearInterval(thisWs._pingInterval);
+        clearInterval(inactivityTimer);
         // Only act if this is still the active WebSocket (not a stale one being replaced)
         if (ws !== thisWs) return;
         flushAssistantBuffer();
@@ -1888,6 +1920,8 @@ let currentAssistantEl = null;
 
 function renderStreamEvent(data) {
     const type = data.type;
+
+    lastWsActivity = Date.now();
 
     if (type === 'pong' || type === 'ping') return;
 
@@ -2373,12 +2407,14 @@ function setStatus(status) {
         stopBtn.style.display = 'inline-flex';
         sendBtn.disabled = false;
         isRunning = true;
+        clearInterval(inactivityTimer);
         document.getElementById('promptInput').placeholder = 'Send a follow-up message...';
     } else {
         stopBtn.style.display = 'none';
         sendBtn.disabled = false;
         isRunning = false;
         isWaiting = false;
+        clearInterval(inactivityTimer);
         document.getElementById('promptInput').placeholder = 'Describe what you need...';
     }
 }
