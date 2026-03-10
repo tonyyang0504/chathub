@@ -335,25 +335,10 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required")
 
-    # Check for existing active session — auto-stop idle sessions
+    # Auto-stop any existing session (running or waiting) before creating a new one
     active = claude_code_manager.get_active_session(user.id)
     if active:
-        if active.is_waiting and not active.is_running:
-            # Stop the idle waiting session so a new one can be created
-            try:
-                db_old = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == active.session_id
-                ).first()
-                if db_old and db_old.status == "running":
-                    db_old.status = "completed"
-                    db_old.ended_at = datetime.utcnow()
-                    db.commit()
-            except Exception:
-                pass
-            if user.id in claude_code_manager._sessions:
-                del claude_code_manager._sessions[user.id]
-        else:
-            raise HTTPException(status_code=409, detail="You already have an active session")
+        await claude_code_manager.stop_session(user.id)
 
     # Get settings
     settings = db.query(ClaudeCodeSettings).filter(

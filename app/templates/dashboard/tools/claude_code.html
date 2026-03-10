@@ -2725,7 +2725,7 @@ function renderScopeRequestCard(jsonStr, chatBody) {
         </div>`;
     chatBody.appendChild(card);
 
-    if (autoApproveScope) {
+    if (autoApproveScope && isWaiting) {
         handleScopeRequest(cardId, true);
     }
 }

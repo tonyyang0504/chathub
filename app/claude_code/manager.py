@@ -444,12 +444,6 @@ class ClaudeCodeManager:
         file_paths: list = None
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
-        # Enforce one session per user
-        existing = self.get_active_session(user_id)
-        if existing:
-            logger.warning(f"User {user_id} already has an active session {existing.session_id}")
-            return None
-
         session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
         self._sessions[user_id] = session
 
@@ -867,11 +861,6 @@ class ClaudeCodeManager:
         file_paths: list = None
     ) -> Optional[ActiveSession]:
         """Resume a stopped session by reusing its Claude CLI session UUID."""
-        existing = self.get_active_session(user_id)
-        if existing:
-            logger.warning(f"User {user_id} already has an active session {existing.session_id}")
-            return None
-
         if not claude_session_uuid:
             logger.error(f"No claude_session_uuid for session {session_id}")
             return None
@@ -895,8 +884,6 @@ class ClaudeCodeManager:
         """Stop a running or waiting session."""
         session = self._sessions.get(user_id)
         if not session:
-            return False
-        if not session.is_running and not session.is_waiting:
             return False
 
         was_waiting = session.is_waiting
