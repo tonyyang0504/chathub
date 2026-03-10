@@ -1306,9 +1306,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Gemini Model</label>
                         <select class="form-select" id="geminiModelSelect">
-                            <option value="gemini-3-pro" selected>Gemini 3 Pro</option>
-                            <option value="gemini-3-flash">Gemini 3 Flash</option>
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-2.5-pro" selected>Gemini 2.5 Pro</option>
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                         </select>
                     </div>
@@ -1465,7 +1463,7 @@ async function loadSettings() {
         }
         document.getElementById('modelSelect').value = data.default_model || 'sonnet';
         document.getElementById('codexModelSelect').value = data.codex_default_model || 'gpt-5.3-codex';
-        document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'gemini-3-pro';
+        document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'gemini-2.5-pro';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         setAuthMethod(data.auth_method || 'api_key', true);
