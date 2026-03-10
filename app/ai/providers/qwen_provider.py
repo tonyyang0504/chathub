@@ -25,12 +25,10 @@ class QwenProvider(AIProvider):
 
     # Available models
     MODELS = [
-        "qwen-turbo",
-        "qwen-plus",
-        "qwen-max",
-        "qwen-max-longcontext",
-        "qwen-vl-plus",  # Vision-language model
-        "qwen-vl-max",   # Vision-language model
+        "qwen3.5-plus",
+        "qwen3-max-thinking", "qwen3-max", "qwen3-plus", "qwen3-turbo",
+        "qwen-max", "qwen-plus", "qwen-turbo",
+        "qwen-vl-plus", "qwen-vl-max",
     ]
 
     # Default API base URL (OpenAI-compatible endpoint)

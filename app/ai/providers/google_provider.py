@@ -23,10 +23,11 @@ class GoogleProvider(AIProvider):
 
     # Available models
     MODELS = [
-        "gemini-1.5-pro",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-8b",
-        "gemini-1.0-pro",
+        "gemini-3.1-pro-preview", "gemini-3.1-flash-lite-preview",
+        "gemini-3-flash-preview",
+        "gemini-2.5-pro", "gemini-2.5-flash",
+        "gemini-2.0-flash", "gemini-2.0-flash-lite",
+        "gemini-1.5-pro", "gemini-1.5-flash",
     ]
 
     def __init__(
@@ -36,7 +37,7 @@ class GoogleProvider(AIProvider):
         base_url: Optional[str] = None,
         **kwargs
     ):
-        super().__init__(api_key, model or "gemini-1.5-flash", base_url, **kwargs)
+        super().__init__(api_key, model or "gemini-2.0-flash", base_url, **kwargs)
 
         try:
             import google.generativeai as genai

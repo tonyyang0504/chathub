@@ -23,22 +23,24 @@ class AnthropicProvider(AIProvider):
 
     # Available models
     MODELS = [
-        "claude-3-5-sonnet-20241022",
-        "claude-3-5-haiku-20241022",
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-        "claude-3-haiku-20240307",
+        "claude-opus-4-6-20260205", "claude-sonnet-4-6",
+        "claude-opus-4-5-20251124", "claude-sonnet-4-5-20241022", "claude-haiku-4-5-20241022",
+        "claude-opus-4-1-20250414", "claude-opus-4-20250514", "claude-sonnet-4-20250514",
+        "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022",
     ]
 
     # Model aliases for convenience
     MODEL_ALIASES = {
+        "claude-opus-4.6": "claude-opus-4-6-20260205",
+        "claude-sonnet-4.6": "claude-sonnet-4-6",
+        "claude-opus-4.5": "claude-opus-4-5-20251124",
+        "claude-sonnet-4.5": "claude-sonnet-4-5-20241022",
+        "claude-haiku-4.5": "claude-haiku-4-5-20241022",
+        "claude-opus-4.1": "claude-opus-4-1-20250414",
         "claude-3.5-sonnet": "claude-3-5-sonnet-20241022",
         "claude-3-5-sonnet": "claude-3-5-sonnet-20241022",
         "claude-3.5-haiku": "claude-3-5-haiku-20241022",
         "claude-3-5-haiku": "claude-3-5-haiku-20241022",
-        "claude-3-opus": "claude-3-opus-20240229",
-        "claude-3-sonnet": "claude-3-sonnet-20240229",
-        "claude-3-haiku": "claude-3-haiku-20240307",
     }
 
     def __init__(
@@ -48,7 +50,7 @@ class AnthropicProvider(AIProvider):
         base_url: Optional[str] = None,
         **kwargs
     ):
-        super().__init__(api_key, model or "claude-3-5-sonnet-20241022", base_url, **kwargs)
+        super().__init__(api_key, model or "claude-sonnet-4-5-20241022", base_url, **kwargs)
 
         try:
             import anthropic

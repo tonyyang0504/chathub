@@ -54,6 +54,20 @@ usage_context = _UsageContext()
 # Updated pricing as of early 2026
 MODEL_PRICING = {
     # OpenAI
+    "gpt-5.4": (2.50, 15.00),
+    "gpt-5.4-pro": (2.50, 15.00),
+    "gpt-5.3-codex": (1.75, 14.00),
+    "gpt-5.3-chat-latest": (1.75, 14.00),
+    "gpt-5.2": (1.75, 14.00),
+    "gpt-5": (2.50, 10.00),
+    "gpt-5-mini": (0.15, 0.60),
+    "gpt-5-nano": (0.10, 0.40),
+    "o4-mini": (1.10, 4.40),
+    "o3": (10.00, 40.00),
+    "o3-mini": (1.10, 4.40),
+    "gpt-4.1": (2.00, 8.00),
+    "gpt-4.1-mini": (0.40, 1.60),
+    "gpt-4.1-nano": (0.10, 0.40),
     "gpt-4o": (2.50, 10.00),
     "gpt-4o-mini": (0.15, 0.60),
     "gpt-4-turbo": (10.00, 30.00),
@@ -61,10 +75,13 @@ MODEL_PRICING = {
     "gpt-3.5-turbo": (0.50, 1.50),
     "o1-preview": (15.00, 60.00),
     "o1-mini": (3.00, 12.00),
-    "o3-mini": (1.10, 4.40),
-    "gpt-5": (2.50, 10.00),
-    "gpt-5-mini": (0.15, 0.60),
     # Anthropic
+    "claude-opus-4-6-20260205": (5.00, 25.00),
+    "claude-sonnet-4-6": (3.00, 15.00),
+    "claude-opus-4-5-20251124": (15.00, 75.00),
+    "claude-sonnet-4-5-20241022": (3.00, 15.00),
+    "claude-haiku-4-5-20241022": (0.80, 4.00),
+    "claude-opus-4-1-20250414": (15.00, 75.00),
     "claude-opus-4-20250514": (15.00, 75.00),
     "claude-sonnet-4-20250514": (3.00, 15.00),
     "claude-3-5-sonnet-20241022": (3.00, 15.00),
@@ -73,17 +90,34 @@ MODEL_PRICING = {
     "claude-3-sonnet-20240229": (3.00, 15.00),
     "claude-3-haiku-20240307": (0.25, 1.25),
     # Google
+    "gemini-3.1-pro-preview": (2.00, 12.00),
+    "gemini-3.1-flash-lite-preview": (0.25, 1.50),
+    "gemini-3-flash-preview": (0.10, 0.40),
+    "gemini-2.5-pro": (1.25, 5.00),
+    "gemini-2.5-flash": (0.075, 0.30),
+    "gemini-2.0-flash": (0.10, 0.40),
+    "gemini-2.0-flash-lite": (0.075, 0.30),
     "gemini-1.5-pro": (1.25, 5.00),
     "gemini-1.5-flash": (0.075, 0.30),
-    "gemini-2.0-flash": (0.10, 0.40),
     # DeepSeek
     "deepseek-chat": (0.14, 0.28),
     "deepseek-reasoner": (0.55, 2.19),
     # Qwen
+    "qwen3.5-plus": (0.26, 1.56),
+    "qwen3-max-thinking": (4.00, 16.00),
+    "qwen3-max": (2.40, 9.60),
+    "qwen3-plus": (0.80, 2.00),
+    "qwen3-turbo": (0.30, 0.60),
     "qwen-turbo": (0.30, 0.60),
     "qwen-plus": (0.80, 2.00),
     "qwen-max": (2.40, 9.60),
     # xAI Grok
+    "grok-4": (3.00, 15.00),
+    "grok-4-1-fast-reasoning": (0.20, 0.50),
+    "grok-4-1-fast-non-reasoning": (0.20, 0.50),
+    "grok-code-fast-1": (0.20, 0.50),
+    "grok-3": (3.00, 15.00),
+    "grok-3-fast": (0.60, 3.00),
     "grok-2": (2.00, 10.00),
     "grok-2-mini": (0.30, 0.50),
 }
@@ -97,7 +131,8 @@ PROVIDER_FALLBACK_PRICING = {
     "deepseek": (0.14, 0.28),
     "qwen": (0.30, 0.60),
     "dashscope": (0.30, 0.60),
-    "grok": (2.00, 10.00),
+    "grok": (3.00, 15.00),
+    "xai": (3.00, 15.00),
 }
 
 

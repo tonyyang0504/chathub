@@ -1169,6 +1169,7 @@
                             <option value="google">Google (Gemini)</option>
                             <option value="deepseek">DeepSeek</option>
                             <option value="qwen">Qwen</option>
+                            <option value="grok">xAI (Grok)</option>
                         </select>
                     </div>
                     <div class="col-md-6">
@@ -1254,26 +1255,35 @@ const PROVIDER_MODELS = {
     openai: {
         defaultModel: 'gpt-4o-mini',
         groups: [
-            { header: 'GPT-5.2 Series (Latest)', models: [
-                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            { header: 'GPT-5.4 Series (Latest)', models: [
+                { value: 'gpt-5.4', label: 'GPT-5.4' },
+                { value: 'gpt-5.4-pro', label: 'GPT-5.4 Pro' },
             ]},
-            { header: 'GPT-5.1 Series', models: [
-                { value: 'gpt-5.1', label: 'GPT-5.1' },
+            { header: 'GPT-5.3 Series', models: [
+                { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex' },
+                { value: 'gpt-5.3-chat-latest', label: 'GPT-5.3 Chat' },
+            ]},
+            { header: 'GPT-5.2 Series', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
             ]},
             { header: 'GPT-5 Series', models: [
                 { value: 'gpt-5', label: 'GPT-5' },
                 { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
                 { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
             ]},
+            { header: 'Reasoning Models', models: [
+                { value: 'o4-mini', label: 'o4-mini' },
+                { value: 'o3', label: 'o3' },
+                { value: 'o3-mini', label: 'o3-mini' },
+            ]},
             { header: 'GPT-4.1 Series', models: [
                 { value: 'gpt-4.1', label: 'GPT-4.1' },
                 { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
                 { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
             ]},
-            { header: 'GPT-4 Series', models: [
+            { header: 'GPT-4 Series (Legacy)', models: [
                 { value: 'gpt-4o', label: 'GPT-4o' },
                 { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
-                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
             ]},
         ]
     },
@@ -1282,6 +1292,7 @@ const PROVIDER_MODELS = {
         groups: [
             { header: 'Claude 4.6 Series (Latest)', models: [
                 { value: 'claude-opus-4-6-20260205', label: 'Claude Opus 4.6' },
+                { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
             ]},
             { header: 'Claude 4.5 Series', models: [
                 { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
@@ -1302,9 +1313,12 @@ const PROVIDER_MODELS = {
     google: {
         defaultModel: 'gemini-3-flash',
         groups: [
-            { header: 'Gemini 3 Series (Latest)', models: [
-                { value: 'gemini-3-pro', label: 'Gemini 3 Pro' },
-                { value: 'gemini-3-flash', label: 'Gemini 3 Flash (Default)' },
+            { header: 'Gemini 3.1 Series (Latest)', models: [
+                { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
+                { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite Preview' },
+            ]},
+            { header: 'Gemini 3 Series', models: [
+                { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview (Default)' },
             ]},
             { header: 'Gemini 2.5 Series', models: [
                 { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
@@ -1337,7 +1351,10 @@ const PROVIDER_MODELS = {
     qwen: {
         defaultModel: 'qwen3-turbo',
         groups: [
-            { header: 'Qwen3 Series (Latest)', models: [
+            { header: 'Qwen3.5 Series (Latest)', models: [
+                { value: 'qwen3.5-plus', label: 'Qwen3.5 Plus' },
+            ]},
+            { header: 'Qwen3 Series', models: [
                 { value: 'qwen3-max-thinking', label: 'Qwen3 Max Thinking' },
                 { value: 'qwen3-max', label: 'Qwen3 Max' },
                 { value: 'qwen3-plus', label: 'Qwen3 Plus' },
@@ -1347,6 +1364,23 @@ const PROVIDER_MODELS = {
                 { value: 'qwen-max', label: 'Qwen Max' },
                 { value: 'qwen-plus', label: 'Qwen Plus' },
                 { value: 'qwen-turbo', label: 'Qwen Turbo' },
+            ]},
+        ]
+    },
+    grok: {
+        defaultModel: 'grok-4',
+        groups: [
+            { header: 'Grok 4 Series (Latest)', models: [
+                { value: 'grok-4', label: 'Grok 4 (Default)' },
+                { value: 'grok-4-1-fast-reasoning', label: 'Grok 4.1 Fast Reasoning' },
+                { value: 'grok-4-1-fast-non-reasoning', label: 'Grok 4.1 Fast' },
+            ]},
+            { header: 'Grok Code', models: [
+                { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+            { header: 'Grok 3 Series', models: [
+                { value: 'grok-3', label: 'Grok 3' },
+                { value: 'grok-3-fast', label: 'Grok 3 Fast' },
             ]},
         ]
     },

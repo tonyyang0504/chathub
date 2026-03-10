@@ -2150,7 +2150,26 @@ function renderStreamEvent(data, timestamp) {
                 appendAssistantMessage(block.text);
                 turnHasStreamedText = true;  // Prevent result event from duplicating
             } else if (block.type === 'tool_use') {
-                appendToolUse(JSON.stringify({ tool: block.name, input: block.input }), timestamp);
+                // During live streaming, artifact may already exist from content_block_start
+                const last = artifacts.length > 0 ? artifacts[artifacts.length - 1] : null;
+                if (last && last.toolName === block.name && !last.result) {
+                    // Update input data (content_block_start has minimal input, assistant has full input)
+                    last.inputData = block.input || {};
+                    last.input = typeof block.input === 'object' ? JSON.stringify(block.input, null, 2) : (block.input || '');
+                    const cardEl = document.getElementById(`artifact-${last.id}`);
+                    if (cardEl) {
+                        const contentEl = cardEl.querySelector('.artifact-card-content');
+                        if (contentEl) {
+                            contentEl.innerHTML = renderArtifactInputHtml(last) +
+                                (last.result !== null ? renderArtifactResultHtml(last.toolName, last.result) :
+                                `<div class="artifact-waiting" style="color: var(--text-secondary); font-size: 0.78rem; font-style: italic; margin-top: 0.5rem;">
+                                    <i class="bi bi-hourglass-split me-1"></i>Waiting for result...
+                                </div>`);
+                        }
+                    }
+                } else {
+                    appendToolUse(JSON.stringify({ tool: block.name, input: block.input }), timestamp);
+                }
             }
         }
     } else if (type === 'content_block_start') {

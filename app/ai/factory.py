@@ -13,6 +13,7 @@ from app.ai.providers.anthropic_provider import AnthropicProvider
 from app.ai.providers.google_provider import GoogleProvider
 from app.ai.providers.deepseek_provider import DeepSeekProvider
 from app.ai.providers.qwen_provider import QwenProvider
+from app.ai.providers.grok_provider import GrokProvider
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,8 @@ PROVIDERS: Dict[str, Type[AIProvider]] = {
     "deepseek": DeepSeekProvider,
     "qwen": QwenProvider,
     "dashscope": QwenProvider,  # Alias
+    "grok": GrokProvider,
+    "xai": GrokProvider,  # Alias
 }
 
 # Default models for each provider
@@ -42,6 +45,8 @@ DEFAULT_MODELS: Dict[str, str] = {
     "deepseek": "deepseek-chat",
     "qwen": "qwen-turbo",
     "dashscope": "qwen-turbo",
+    "grok": "grok-4",
+    "xai": "grok-4",
 }
 
 
@@ -110,7 +115,7 @@ def get_available_providers() -> Dict[str, Dict]:
     """
     info = {}
     for name, provider_class in PROVIDERS.items():
-        if name in ["gemini", "dashscope"]:  # Skip aliases
+        if name in ["gemini", "dashscope", "xai"]:  # Skip aliases
             continue
         info[name] = {
             "supports_tools": provider_class.supports_tools,

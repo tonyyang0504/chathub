@@ -767,7 +767,7 @@ class ClaudeCodeManager:
                         db = SessionLocal()
                         event_json = json.dumps(data)
                         # Result events carry final assistant text needed for replay
-                        max_event = 50000 if msg_type == "result" else 5000
+                        max_event = 50000 if msg_type in ("result", "assistant") else 5000
                         msg = ClaudeCodeMessage(
                             session_id=session.session_id,
                             role=role,

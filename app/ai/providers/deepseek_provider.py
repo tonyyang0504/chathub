@@ -25,7 +25,6 @@ class DeepSeekProvider(AIProvider):
     # Available models
     MODELS = [
         "deepseek-chat",
-        "deepseek-coder",
         "deepseek-reasoner",
     ]
 
