@@ -2225,7 +2225,7 @@ function appendApprovalResolved(content, toolName) {
         <div class="approval-header">
             <i class="bi bi-shield-lock"></i> Permission Required
         </div>
-        ${toolName ? `<div class="approval-detail"><span class="approval-label">Tool</span><span class="approval-value">${escapeHtml(toolName)}</span></div>` : ''}
+        ${toolName ? `<div class="approval-description">${escapeHtml(toolName)}</div>` : ''}
         <div class="approval-actions">
             <span class="approval-badge ${badgeClass}"><i class="bi ${badgeIcon}"></i> ${badgeText}</span>
         </div>
