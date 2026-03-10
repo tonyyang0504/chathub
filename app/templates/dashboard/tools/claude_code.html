@@ -2214,11 +2214,12 @@ function renderStreamEvent(data, timestamp) {
         if (delta.type === 'text_delta' && delta.text) {
             assistantBuffer += delta.text;
             turnHasStreamedText = true;
-            if (currentAssistantEl) {
-                currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
-                wrapTables(currentAssistantEl);
-                scrollToBottom();
+            if (!currentAssistantEl) {
+                currentAssistantEl = createAssistantBubble();
             }
+            currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
+            wrapTables(currentAssistantEl);
+            scrollToBottom();
         } else if (delta.type === 'input_json_delta' && delta.partial_json) {
             // Stream into the last artifact card's input
             if (artifacts.length > 0) {

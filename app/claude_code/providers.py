@@ -241,8 +241,14 @@ class GeminiProvider(CLIProvider):
                 "content": raw.get("output", raw.get("content", ""))
             }
 
-        # Final result
+        # Final result — check for error status
         if evt_type == "result":
+            if raw.get("status") == "error":
+                err = raw.get("error", {})
+                return {
+                    "type": "error",
+                    "error": {"message": err.get("message", str(err))}
+                }
             stats = raw.get("stats", {})
             return {
                 "type": "result",
