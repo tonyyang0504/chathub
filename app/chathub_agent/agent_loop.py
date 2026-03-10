@@ -156,16 +156,28 @@ class AgentLoop:
 
                         # Check if approval is needed
                         if self._needs_approval(tc.name):
+                            # Extract meaningful description with proper fallbacks
+                            description = tc.arguments.get("description", "")
+                            if not description:
+                                if tc.name == "exec_command":
+                                    cmd = tc.arguments.get("command", "")
+                                    description = f"Run: {cmd[:80]}{'…' if len(cmd) > 80 else ''}" if cmd else "Run a shell command"
+                                elif tc.name == "write_file":
+                                    description = f"Write file: {tc.arguments.get('path', 'unknown')}"
+                                elif tc.name == "edit_file":
+                                    description = f"Edit file: {tc.arguments.get('path', 'unknown')}"
+                                else:
+                                    description = f"Use {tc.name}"
+
                             await self.broadcast({
                                 "type": "approval_request",
                                 "tool_call_id": tc.id,
                                 "tool_name": tc.name,
                                 "arguments": tc.arguments,
-                                "description": tc.arguments.get("description", ""),
+                                "description": description,
                             })
                             await self._persist_message(
-                                "approval_request",
-                                tc.arguments.get("description", "") or f"Approval needed for {tc.name}",
+                                "approval_request", description,
                                 tool_name=tc.name, tool_call_id=tc.id,
                             )
                             approved = await self._wait_for_approval()
