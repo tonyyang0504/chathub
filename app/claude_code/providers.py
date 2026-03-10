@@ -89,10 +89,9 @@ class CodexProvider(CLIProvider):
     brand_color = "#10a37f"
 
     def build_command(self, prompt, session_uuid, is_first, model=None, system_context=None):
-        cmd = ["codex", "--full-auto"]
+        cmd = ["codex", "exec", "--full-auto", "--json"]
         if model:
             cmd.extend(["--model", model])
-        # Codex doesn't have --append-system-prompt, but we can prepend context to prompt
         effective_prompt = prompt
         if system_context:
             effective_prompt = f"[System context: {system_context}]\n\n{prompt}"
@@ -106,65 +105,55 @@ class CodexProvider(CLIProvider):
         return env
 
     def normalize_event(self, raw):
-        """Normalize Codex JSONL events to Claude stream-json format."""
+        """Normalize Codex JSONL events to Claude stream-json format.
+
+        Actual Codex `exec --json` JSONL events:
+        - thread.started, turn.started → lifecycle, skip
+        - item.started {item.type: command_execution} → tool_use
+        - item.completed {item.type: command_execution} → tool_result
+        - item.completed {item.type: agent_message} → result (final text)
+        - turn.completed → skip (process exit handles session lifecycle)
+        - error / turn.failed → error
+        """
         evt_type = raw.get("type", "")
 
-        # Codex outputs lines of text as the agent works
-        if evt_type == "message":
-            role = raw.get("role", "assistant")
-            content = raw.get("content", "")
-            if role == "user":
-                return None  # Skip echoed user messages
-            return {
-                "type": "content_block_delta",
-                "delta": {"type": "text_delta", "text": content + "\n"}
-            }
+        # Skip lifecycle events
+        if evt_type in ("thread.started", "turn.started", "turn.completed"):
+            return None
 
-        # Command execution events
-        if evt_type == "function_call":
-            name = raw.get("name", "command")
-            args = raw.get("arguments", "")
-            return {
-                "type": "tool_use",
-                "tool": {"name": name},
-                "input": {"command": args}
-            }
+        # Command started → tool_use
+        if evt_type == "item.started":
+            item = raw.get("item", {})
+            if item.get("type") == "command_execution":
+                return {
+                    "type": "tool_use",
+                    "tool": {"name": "execute_command"},
+                    "input": {"command": item.get("command", "")}
+                }
+            return None
 
-        if evt_type == "function_call_output":
-            output = raw.get("output", "")
-            return {
-                "type": "tool_result",
-                "content": output
-            }
+        # Item completed — command result or agent message
+        if evt_type == "item.completed":
+            item = raw.get("item", {})
+            if item.get("type") == "command_execution":
+                return {
+                    "type": "tool_result",
+                    "content": item.get("aggregated_output", "")
+                }
+            if item.get("type") == "agent_message":
+                return {
+                    "type": "result",
+                    "result": item.get("text", "")
+                }
+            return None
 
-        # Final result
-        if evt_type == "result":
-            content = raw.get("content", raw.get("message", ""))
-            return {
-                "type": "result",
-                "result": content,
-                "cost_usd": raw.get("cost_usd"),
-                "duration_ms": raw.get("duration_ms"),
-                "duration_api_ms": raw.get("duration_api_ms")
-            }
-
-        # Error
-        if evt_type == "error":
+        # Error events
+        if evt_type in ("error", "turn.failed"):
             return {
                 "type": "error",
                 "error": {"message": raw.get("message", raw.get("error", str(raw)))}
             }
 
-        # Pass through unknown events as raw content
-        if "content" in raw or "text" in raw:
-            text = raw.get("content", raw.get("text", ""))
-            if text:
-                return {
-                    "type": "content_block_delta",
-                    "delta": {"type": "text_delta", "text": text}
-                }
-
-        # Skip unrecognized events
         return None
 
 
