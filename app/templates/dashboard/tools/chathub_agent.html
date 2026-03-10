@@ -1547,7 +1547,12 @@ async function viewSession(sessionId) {
             } else if (msg.role === 'tool_result') {
                 appendToolResult(msg.content, msg.tool_name, msg.denied);
             } else if (msg.role === 'approval_request') {
-                appendApprovalResolved(msg.content, msg.tool_name);
+                // Look ahead for corresponding tool_result to determine approval status
+                const toolResult = (session.messages || []).find(m =>
+                    m.role === 'tool_result' && m.tool_call_id === msg.tool_call_id
+                );
+                const wasApproved = toolResult && toolResult.content !== 'Tool execution denied by user.';
+                appendApprovalResolved(msg.content, msg.tool_name, wasApproved);
             } else if (msg.role === 'system') {
                 appendSystemMessage(msg.content);
             }
@@ -2219,19 +2224,21 @@ function appendApprovalRequest(toolCallId, toolName, args, description) {
     scrollToBottom();
 }
 
-function appendApprovalResolved(content, toolName) {
+function appendApprovalResolved(content, toolName, wasApproved) {
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-assistant';
-    const isApproved = /approved/i.test(content);
-    const badgeClass = isApproved ? 'approved' : 'denied';
-    const badgeIcon = isApproved ? 'bi-check-circle' : 'bi-x-circle';
-    const badgeText = isApproved ? 'Approved' : 'Denied';
+    const badgeClass = wasApproved ? 'approved' : 'denied';
+    const badgeIcon = wasApproved ? 'bi-check-circle' : 'bi-x-circle';
+    const badgeText = wasApproved ? 'Approved' : 'Denied';
+    // content holds the AI description (or "Approval needed for X" for old messages)
+    const isApprovalPrefix = /^Approval needed for /i.test(content);
+    const displayDesc = (!isApprovalPrefix && content) ? content : toolName;
     div.innerHTML = `<div class="approval-card resolved">
         <div class="approval-header">
             <i class="bi bi-shield-lock"></i> Permission Required
         </div>
-        ${toolName ? `<div class="approval-description">${escapeHtml(toolName)}</div>` : ''}
+        ${displayDesc ? `<div class="approval-description">${escapeHtml(displayDesc)}</div>` : ''}
         <div class="approval-actions">
             <span class="approval-badge ${badgeClass}"><i class="bi ${badgeIcon}"></i> ${badgeText}</span>
         </div>

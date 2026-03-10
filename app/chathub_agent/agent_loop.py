@@ -164,7 +164,8 @@ class AgentLoop:
                                 "description": tc.arguments.get("description", ""),
                             })
                             await self._persist_message(
-                                "approval_request", f"Approval needed for {tc.name}",
+                                "approval_request",
+                                tc.arguments.get("description", "") or f"Approval needed for {tc.name}",
                                 tool_name=tc.name, tool_call_id=tc.id,
                             )
                             approved = await self._wait_for_approval()
