@@ -708,7 +708,7 @@ class ClaudeCodeSettings(Base):
     # Multi-provider support
     openai_api_key_encrypted = Column(Text)
     gemini_api_key_encrypted = Column(Text)
-    codex_default_model = Column(String(100), default="codex-mini")
+    codex_default_model = Column(String(100), default="gpt-5.3-codex")
     gemini_default_model = Column(String(100), default="gemini-2.5-pro")
     default_provider = Column(String(20), default="claude")
     created_at = Column(DateTime, default=datetime.utcnow)

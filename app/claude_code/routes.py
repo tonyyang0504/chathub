@@ -84,7 +84,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "default_provider": "claude",
             "openai_api_key_set": False,
             "gemini_api_key_set": False,
-            "codex_default_model": "codex-mini",
+            "codex_default_model": "gpt-5.3-codex",
             "gemini_default_model": "gemini-2.5-pro",
         }
 
@@ -102,7 +102,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "openai_api_key_masked": "****" + decrypt_string(settings.openai_api_key_encrypted)[-4:] if settings.openai_api_key_encrypted else "",
         "gemini_api_key_set": bool(settings.gemini_api_key_encrypted),
         "gemini_api_key_masked": "****" + decrypt_string(settings.gemini_api_key_encrypted)[-4:] if settings.gemini_api_key_encrypted else "",
-        "codex_default_model": settings.codex_default_model or "codex-mini",
+        "codex_default_model": settings.codex_default_model or "gpt-5.3-codex",
         "gemini_default_model": settings.gemini_default_model or "gemini-2.5-pro",
     }
 
@@ -405,7 +405,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     if provider == "claude":
         model = data.get("model") or (settings.default_model if settings else "sonnet")
     elif provider == "codex":
-        model = data.get("model") or (settings.codex_default_model if settings else "codex-mini")
+        model = data.get("model") or (settings.codex_default_model if settings else "gpt-5.3-codex")
     elif provider == "gemini":
         model = data.get("model") or (settings.gemini_default_model if settings else "gemini-2.5-pro")
 
@@ -683,7 +683,12 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     else:
         api_key = ""
 
-    model = data.get("model") or (settings.default_model if settings else "sonnet")
+    if provider == "codex":
+        model = data.get("model") or (settings.codex_default_model if settings else "gpt-5.3-codex")
+    elif provider == "gemini":
+        model = data.get("model") or (settings.gemini_default_model if settings else "gemini-2.5-pro")
+    else:
+        model = data.get("model") or (settings.default_model if settings else "sonnet")
 
     # Safety commit and backup
     git_hash = None

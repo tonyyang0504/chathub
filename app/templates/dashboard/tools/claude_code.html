@@ -1294,9 +1294,11 @@
                     <div class="col-md-4">
                         <label class="form-label">Codex Model</label>
                         <select class="form-select" id="codexModelSelect">
-                            <option value="codex-mini" selected>Codex Mini</option>
-                            <option value="o4-mini">o4-mini</option>
-                            <option value="o3">o3</option>
+                            <option value="gpt-5.3-codex" selected>GPT-5.3-Codex</option>
+                            <option value="gpt-5.2-codex">GPT-5.2-Codex</option>
+                            <option value="gpt-5.1-codex-max">GPT-5.1-Codex-Max</option>
+                            <option value="gpt-5.2">GPT-5.2</option>
+                            <option value="gpt-5.1-codex-mini">GPT-5.1-Codex-Mini</option>
                         </select>
                     </div>
 
@@ -1460,7 +1462,7 @@ async function loadSettings() {
             document.getElementById('geminiKeyStatus').className = 'text-success small';
         }
         document.getElementById('modelSelect').value = data.default_model || 'sonnet';
-        document.getElementById('codexModelSelect').value = data.codex_default_model || 'codex-mini';
+        document.getElementById('codexModelSelect').value = data.codex_default_model || 'gpt-5.3-codex';
         document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'gemini-2.5-pro';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
