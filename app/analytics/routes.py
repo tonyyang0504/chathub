@@ -345,11 +345,16 @@ async def get_top_conversations(
 @router.get("/activity")
 async def get_activity_log(
     bot_id: Optional[int] = None,
+    action: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get activity log."""
+    """Get activity log with filtering and pagination."""
     # Get user's bot IDs
     bot_ids = db.query(BotProfile.id).filter(
         BotProfile.user_id == current_user.id
@@ -366,8 +371,24 @@ async def get_activity_log(
             raise HTTPException(status_code=404, detail="Bot not found")
         query = query.filter(ActivityLog.bot_profile_id == bot_id)
 
+    if action:
+        query = query.filter(ActivityLog.action == action)
+
+    if start_date:
+        query = query.filter(ActivityLog.timestamp >= start_date)
+
+    if end_date:
+        query = query.filter(ActivityLog.timestamp <= end_date)
+
+    if search:
+        query = query.filter(ActivityLog.details.ilike(f"%{search}%"))
+
     total = query.count()
-    activities = query.order_by(desc(ActivityLog.timestamp)).limit(limit).all()
+    
+    # Calculate offset for pagination
+    offset = (page - 1) * limit
+    
+    activities = query.order_by(desc(ActivityLog.timestamp)).offset(offset).limit(limit).all()
 
     return {
         "activities": [
@@ -380,5 +401,7 @@ async def get_activity_log(
             }
             for a in activities
         ],
-        "total": total
+        "total": total,
+        "page": page,
+        "limit": limit
     }
