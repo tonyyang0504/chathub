@@ -1613,13 +1613,17 @@ async function viewSession(sessionId) {
             }
         }
 
-        setStatus(session.status);
+        if (session.status === 'running' && session.is_waiting) {
+            setStatus('ready');
+        } else {
+            setStatus(session.status);
+        }
         currentSessionStatus = session.status;
         if (session.ai_provider) {
             updateProviderInfo(session.ai_provider, session.model);
         }
 
-        if (session.status === 'running' || session.status === 'awaiting_approval') {
+        if ((session.status === 'running' && !session.is_waiting) || session.status === 'awaiting_approval') {
             connectWebSocket(sessionId, true);
         } else {
             isWaiting = false;
@@ -1843,7 +1847,6 @@ function connectWebSocket(sessionId, noReplay = false) {
         ws._pingInterval = setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) ws.send('ping');
         }, 30000);
-        startInactivityWatchdog();
     };
 
     ws.onmessage = (event) => {
@@ -1858,7 +1861,6 @@ function connectWebSocket(sessionId, noReplay = false) {
     const thisWs = ws;
     ws.onclose = () => {
         clearInterval(thisWs._pingInterval);
-        clearInterval(inactivityTimer);
         // Only act if this is still the active WebSocket (not a stale one being replaced)
         if (ws !== thisWs) return;
         flushAssistantBuffer();
@@ -1890,8 +1892,6 @@ let currentAssistantEl = null;
 
 function renderStreamEvent(data) {
     const type = data.type;
-
-    lastWsActivity = Date.now();
 
     if (type === 'pong' || type === 'ping') return;
 
@@ -2377,14 +2377,12 @@ function setStatus(status) {
         stopBtn.style.display = 'inline-flex';
         sendBtn.disabled = false;
         isRunning = true;
-        clearInterval(inactivityTimer);
         document.getElementById('promptInput').placeholder = 'Send a follow-up message...';
     } else {
         stopBtn.style.display = 'none';
         sendBtn.disabled = false;
         isRunning = false;
         isWaiting = false;
-        clearInterval(inactivityTimer);
         document.getElementById('promptInput').placeholder = 'Describe what you need...';
     }
 }

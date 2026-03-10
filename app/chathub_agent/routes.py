@@ -486,9 +486,20 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         ChatHubAgentMessage.session_id == session_id
     ).order_by(ChatHubAgentMessage.created_at.asc()).all()
 
+    # Check if the agent is waiting (turn complete) despite DB status being "running"
+    active = chathub_agent_manager.get_active_session(user.id)
+    if active and active.session_id == session.id:
+        is_waiting = active.is_waiting
+    elif session.status == "running":
+        # No active session in memory but DB says running = stale/server restarted
+        is_waiting = True
+    else:
+        is_waiting = False
+
     return {
         "id": session.id,
         "status": session.status,
+        "is_waiting": is_waiting,
         "prompt": session.prompt,
         "ai_provider": session.ai_provider,
         "model": session.model,
