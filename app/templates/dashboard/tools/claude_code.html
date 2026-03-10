@@ -2029,7 +2029,6 @@ function renderStreamEvent(data, timestamp) {
     if (type === 'pong' || type === 'ping') return;
 
     if (type === 'assistant' && data.message) {
-        removeThinkingIndicator();
         flushAssistantBuffer();
         turnHasStreamedText = false;  // New turn starting
         const blocks = data.message.content || [];
@@ -2061,7 +2060,6 @@ function renderStreamEvent(data, timestamp) {
             }
         }
     } else if (type === 'content_block_start') {
-        removeThinkingIndicator();
         const block = data.content_block || {};
         if (block.type === 'text') {
             flushAssistantBuffer();
@@ -2101,7 +2099,6 @@ function renderStreamEvent(data, timestamp) {
         currentAssistantEl = null;
         currentToolUseEl = null;
     } else if (type === 'tool_use') {
-        removeThinkingIndicator();
         flushAssistantBuffer();
         const toolName = data.tool?.name || data.name || 'tool';
         // During live streaming, artifact already exists from content_block_start + deltas
@@ -2131,18 +2128,22 @@ function renderStreamEvent(data, timestamp) {
         }
         turnHasStreamedText = false;
     } else if (type === 'result_done') {
+        removeThinkingIndicator();
         isWaiting = true;
         setStatus('ready');
     } else if (type === 'turn_end') {
+        removeThinkingIndicator();
         isWaiting = true;
         setStatus('ready');
     } else if (type === 'user_message') {
         // Follow-up user message broadcast from server — skip since frontend already appended it
     } else if (type === 'error') {
+        removeThinkingIndicator();
         const errMsg = data.error?.message || JSON.stringify(data);
         appendSystemMessage('Error: ' + errMsg);
         setStatus('failed');
     } else if (type === 'session_end') {
+        removeThinkingIndicator();
         isRunning = false;
         isWaiting = false;
         const endStatus = data.status || (data.exit_code === 0 ? 'completed' : 'failed');
@@ -2569,6 +2570,11 @@ function wrapTables(el) {
 
 function scrollToBottom() {
     if (!autoScroll) return;
+    // Keep thinking indicator at the bottom of chat
+    const indicator = document.getElementById('thinkingIndicator');
+    if (indicator) {
+        indicator.parentNode.appendChild(indicator);
+    }
     const wrapper = document.getElementById('chatBodyWrapper');
     wrapper.scrollTop = wrapper.scrollHeight;
 }
