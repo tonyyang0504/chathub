@@ -1375,6 +1375,7 @@
 let currentSessionId = null;
 let ws = null;
 let autoApproveScope = false;
+let pendingAutoApproveCardId = null;
 let isRunning = false;
 let isWaiting = false;  // True when session finished responding, awaiting follow-up
 let currentSessionStatus = null;  // Track viewed session status for resume detection
@@ -2272,9 +2273,19 @@ function renderStreamEvent(data, timestamp) {
     } else if (type === 'result_done') {
         isWaiting = true;
         setStatus('ready');
+        if (pendingAutoApproveCardId) {
+            const cardId = pendingAutoApproveCardId;
+            pendingAutoApproveCardId = null;
+            handleScopeRequest(cardId, true);
+        }
     } else if (type === 'turn_end') {
         isWaiting = true;
         setStatus('ready');
+        if (pendingAutoApproveCardId) {
+            const cardId = pendingAutoApproveCardId;
+            pendingAutoApproveCardId = null;
+            handleScopeRequest(cardId, true);
+        }
     } else if (type === 'user_message') {
         // Follow-up user message broadcast from server — skip since frontend already appended it
     } else if (type === 'error') {
@@ -2725,9 +2736,9 @@ function renderScopeRequestCard(jsonStr, chatBody) {
         </div>`;
     chatBody.appendChild(card);
 
-    // Auto-approve if setting is enabled
+    // Queue auto-approve — will fire when turn ends (session becomes ready for input)
     if (autoApproveScope) {
-        handleScopeRequest(cardId, true);
+        pendingAutoApproveCardId = cardId;
     }
 }
 
@@ -2761,6 +2772,7 @@ function clearChat() {
     currentToolUseEl = null;
     assistantBuffer = '';
     turnHasStreamedText = false;
+    pendingAutoApproveCardId = null;
     resetArtifacts();
 }
 
