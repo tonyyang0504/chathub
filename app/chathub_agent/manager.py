@@ -218,11 +218,15 @@ class ChatHubAgentManager:
             if session.user_id in self._sessions and self._sessions[session.user_id] is session:
                 del self._sessions[session.user_id]
 
-    async def send_message(self, user_id: int, message: str, file_paths: list = None) -> bool:
+    async def send_message(self, user_id: int, message: str, session_id: int = None, file_paths: list = None) -> bool:
         """Send a follow-up message to an active session."""
         session = self.get_active_session(user_id)
         if not session or not session.agent_loop:
             logger.warning(f"No active session for user {user_id}")
+            return False
+        # Verify session matches what the user is viewing
+        if session_id and session.session_id != session_id:
+            logger.warning(f"Session mismatch: active={session.session_id}, requested={session_id}")
             return False
         if not session.agent_loop.is_waiting:
             logger.warning(f"Session {session.session_id} is not waiting for input")

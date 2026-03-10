@@ -575,8 +575,8 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     db.add(user_msg)
     db.commit()
 
-    # Send via manager
-    sent = await chathub_agent_manager.send_message(user.id, prompt, file_paths=file_paths)
+    # Send via manager (pass session_id to prevent cross-session routing)
+    sent = await chathub_agent_manager.send_message(user.id, prompt, session_id=session.id, file_paths=file_paths)
     if not sent:
         # Session not in memory — attempt to resume from DB
         from app.database import ChatHubAgentSettings
@@ -618,6 +618,11 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
             "workspace_path": agent_config_dict.get("workspace_path"),
         }
 
+        # Stop any existing active session before resuming this one
+        existing = chathub_agent_manager.get_active_session(user.id)
+        if existing:
+            await chathub_agent_manager.stop_session(user.id)
+
         resumed = await chathub_agent_manager.resume_session(
             user_id=user.id,
             session_id=session.id,
@@ -632,7 +637,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
         session.status = "running"
         db.commit()
 
-        sent = await chathub_agent_manager.send_message(user.id, prompt, file_paths=file_paths)
+        sent = await chathub_agent_manager.send_message(user.id, prompt, session_id=session.id, file_paths=file_paths)
         if not sent:
             raise HTTPException(status_code=400, detail="Session is not ready for input")
 
