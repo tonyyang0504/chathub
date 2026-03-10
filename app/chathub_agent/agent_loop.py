@@ -405,6 +405,7 @@ class AgentLoop:
             "- If you don't know a table schema, run: `sqlite3 data/app.db \"PRAGMA table_info(table_name);\"`\n"
             "- For user-specific queries, use the user_id provided in the Current User section.\n"
             "- Chain multiple tool calls as needed — explore first, then act.\n"
+            "- If a command fails with a permission or access error, try an alternative approach before giving up.\n"
             "- Read-only tools (read_file, list_files, search_files, read_url, web_search, browser_read) don't need approval.\n"
             "- NEVER ask the user for permission or confirmation in your text responses. "
             "The system has a built-in approval UI that automatically prompts the user when needed. "
