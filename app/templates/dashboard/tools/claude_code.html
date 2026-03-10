@@ -1841,17 +1841,8 @@ function handleSend() {
 }
 
 async function checkAndSend(prompt) {
-    try {
-        const res = await fetch('/tools/api/claude-code/active-session', { credentials: 'include' });
-        const data = await res.json();
-        if (data.active && data.is_waiting) {
-            // Server has a waiting session — use it instead of creating new
-            currentSessionId = data.session_id;
-            isWaiting = true;
-            sendFollowUp(prompt);
-            return;
-        }
-    } catch (e) {}
+    // Always create a new session from a fresh page.
+    // Server-side create_session() auto-stops any previous session.
     startSession(prompt);
 }
 
@@ -2725,7 +2716,7 @@ function renderScopeRequestCard(jsonStr, chatBody) {
         </div>`;
     chatBody.appendChild(card);
 
-    if (autoApproveScope && isWaiting) {
+    if (autoApproveScope && (isRunning || isWaiting)) {
         handleScopeRequest(cardId, true);
     }
 }
