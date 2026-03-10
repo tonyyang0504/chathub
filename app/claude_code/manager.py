@@ -982,6 +982,7 @@ class ClaudeCodeManager:
                 if turn_data:
                     broadcast_data["turn"] = turn_data
                 await session.broadcast(broadcast_data)
+                session.output_buffer.clear()
                 logger.info(f"Turn completed for session {session.session_id}, waiting for follow-up")
             else:
                 # Process failed — session is done

@@ -2176,16 +2176,81 @@ function appendToolResult(content, toolName, denied) {
 
 function describeToolAction(toolName, args) {
     const a = typeof args === 'object' ? args : (() => { try { return JSON.parse(args); } catch { return {}; } })();
-    switch (toolName) {
-        case 'exec_command':
-            return `I need to run a shell command: ${a.command || '(unknown)'}`;
-        case 'write_file':
-            return `I need to create or overwrite a file: ${a.path || '(unknown)'}`;
-        case 'edit_file':
-            return `I need to edit a file: ${a.path || '(unknown)'}`;
-        default:
-            return `I need to use ${toolName}` + (a.path ? `: ${a.path}` : '');
+
+    if (toolName === 'exec_command') {
+        return describeCommand(a.command || '');
     }
+    if (toolName === 'write_file') {
+        const name = (a.path || '').split('/').pop() || a.path;
+        return `I need to create or overwrite a file: ${name}`;
+    }
+    if (toolName === 'edit_file') {
+        const name = (a.path || '').split('/').pop() || a.path;
+        return `I need to edit a file: ${name}`;
+    }
+    return `I need to use ${toolName}` + (a.path ? `: ${a.path}` : '');
+}
+
+function describeCommand(cmd) {
+    const c = cmd.trim();
+
+    // App launch: open -a "AppName"
+    const openApp = c.match(/^open\s+-a\s+["']?([^"'\s]+)["']?\s*$/i);
+    if (openApp) return `I need to open ${openApp[1]}`;
+
+    // App launch with URL/file: open -a "App" "url/file"
+    const openAppWith = c.match(/^open\s+-a\s+["']?([^"'\s]+)["']?\s+["']?(.+?)["']?\s*$/i);
+    if (openAppWith) return `I need to open a URL/file in ${openAppWith[1]}`;
+
+    // osascript (AppleScript): extract the app name
+    const osascript = c.match(/osascript.*?application\s+["\\]*(\w+)/i);
+    if (osascript) {
+        const app = osascript[1];
+        if (/spotify/i.test(app)) return `I need to access Spotify to check what's currently playing`;
+        if (/music/i.test(app)) return `I need to access the Music app to check what's currently playing`;
+        if (/finder/i.test(app)) return `I need to access Finder`;
+        if (/safari|chrome|firefox|arc/i.test(app)) return `I need to interact with ${app}`;
+        if (/system\s*events|system\s*preferences|system\s*settings/i.test(c)) return `I need to access macOS system settings`;
+        if (/calendar/i.test(app)) return `I need to access your Calendar`;
+        if (/mail/i.test(app)) return `I need to access the Mail app`;
+        if (/notes/i.test(app)) return `I need to access the Notes app`;
+        if (/messages/i.test(app)) return `I need to access the Messages app`;
+        return `I need to interact with ${app} via AppleScript`;
+    }
+
+    // Python scripts
+    if (/^python3?\s/.test(c)) return `I need to run a Python script`;
+
+    // npm/node
+    if (/^(?:npm|npx|node|yarn|bun)\s/.test(c)) return `I need to run a Node.js command`;
+
+    // git commands
+    const gitCmd = c.match(/^git\s+(\w+)/);
+    if (gitCmd) return `I need to run a git command: git ${gitCmd[1]}`;
+
+    // pip/brew install
+    if (/^(?:pip3?|brew)\s+install\s/.test(c)) return `I need to install a package`;
+
+    // curl/wget
+    if (/^(?:curl|wget)\s/.test(c)) return `I need to make a network request`;
+
+    // rm/delete
+    if (/^rm\s/.test(c)) return `I need to delete files`;
+
+    // mkdir
+    if (/^mkdir\s/.test(c)) return `I need to create a directory`;
+
+    // sqlite3
+    if (/^sqlite3\s/.test(c)) return `I need to run a database query`;
+
+    // docker
+    if (/^docker\s/.test(c)) return `I need to run a Docker command`;
+
+    // Short commands (< 80 chars): show as-is
+    if (c.length <= 80) return `I need to run a shell command: ${c}`;
+
+    // Long commands: truncate
+    return `I need to run a shell command: ${c.substring(0, 80)}…`;
 }
 
 function appendApprovalRequest(toolCallId, toolName, args) {

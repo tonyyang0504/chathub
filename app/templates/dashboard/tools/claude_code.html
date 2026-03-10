@@ -1930,7 +1930,7 @@ async function viewSession(sessionId) {
                 // Session is waiting for follow-up — set ready state
                 isWaiting = true;
                 setStatus('ready');
-                wsSkipCount = dbEventCount;
+                wsSkipCount = 0;  // Buffer cleared at turn end, no events to skip
                 connectWebSocket(sessionId);
             } else {
                 // Session is actively running — connect and stream
@@ -2106,6 +2106,11 @@ async function resumeSession(prompt) {
     appendUserMessage(prompt);
     setStatus('pending');
     showThinkingIndicator();
+
+    // Reset streaming state for new turn
+    assistantBuffer = '';
+    currentAssistantEl = null;
+    turnHasStreamedText = false;
 
     try {
         const res = await fetch(`/tools/api/claude-code/sessions/${oldSessionId}/resume`, {
