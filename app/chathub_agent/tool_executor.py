@@ -3,6 +3,7 @@
 import asyncio
 import glob
 import os
+import re
 
 
 class ToolExecutor:
@@ -42,6 +43,7 @@ class ToolExecutor:
             "exec_command": self._exec_command,
             "list_files": self._list_files,
             "search_files": self._search_files,
+            "read_url": self._read_url,
         }
 
         handler = handlers.get(tool_name)
@@ -215,3 +217,66 @@ class ToolExecutor:
             lines.append(line)
 
         return "\n".join(lines)
+
+    async def _read_url(self, url: str, max_length: int = 15000) -> str:
+        """Fetch a URL and return its content. Extracts text from HTML pages."""
+        import httpx
+
+        try:
+            async with httpx.AsyncClient(
+                follow_redirects=True, timeout=30.0,
+                headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}
+            ) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            return f"Error: HTTP {e.response.status_code} fetching {url}"
+        except httpx.RequestError as e:
+            return f"Error fetching URL: {e}"
+
+        content_type = resp.headers.get("content-type", "")
+        raw = resp.text
+
+        # Non-HTML: return raw content
+        if "html" not in content_type.lower():
+            if len(raw) > max_length:
+                raw = raw[:max_length] + "\n... (truncated)"
+            return raw
+
+        # HTML: extract readable text
+        text = self._extract_text_from_html(raw)
+
+        if len(text) > max_length:
+            text = text[:max_length] + "\n... (truncated)"
+
+        return text
+
+    @staticmethod
+    def _extract_text_from_html(html: str) -> str:
+        """Extract readable text from HTML, stripping scripts/styles/nav."""
+        # Remove script and style blocks
+        html = re.sub(r'<script[^>]*>.*?</script>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<style[^>]*>.*?</style>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<nav[^>]*>.*?</nav>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<header[^>]*>.*?</header>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<footer[^>]*>.*?</footer>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<!--.*?-->', ' ', html, flags=re.DOTALL)
+
+        # Convert common block elements to newlines
+        html = re.sub(r'<(?:br|hr)[^>]*/?>', '\n', html, flags=re.IGNORECASE)
+        html = re.sub(r'<(?:p|div|h[1-6]|li|tr|blockquote|section|article)[^>]*>', '\n', html, flags=re.IGNORECASE)
+        html = re.sub(r'<(?:td|th)[^>]*>', '\t', html, flags=re.IGNORECASE)
+
+        # Strip remaining tags
+        text = re.sub(r'<[^>]+>', ' ', html)
+
+        # Decode common HTML entities
+        text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+        text = text.replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' ')
+
+        # Collapse whitespace
+        text = re.sub(r'[ \t]+', ' ', text)
+        text = re.sub(r'\n[ \t]+', '\n', text)
+        text = re.sub(r'\n{3,}', '\n\n', text)
+
+        return text.strip()

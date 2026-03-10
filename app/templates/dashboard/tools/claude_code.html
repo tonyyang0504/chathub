@@ -518,6 +518,134 @@
     color: #ef4444;
 }
 
+/* Turn review cards */
+.turn-review-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(124,58,237,0.03) 100%);
+    border: 1px solid rgba(168,85,247,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0.5rem 0;
+    max-width: 520px;
+}
+.turn-review-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #a855f7;
+}
+.turn-review-header i { font-size: 1.1rem; }
+.turn-review-files {
+    font-size: 0.78rem;
+    margin-bottom: 0.75rem;
+}
+.turn-review-file {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0;
+    color: var(--text-primary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.turn-review-file .file-stat {
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: right;
+}
+.turn-review-file .file-stat.ins { color: #10b981; }
+.turn-review-file .file-stat.del { color: #ef4444; }
+.turn-review-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+.turn-review-actions .btn-turn-accept {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.turn-review-actions .btn-turn-accept:hover { background: #059669; }
+.turn-review-actions .btn-turn-reject {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.turn-review-actions .btn-turn-reject:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+.turn-review-actions .btn-turn-diff {
+    background: transparent;
+    color: #a855f7;
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.turn-review-actions .btn-turn-diff:hover {
+    background: rgba(168,85,247,0.08);
+}
+.turn-review-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.turn-review-badge.accepted {
+    background: rgba(16,185,129,0.15);
+    color: #10b981;
+}
+.turn-review-badge.rejected {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+}
+.turn-review-badge.pending {
+    background: rgba(245,158,11,0.15);
+    color: #f59e0b;
+}
+.turn-review-card.resolved {
+    opacity: 0.6;
+}
+.turn-diff-container {
+    margin-top: 0.75rem;
+    max-height: 400px;
+    overflow: auto;
+    border-radius: 8px;
+    background: #1e1e2e;
+    padding: 0.75rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    display: none;
+}
+.turn-diff-container.show { display: block; }
+.diff-line { white-space: pre-wrap; word-break: break-all; }
+.diff-line.add { color: #10b981; }
+.diff-line.del { color: #ef4444; }
+.diff-line.hunk { color: #06b6d4; font-weight: 600; }
+.diff-line.file-header { color: #f59e0b; font-weight: 600; }
+
 .msg-system {
     align-self: center;
     color: var(--text-secondary);
@@ -1777,6 +1905,13 @@ async function viewSession(sessionId) {
         }
         flushAssistantBuffer();
 
+        // Render turn review cards from session history
+        if (session.turns && session.turns.length) {
+            for (const turn of session.turns) {
+                appendTurnReviewCard(turn);
+            }
+        }
+
         // Auto-resolve scope request cards from history — if they exist in past messages,
         // the session continued past them, meaning they were approved
         document.querySelectorAll('.scope-request-card:not(.resolved)').forEach(card => {
@@ -2037,6 +2172,150 @@ async function rollbackSession(sessionId) {
     }
 }
 
+// --- Turn Review ---
+function appendTurnReviewCard(turn) {
+    const chatArea = document.getElementById('chatArea');
+    const card = document.createElement('div');
+    card.className = `turn-review-card${turn.review_status !== 'pending' ? ' resolved' : ''}`;
+    card.id = `turn-review-${turn.id}`;
+
+    const totalIns = (turn.summary || []).reduce((s, f) => s + f.insertions, 0);
+    const totalDels = (turn.summary || []).reduce((s, f) => s + f.deletions, 0);
+
+    let filesHtml = '';
+    if (turn.summary && turn.summary.length) {
+        filesHtml = turn.summary.map(f =>
+            `<div class="turn-review-file">
+                <span class="file-stat ins">+${f.insertions}</span>
+                <span class="file-stat del">-${f.deletions}</span>
+                <span>${escapeHtml(f.file)}</span>
+            </div>`
+        ).join('');
+    }
+
+    let actionsHtml = '';
+    if (turn.review_status === 'pending') {
+        actionsHtml = `
+            <div class="turn-review-actions">
+                <button class="btn-turn-accept" onclick="acceptTurn(${turn.id})"><i class="bi bi-check-lg me-1"></i>Accept</button>
+                <button class="btn-turn-reject" onclick="rejectTurn(${turn.id})"><i class="bi bi-x-lg me-1"></i>Reject</button>
+                <button class="btn-turn-diff" onclick="loadTurnDiff(${turn.id})"><i class="bi bi-file-diff me-1"></i>View diff</button>
+            </div>
+            <div class="turn-diff-container" id="turn-diff-${turn.id}"></div>`;
+    } else {
+        const badgeClass = turn.review_status;
+        const icon = turn.review_status === 'accepted' ? 'check-circle' : 'x-circle';
+        actionsHtml = `
+            <div class="turn-review-actions">
+                <span class="turn-review-badge ${badgeClass}"><i class="bi bi-${icon}"></i> ${turn.review_status.charAt(0).toUpperCase() + turn.review_status.slice(1)}</span>
+                <button class="btn-turn-diff" onclick="loadTurnDiff(${turn.id})"><i class="bi bi-file-diff me-1"></i>View diff</button>
+            </div>
+            <div class="turn-diff-container" id="turn-diff-${turn.id}"></div>`;
+    }
+
+    card.innerHTML = `
+        <div class="turn-review-header">
+            <i class="bi bi-git"></i>
+            Turn ${turn.turn_number} — ${turn.files_changed} file${turn.files_changed !== 1 ? 's' : ''} changed
+            <span style="margin-left:auto;font-weight:400;font-size:0.75rem;color:var(--text-secondary)">
+                <span class="file-stat ins">+${totalIns}</span> <span class="file-stat del">-${totalDels}</span>
+            </span>
+        </div>
+        <div class="turn-review-files">${filesHtml}</div>
+        ${actionsHtml}`;
+
+    chatArea.appendChild(card);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+async function loadTurnDiff(turnId) {
+    const container = document.getElementById(`turn-diff-${turnId}`);
+    if (!container) return;
+
+    if (container.classList.contains('show')) {
+        container.classList.remove('show');
+        return;
+    }
+
+    if (container.innerHTML) {
+        container.classList.add('show');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/tools/api/claude-code/turns/${turnId}/diff`, { credentials: 'include' });
+        const data = await res.json();
+
+        const lines = (data.diff_text || '').split('\n').map(line => {
+            let cls = 'diff-line';
+            if (line.startsWith('+++ ') || line.startsWith('--- ') || line.startsWith('diff --git')) cls += ' file-header';
+            else if (line.startsWith('@@')) cls += ' hunk';
+            else if (line.startsWith('+')) cls += ' add';
+            else if (line.startsWith('-')) cls += ' del';
+            return `<div class="${cls}">${escapeHtml(line)}</div>`;
+        }).join('');
+
+        container.innerHTML = lines || '<div style="color:#888">No diff available</div>';
+        container.classList.add('show');
+    } catch (e) {
+        container.innerHTML = '<div style="color:#ef4444">Failed to load diff</div>';
+        container.classList.add('show');
+    }
+}
+
+async function acceptTurn(turnId) {
+    try {
+        const res = await fetch(`/tools/api/claude-code/turns/${turnId}/accept`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            showToast('Turn accepted', 'success');
+            const card = document.getElementById(`turn-review-${turnId}`);
+            if (card) {
+                card.classList.add('resolved');
+                const actions = card.querySelector('.turn-review-actions');
+                if (actions) {
+                    const diffBtn = actions.querySelector('.btn-turn-diff')?.outerHTML || '';
+                    actions.innerHTML = `<span class="turn-review-badge accepted"><i class="bi bi-check-circle"></i> Accepted</span>${diffBtn}`;
+                }
+            }
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to accept', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+}
+
+async function rejectTurn(turnId) {
+    if (!confirm('This will revert all file changes from this turn. Continue?')) return;
+    try {
+        const res = await fetch(`/tools/api/claude-code/turns/${turnId}/reject`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            showToast('Turn rejected — changes reverted', 'success');
+            const card = document.getElementById(`turn-review-${turnId}`);
+            if (card) {
+                card.classList.add('resolved');
+                const actions = card.querySelector('.turn-review-actions');
+                if (actions) {
+                    const diffBtn = actions.querySelector('.btn-turn-diff')?.outerHTML || '';
+                    actions.innerHTML = `<span class="turn-review-badge rejected"><i class="bi bi-x-circle"></i> Rejected</span>${diffBtn}`;
+                }
+            }
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to reject', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    }
+}
+
 async function deleteSession(sessionId) {
     if (!confirm('Delete this session and all its messages?')) return;
 
@@ -2263,6 +2542,9 @@ function renderStreamEvent(data, timestamp) {
     } else if (type === 'turn_end') {
         isWaiting = true;
         setStatus('ready');
+        if (data.turn) {
+            appendTurnReviewCard(data.turn);
+        }
     } else if (type === 'user_message') {
         // Follow-up user message broadcast from server — skip since frontend already appended it
     } else if (type === 'error') {

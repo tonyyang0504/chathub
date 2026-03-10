@@ -673,6 +673,27 @@ class ClaudeCodeSession(Base):
     # Relationships
     user = relationship("User", backref="claude_code_sessions")
     messages = relationship("ClaudeCodeMessage", back_populates="session", cascade="all, delete-orphan", order_by="ClaudeCodeMessage.created_at")
+    turns = relationship("ClaudeCodeTurn", back_populates="session", cascade="all, delete-orphan", order_by="ClaudeCodeTurn.turn_number")
+
+
+class ClaudeCodeTurn(Base):
+    """Claude Code turn - tracks git changes per turn for review."""
+    __tablename__ = "claude_code_turns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("claude_code_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    turn_number = Column(Integer, nullable=False)
+    pre_turn_hash = Column(String(40))
+    post_turn_hash = Column(String(40))
+    diff_summary = Column(Text)  # JSON: [{file, insertions, deletions}]
+    diff_text = Column(Text)  # Full unified diff (max ~500KB)
+    files_changed = Column(Integer, default=0)
+    review_status = Column(String(20), default="pending")  # pending, accepted, rejected, skipped
+    reviewed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    session = relationship("ClaudeCodeSession", back_populates="turns")
 
 
 class ClaudeCodeMessage(Base):

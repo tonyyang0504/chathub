@@ -138,6 +138,30 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "read_url",
+            "description": "Fetch a URL and return its content. For HTML pages, extracts clean readable text "
+"(strips scripts, styles, nav). For non-HTML (JSON, CSV, plain text), returns raw content. "
+"Use this instead of curl for reading web pages, Google Docs/Sheets, articles, etc.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL to fetch"
+                    },
+                    "max_length": {
+                        "type": "integer",
+                        "description": "Maximum characters to return (default 15000)",
+                        "default": 15000
+                    }
+                },
+                "required": ["url"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "search_files",
             "description": "Search for a text pattern in files. Returns matching lines with file paths and line numbers.",
             "parameters": {
@@ -172,7 +196,7 @@ TOOL_DEFINITIONS = [
 TOOLS_REQUIRING_APPROVAL = {"exec_command", "write_file", "edit_file"}
 
 # Tools that only read data and are safe to auto-approve
-READ_ONLY_TOOLS = {"read_file", "list_files", "search_files"}
+READ_ONLY_TOOLS = {"read_file", "list_files", "search_files", "read_url"}
 
 
 def get_tool_definitions(allowed_tools: list[str] | None = None) -> list[dict]:

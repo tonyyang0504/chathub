@@ -1,5 +1,6 @@
 #!/bin/bash
-# PreToolUse hook: blocks Edit/Write to sensitive files
+# PreToolUse hook: blocks Edit/Write to .env files (secrets protection)
+# Other file protections handled by per-turn review feature
 # Exit 0 = allow, Exit 2 = block (with reason on stdout)
 
 set -euo pipefail
@@ -25,36 +26,6 @@ BASENAME=$(basename "$RESOLVED")
 # Block .env and .env.* files
 if [[ "$BASENAME" == ".env" || "$BASENAME" == .env.* ]]; then
   echo "BLOCKED: Cannot modify .env files — they contain secrets (SECRET_KEY, ENCRYPTION_KEY)"
-  exit 2
-fi
-
-# Block .git/ internals
-if [[ "$RESOLVED" == *"/.git/"* || "$RESOLVED" == *"/.git" ]]; then
-  echo "BLOCKED: Cannot modify .git/ repository internals"
-  exit 2
-fi
-
-# Block .claude/ config
-if [[ "$RESOLVED" == *"/.claude/"* || "$RESOLVED" == *"/.claude" ]]; then
-  echo "BLOCKED: Cannot modify .claude/ configuration files"
-  exit 2
-fi
-
-# Block data/sessions/ (WhatsApp session data)
-if [[ "$RESOLVED" == *"/data/sessions/"* || "$RESOLVED" == *"/data/sessions" ]]; then
-  echo "BLOCKED: Cannot modify WhatsApp session data in data/sessions/"
-  exit 2
-fi
-
-# Block data/backups/
-if [[ "$RESOLVED" == *"/data/backups/"* || "$RESOLVED" == *"/data/backups" ]]; then
-  echo "BLOCKED: Cannot modify database backups in data/backups/"
-  exit 2
-fi
-
-# Block database files
-if [[ "$BASENAME" == *.db || "$BASENAME" == *.db-journal || "$BASENAME" == *.db-wal || "$BASENAME" == *.db-shm ]]; then
-  echo "BLOCKED: Cannot directly modify database files — use migrations or the application"
   exit 2
 fi
 
