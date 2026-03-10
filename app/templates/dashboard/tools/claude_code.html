@@ -1423,6 +1423,7 @@ function newSession() {
     isRunning = false;
     isWaiting = false;
     pendingAutoApproval = false;
+    sendApprovalMessage._sending = false;
     setStatus('idle');
     loadSessions();
     if (window.innerWidth < 992) {
@@ -2739,15 +2740,43 @@ function renderScopeRequestCard(jsonStr, chatBody) {
     chatBody.appendChild(card);
 }
 
-function sendApprovalMessage() {
+async function sendApprovalMessage() {
+    if (sendApprovalMessage._sending) return;  // Dedup guard
+    sendApprovalMessage._sending = true;
+
     setStatus('running');
     isWaiting = false;
-    fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ prompt: 'Approved. Proceed with the requested action.' })
-    });
+
+    // Reset streaming state for new turn (same as sendFollowUp)
+    assistantBuffer = '';
+    currentAssistantEl = null;
+    turnHasStreamedText = false;
+
+    showThinkingIndicator();
+
+    try {
+        const res = await fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ prompt: 'Approved. Proceed with the requested action.' })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            removeThinkingIndicator();
+            appendSystemMessage(err.detail || 'Failed to send approval');
+            setStatus('ready');
+            isWaiting = true;
+        }
+    } catch (e) {
+        removeThinkingIndicator();
+        appendSystemMessage('Network error: ' + e.message);
+        setStatus('ready');
+        isWaiting = true;
+    } finally {
+        sendApprovalMessage._sending = false;
+    }
 }
 
 function handleScopeRequest(cardId, approved) {

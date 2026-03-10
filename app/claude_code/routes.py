@@ -727,6 +727,11 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     # Send via stdin
     sent = await claude_code_manager.send_message(user.id, prompt, file_paths=file_paths)
     if not sent:
+        # Check if session is actively running in memory (not just stale)
+        active = claude_code_manager.get_active_session(user.id)
+        if active and active.is_running:
+            raise HTTPException(status_code=409, detail="Session is currently processing. Please wait.")
+
         # Session not in memory — attempt to auto-resume (e.g., after server restart)
         if not session.claude_session_uuid:
             raise HTTPException(status_code=400, detail="Session is not ready for input")
