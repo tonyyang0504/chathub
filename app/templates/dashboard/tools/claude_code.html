@@ -2265,10 +2265,9 @@ function renderStreamEvent(data, timestamp) {
     } else if (type === 'result_done') {
         isWaiting = true;
         setStatus('ready');
-        if (pendingAutoApproval) {
-            pendingAutoApproval = false;
-            sendApprovalMessage();
-        }
+        // NOTE: Do NOT check pendingAutoApproval here — result_done fires
+        // before is_waiting is set on the server (see manager.py:783 vs 804).
+        // Approval must wait for turn_end.
     } else if (type === 'turn_end') {
         isWaiting = true;
         setStatus('ready');
