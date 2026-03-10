@@ -20,7 +20,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import (
-    get_db, SessionLocal, ClaudeCodeSession, ClaudeCodeMessage, ClaudeCodeSettings, ClaudeCodeTurn
+    get_db, SessionLocal, ClaudeCodeSession, ClaudeCodeMessage, ClaudeCodeSettings
 )
 from app.auth.utils import get_current_user, get_current_user_optional, get_websocket_user, encrypt_string, decrypt_string
 from .manager import claude_code_manager
@@ -501,10 +501,6 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         ClaudeCodeMessage.session_id == session_id
     ).order_by(ClaudeCodeMessage.created_at.asc()).all()
 
-    turns = db.query(ClaudeCodeTurn).filter(
-        ClaudeCodeTurn.session_id == session_id
-    ).order_by(ClaudeCodeTurn.turn_number.asc()).all()
-
     # Check if this session is actively waiting for follow-up
     active = claude_code_manager.get_active_session(user.id)
     session_is_waiting = bool(
@@ -531,16 +527,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
             "message_type": m.message_type,
             "event_data": m.event_data,
             "created_at": (m.created_at.isoformat() + "Z") if m.created_at else None
-        } for m in messages if not (m.message_type == 'system' and m.event_data and '"subtype": "init"' in m.event_data)],
-        "turns": [{
-            "id": t.id,
-            "turn_number": t.turn_number,
-            "files_changed": t.files_changed,
-            "summary": json.loads(t.diff_summary) if t.diff_summary else [],
-            "review_status": t.review_status,
-            "reviewed_at": (t.reviewed_at.isoformat() + "Z") if t.reviewed_at else None,
-            "created_at": (t.created_at.isoformat() + "Z") if t.created_at else None
-        } for t in turns]
+        } for m in messages if not (m.message_type == 'system' and m.event_data and '"subtype": "init"' in m.event_data)]
     }
 
 
@@ -814,81 +801,6 @@ async def rollback_session(session_id: int, request: Request, db: Session = Depe
         pass
 
     return {"status": "ok", "result": result}
-
-
-# ============================================================================
-# Turn Review API
-# ============================================================================
-
-@router.get("/api/claude-code/sessions/{session_id}/turns")
-async def list_turns(session_id: int, request: Request, db: Session = Depends(get_db)):
-    """List turns for a session."""
-    user = await get_current_user(request, None, db)
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
-    ).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    turns = db.query(ClaudeCodeTurn).filter(
-        ClaudeCodeTurn.session_id == session_id
-    ).order_by(ClaudeCodeTurn.turn_number.asc()).all()
-
-    return [{
-        "id": t.id,
-        "turn_number": t.turn_number,
-        "files_changed": t.files_changed,
-        "summary": json.loads(t.diff_summary) if t.diff_summary else [],
-        "review_status": t.review_status,
-        "reviewed_at": (t.reviewed_at.isoformat() + "Z") if t.reviewed_at else None,
-        "created_at": (t.created_at.isoformat() + "Z") if t.created_at else None
-    } for t in turns]
-
-
-@router.get("/api/claude-code/turns/{turn_id}/diff")
-async def get_turn_diff(turn_id: int, request: Request, db: Session = Depends(get_db)):
-    """Get full diff text for a turn."""
-    user = await get_current_user(request, None, db)
-    turn = db.query(ClaudeCodeTurn).filter(ClaudeCodeTurn.id == turn_id).first()
-    if not turn:
-        raise HTTPException(status_code=404, detail="Turn not found")
-
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == turn.session_id,
-        ClaudeCodeSession.user_id == user.id
-    ).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Turn not found")
-
-    return {
-        "id": turn.id,
-        "turn_number": turn.turn_number,
-        "diff_text": turn.diff_text or "",
-        "summary": json.loads(turn.diff_summary) if turn.diff_summary else [],
-        "files_changed": turn.files_changed,
-        "review_status": turn.review_status
-    }
-
-
-@router.post("/api/claude-code/turns/{turn_id}/accept")
-async def accept_turn(turn_id: int, request: Request, db: Session = Depends(get_db)):
-    """Accept a turn's changes."""
-    user = await get_current_user(request, None, db)
-    result = claude_code_manager.accept_turn(turn_id, user.id)
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
-
-
-@router.post("/api/claude-code/turns/{turn_id}/reject")
-async def reject_turn(turn_id: int, request: Request, db: Session = Depends(get_db)):
-    """Reject a turn and revert its changes."""
-    user = await get_current_user(request, None, db)
-    result = claude_code_manager.reject_turn(turn_id, user.id)
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
 
 
 # ============================================================================

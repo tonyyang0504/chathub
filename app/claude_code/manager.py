@@ -51,7 +51,6 @@ class ActiveSession:
         self._read_task: Optional[asyncio.Task] = None
         self._stderr_task: Optional[asyncio.Task] = None
         self.turn_number = 0
-        self.pre_turn_hash: Optional[str] = None
 
     async def broadcast(self, data: dict):
         """Broadcast data to all connected WebSocket clients."""
@@ -479,207 +478,9 @@ class ClaudeCodeManager:
                 del self._sessions[user_id]
             return None
 
-    def _get_current_git_hash(self) -> Optional[str]:
-        """Get current HEAD git hash."""
-        try:
-            r = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-            )
-            if r.returncode == 0:
-                return r.stdout.strip()
-        except Exception as e:
-            logger.error(f"Failed to get git hash: {e}")
-        return None
-
-    def _capture_turn_diff(self, session: ActiveSession) -> Optional[dict]:
-        """Capture git diff between pre-turn and post-turn state, persist to DB."""
-        from app.database import SessionLocal, ClaudeCodeTurn
-
-        pre_hash = session.pre_turn_hash
-        if not pre_hash:
-            return None
-
-        # Auto-commit any uncommitted changes so they show in the diff
-        try:
-            subprocess.run(
-                ["git", "add", "-A"],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-            )
-            r = subprocess.run(
-                ["git", "diff", "--cached", "--quiet"],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-            )
-            if r.returncode != 0:
-                # There are staged changes — commit them
-                subprocess.run(
-                    ["git", "commit", "-m", f"[Claude Code] Turn {session.turn_number} auto-snapshot"],
-                    capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-                )
-        except Exception as e:
-            logger.error(f"Auto-commit failed: {e}")
-
-        post_hash = self._get_current_git_hash()
-        if not post_hash or post_hash == pre_hash:
-            return None  # No changes
-
-        # Get numstat summary
-        try:
-            r = subprocess.run(
-                ["git", "diff", "--numstat", pre_hash, post_hash],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-            )
-            summary = []
-            for line in r.stdout.strip().split("\n"):
-                if not line.strip():
-                    continue
-                parts = line.split("\t")
-                if len(parts) == 3:
-                    ins = int(parts[0]) if parts[0] != '-' else 0
-                    dels = int(parts[1]) if parts[1] != '-' else 0
-                    summary.append({"file": parts[2], "insertions": ins, "deletions": dels})
-        except Exception as e:
-            logger.error(f"Failed to get diff numstat: {e}")
-            summary = []
-
-        # Get full unified diff (capped at 500KB)
-        try:
-            r = subprocess.run(
-                ["git", "diff", pre_hash, post_hash],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-            )
-            diff_text = r.stdout[:500_000] if r.stdout else ""
-        except Exception as e:
-            logger.error(f"Failed to get diff text: {e}")
-            diff_text = ""
-
-        # Persist turn to DB
-        try:
-            db = SessionLocal()
-            turn = ClaudeCodeTurn(
-                session_id=session.session_id,
-                turn_number=session.turn_number,
-                pre_turn_hash=pre_hash,
-                post_turn_hash=post_hash,
-                diff_summary=json.dumps(summary),
-                diff_text=diff_text,
-                files_changed=len(summary),
-                review_status="pending"
-            )
-            db.add(turn)
-            db.commit()
-            turn_id = turn.id
-            db.close()
-
-            return {
-                "turn_id": turn_id,
-                "turn_number": session.turn_number,
-                "files_changed": len(summary),
-                "summary": summary,
-                "review_status": "pending"
-            }
-        except Exception as e:
-            logger.error(f"Failed to persist turn diff: {e}")
-            return None
-
-    def accept_turn(self, turn_id: int, user_id: int) -> dict:
-        """Accept a turn's changes."""
-        from app.database import SessionLocal, ClaudeCodeTurn, ClaudeCodeSession
-
-        db = SessionLocal()
-        try:
-            turn = db.query(ClaudeCodeTurn).filter(ClaudeCodeTurn.id == turn_id).first()
-            if not turn:
-                return {"error": "Turn not found"}
-
-            session = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == turn.session_id).first()
-            if not session or session.user_id != user_id:
-                return {"error": "Not authorized"}
-
-            if turn.review_status != "pending":
-                return {"error": f"Turn already {turn.review_status}"}
-
-            turn.review_status = "accepted"
-            turn.reviewed_at = datetime.utcnow()
-            db.commit()
-
-            return {"status": "accepted", "turn_id": turn_id}
-        except Exception as e:
-            logger.error(f"Failed to accept turn: {e}")
-            return {"error": str(e)}
-        finally:
-            db.close()
-
-    def reject_turn(self, turn_id: int, user_id: int) -> dict:
-        """Reject a turn by reverse-applying its diff."""
-        from app.database import SessionLocal, ClaudeCodeTurn, ClaudeCodeSession
-
-        db = SessionLocal()
-        try:
-            turn = db.query(ClaudeCodeTurn).filter(ClaudeCodeTurn.id == turn_id).first()
-            if not turn:
-                return {"error": "Turn not found"}
-
-            session = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == turn.session_id).first()
-            if not session or session.user_id != user_id:
-                return {"error": "Not authorized"}
-
-            if turn.review_status != "pending":
-                return {"error": f"Turn already {turn.review_status}"}
-
-            # Check this is the most recent pending turn for the session
-            latest_pending = db.query(ClaudeCodeTurn).filter(
-                ClaudeCodeTurn.session_id == turn.session_id,
-                ClaudeCodeTurn.review_status == "pending"
-            ).order_by(ClaudeCodeTurn.turn_number.desc()).first()
-
-            if latest_pending and latest_pending.id != turn_id:
-                return {"error": "Can only reject the most recent pending turn"}
-
-            # Reverse-apply the diff using git revert-like approach
-            if turn.pre_turn_hash and turn.post_turn_hash:
-                try:
-                    # Reset to pre-turn state for the changed files
-                    r = subprocess.run(
-                        ["git", "diff", "--name-only", turn.pre_turn_hash, turn.post_turn_hash],
-                        capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-                    )
-                    changed_files = [f.strip() for f in r.stdout.strip().split("\n") if f.strip()]
-
-                    if changed_files:
-                        # Checkout the pre-turn version of each changed file
-                        for f in changed_files:
-                            subprocess.run(
-                                ["git", "checkout", turn.pre_turn_hash, "--", f],
-                                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-                            )
-
-                        # Commit the revert
-                        subprocess.run(["git", "add", "-A"], capture_output=True, text=True, cwd=str(PROJECT_ROOT))
-                        subprocess.run(
-                            ["git", "commit", "-m", f"[Claude Code] Rejected turn {turn.turn_number} — reverted changes"],
-                            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
-                        )
-                except Exception as e:
-                    logger.error(f"Failed to reverse-apply diff: {e}")
-                    return {"error": f"Failed to revert changes: {e}"}
-
-            turn.review_status = "rejected"
-            turn.reviewed_at = datetime.utcnow()
-            db.commit()
-
-            return {"status": "rejected", "turn_id": turn_id}
-        except Exception as e:
-            logger.error(f"Failed to reject turn: {e}")
-            return {"error": str(e)}
-        finally:
-            db.close()
-
     async def _run_turn(self, session: ActiveSession, prompt: str, is_first: bool = False, file_paths: list = None):
         """Spawn one CLI process for a single turn (prompt on command line)."""
-        # Capture pre-turn git state for diff tracking
         session.turn_number += 1
-        session.pre_turn_hash = self._get_current_git_hash()
 
         # Prepend file context if files are attached
         effective_prompt = prompt
@@ -976,12 +777,7 @@ class ClaudeCodeManager:
                 session.is_running = False
                 session.is_waiting = True
 
-                # Capture turn diff for review
-                turn_data = self._capture_turn_diff(session)
-                broadcast_data = {"type": "turn_end", "exit_code": 0}
-                if turn_data:
-                    broadcast_data["turn"] = turn_data
-                await session.broadcast(broadcast_data)
+                await session.broadcast({"type": "turn_end", "exit_code": 0})
                 session.output_buffer.clear()
                 logger.info(f"Turn completed for session {session.session_id}, waiting for follow-up")
             else:
