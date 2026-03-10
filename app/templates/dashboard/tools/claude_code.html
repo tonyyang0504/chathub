@@ -2181,7 +2181,7 @@ async function rollbackSession(sessionId) {
 
 // --- Turn Review ---
 function appendTurnReviewCard(turn) {
-    const chatArea = document.getElementById('chatArea');
+    const chatArea = document.getElementById('chatBody');
     const card = document.createElement('div');
     card.className = `turn-review-card${turn.review_status !== 'pending' ? ' resolved' : ''}`;
     card.id = `turn-review-${turn.id}`;

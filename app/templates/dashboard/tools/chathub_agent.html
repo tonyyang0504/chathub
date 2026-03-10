@@ -2188,69 +2188,249 @@ function describeToolAction(toolName, args) {
         const name = (a.path || '').split('/').pop() || a.path;
         return `I need to edit a file: ${name}`;
     }
+    if (toolName === 'read_file') {
+        const name = (a.path || '').split('/').pop() || a.path;
+        return `I need to read a file: ${name}`;
+    }
+    if (toolName === 'search_files') {
+        return `I need to search files` + (a.pattern ? ` for "${a.pattern}"` : '');
+    }
+    if (toolName === 'list_directory') {
+        return `I need to list directory contents` + (a.path ? `: ${a.path}` : '');
+    }
     return `I need to use ${toolName}` + (a.path ? `: ${a.path}` : '');
 }
 
 function describeCommand(cmd) {
     const c = cmd.trim();
+    const cl = c.toLowerCase();
 
-    // App launch: open -a "AppName"
+    // open -a "App" (with or without target)
     const openApp = c.match(/^open\s+-a\s+["']?([^"'\s]+)["']?\s*$/i);
     if (openApp) return `I need to open ${openApp[1]}`;
 
-    // App launch with URL/file: open -a "App" "url/file"
-    const openAppWith = c.match(/^open\s+-a\s+["']?([^"'\s]+)["']?\s+["']?(.+?)["']?\s*$/i);
-    if (openAppWith) return `I need to open a URL/file in ${openAppWith[1]}`;
-
-    // osascript (AppleScript): extract the app name
-    const osascript = c.match(/osascript.*?application\s+["\\]*(\w+)/i);
-    if (osascript) {
-        const app = osascript[1];
-        if (/spotify/i.test(app)) return `I need to access Spotify to check what's currently playing`;
-        if (/music/i.test(app)) return `I need to access the Music app to check what's currently playing`;
-        if (/finder/i.test(app)) return `I need to access Finder`;
-        if (/safari|chrome|firefox|arc/i.test(app)) return `I need to interact with ${app}`;
-        if (/system\s*events|system\s*preferences|system\s*settings/i.test(c)) return `I need to access macOS system settings`;
-        if (/calendar/i.test(app)) return `I need to access your Calendar`;
-        if (/mail/i.test(app)) return `I need to access the Mail app`;
-        if (/notes/i.test(app)) return `I need to access the Notes app`;
-        if (/messages/i.test(app)) return `I need to access the Messages app`;
-        return `I need to interact with ${app} via AppleScript`;
+    const openAppWith = c.match(/^open\s+-a\s+["']?([^"'\s]+)["']?\s+(.+)$/i);
+    if (openAppWith) {
+        const app = openAppWith[1];
+        const target = openAppWith[2].replace(/["']/g, '').trim();
+        if (/^https?:\/\//.test(target)) {
+            // Extract domain for readability
+            try {
+                const domain = new URL(target).hostname.replace(/^www\./, '');
+                return `I need to open ${domain} in ${app}`;
+            } catch { return `I need to open a URL in ${app}`; }
+        }
+        return `I need to open a file in ${app}`;
     }
 
-    // Python scripts
-    if (/^python3?\s/.test(c)) return `I need to run a Python script`;
+    // open URL directly
+    const openUrl = c.match(/^open\s+["']?(https?:\/\/\S+)["']?\s*$/i);
+    if (openUrl) {
+        try {
+            const domain = new URL(openUrl[1]).hostname.replace(/^www\./, '');
+            return `I need to open ${domain} in your browser`;
+        } catch { return `I need to open a URL in your browser`; }
+    }
 
-    // npm/node
-    if (/^(?:npm|npx|node|yarn|bun)\s/.test(c)) return `I need to run a Node.js command`;
+    // osascript (AppleScript) — detect app AND action
+    const osascript = c.match(/osascript/i);
+    if (osascript) {
+        const appMatch = cl.match(/application\s+["\\]*(\w+)/i);
+        const app = appMatch ? appMatch[1] : null;
+
+        if (app) {
+            // Detect the action from command content
+            const action = describeAppleScriptAction(cl, app);
+            if (action) return action;
+            return `I need to interact with ${app} via AppleScript`;
+        }
+        // No app detected — try to describe generically
+        if (/volume|sound|audio/.test(cl)) return `I need to adjust your system volume`;
+        if (/display|screen|brightness/.test(cl)) return `I need to access display settings`;
+        if (/notification/.test(cl)) return `I need to send a notification`;
+        if (/clipboard|pbcopy|pbpaste/.test(cl)) return `I need to access your clipboard`;
+        return `I need to run an AppleScript command`;
+    }
+
+    // Python — try to extract the script name or detect inline code
+    if (/^python3?\s/.test(c)) {
+        // python -c "..." inline code
+        const inlineMatch = c.match(/^python3?\s+-c\s+["'](.{0,200})/);
+        if (inlineMatch) {
+            const code = inlineMatch[1];
+            if (/import\s+os|listdir|walk|scandir|glob/.test(code)) return `I need to run a Python script to list files/directories`;
+            if (/import\s+subprocess|popen|run\(/.test(code)) return `I need to run a Python script to execute a system command`;
+            if (/import\s+json/.test(code)) return `I need to run a Python script to process JSON data`;
+            if (/import\s+requests|urllib|http/.test(code)) return `I need to run a Python script to make a network request`;
+            if (/plistlib|plist/.test(code)) return `I need to run a Python script to read application info`;
+            if (/\.app|applications|\/Applications/i.test(code)) return `I need to run a Python script to inspect applications`;
+            return `I need to run an inline Python script`;
+        }
+        // python script.py
+        const scriptMatch = c.match(/^python3?\s+["']?([^\s"']+\.py)["']?/);
+        if (scriptMatch) {
+            const script = scriptMatch[1].split('/').pop();
+            return `I need to run a Python script: ${script}`;
+        }
+        // python -m module
+        const moduleMatch = c.match(/^python3?\s+-m\s+(\S+)/);
+        if (moduleMatch) return `I need to run Python module: ${moduleMatch[1]}`;
+        return `I need to run a Python command`;
+    }
+
+    // npm/node/yarn/bun
+    if (/^(?:npm|npx|node|yarn|bun)\s/.test(c)) {
+        const m = c.match(/^(\w+)\s+(\w+)/);
+        if (m) return `I need to run: ${m[1]} ${m[2]}`;
+        return `I need to run a Node.js command`;
+    }
 
     // git commands
     const gitCmd = c.match(/^git\s+(\w+)/);
-    if (gitCmd) return `I need to run a git command: git ${gitCmd[1]}`;
+    if (gitCmd) return `I need to run: git ${gitCmd[1]}`;
 
     // pip/brew install
-    if (/^(?:pip3?|brew)\s+install\s/.test(c)) return `I need to install a package`;
+    const installMatch = c.match(/^(pip3?|brew)\s+install\s+["']?(\S+)["']?/);
+    if (installMatch) return `I need to install: ${installMatch[2]}`;
 
     // curl/wget
-    if (/^(?:curl|wget)\s/.test(c)) return `I need to make a network request`;
+    if (/^(?:curl|wget)\s/.test(c)) {
+        const urlMatch = c.match(/(?:curl|wget)\s+.*?(https?:\/\/\S+)/);
+        if (urlMatch) {
+            try {
+                const domain = new URL(urlMatch[1]).hostname.replace(/^www\./, '');
+                return `I need to make a network request to ${domain}`;
+            } catch {}
+        }
+        return `I need to make a network request`;
+    }
+
+    // ls/find — listing files
+    if (/^(?:ls|find)\s/.test(c)) return `I need to list files/directories`;
+
+    // cat/head/tail — reading files
+    if (/^(?:cat|head|tail|less|more)\s/.test(c)) {
+        const fileMatch = c.match(/(?:cat|head|tail|less|more)\s+["']?([^\s|>"']+)/);
+        const name = fileMatch ? fileMatch[1].split('/').pop() : '';
+        return `I need to read a file` + (name ? `: ${name}` : '');
+    }
+
+    // cp/mv — copying/moving files
+    if (/^cp\s/.test(c)) return `I need to copy files`;
+    if (/^mv\s/.test(c)) return `I need to move/rename files`;
 
     // rm/delete
-    if (/^rm\s/.test(c)) return `I need to delete files`;
+    if (/^rm\s/.test(c)) {
+        if (/\s-r/.test(c)) return `I need to delete files/directories recursively`;
+        return `I need to delete files`;
+    }
 
     // mkdir
     if (/^mkdir\s/.test(c)) return `I need to create a directory`;
+
+    // chmod/chown
+    if (/^(?:chmod|chown)\s/.test(c)) return `I need to change file permissions`;
 
     // sqlite3
     if (/^sqlite3\s/.test(c)) return `I need to run a database query`;
 
     // docker
-    if (/^docker\s/.test(c)) return `I need to run a Docker command`;
+    const dockerCmd = c.match(/^docker\s+(\w+)/);
+    if (dockerCmd) return `I need to run: docker ${dockerCmd[1]}`;
 
-    // Short commands (< 80 chars): show as-is
-    if (c.length <= 80) return `I need to run a shell command: ${c}`;
+    // ssh/scp
+    if (/^(?:ssh|scp)\s/.test(c)) return `I need to connect to a remote server`;
+
+    // systemctl/launchctl
+    if (/^(?:systemctl|launchctl)\s/.test(c)) return `I need to manage a system service`;
+
+    // killall/pkill
+    const killMatch = c.match(/^(?:killall|pkill)\s+["']?(\S+)/);
+    if (killMatch) return `I need to stop the process: ${killMatch[1]}`;
+
+    // defaults (macOS preferences)
+    if (/^defaults\s/.test(c)) return `I need to read/write macOS preferences`;
+
+    // Short commands (≤ 80 chars): show as-is
+    if (c.length <= 80) return `I need to run: ${c}`;
 
     // Long commands: truncate
     return `I need to run a shell command: ${c.substring(0, 80)}…`;
+}
+
+function describeAppleScriptAction(cl, app) {
+    const appName = app.charAt(0).toUpperCase() + app.slice(1);
+    const isMedia = /spotify|music|itunes/i.test(app);
+
+    if (isMedia) {
+        if (/\bpause\b/.test(cl)) return `I need to pause ${appName}`;
+        if (/\bplay\b(?!er)/.test(cl)) return `I need to resume playback on ${appName}`;
+        if (/\bplaypause\b|play\s*\/\s*pause/.test(cl)) return `I need to toggle play/pause on ${appName}`;
+        if (/\bstop\b/.test(cl)) return `I need to stop ${appName}`;
+        if (/\bnext\s*track\b/.test(cl)) return `I need to skip to the next track on ${appName}`;
+        if (/\bprevious\s*track\b/.test(cl)) return `I need to go to the previous track on ${appName}`;
+        if (/\bset\s+(?:sound\s+)?volume\b/.test(cl)) return `I need to change the volume on ${appName}`;
+        if (/\bshuffle\b/.test(cl)) return `I need to toggle shuffle on ${appName}`;
+        if (/\brepeat\b/.test(cl)) return `I need to toggle repeat on ${appName}`;
+        if (/player\s*state|current\s*track|name\s*of\s*current|get\s+(?:name|artist|album|track)/.test(cl))
+            return `I need to check what's currently playing on ${appName}`;
+        return `I need to control ${appName}`;
+    }
+
+    if (/safari|chrome|firefox|arc|brave|edge/i.test(app)) {
+        if (/\burl\b|current\s*tab|active\s*tab/.test(cl)) return `I need to get the current URL from ${appName}`;
+        if (/\bopen\s+location\b|navigate/.test(cl)) return `I need to open a URL in ${appName}`;
+        if (/\btab\b.*\bclose\b|\bclose\b.*\btab\b/.test(cl)) return `I need to close a tab in ${appName}`;
+        if (/\bnew\s*tab\b|\bmake\s+new\s+(?:tab|document)\b/.test(cl)) return `I need to open a new tab in ${appName}`;
+        return `I need to interact with ${appName}`;
+    }
+
+    if (/finder/i.test(app)) {
+        if (/\btrash\b|\bdelete\b/.test(cl)) return `I need to move files to Trash via Finder`;
+        if (/\bfolder\b.*\bnew\b|\bnew\b.*\bfolder\b|\bmake\b.*\bfolder\b/.test(cl)) return `I need to create a folder via Finder`;
+        if (/\bopen\b/.test(cl)) return `I need to open a file/folder in Finder`;
+        return `I need to access Finder`;
+    }
+
+    if (/calendar/i.test(app)) {
+        if (/\bmake\s+new\s+event\b|\bcreate\b.*\bevent\b/.test(cl)) return `I need to create a calendar event`;
+        if (/\bdelete\b.*\bevent\b/.test(cl)) return `I need to delete a calendar event`;
+        return `I need to access your Calendar`;
+    }
+
+    if (/mail/i.test(app)) {
+        if (/\bsend\b|\boutgoing\b|\bnew\b.*\bmessage\b|\bmake\s+new\b/.test(cl)) return `I need to send an email via Mail`;
+        if (/\bunread\b|\binbox\b|\bmessage\b.*\bcount\b/.test(cl)) return `I need to check your inbox`;
+        return `I need to access the Mail app`;
+    }
+
+    if (/notes/i.test(app)) {
+        if (/\bmake\s+new\b|\bcreate\b/.test(cl)) return `I need to create a note`;
+        return `I need to access your Notes`;
+    }
+
+    if (/messages/i.test(app)) {
+        if (/\bsend\b/.test(cl)) return `I need to send a message via Messages`;
+        return `I need to access Messages`;
+    }
+
+    if (/reminders/i.test(app)) {
+        if (/\bmake\s+new\b|\bcreate\b/.test(cl)) return `I need to create a reminder`;
+        return `I need to access your Reminders`;
+    }
+
+    if (/terminal|iterm/i.test(app)) return `I need to interact with the terminal via AppleScript`;
+
+    if (/system\s*events|system\s*preferences|system\s*settings/i.test(cl)) {
+        if (/dark\s*mode|appearance/.test(cl)) return `I need to check/change your appearance settings`;
+        if (/volume|sound/.test(cl)) return `I need to adjust system volume`;
+        if (/wifi|network/.test(cl)) return `I need to check network settings`;
+        if (/bluetooth/.test(cl)) return `I need to access Bluetooth settings`;
+        if (/key\s*stroke|click|keystroke/.test(cl)) return `I need to simulate keyboard/mouse input`;
+        return `I need to access macOS system settings`;
+    }
+
+    return null;  // let caller handle generic case
 }
 
 function appendApprovalRequest(toolCallId, toolName, args) {
