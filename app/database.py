@@ -701,6 +701,7 @@ class ClaudeCodeSettings(Base):
     default_model = Column(String(100), default="sonnet")
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
+    auto_approve_scope = Column(Boolean, default=False)
     auth_method = Column(String(20), default="api_key")  # "api_key" or "membership"
     oauth_token_encrypted = Column(Text)  # Fernet-encrypted setup-token for membership
     created_at = Column(DateTime, default=datetime.utcnow)

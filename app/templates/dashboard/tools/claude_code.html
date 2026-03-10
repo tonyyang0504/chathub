@@ -1348,6 +1348,13 @@
                             <label class="form-check-label" for="autoBackupToggle">Auto DB backup</label>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" id="autoApproveScopeToggle">
+                            <label class="form-check-label" for="autoApproveScopeToggle">Auto-approve scope requests</label>
+                        </div>
+                        <small class="text-muted">Skip permission prompts for external actions</small>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1367,6 +1374,7 @@
 // State
 let currentSessionId = null;
 let ws = null;
+let autoApproveScope = false;
 let isRunning = false;
 let isWaiting = false;  // True when session finished responding, awaiting follow-up
 let currentSessionStatus = null;  // Track viewed session status for resume detection
@@ -1457,6 +1465,8 @@ async function loadSettings() {
         document.getElementById('modelSelect').value = data.default_model || 'sonnet';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
+        document.getElementById('autoApproveScopeToggle').checked = data.auto_approve_scope === true;
+        autoApproveScope = data.auto_approve_scope === true;
         setAuthMethod(data.auth_method || 'api_key', true);
     } catch (e) {
         console.error('Failed to load settings:', e);
@@ -1469,6 +1479,7 @@ async function saveSettings() {
         default_model: document.getElementById('modelSelect').value,
         auto_commit: document.getElementById('autoCommitToggle').checked,
         auto_backup_db: document.getElementById('autoBackupToggle').checked,
+        auto_approve_scope: document.getElementById('autoApproveScopeToggle').checked,
         auth_method: currentAuthMethod
     };
     if (apiKey && !apiKey.startsWith('****')) {
@@ -2713,6 +2724,11 @@ function renderScopeRequestCard(jsonStr, chatBody) {
             </div>
         </div>`;
     chatBody.appendChild(card);
+
+    // Auto-approve if setting is enabled
+    if (autoApproveScope) {
+        handleScopeRequest(cardId, true);
+    }
 }
 
 function handleScopeRequest(cardId, approved) {

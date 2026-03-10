@@ -89,6 +89,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "default_model": settings.default_model or "sonnet",
         "auto_commit": settings.auto_commit if settings.auto_commit is not None else True,
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
+        "auto_approve_scope": settings.auto_approve_scope if settings.auto_approve_scope is not None else False,
         "auth_method": settings.auth_method or "api_key",
     }
 
@@ -118,6 +119,8 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.auto_commit = data["auto_commit"]
     if "auto_backup_db" in data:
         settings.auto_backup_db = data["auto_backup_db"]
+    if "auto_approve_scope" in data:
+        settings.auto_approve_scope = data["auto_approve_scope"]
     if "auth_method" in data and data["auth_method"] in ("api_key", "membership"):
         settings.auth_method = data["auth_method"]
 
