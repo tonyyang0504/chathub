@@ -36,6 +36,14 @@ TOOL_DEFINITIONS = [
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "description": {
+                        "type": "string",
+                        "description": (
+                            "A short, clear, human-readable description of what this file change does "
+                            "(e.g. 'Save search results to output.json', 'Fix the typo in the config file'). "
+                            "Describe the PURPOSE, not the mechanics."
+                        )
+                    },
                     "path": {
                         "type": "string",
                         "description": "Absolute or relative path to the file to write"
@@ -50,7 +58,7 @@ TOOL_DEFINITIONS = [
                         "default": False
                     }
                 },
-                "required": ["path", "content"]
+                "required": ["description", "path", "content"]
             }
         }
     },
@@ -62,6 +70,14 @@ TOOL_DEFINITIONS = [
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "description": {
+                        "type": "string",
+                        "description": (
+                            "A short, clear, human-readable description of what this file change does "
+                            "(e.g. 'Save search results to output.json', 'Fix the typo in the config file'). "
+                            "Describe the PURPOSE, not the mechanics."
+                        )
+                    },
                     "path": {
                         "type": "string",
                         "description": "Absolute or relative path to the file to edit"
@@ -75,7 +91,7 @@ TOOL_DEFINITIONS = [
                         "description": "The text to replace old_text with"
                     }
                 },
-                "required": ["path", "old_text", "new_text"]
+                "required": ["description", "path", "old_text", "new_text"]
             }
         }
     },
@@ -89,6 +105,16 @@ TOOL_DEFINITIONS = [
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "description": {
+                        "type": "string",
+                        "description": (
+                            "A short, clear, human-readable description of what this command does, written in active voice. "
+                            "For simple commands keep it brief (5-10 words, e.g. 'List files in current directory'). "
+                            "For complex commands add enough context so a non-technical user understands the intent "
+                            "(e.g. 'Check what song is currently playing on Spotify'). "
+                            "Never include the raw command text — describe the PURPOSE, not the syntax."
+                        )
+                    },
                     "command": {
                         "type": "string",
                         "description": "The shell command to execute"
@@ -103,7 +129,7 @@ TOOL_DEFINITIONS = [
                         "default": 120
                     }
                 },
-                "required": ["command"]
+                "required": ["description", "command"]
             }
         }
     },
