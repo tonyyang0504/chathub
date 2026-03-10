@@ -81,6 +81,11 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             "auto_commit": True,
             "auto_backup_db": True,
             "auth_method": "api_key",
+            "default_provider": "claude",
+            "openai_api_key_set": False,
+            "gemini_api_key_set": False,
+            "codex_default_model": "codex-mini",
+            "gemini_default_model": "gemini-2.5-pro",
         }
 
     return {
@@ -91,6 +96,14 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "auto_backup_db": settings.auto_backup_db if settings.auto_backup_db is not None else True,
         "auto_approve_scope": settings.auto_approve_scope if settings.auto_approve_scope is not None else False,
         "auth_method": settings.auth_method or "api_key",
+        # Multi-provider fields
+        "default_provider": settings.default_provider or "claude",
+        "openai_api_key_set": bool(settings.openai_api_key_encrypted),
+        "openai_api_key_masked": "****" + decrypt_string(settings.openai_api_key_encrypted)[-4:] if settings.openai_api_key_encrypted else "",
+        "gemini_api_key_set": bool(settings.gemini_api_key_encrypted),
+        "gemini_api_key_masked": "****" + decrypt_string(settings.gemini_api_key_encrypted)[-4:] if settings.gemini_api_key_encrypted else "",
+        "codex_default_model": settings.codex_default_model or "codex-mini",
+        "gemini_default_model": settings.gemini_default_model or "gemini-2.5-pro",
     }
 
 
@@ -123,6 +136,22 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.auto_approve_scope = data["auto_approve_scope"]
     if "auth_method" in data and data["auth_method"] in ("api_key", "membership"):
         settings.auth_method = data["auth_method"]
+
+    # Multi-provider fields
+    openai_key = data.get("openai_api_key")
+    if openai_key and openai_key.strip() and not openai_key.startswith("****"):
+        settings.openai_api_key_encrypted = encrypt_string(openai_key.strip())
+
+    gemini_key = data.get("gemini_api_key")
+    if gemini_key and gemini_key.strip() and not gemini_key.startswith("****"):
+        settings.gemini_api_key_encrypted = encrypt_string(gemini_key.strip())
+
+    if "codex_default_model" in data:
+        settings.codex_default_model = data["codex_default_model"]
+    if "gemini_default_model" in data:
+        settings.gemini_default_model = data["gemini_default_model"]
+    if "default_provider" in data and data["default_provider"] in ("claude", "codex", "gemini"):
+        settings.default_provider = data["default_provider"]
 
     db.commit()
     return {"status": "ok"}
@@ -345,19 +374,40 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         ClaudeCodeSettings.user_id == user.id
     ).first()
 
+    # Determine provider
+    provider = data.get("provider") or (settings.default_provider if settings else "claude") or "claude"
+
     auth_method = (settings.auth_method if settings else None) or "api_key"
 
+    # Get API key based on provider
     oauth_token = None
-    if auth_method == "api_key":
-        if not settings or not settings.anthropic_api_key_encrypted:
-            raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
-        api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+    if provider == "claude":
+        if auth_method == "api_key":
+            if not settings or not settings.anthropic_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+            api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+        else:
+            api_key = ""  # Membership mode — CLI uses stored credentials
+            if settings and settings.oauth_token_encrypted:
+                oauth_token = decrypt_string(settings.oauth_token_encrypted)
+    elif provider == "codex":
+        if not settings or not settings.openai_api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
+        api_key = decrypt_string(settings.openai_api_key_encrypted)
+    elif provider == "gemini":
+        if not settings or not settings.gemini_api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
+        api_key = decrypt_string(settings.gemini_api_key_encrypted)
     else:
-        api_key = ""  # Membership mode — CLI uses stored credentials
-        if settings and settings.oauth_token_encrypted:
-            oauth_token = decrypt_string(settings.oauth_token_encrypted)
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
 
-    model = data.get("model") or (settings.default_model if settings else "sonnet")
+    # Determine model based on provider
+    if provider == "claude":
+        model = data.get("model") or (settings.default_model if settings else "sonnet")
+    elif provider == "codex":
+        model = data.get("model") or (settings.codex_default_model if settings else "codex-mini")
+    elif provider == "gemini":
+        model = data.get("model") or (settings.gemini_default_model if settings else "gemini-2.5-pro")
 
     # Safety commit and backup
     git_hash = None
@@ -376,6 +426,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         git_commit_hash=git_hash,
         db_backup_path=db_backup_path,
         model=model,
+        provider=provider,
         status="pending"
     )
     db.add(session)
@@ -406,15 +457,18 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         oauth_token=oauth_token,
         user_email=user.email,
         user_name=user.name,
-        file_paths=file_paths
+        file_paths=file_paths,
+        provider=provider
     )
 
     if not active_session:
         session.status = "failed"
         db.commit()
+        from .providers import get_provider
+        prov = get_provider(provider)
         raise HTTPException(
             status_code=500,
-            detail="Failed to start Claude Code CLI. Ensure 'claude' is installed (npm install -g @anthropic-ai/claude-code)"
+            detail=f"Failed to start {prov.display_name} CLI. Ensure '{prov.name}' is installed."
         )
 
     session.status = "running"
@@ -472,6 +526,7 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
         "status": s.status,
         "prompt": s.prompt[:100] if s.prompt else "",
         "model": s.model,
+        "provider": s.provider or "claude",
         "git_commit_hash": s.git_commit_hash,
         "rolled_back": s.rolled_back,
         "created_at": (s.created_at.isoformat() + "Z") if s.created_at else None,
@@ -506,6 +561,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         "status": session.status,
         "prompt": session.prompt,
         "model": session.model,
+        "provider": session.provider or "claude",
         "git_commit_hash": session.git_commit_hash,
         "db_backup_path": session.db_backup_path,
         "rolled_back": session.rolled_back,
@@ -601,17 +657,31 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
         ClaudeCodeSettings.user_id == user.id
     ).first()
 
+    # Determine provider from the old session
+    provider = old_session.provider or "claude"
     auth_method = (settings.auth_method if settings else None) or "api_key"
 
+    # Get API key based on provider
     oauth_token = None
-    if auth_method == "api_key":
-        if not settings or not settings.anthropic_api_key_encrypted:
-            raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
-        api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+    if provider == "claude":
+        if auth_method == "api_key":
+            if not settings or not settings.anthropic_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+            api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+        else:
+            api_key = ""
+            if settings and settings.oauth_token_encrypted:
+                oauth_token = decrypt_string(settings.oauth_token_encrypted)
+    elif provider == "codex":
+        if not settings or not settings.openai_api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
+        api_key = decrypt_string(settings.openai_api_key_encrypted)
+    elif provider == "gemini":
+        if not settings or not settings.gemini_api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
+        api_key = decrypt_string(settings.gemini_api_key_encrypted)
     else:
         api_key = ""
-        if settings and settings.oauth_token_encrypted:
-            oauth_token = decrypt_string(settings.oauth_token_encrypted)
 
     model = data.get("model") or (settings.default_model if settings else "sonnet")
 
@@ -657,7 +727,8 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
         user_email=user.email,
         user_name=user.name,
         claude_session_uuid=old_session.claude_session_uuid,
-        file_paths=file_paths
+        file_paths=file_paths,
+        provider=provider
     )
 
     if not active_session:
@@ -740,16 +811,30 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
             ClaudeCodeSettings.user_id == user.id
         ).first()
 
+        # Determine provider from session
+        msg_provider = session.provider or "claude"
         auth_method = (settings.auth_method if settings else None) or "api_key"
         oauth_token = None
-        if auth_method == "api_key":
-            if not settings or not settings.anthropic_api_key_encrypted:
-                raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
-            api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+
+        if msg_provider == "claude":
+            if auth_method == "api_key":
+                if not settings or not settings.anthropic_api_key_encrypted:
+                    raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+                api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+            else:
+                api_key = ""
+                if settings and settings.oauth_token_encrypted:
+                    oauth_token = decrypt_string(settings.oauth_token_encrypted)
+        elif msg_provider == "codex":
+            if not settings or not settings.openai_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
+            api_key = decrypt_string(settings.openai_api_key_encrypted)
+        elif msg_provider == "gemini":
+            if not settings or not settings.gemini_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
+            api_key = decrypt_string(settings.gemini_api_key_encrypted)
         else:
             api_key = ""
-            if settings and settings.oauth_token_encrypted:
-                oauth_token = decrypt_string(settings.oauth_token_encrypted)
 
         model = session.model or (settings.default_model if settings else "sonnet")
 
@@ -770,7 +855,8 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
             user_email=user.email,
             user_name=user.name,
             claude_session_uuid=session.claude_session_uuid,
-            file_paths=file_paths
+            file_paths=file_paths,
+            provider=msg_provider
         )
 
         if not active_session:

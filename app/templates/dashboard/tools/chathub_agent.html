@@ -455,6 +455,14 @@
     0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
     40% { opacity: 1; transform: scale(1); }
 }
+.thinking-indicator-fixed {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 0 0 0.5rem 0;
+}
+.thinking-indicator-inner {
+    padding: 0.5rem 1rem;
+}
 
 /* Input bar */
 .claude-input-bar {
@@ -1077,6 +1085,11 @@
                 <small>Configure your API key and provider in Settings first.</small>
             </div>
             <div class="claude-messages-inner" id="chatBody"></div>
+            <div id="thinkingIndicator" class="thinking-indicator-fixed" style="display: none;">
+                <div class="thinking-indicator-inner">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            </div>
         </div>
 
         <!-- Input bar -->
@@ -1173,6 +1186,12 @@
                         </select>
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Model</label>
+                        <select class="form-select" id="modelSelect">
+                        </select>
+                        <small class="text-muted" id="modelHint">Default model for selected provider</small>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">API Key</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="apiKeyInput" placeholder="Enter API key...">
@@ -1181,12 +1200,6 @@
                             </button>
                         </div>
                         <small class="text-muted" id="apiKeyStatus"></small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Model</label>
-                        <select class="form-select" id="modelSelect">
-                        </select>
-                        <small class="text-muted" id="modelHint">Default model for selected provider</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Tool Approval</label>
@@ -1569,6 +1582,14 @@ async function viewSession(sessionId) {
         const session = await res.json();
 
         currentSessionId = sessionId;
+
+        // Close any existing WebSocket before switching sessions
+        if (ws) {
+            const staleWs = ws;
+            ws = null;  // Nullify first so onclose guard (ws !== thisWs) triggers
+            try { staleWs.close(); } catch(e) {}
+        }
+
         clearChat();
 
         for (const msg of (session.messages || [])) {
@@ -1833,8 +1854,11 @@ function connectWebSocket(sessionId, noReplay = false) {
         }
     };
 
+    const thisWs = ws;
     ws.onclose = () => {
-        clearInterval(ws._pingInterval);
+        clearInterval(thisWs._pingInterval);
+        // Only act if this is still the active WebSocket (not a stale one being replaced)
+        if (ws !== thisWs) return;
         flushAssistantBuffer();
         removeThinkingIndicator();
         // If we were still "running" when WS closed, the session is stale (e.g. server restarted)
@@ -1868,21 +1892,23 @@ function renderStreamEvent(data) {
     if (type === 'pong' || type === 'ping') return;
 
     if (type === 'assistant_text') {
-        removeThinkingIndicator();
         flushAssistantBuffer();
         appendAssistantMessage(data.content || '');
+        moveThinkingIndicatorToBottom();
     } else if (type === 'tool_call') {
-        removeThinkingIndicator();
         flushAssistantBuffer();
         appendToolUse(JSON.stringify(data.arguments || {}, null, 2), data.tool_name);
+        moveThinkingIndicatorToBottom();
     } else if (type === 'tool_result') {
         const content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content || '');
         appendToolResult(content, data.tool_name, data.denied);
+        moveThinkingIndicatorToBottom();
     } else if (type === 'approval_request') {
         removeThinkingIndicator();
         appendApprovalRequest(data.tool_call_id, data.tool_name, data.arguments, data.description);
         setStatus('awaiting_approval');
     } else if (type === 'turn_complete') {
+        removeThinkingIndicator();
         isWaiting = true;
         setStatus('ready');
     } else if (type === 'user_message') {
@@ -1892,12 +1918,14 @@ function renderStreamEvent(data) {
         appendSystemMessage('Error: ' + (data.content || data.message || JSON.stringify(data)));
         setStatus('failed');
     } else if (type === 'session_end') {
+        removeThinkingIndicator();
         isRunning = false;
         isWaiting = false;
         currentSessionStatus = data.status || 'completed';
         setStatus(currentSessionStatus);
     } else if (type === 'system') {
         appendSystemMessage(data.content || data.message || '');
+        moveThinkingIndicatorToBottom();
     }
 }
 
@@ -2309,19 +2337,17 @@ function clearChat() {
 
 // --- Thinking Indicator ---
 function showThinkingIndicator() {
-    removeThinkingIndicator();
-    const chatBody = document.getElementById('chatBody');
-    const div = document.createElement('div');
-    div.id = 'thinkingIndicator';
-    div.className = 'msg-row msg-assistant';
-    div.innerHTML = `<div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
-    chatBody.appendChild(div);
+    document.getElementById('thinkingIndicator').style.display = '';
+    scrollToBottom();
+}
+
+function moveThinkingIndicatorToBottom() {
+    // No-op — indicator is always at the bottom (sibling after chatBody)
     scrollToBottom();
 }
 
 function removeThinkingIndicator() {
-    const el = document.getElementById('thinkingIndicator');
-    if (el) el.remove();
+    document.getElementById('thinkingIndicator').style.display = 'none';
 }
 
 // --- UI Helpers ---

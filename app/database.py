@@ -663,6 +663,7 @@ class ClaudeCodeSession(Base):
     db_backup_path = Column(String(500))  # Backup file path
     pid = Column(Integer)  # OS process ID
     model = Column(String(100))
+    provider = Column(String(20), default="claude")  # claude, codex, gemini
     claude_session_uuid = Column(String(36))  # Claude CLI session UUID for --resume
     rolled_back = Column(Boolean, default=False)
     rolled_back_at = Column(DateTime)
@@ -704,6 +705,12 @@ class ClaudeCodeSettings(Base):
     auto_approve_scope = Column(Boolean, default=False)
     auth_method = Column(String(20), default="api_key")  # "api_key" or "membership"
     oauth_token_encrypted = Column(Text)  # Fernet-encrypted setup-token for membership
+    # Multi-provider support
+    openai_api_key_encrypted = Column(Text)
+    gemini_api_key_encrypted = Column(Text)
+    codex_default_model = Column(String(100), default="codex-mini")
+    gemini_default_model = Column(String(100), default="gemini-2.5-pro")
+    default_provider = Column(String(20), default="claude")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

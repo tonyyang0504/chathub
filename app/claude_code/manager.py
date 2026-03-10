@@ -33,7 +33,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 class ActiveSession:
     """Represents an active Claude Code CLI session."""
 
-    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key", oauth_token: Optional[str] = None, user_email: Optional[str] = None, user_name: Optional[str] = None):
+    def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key", oauth_token: Optional[str] = None, user_email: Optional[str] = None, user_name: Optional[str] = None, provider: str = "claude"):
         self.session_id = session_id
         self.user_id = user_id
         self.claude_session_id = str(uuid.uuid4())  # UUID for Claude CLI --session-id/--resume
@@ -43,6 +43,10 @@ class ActiveSession:
         self._oauth_token = oauth_token
         self._user_email = user_email
         self._user_name = user_name
+        self.provider = provider
+        # Load CLI provider adapter
+        from .providers import get_provider
+        self.cli_provider = get_provider(provider)
         self.process: Optional[asyncio.subprocess.Process] = None
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []
@@ -441,10 +445,11 @@ class ClaudeCodeManager:
         oauth_token: Optional[str] = None,
         user_email: Optional[str] = None,
         user_name: Optional[str] = None,
-        file_paths: list = None
+        file_paths: list = None,
+        provider: str = "claude"
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
-        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
+        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name, provider=provider)
         self._sessions[user_id] = session
 
         # Persist the CLI session UUID to DB for future --resume
@@ -463,7 +468,8 @@ class ClaudeCodeManager:
             await self._run_turn(session, prompt, is_first=True, file_paths=file_paths)
             return session
         except FileNotFoundError:
-            logger.error("Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code")
+            cli_name = session.cli_provider.display_name
+            logger.error(f"{cli_name} CLI not found")
             del self._sessions[user_id]
             return None
         except Exception as e:
@@ -486,15 +492,7 @@ class ClaudeCodeManager:
                 f"User's message: {prompt}"
             )
 
-        cmd = [
-            "claude",
-            "-p", effective_prompt,
-            "--output-format", "stream-json",
-            "--verbose",
-            "--dangerously-skip-permissions"
-        ]
-
-        # Inject user context so CLI operates on behalf of the logged-in user
+        # Build system context for the CLI
         system_context = (
             f"You are running inside the ChatHub project on behalf of user: "
             f"{session._user_name} (email: {session._user_email}, user_id: {session.user_id}). "
@@ -538,27 +536,23 @@ class ClaudeCodeManager:
             f"plus a summary (e.g., 'Showing 5 of 145 rows'). Show all rows only if the user explicitly asks for the full data."
         )
 
-        cmd.extend(["--append-system-prompt", system_context])
+        # Use provider adapter to build command
+        cmd = session.cli_provider.build_command(
+            prompt=effective_prompt,
+            session_uuid=session.claude_session_id,
+            is_first=is_first,
+            model=session._model,
+            system_context=system_context
+        )
 
-        if session._model:
-            cmd.extend(["--model", session._model])
-
-        if is_first:
-            cmd.extend(["--session-id", session.claude_session_id])
-        else:
-            cmd.extend(["--resume", session.claude_session_id])
-
-        # Set environment
-        env = os.environ.copy()
-        env.pop("CLAUDECODE", None)
-        env.pop("CLAUDE_CODE_ENTRYPOINT", None)
-        if session._auth_method == "membership":
-            # Don't set ANTHROPIC_API_KEY — let CLI use stored membership credentials
-            env.pop("ANTHROPIC_API_KEY", None)
-            if session._oauth_token:
-                env["CLAUDE_CODE_OAUTH_TOKEN"] = session._oauth_token
-        else:
-            env["ANTHROPIC_API_KEY"] = session._api_key
+        # Use provider adapter to build environment
+        base_env = os.environ.copy()
+        env = session.cli_provider.build_env(
+            base_env,
+            api_key=session._api_key,
+            auth_method=session._auth_method,
+            oauth_token=session._oauth_token
+        )
 
         # Generate auth token so CLI can call server API for runtime operations
         from app.auth.utils import create_access_token
@@ -650,6 +644,12 @@ class ClaudeCodeManager:
                     data = json.loads(line_str)
                 except json.JSONDecodeError:
                     data = {"type": "raw", "content": line_str}
+
+                # Normalize non-Claude provider events to Claude format
+                if session.provider != "claude":
+                    data = session.cli_provider.normalize_event(data)
+                    if data is None:
+                        continue  # Provider says skip this event
 
                 # Extract role and content for DB persistence
                 msg_type = data.get("type", "unknown")
@@ -844,14 +844,15 @@ class ClaudeCodeManager:
         user_email: Optional[str] = None,
         user_name: Optional[str] = None,
         claude_session_uuid: Optional[str] = None,
-        file_paths: list = None
+        file_paths: list = None,
+        provider: str = "claude"
     ) -> Optional[ActiveSession]:
         """Resume a stopped session by reusing its Claude CLI session UUID."""
         if not claude_session_uuid:
             logger.error(f"No claude_session_uuid for session {session_id}")
             return None
 
-        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name)
+        session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name, provider=provider)
         # Reuse the old CLI session UUID so --resume picks up the conversation
         session.claude_session_id = claude_session_uuid
         self._sessions[user_id] = session

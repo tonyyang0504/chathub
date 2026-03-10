@@ -1,12 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}Claude Code - ChatHub{% endblock %}
+{% block title %}AI Code - ChatHub{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
 <style>
 /* Override parent main-content overflow so our app shell manages scrolling */
 .main-content { overflow-y: hidden !important; }
+
+/* Provider theming — CSS custom properties driven by data-provider on .claude-app */
+.claude-app { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
+.claude-app[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
+.claude-app[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
+
+/* Provider pill selector */
+.provider-pills { display: flex; gap: 4px; background: var(--border-color); border-radius: 10px; padding: 3px; }
+.provider-pill { border: none; background: transparent; color: var(--text-secondary); font-size: 0.75rem; font-weight: 500; padding: 4px 12px; border-radius: 8px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.provider-pill:hover { color: var(--text-primary); }
+.provider-pill.active { background: var(--card-bg); color: var(--provider-color); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.provider-pill .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
+.provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
+.provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
+
+/* Provider badge on session items */
+.provider-badge { font-size: 0.55rem; padding: 1px 5px; border-radius: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
+.provider-badge.pb-claude { background: rgba(218,106,70,0.12); color: #da6a46; }
+.provider-badge.pb-codex { background: rgba(16,163,127,0.12); color: #10a37f; }
+.provider-badge.pb-gemini { background: rgba(66,133,244,0.12); color: #4285f4; }
 
 /* App shell */
 .claude-app {
@@ -63,9 +84,9 @@
     padding: 0;
 }
 .btn-new-session:hover {
-    background: rgba(218,106,70,0.1);
-    border-color: #da6a46;
-    color: #da6a46;
+    background: rgba(var(--provider-color-rgb),0.1);
+    border-color: var(--provider-color);
+    color: var(--provider-color);
 }
 
 /* Session list */
@@ -85,7 +106,7 @@
     transition: background 0.15s;
 }
 .session-item:hover { background: var(--border-color); }
-.session-item.active { background: rgba(218,106,70,0.12); border: 1px solid rgba(218,106,70,0.25); }
+.session-item.active { background: rgba(var(--provider-color-rgb),0.12); border: 1px solid rgba(var(--provider-color-rgb),0.25); }
 .session-item .prompt-preview {
     font-size: 0.8rem;
     font-weight: 500;
@@ -202,8 +223,8 @@
     font-weight: 500;
 }
 .status-idle { background: var(--border-color); color: var(--text-secondary); }
-.status-running { background: rgba(218,106,70,0.15); color: #da6a46; }
-.status-pending { background: rgba(218,106,70,0.15); color: #da6a46; }
+.status-running { background: rgba(var(--provider-color-rgb),0.15); color: var(--provider-color); }
+.status-pending { background: rgba(var(--provider-color-rgb),0.15); color: var(--provider-color); }
 .status-ready { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-completed { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
@@ -245,7 +266,7 @@
 .msg { max-width: 95%; }
 .msg-user {
     align-self: flex-end;
-    background: linear-gradient(135deg, #da6a46, #d4562a);
+    background: var(--provider-gradient);
     color: white;
     padding: 0.65rem 1rem;
     border-radius: 18px;
@@ -314,7 +335,7 @@
     overflow: hidden;
 }
 .tool-block-header {
-    background: rgba(218,106,70,0.06);
+    background: rgba(var(--provider-color-rgb),0.06);
     padding: 0.4rem 0.75rem;
     cursor: pointer;
     display: flex;
@@ -325,7 +346,7 @@
     user-select: none;
     color: var(--text-secondary);
 }
-.tool-block-header:hover { background: rgba(218,106,70,0.12); }
+.tool-block-header:hover { background: rgba(var(--provider-color-rgb),0.12); }
 .tool-block-header .chevron {
     transition: transform 0.2s;
     font-size: 0.65rem;
@@ -346,8 +367,8 @@
 .ask-question-block {
     margin-top: 0.5rem;
     padding: 0.75rem 1rem;
-    background: rgba(218,106,70,0.06);
-    border: 1px solid rgba(218,106,70,0.2);
+    background: rgba(var(--provider-color-rgb),0.06);
+    border: 1px solid rgba(var(--provider-color-rgb),0.2);
     border-radius: 12px;
 }
 .ask-question-text {
@@ -373,7 +394,7 @@
 }
 .ask-option-label {
     font-weight: 500;
-    color: #da6a46;
+    color: var(--provider-color);
 }
 .ask-option-desc {
     color: var(--text-secondary);
@@ -398,7 +419,7 @@
 .typing-indicator span {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: #da6a46;
+    background: var(--provider-color);
     animation: typing 1.2s infinite ease-in-out;
 }
 .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
@@ -431,7 +452,7 @@
     flex-direction: column;
 }
 .prompt-wrapper:focus-within {
-    border-color: #da6a46;
+    border-color: var(--provider-color);
 }
 
 /* Bottom toolbar row inside prompt-wrapper */
@@ -464,8 +485,8 @@
     position: relative;
 }
 .input-toolbar .toolbar-btn:hover {
-    background: rgba(218,106,70,0.1);
-    color: #da6a46;
+    background: rgba(var(--provider-color-rgb),0.1);
+    color: var(--provider-color);
 }
 .input-toolbar .toolbar-btn.recording {
     color: #ef4444;
@@ -505,7 +526,7 @@
     text-align: left;
 }
 .connector-dropdown .connector-item:hover {
-    background: rgba(218,106,70,0.08);
+    background: rgba(var(--provider-color-rgb),0.08);
 }
 .connector-dropdown .connector-item i {
     font-size: 1rem;
@@ -531,9 +552,9 @@
     color: var(--text-primary);
     outline: none;
 }
-.url-input-bar input:focus { border-color: #da6a46; }
+.url-input-bar input:focus { border-color: var(--provider-color); }
 .url-input-bar .btn-fetch {
-    background: linear-gradient(135deg, #da6a46, #d4562a);
+    background: var(--provider-gradient);
     color: white;
     border: none;
     border-radius: 8px;
@@ -563,12 +584,12 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    background: rgba(218,106,70,0.1);
-    border: 1px solid rgba(218,106,70,0.25);
+    background: rgba(var(--provider-color-rgb),0.1);
+    border: 1px solid rgba(var(--provider-color-rgb),0.25);
     border-radius: 16px;
     padding: 0.2rem 0.55rem;
     font-size: 0.75rem;
-    color: #da6a46;
+    color: var(--provider-color);
     max-width: 180px;
 }
 .file-chip .chip-name {
@@ -591,8 +612,8 @@
 .file-chip .chip-spinner {
     width: 12px;
     height: 12px;
-    border: 2px solid rgba(218,106,70,0.3);
-    border-top-color: #da6a46;
+    border: 2px solid rgba(var(--provider-color-rgb),0.3);
+    border-top-color: var(--provider-color);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -602,8 +623,8 @@
 .drag-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(218,106,70,0.08);
-    border: 2px dashed #da6a46;
+    background: rgba(var(--provider-color-rgb),0.08);
+    border: 2px dashed var(--provider-color);
     border-radius: 12px;
     display: none;
     align-items: center;
@@ -615,8 +636,8 @@
     display: flex;
 }
 .drag-overlay span {
-    background: rgba(218,106,70,0.15);
-    color: #da6a46;
+    background: rgba(var(--provider-color-rgb),0.15);
+    color: var(--provider-color);
     padding: 0.5rem 1.2rem;
     border-radius: 20px;
     font-size: 0.9rem;
@@ -653,7 +674,7 @@
     flex-shrink: 0;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(135deg, #da6a46, #d4562a);
+    background: var(--provider-gradient);
     color: white;
     display: flex;
     align-items: center;
@@ -862,20 +883,20 @@
     transition: border-color 0.3s;
 }
 .artifact-card.highlight {
-    border-color: #da6a46;
+    border-color: var(--provider-color);
 }
 .artifact-card-header {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 0.45rem 0.7rem;
-    background: rgba(218,106,70,0.05);
+    background: rgba(var(--provider-color-rgb),0.05);
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-color);
 }
-.artifact-card-header i { color: #da6a46; font-size: 0.7rem; }
+.artifact-card-header i { color: var(--provider-color); font-size: 0.7rem; }
 .artifact-card-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .artifact-card-time { font-size: 0.65rem; opacity: 0.6; flex-shrink: 0; }
 .artifact-card-content { padding: 0.5rem 0.7rem; }
@@ -957,9 +978,9 @@
     gap: 5px;
     padding: 4px 12px;
     border-radius: 16px;
-    background: rgba(218,106,70,0.08);
-    border: 1px solid rgba(218,106,70,0.2);
-    color: #da6a46;
+    background: rgba(var(--provider-color-rgb),0.08);
+    border: 1px solid rgba(var(--provider-color-rgb),0.2);
+    color: var(--provider-color);
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
@@ -967,8 +988,8 @@
     margin: 2px 0;
 }
 .msg-tool-pill:hover {
-    background: rgba(218,106,70,0.15);
-    border-color: rgba(218,106,70,0.4);
+    background: rgba(var(--provider-color-rgb),0.15);
+    border-color: rgba(var(--provider-color-rgb),0.4);
 }
 .msg-tool-pill i { font-size: 0.7rem; }
 .msg-tool-pill .pill-hint {
@@ -1016,7 +1037,7 @@
 <!-- Mobile sidebar backdrop -->
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
 
-<div class="claude-app">
+<div class="claude-app" id="claudeApp" data-provider="claude">
     <!-- Left Sidebar -->
     <div class="claude-sidebar" id="claudeSidebar">
         <div class="claude-sidebar-header">
@@ -1041,6 +1062,17 @@
                 <button class="btn-sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
                     <i class="bi bi-layout-sidebar-inset"></i>
                 </button>
+                <div class="provider-pills" id="providerPills">
+                    <button class="provider-pill active" data-provider="claude" onclick="switchProvider('claude')">
+                        <span class="pill-dot"></span>Claude
+                    </button>
+                    <button class="provider-pill" data-provider="codex" onclick="switchProvider('codex')">
+                        <span class="pill-dot"></span>Codex
+                    </button>
+                    <button class="provider-pill" data-provider="gemini" onclick="switchProvider('gemini')">
+                        <span class="pill-dot"></span>Gemini
+                    </button>
+                </div>
                 <span class="status-badge status-idle" id="statusBadge">
                     <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
                     <span id="statusText">Ready</span>
@@ -1050,7 +1082,7 @@
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn"
                         onclick="toggleArtifacts()" style="display: none;">
                     <i class="bi bi-layout-sidebar-inset-reverse me-1"></i>Artifacts
-                    <span class="badge ms-1" style="background: rgba(218,106,70,0.2); color: #da6a46;" id="artifactCount">0</span>
+                    <span class="badge ms-1" style="background: rgba(var(--provider-color-rgb),0.2); color: var(--provider-color);" id="artifactCount">0</span>
                 </button>
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
                     <i class="bi bi-gear me-1"></i>Settings
@@ -1066,19 +1098,13 @@
             <div class="claude-empty-state" id="emptyState">
                 <div class="claude-code-logo">
                     <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="64" height="64" rx="16" fill="url(#cc-grad)"/>
+                        <rect width="64" height="64" rx="16" fill="var(--provider-color)"/>
                         <path d="M16 40L28 28L16 16" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M32 44H48" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                        <defs>
-                            <linearGradient id="cc-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#da6a46"/>
-                                <stop offset="1" stop-color="#d4562a"/>
-                            </linearGradient>
-                        </defs>
                     </svg>
                 </div>
-                <p>Describe what you need and Claude Code will work on it.</p>
-                <small>Configure your API key or membership in Settings first.</small>
+                <p id="emptyStateText">Describe what you need and the AI will work on it.</p>
+                <small>Configure your API key in Settings first.</small>
             </div>
             <div class="claude-messages-inner" id="chatBody"></div>
         </div>
@@ -1160,7 +1186,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>Claude Code Settings</h6>
+                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>AI Code Settings</h6>
                 <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -1228,14 +1254,58 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Model</label>
+                    <!-- OpenAI API Key (for Codex) -->
+                    <div class="col-md-6" id="openaiKeySection">
+                        <label class="form-label">OpenAI API Key <small class="text-muted">(for Codex)</small></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="openaiKeyInput" placeholder="sk-...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis('openaiKeyInput','openaiKeyIcon')">
+                                <i class="bi bi-eye" id="openaiKeyIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="openaiKeyStatus"></small>
+                    </div>
+
+                    <!-- Gemini API Key -->
+                    <div class="col-md-6" id="geminiKeySection">
+                        <label class="form-label">Gemini API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="geminiKeyInput" placeholder="AIza...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis('geminiKeyInput','geminiKeyIcon')">
+                                <i class="bi bi-eye" id="geminiKeyIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="geminiKeyStatus"></small>
+                    </div>
+
+                    <!-- Claude Model -->
+                    <div class="col-md-4">
+                        <label class="form-label">Claude Model</label>
                         <select class="form-select" id="modelSelect">
                             <option value="opus">Opus 4.6 - Most capable</option>
                             <option value="opus-1m">Opus (1M context)</option>
                             <option value="sonnet" selected>Sonnet 4.6 - Best for everyday tasks</option>
                             <option value="sonnet-1m">Sonnet (1M context)</option>
                             <option value="haiku">Haiku 4.5 - Fastest</option>
+                        </select>
+                    </div>
+
+                    <!-- Codex Model -->
+                    <div class="col-md-4">
+                        <label class="form-label">Codex Model</label>
+                        <select class="form-select" id="codexModelSelect">
+                            <option value="codex-mini" selected>Codex Mini</option>
+                            <option value="o4-mini">o4-mini</option>
+                            <option value="o3">o3</option>
+                        </select>
+                    </div>
+
+                    <!-- Gemini Model -->
+                    <div class="col-md-4">
+                        <label class="form-label">Gemini Model</label>
+                        <select class="form-select" id="geminiModelSelect">
+                            <option value="gemini-2.5-pro" selected>Gemini 2.5 Pro</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -1277,6 +1347,13 @@ let assistantBuffer = '';  // Buffer for streaming assistant text
 let turnHasStreamedText = false;  // Track if text was shown via deltas (live) vs needs result (replay)
 let wsSkipCount = 0;  // Skip buffered WS events already rendered from DB
 let wsEventsReceived = 0;  // Total WS events received (for reconnect skip count)
+let currentProvider = 'claude';  // Active provider: claude, codex, gemini
+
+const PROVIDER_INFO = {
+    claude: { name: 'Claude Code', color: '#da6a46' },
+    codex: { name: 'OpenAI Codex', color: '#10a37f' },
+    gemini: { name: 'Gemini CLI', color: '#4285f4' }
+};
 
 // File upload state
 let pendingFiles = [];  // { id, filename, path, size, type, uploading }
@@ -1307,6 +1384,19 @@ function toggleSidebar() {
     }
 }
 
+function switchProvider(provider) {
+    currentProvider = provider;
+    // Update pill buttons
+    document.querySelectorAll('.provider-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.provider === provider);
+    });
+    // Update app theme
+    document.getElementById('claudeApp').dataset.provider = provider;
+    // Update empty state text
+    const info = PROVIDER_INFO[provider];
+    document.getElementById('emptyStateText').textContent = `Describe what you need and ${info.name} will work on it.`;
+}
+
 function newSession() {
     currentSessionId = null;
     currentSessionStatus = null;
@@ -1333,8 +1423,11 @@ function toggleSettings() {
 }
 
 function toggleKeyVisibility() {
-    const input = document.getElementById('apiKeyInput');
-    const icon = document.getElementById('keyToggleIcon');
+    toggleKeyVis('apiKeyInput', 'keyToggleIcon');
+}
+function toggleKeyVis(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
     if (input.type === 'password') {
         input.type = 'text';
         icon.className = 'bi bi-eye-slash';
@@ -1356,10 +1449,26 @@ async function loadSettings() {
             document.getElementById('apiKeyStatus').textContent = 'API key configured';
             document.getElementById('apiKeyStatus').className = 'text-success small';
         }
+        if (data.openai_api_key_set) {
+            document.getElementById('openaiKeyInput').placeholder = data.openai_api_key_masked || '****';
+            document.getElementById('openaiKeyStatus').textContent = 'API key configured';
+            document.getElementById('openaiKeyStatus').className = 'text-success small';
+        }
+        if (data.gemini_api_key_set) {
+            document.getElementById('geminiKeyInput').placeholder = data.gemini_api_key_masked || '****';
+            document.getElementById('geminiKeyStatus').textContent = 'API key configured';
+            document.getElementById('geminiKeyStatus').className = 'text-success small';
+        }
         document.getElementById('modelSelect').value = data.default_model || 'sonnet';
+        document.getElementById('codexModelSelect').value = data.codex_default_model || 'codex-mini';
+        document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'gemini-2.5-pro';
         document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
         document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         setAuthMethod(data.auth_method || 'api_key', true);
+        // Set default provider
+        if (data.default_provider) {
+            switchProvider(data.default_provider);
+        }
     } catch (e) {
         console.error('Failed to load settings:', e);
     }
@@ -1367,14 +1476,25 @@ async function loadSettings() {
 
 async function saveSettings() {
     const apiKey = document.getElementById('apiKeyInput').value;
+    const openaiKey = document.getElementById('openaiKeyInput').value;
+    const geminiKey = document.getElementById('geminiKeyInput').value;
     const payload = {
         default_model: document.getElementById('modelSelect').value,
+        codex_default_model: document.getElementById('codexModelSelect').value,
+        gemini_default_model: document.getElementById('geminiModelSelect').value,
         auto_commit: document.getElementById('autoCommitToggle').checked,
         auto_backup_db: document.getElementById('autoBackupToggle').checked,
-        auth_method: currentAuthMethod
+        auth_method: currentAuthMethod,
+        default_provider: currentProvider
     };
     if (apiKey && !apiKey.startsWith('****')) {
         payload.anthropic_api_key = apiKey;
+    }
+    if (openaiKey && !openaiKey.startsWith('****')) {
+        payload.openai_api_key = openaiKey;
+    }
+    if (geminiKey && !geminiKey.startsWith('****')) {
+        payload.gemini_api_key = geminiKey;
     }
     try {
         const res = await fetch('/tools/api/claude-code/settings', {
@@ -1386,6 +1506,8 @@ async function saveSettings() {
         if (res.ok) {
             showToast('Settings saved', 'success');
             document.getElementById('apiKeyInput').value = '';
+            document.getElementById('openaiKeyInput').value = '';
+            document.getElementById('geminiKeyInput').value = '';
             loadSettings();
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
@@ -1595,15 +1717,18 @@ async function loadSessions() {
             const statusClass = `mini-badge status-${s.status}`;
             const date = s.created_at ? new Date(s.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
             const active = s.id === currentSessionId ? 'active' : '';
+            const provider = s.provider || 'claude';
+            const providerBadge = `<span class="provider-badge pb-${provider}">${provider}</span>`;
             const rollbackBtn = (s.status === 'completed' || s.status === 'failed' || s.status === 'stopped') && !s.rolled_back && s.git_commit_hash
                 ? `<button class="btn-rollback" onclick="event.stopPropagation(); rollbackSession(${s.id})" title="Rollback changes"><i class="bi bi-arrow-counterclockwise"></i></button>`
                 : s.rolled_back ? '<span class="text-muted" style="font-size:0.6rem;">rolled back</span>' : '';
 
             const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id})" title="Delete session"><i class="bi bi-trash3"></i></button>`;
 
-            return `<div class="session-item ${active}" onclick="viewSession(${s.id})">
+            return `<div class="session-item ${active}" onclick="viewSession(${s.id})" data-provider="${provider}">
                     <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
                     <div class="session-meta">
+                        ${providerBadge}
                         <span class="${statusClass}">${s.status}</span>
                         <span>${date}</span>
                         ${rollbackBtn}
@@ -1622,6 +1747,10 @@ async function viewSession(sessionId) {
         const session = await res.json();
 
         currentSessionId = sessionId;
+        // Switch to the session's provider theme
+        if (session.provider) {
+            switchProvider(session.provider);
+        }
         clearChat();
 
         // Render stored messages using event_data for full artifact support
@@ -1735,13 +1864,17 @@ async function startSession(prompt) {
     showThinkingIndicator();
 
     try {
+        const modelSelect = currentProvider === 'codex' ? 'codexModelSelect'
+                           : currentProvider === 'gemini' ? 'geminiModelSelect'
+                           : 'modelSelect';
         const res = await fetch('/tools/api/claude-code/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
                 prompt: prompt,
-                model: document.getElementById('modelSelect').value,
+                provider: currentProvider,
+                model: document.getElementById(modelSelect).value,
                 file_paths: filePaths
             })
         });
@@ -1827,13 +1960,16 @@ async function resumeSession(prompt) {
     turnHasStreamedText = false;
 
     try {
+        const resumeModelSelect = currentProvider === 'codex' ? 'codexModelSelect'
+                                : currentProvider === 'gemini' ? 'geminiModelSelect'
+                                : 'modelSelect';
         const res = await fetch(`/tools/api/claude-code/sessions/${oldSessionId}/resume`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
                 prompt: prompt,
-                model: document.getElementById('modelSelect').value,
+                model: document.getElementById(resumeModelSelect).value,
                 file_paths: filePaths
             })
         });
