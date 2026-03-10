@@ -1246,8 +1246,6 @@ let currentSessionStatus = null;
 let ws = null;
 let isRunning = false;
 let isWaiting = false;
-let lastWsActivity = 0;
-let inactivityTimer = null;
 let autoScroll = true;
 let assistantBuffer = '';
 
@@ -1826,34 +1824,6 @@ async function approveToolCall(toolCallId, approved) {
         console.error('Failed to approve:', e);
         showToast('Failed to send approval', 'error');
     }
-}
-
-// --- Inactivity Watchdog ---
-function startInactivityWatchdog() {
-    clearInterval(inactivityTimer);
-    inactivityTimer = setInterval(async () => {
-        if (!isRunning || !currentSessionId) {
-            clearInterval(inactivityTimer);
-            return;
-        }
-        if (Date.now() - lastWsActivity > 15000) {
-            try {
-                const res = await fetch(`${API_BASE}/sessions/${currentSessionId}`, { credentials: 'include' });
-                if (res.ok) {
-                    const session = await res.json();
-                    if (['completed', 'stopped', 'failed'].includes(session.status)) {
-                        removeThinkingIndicator();
-                        isRunning = false;
-                        isWaiting = false;
-                        currentSessionStatus = session.status;
-                        setStatus(session.status);
-                        loadSessions();
-                        clearInterval(inactivityTimer);
-                    }
-                }
-            } catch (e) { /* ignore polling errors */ }
-        }
-    }, 10000);
 }
 
 // --- WebSocket ---
