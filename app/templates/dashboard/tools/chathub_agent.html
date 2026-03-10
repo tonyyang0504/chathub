@@ -2186,24 +2186,36 @@ function appendToolResult(content, toolName, denied) {
 function appendApprovalRequest(toolCallId, toolName, args) {
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'msg';
-    div.style.width = '100%';
-    const argsStr = typeof args === 'object' ? JSON.stringify(args, null, 2) : (args || '');
+    div.className = 'msg msg-assistant';
+
+    // Build detail rows from args
+    let detailHtml = '';
+    const argsObj = typeof args === 'object' ? args : (() => { try { return JSON.parse(args); } catch { return null; } })();
+
+    if (argsObj && typeof argsObj === 'object') {
+        for (const [key, val] of Object.entries(argsObj)) {
+            const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+            const value = typeof val === 'string' ? val : JSON.stringify(val);
+            detailHtml += `<div class="approval-detail"><span class="approval-label">${escapeHtml(label)}</span><span class="approval-value">${escapeHtml(value)}</span></div>`;
+        }
+    } else {
+        const fallback = typeof args === 'string' ? args : JSON.stringify(args || '');
+        detailHtml = `<div class="approval-detail"><span class="approval-value">${escapeHtml(fallback)}</span></div>`;
+    }
+
     div.innerHTML = `<div class="approval-card" id="approval-${escapeHtml(toolCallId)}">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <i class="bi bi-shield-lock" style="color: #06b6d4; font-size: 1.1rem;"></i>
-            <span class="tool-name">Permission Required</span>
+        <div class="approval-header">
+            <i class="bi bi-shield-lock"></i> Permission Required
         </div>
-        <div class="tool-desc">${escapeHtml(toolName)}</div>
-        <div class="tool-args">${escapeHtml(argsStr)}</div>
-        <div class="d-flex align-items-center gap-2 approval-actions">
+        <div class="approval-detail"><span class="approval-label">Tool</span><span class="approval-value">${escapeHtml(toolName)}</span></div>
+        ${detailHtml}
+        <div class="approval-actions">
             <button class="btn-approve" onclick="approveToolCall('${escapeHtml(toolCallId)}', true)">
                 <i class="bi bi-check-lg me-1"></i>Allow
             </button>
             <button class="btn-deny" onclick="approveToolCall('${escapeHtml(toolCallId)}', false)">
                 <i class="bi bi-x-lg me-1"></i>Deny
             </button>
-            <span class="approval-status ms-2" style="font-size: 0.8rem;"></span>
         </div>
     </div>`;
     chatBody.appendChild(div);
@@ -2213,19 +2225,17 @@ function appendApprovalRequest(toolCallId, toolName, args) {
 function appendApprovalResolved(content, toolName) {
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'msg';
-    div.style.width = '100%';
+    div.className = 'msg msg-assistant';
     const isApproved = /approved/i.test(content);
     const badgeClass = isApproved ? 'approved' : 'denied';
     const badgeIcon = isApproved ? 'bi-check-circle' : 'bi-x-circle';
     const badgeText = isApproved ? 'Approved' : 'Denied';
     div.innerHTML = `<div class="approval-card resolved">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <i class="bi bi-shield-lock" style="color: #06b6d4; font-size: 1.1rem;"></i>
-            <span class="tool-name">Permission Required</span>
+        <div class="approval-header">
+            <i class="bi bi-shield-lock"></i> Permission Required
         </div>
-        ${toolName ? `<div class="tool-desc">${escapeHtml(toolName)}</div>` : ''}
-        <div class="d-flex align-items-center gap-2">
+        ${toolName ? `<div class="approval-detail"><span class="approval-label">Tool</span><span class="approval-value">${escapeHtml(toolName)}</span></div>` : ''}
+        <div class="approval-actions">
             <span class="approval-badge ${badgeClass}"><i class="bi ${badgeIcon}"></i> ${badgeText}</span>
         </div>
     </div>`;
