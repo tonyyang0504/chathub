@@ -2093,12 +2093,15 @@ function connectWebSocket(sessionId) {
             }, 1000);
             return;
         }
-        isRunning = false;
-        isWaiting = false;
-        // Mark session as stopped so resume works if user sends another message
+        // If session was still "running" when WS closed (e.g., server restart),
+        // mark as stopped so the user can resume it by typing a new message.
+        // Don't override if session_end already set the correct status.
         if (currentSessionStatus === 'running' || currentSessionStatus === 'pending') {
             currentSessionStatus = 'stopped';
+            document.getElementById('promptInput').placeholder = 'Continue this conversation...';
         }
+        isRunning = false;
+        isWaiting = false;
         document.getElementById('stopBtn').style.display = 'none';
         document.getElementById('sendBtn').disabled = false;
         if (currentSessionId) {
