@@ -14,7 +14,6 @@ class PlatformType(str, Enum):
     TELEGRAM = "telegram"
     INSTAGRAM = "instagram"
     MESSENGER = "messenger"
-    WECHAT = "wechat"
     LINE = "line"
     LINKEDIN = "linkedin"
     TINDER = "tinder"

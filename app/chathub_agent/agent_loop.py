@@ -335,7 +335,7 @@ class AgentLoop:
             "- **Database models** in `app/database.py`: User, BotProfile, Conversation, Message, "
             "Hub, HubBotMembership, Contact, ScheduledContent, AIAgent, and more\n"
             "- **AI Providers**: OpenAI, Anthropic, Google, DeepSeek, Qwen (in `app/ai/providers/`)\n"
-            "- **Bot platforms**: WhatsApp, Telegram, Instagram, Messenger, WeChat, LINE, etc.\n"
+            "- **Bot platforms**: WhatsApp, Telegram, Instagram, Messenger, LINE, etc.\n"
             "- **Templates**: `app/templates/` (Jinja2 HTML)\n"
             "- **Static files**: `static/` (CSS, JS)\n\n"
 

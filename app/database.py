@@ -71,7 +71,7 @@ class BotProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
 
-    # Platform type (whatsapp, telegram, instagram, messenger, wechat, line, linkedin, tinder, bumble)
+    # Platform type (whatsapp, telegram, instagram, messenger, line, linkedin, tinder, bumble)
     platform_type = Column(String(50), default="whatsapp")
 
     # AI Provider Settings
@@ -709,7 +709,7 @@ class ClaudeCodeSettings(Base):
     openai_api_key_encrypted = Column(Text)
     gemini_api_key_encrypted = Column(Text)
     codex_default_model = Column(String(100), default="gpt-5.3-codex")
-    gemini_default_model = Column(String(100), default="gemini-2.5-pro")
+    gemini_default_model = Column(String(100), default="auto-gemini-3")
     default_provider = Column(String(20), default="claude")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

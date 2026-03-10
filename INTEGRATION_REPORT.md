@@ -38,17 +38,12 @@
 - **Resolution:** Added Messenger adapter import and registration
 - **Changes:** Added `app/platforms/messenger/`
 
-### 7. WeChat (feature/wechat) - Conflict resolved
-- **Conflicts:** `app/main.py`, `requirements.txt`, `PLATFORM_TASK.md`
-- **Resolution:** Added WeChat adapter import/registration; combined line-bot-sdk and defusedxml dependencies
-- **Changes:** Added `app/platforms/wechat/`, `requirements.txt` (defusedxml>=0.7.1)
-
-### 8. Tinder (feature/tinder) - Clean merge
+### 7. Tinder (feature/tinder) - Clean merge
 - **Conflicts:** None
 - **Changes:** Added `app/platforms/tinder/adapter.py` only
 - **Note:** Branch was missing `__init__.py` and `main.py` registration - created in post-merge fixup
 
-### 9. Bumble (feature/bumble) - Clean merge
+### 8. Bumble (feature/bumble) - Clean merge
 - **Conflicts:** None
 - **Changes:** Added `app/platforms/bumble/adapter.py` only
 - **Note:** Branch was missing `__init__.py` and `main.py` registration - created in post-merge fixup
@@ -59,13 +54,13 @@
 
 ## Validation Results
 
-### PlatformType Enum (10 entries)
-All 10 platform types present:
-- WHATSAPP, TELEGRAM, INSTAGRAM, MESSENGER, WECHAT, LINE, LINKEDIN, TINDER, BUMBLE, DISCORD
+### PlatformType Enum (9 entries)
+All 9 platform types present:
+- WHATSAPP, TELEGRAM, INSTAGRAM, MESSENGER, LINE, LINKEDIN, TINDER, BUMBLE, DISCORD
 
-### VALID_PLATFORMS (10 entries)
-All 10 platforms in validation list:
-- whatsapp, telegram, instagram, messenger, wechat, line, linkedin, tinder, bumble, discord
+### VALID_PLATFORMS (9 entries)
+All 9 platforms in validation list:
+- whatsapp, telegram, instagram, messenger, line, linkedin, tinder, bumble, discord
 
 ### Adapter Imports
 All 9 new platform adapter modules import successfully (plus existing WhatsApp).
@@ -96,7 +91,6 @@ All 9 new platform adapter modules import successfully (plus existing WhatsApp).
 | f157d53 | Add missing __init__.py files and register Tinder/Bumble adapters |
 | 11a14ee | Merge feature/bumble |
 | fabba2c | Merge feature/tinder |
-| 704d4b5 | Merge feature/wechat |
 | affa729 | Merge feature/messenger |
 | c050f4a | Merge feature/instagram |
 | fd1a608 | Merge feature/line |

@@ -20,8 +20,7 @@ ChatHub v2.0.0 introduces multi-platform support with 9 new platform adapters, a
 | 1 | Telegram | API Token | Long polling |
 | 2 | Instagram | API Token | Webhook |
 | 3 | Messenger | API Token | Webhook |
-| 4 | WeChat | API Token | Webhook |
-| 5 | LINE | API Token | Webhook |
+| 4 | LINE | API Token | Webhook |
 | 6 | LinkedIn | OAuth 2.0 | Polling |
 | 7 | Tinder | Credentials | Polling |
 | 8 | Bumble | Credentials | Polling |
@@ -54,7 +53,6 @@ The following security issues were identified during code review and resolved be
 
 | Fix | Platforms Affected | Description |
 |-----|--------------------|-------------|
-| XXE prevention | WeChat | Replaced `xml.etree` with `defusedxml.ElementTree` to prevent XML External Entity attacks |
 | Webhook hardening | Instagram, Messenger | Webhook signature verification made explicitly fail-closed (reject if no secret configured) |
 | Token encryption | LinkedIn, Tinder, Bumble | OAuth tokens and session tokens encrypted at rest using Fernet (AES-128-CBC + HMAC-SHA256) |
 | CSRF protection | LinkedIn | OAuth state parameter using `secrets.token_urlsafe(32)` with validation on callback |
