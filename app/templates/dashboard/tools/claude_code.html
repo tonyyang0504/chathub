@@ -2095,6 +2095,10 @@ function connectWebSocket(sessionId) {
         }
         isRunning = false;
         isWaiting = false;
+        // Mark session as stopped so resume works if user sends another message
+        if (currentSessionStatus === 'running' || currentSessionStatus === 'pending') {
+            currentSessionStatus = 'stopped';
+        }
         document.getElementById('stopBtn').style.display = 'none';
         document.getElementById('sendBtn').disabled = false;
         if (currentSessionId) {
