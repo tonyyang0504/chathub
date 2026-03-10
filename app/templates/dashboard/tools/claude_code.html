@@ -2244,7 +2244,9 @@ function renderStreamEvent(data, timestamp) {
     } else if (type === 'session_end') {
         isRunning = false;
         isWaiting = false;
-        setStatus(data.status || (data.exit_code === 0 ? 'completed' : 'failed'));
+        const endStatus = data.status || (data.exit_code === 0 ? 'completed' : 'failed');
+        currentSessionStatus = endStatus;
+        setStatus(endStatus);
         if (data.stderr) {
             appendSystemMessage(data.stderr);
         }

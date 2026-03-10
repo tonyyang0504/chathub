@@ -866,6 +866,12 @@ async def stream_session(websocket: WebSocket, session_id: int):
             finally:
                 active.websockets.discard(websocket)
         else:
+            # Session not active in memory — if DB says 'running', it's stale (server restarted)
+            if session.status == 'running':
+                session.status = 'completed'
+                session.ended_at = datetime.utcnow()
+                db.commit()
+
             # Session not active, send historical messages
             messages = db.query(ClaudeCodeMessage).filter(
                 ClaudeCodeMessage.session_id == session_id

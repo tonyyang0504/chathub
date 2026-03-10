@@ -52,8 +52,11 @@ class ToolExecutor:
         if handler is None:
             return f"Error: unknown tool '{tool_name}'"
 
+        # Strip meta-parameters not accepted by handlers
+        args = {k: v for k, v in arguments.items() if k != "description"}
+
         try:
-            return await handler(**arguments)
+            return await handler(**args)
         except PermissionError as e:
             return f"Permission denied: {e}"
         except FileNotFoundError as e:
