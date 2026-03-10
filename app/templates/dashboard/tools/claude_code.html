@@ -83,6 +83,26 @@
     cursor: pointer;
     margin-bottom: 0.25rem;
     transition: background 0.15s;
+    display: flex;
+    align-items: flex-start;
+}
+.session-item-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    margin-right: 0.5rem;
+    margin-top: 1px;
+}
+.session-item-content {
+    flex: 1;
+    min-width: 0;
 }
 .session-item:hover { background: var(--border-color); }
 .session-item.active { background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); }
@@ -1690,12 +1710,15 @@ async function loadSessions() {
             const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id})" title="Delete session"><i class="bi bi-trash3"></i></button>`;
 
             return `<div class="session-item ${active}" onclick="viewSession(${s.id})">
-                <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
-                <div class="session-meta">
-                    <span class="${statusClass}">${s.status}</span>
-                    <span>${date}</span>
-                    ${rollbackBtn}
-                    ${deleteBtn}
+                <div class="session-item-icon"><i class="bi bi-terminal-fill"></i></div>
+                <div class="session-item-content">
+                    <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
+                    <div class="session-meta">
+                        <span class="${statusClass}">${s.status}</span>
+                        <span>${date}</span>
+                        ${rollbackBtn}
+                        ${deleteBtn}
+                    </div>
                 </div>
             </div>`;
         }).join('');
