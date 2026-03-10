@@ -422,6 +422,12 @@ class ChatHubAgentManager:
                 del self._sessions[user_id]
             return None
 
+    def update_session_config(self, user_id: int, config_updates: dict):
+        """Push config updates to a running session's agent loop."""
+        session = self.get_active_session(user_id)
+        if session and session.agent_loop:
+            session.agent_loop.update_config(config_updates)
+
     def approve_tool(self, user_id: int, approved: bool) -> bool:
         """Approve or deny a pending tool call."""
         session = self.get_active_session(user_id)

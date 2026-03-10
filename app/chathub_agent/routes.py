@@ -135,6 +135,24 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
             setattr(settings, field, data[field])
 
     db.commit()
+
+    # Hot-reload settings into running session (if any)
+    approval_mode = data.get("approval_mode") or settings.approval_mode or "auto_approve_all"
+    config_updates = {
+        "auto_approve_all": approval_mode == "auto_approve_all",
+        "auto_approve_read": approval_mode in ("auto_approve_all", "auto_approve_reads"),
+    }
+    new_model = data.get("default_model") or settings.default_model
+    if new_model:
+        config_updates["model"] = new_model
+
+    chathub_agent_manager.update_session_config(user.id, config_updates)
+
+    # Also update the provider's model if it changed
+    session = chathub_agent_manager.get_active_session(user.id)
+    if session and session.agent_loop and new_model:
+        session.agent_loop.provider.model = new_model
+
     return {"status": "ok"}
 
 

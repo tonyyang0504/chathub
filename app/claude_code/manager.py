@@ -721,7 +721,39 @@ class ClaudeCodeManager:
                     role = "system"
                     content = data.get("message", data.get("content", str(data)))
                 elif msg_type == "user":
-                    continue  # Auto-submitted tool_result content, skip entirely
+                    # Extract tool_result from auto-submitted user messages for artifact panel
+                    message_data = data.get("message", data)
+                    content_blocks = message_data.get("content", [])
+                    if isinstance(content_blocks, list):
+                        for block in content_blocks:
+                            if isinstance(block, dict) and block.get("type") == "tool_result":
+                                result_content = block.get("content", "")
+                                if isinstance(result_content, list):
+                                    result_content = "\n".join(
+                                        p.get("text", "") for p in result_content
+                                        if isinstance(p, dict) and p.get("type") == "text"
+                                    )
+                                elif not isinstance(result_content, str):
+                                    result_content = str(result_content)
+                                tool_result_event = {"type": "tool_result", "content": result_content}
+                                # Save to DB
+                                try:
+                                    tr_db = SessionLocal()
+                                    tr_msg = ClaudeCodeMessage(
+                                        session_id=session.session_id,
+                                        role="tool_result",
+                                        content=(result_content[:10000] if result_content else ""),
+                                        message_type="tool_result",
+                                        event_data=json.dumps(tool_result_event)[:5000]
+                                    )
+                                    tr_db.add(tr_msg)
+                                    tr_db.commit()
+                                    tr_db.close()
+                                except Exception as e:
+                                    logger.error(f"Failed to persist tool_result: {e}")
+                                # Broadcast to WebSocket clients
+                                await session.broadcast(tool_result_event)
+                    continue  # Skip the raw user event itself
                 else:
                     content = line_str
 

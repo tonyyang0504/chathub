@@ -289,6 +289,10 @@ class AgentLoop:
         self.is_running = True
         self.is_waiting = True
 
+    def update_config(self, new_config: dict):
+        """Hot-reload config for the running agent loop."""
+        self.agent_config.update(new_config)
+
     def stop(self):
         """Request the agent loop to stop."""
         self._stop_requested = True
