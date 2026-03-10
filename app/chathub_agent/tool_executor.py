@@ -282,3 +282,100 @@ class ToolExecutor:
         text = re.sub(r'\n{3,}', '\n\n', text)
 
         return text.strip()
+
+    async def _get_browser(self):
+        """Get or create a shared Playwright browser instance."""
+        if not hasattr(self, '_playwright') or self._playwright is None:
+            from playwright.async_api import async_playwright
+            self._playwright = await async_playwright().start()
+            self._browser = await self._playwright.chromium.launch(headless=True)
+        return self._browser
+
+    async def _browser_read(self, url: str, wait_seconds: float = 3, max_length: int = 15000) -> str:
+        """Navigate to a URL in a real browser and return the visible page text."""
+        try:
+            browser = await self._get_browser()
+            page = await browser.new_page(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            )
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                await page.wait_for_timeout(int(wait_seconds * 1000))
+
+                # Extract visible text from the page
+                text = await page.evaluate("""() => {
+                    // Remove non-visible elements
+                    const remove = document.querySelectorAll('script, style, noscript, iframe, svg');
+                    remove.forEach(el => el.remove());
+                    return document.body ? document.body.innerText : document.documentElement.innerText || '';
+                }""")
+
+                if len(text) > max_length:
+                    text = text[:max_length] + "\n... (truncated)"
+
+                return text.strip() if text.strip() else "Page loaded but no visible text content found."
+            finally:
+                await page.close()
+        except Exception as e:
+            return f"Error reading page: {type(e).__name__}: {e}"
+
+    async def _web_search(self, query: str, max_results: int = 10) -> str:
+        """Search Google using a real browser and return results."""
+        import urllib.parse
+        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&hl=en&gl=us"
+
+        try:
+            browser = await self._get_browser()
+            page = await browser.new_page(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            )
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                await page.wait_for_timeout(2000)
+
+                # Extract search results using JS
+                results = await page.evaluate("""(maxResults) => {
+                    const results = [];
+                    // Google search result containers
+                    const items = document.querySelectorAll('div.g, div[data-hveid] div.g');
+                    for (const item of items) {
+                        if (results.length >= maxResults) break;
+                        const titleEl = item.querySelector('h3');
+                        const linkEl = item.querySelector('a[href]');
+                        const snippetEl = item.querySelector('div[data-sncf], div.VwiC3b, span.aCOpRe, div[style*="-webkit-line-clamp"]');
+                        if (titleEl && linkEl) {
+                            results.push({
+                                title: titleEl.innerText,
+                                url: linkEl.href,
+                                snippet: snippetEl ? snippetEl.innerText : ''
+                            });
+                        }
+                    }
+                    // Fallback: if no structured results found, get all visible text
+                    if (results.length === 0) {
+                        return [{title: '_fallback_', url: '', snippet: document.body ? document.body.innerText.slice(0, 5000) : 'No content found'}];
+                    }
+                    return results;
+                }""", max_results)
+
+                if not results:
+                    return "No search results found."
+
+                # Check for fallback
+                if len(results) == 1 and results[0].get('title') == '_fallback_':
+                    return f"Could not parse structured results. Page text:\n\n{results[0]['snippet']}"
+
+                # Format results
+                lines = []
+                for i, r in enumerate(results, 1):
+                    lines.append(f"{i}. {r['title']}")
+                    lines.append(f"   URL: {r['url']}")
+                    if r.get('snippet'):
+                        lines.append(f"   {r['snippet']}")
+                    lines.append("")
+
+                return "\n".join(lines).strip()
+            finally:
+                await page.close()
+        except Exception as e:
+            return f"Error performing search: {type(e).__name__}: {e}"
