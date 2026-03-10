@@ -439,7 +439,7 @@
     transition: background 0.15s;
 }
 .scope-request-actions .btn-scope-allow:hover {
-    background: #0891b2;
+    background: #c45a3a;
 }
 .scope-request-actions .btn-scope-deny {
     background: transparent;
@@ -1148,7 +1148,7 @@
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn"
                         onclick="toggleArtifacts()" style="display: none;">
                     <i class="bi bi-layout-sidebar-inset-reverse me-1"></i>Artifacts
-                    <span class="badge bg-info bg-opacity-25 text-info ms-1" id="artifactCount">0</span>
+                    <span class="badge ms-1" style="background: rgba(218,106,70,0.2); color: #da6a46;" id="artifactCount">0</span>
                 </button>
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
                     <i class="bi bi-gear me-1"></i>Settings
@@ -1305,21 +1305,21 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="oauthUrlPanel" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.75rem; background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 0.5rem;">
+                        <div id="oauthUrlPanel" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.75rem; background: rgba(218,106,70,0.06); border: 1px solid rgba(218,106,70,0.2); border-radius: 0.5rem;">
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
                                 <small class="text-muted"><i class="bi bi-link-45deg me-1"></i>Open this URL on any device to authorize:</small>
                                 <button type="button" class="btn-close" style="font-size: 0.6rem;" onclick="document.getElementById('oauthUrlPanel').style.display='none'" aria-label="Close"></button>
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <input type="text" class="form-control form-control-sm" id="oauthUrlInput" readonly style="font-size: 0.75rem; background: rgba(255,255,255,0.5);">
-                                <button class="btn btn-sm btn-outline-info" type="button" onclick="copyOAuthUrl()" title="Copy URL">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="copyOAuthUrl()" title="Copy URL">
                                     <i class="bi bi-clipboard" id="copyOAuthIcon"></i>
                                 </button>
                             </div>
                             <small class="text-muted d-block mb-1"><i class="bi bi-key me-1"></i>Paste the authorization code you received:</small>
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control form-control-sm" id="oauthCodeInput" placeholder="Paste authorization code here" style="font-size: 0.75rem;">
-                                <button class="btn btn-sm btn-outline-info" type="button" onclick="submitLoginCode()" id="submitCodeBtn">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="submitLoginCode()" id="submitCodeBtn">
                                     <i class="bi bi-check-lg me-1"></i>Submit
                                 </button>
                             </div>
@@ -3118,7 +3118,7 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
     const id = 'toast_' + Date.now();
-    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning';
     container.insertAdjacentHTML('beforeend', `
         <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
             <div class="d-flex">
