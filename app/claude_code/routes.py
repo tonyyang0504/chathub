@@ -733,7 +733,51 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     # Send via stdin
     sent = await claude_code_manager.send_message(user.id, prompt, file_paths=file_paths)
     if not sent:
-        raise HTTPException(status_code=400, detail="Session is not ready for input")
+        # Session not in memory — attempt to auto-resume (e.g., after server restart)
+        if not session.claude_session_uuid:
+            raise HTTPException(status_code=400, detail="Session is not ready for input")
+
+        settings = db.query(ClaudeCodeSettings).filter(
+            ClaudeCodeSettings.user_id == user.id
+        ).first()
+
+        auth_method = (settings.auth_method if settings else None) or "api_key"
+        oauth_token = None
+        if auth_method == "api_key":
+            if not settings or not settings.anthropic_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your Anthropic API key in Settings")
+            api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+        else:
+            api_key = ""
+            if settings and settings.oauth_token_encrypted:
+                oauth_token = decrypt_string(settings.oauth_token_encrypted)
+
+        model = session.model or (settings.default_model if settings else "sonnet")
+
+        # Mark session as running again
+        session.status = "running"
+        session.ended_at = None
+        db.commit()
+
+        # Resume CLI subprocess with --resume
+        active_session = await claude_code_manager.resume_session(
+            user_id=user.id,
+            session_id=session.id,
+            prompt=prompt,
+            api_key=api_key,
+            model=model,
+            auth_method=auth_method,
+            oauth_token=oauth_token,
+            user_email=user.email,
+            user_name=user.name,
+            claude_session_uuid=session.claude_session_uuid,
+            file_paths=file_paths
+        )
+
+        if not active_session:
+            session.status = "failed"
+            db.commit()
+            raise HTTPException(status_code=400, detail="Failed to resume session")
 
     return {"status": "ok"}
 

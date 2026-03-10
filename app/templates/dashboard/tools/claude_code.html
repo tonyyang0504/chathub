@@ -1810,9 +1810,9 @@ function handleSend() {
 
     if (currentSessionId && isWaiting) {
         sendFollowUp(prompt);
-    } else if (currentSessionId && !isRunning && !isWaiting && currentSessionStatus && ['stopped', 'completed', 'failed'].includes(currentSessionStatus)) {
-        // Session is stopped/completed — resume it
-        resumeSession(prompt);
+    } else if (currentSessionId && !isRunning && !isWaiting) {
+        // Session ended or stale — backend will auto-resume if needed
+        sendFollowUp(prompt);
     } else if (!isRunning) {
         // Before starting a new session, check if server has a waiting one
         checkAndSend(prompt);
