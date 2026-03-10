@@ -39,6 +39,7 @@ class SettingsResponse(BaseModel):
 class SessionCreate(BaseModel):
     prompt: str
     model: Optional[str] = None
+    file_paths: Optional[List[str]] = None
 
 
 class SessionResponse(BaseModel):
@@ -88,6 +89,7 @@ class SessionDetailResponse(SessionResponse):
 
 class MessageCreate(BaseModel):
     content: str
+    file_paths: Optional[List[str]] = None
 
 
 class ApprovalRequest(BaseModel):

@@ -497,9 +497,6 @@ class ClaudeCodeManager:
             "--dangerously-skip-permissions"
         ]
 
-        # Build dynamic resource summary for the user
-        resource_summary = self._build_user_resource_summary(session.user_id)
-
         # Inject user context so CLI operates on behalf of the logged-in user
         system_context = (
             f"You are running inside the ChatHub project on behalf of user: "
@@ -558,8 +555,6 @@ class ClaudeCodeManager:
             f"plus a summary (e.g., 'Showing 5 of 145 rows'). Show all rows only if the user explicitly asks for the full data."
         )
 
-        if resource_summary:
-            system_context += f"\n\n{resource_summary}"
         cmd.extend(["--append-system-prompt", system_context])
 
         if session._model:
@@ -611,75 +606,6 @@ class ClaudeCodeManager:
         session._stderr_task = asyncio.create_task(self._read_stderr(session))
 
         logger.info(f"Turn started for session {session.session_id}, PID={process.pid}, first={is_first}")
-
-    def _build_user_resource_summary(self, user_id: int) -> str:
-        """Query the DB for the user's bots, hubs, and contacts to inject as runtime context."""
-        try:
-            from app.database import SessionLocal, BotProfile, Hub, HubBotMembership, Contact
-            from sqlalchemy import func
-
-            db = SessionLocal()
-            try:
-                # Get user's bots
-                bots = db.query(BotProfile).filter(BotProfile.user_id == user_id).all()
-
-                # Get user's hubs with contact counts
-                hubs = db.query(Hub).filter(Hub.user_id == user_id).all()
-
-                if not bots and not hubs:
-                    return ""
-
-                # Build hub membership map: hub_id -> list of bot names
-                hub_bot_map = {}
-                bot_hub_map = {}
-                contact_counts = {}
-                memberships = []
-                if hubs:
-                    hub_ids = [h.id for h in hubs]
-                    memberships = db.query(HubBotMembership).filter(
-                        HubBotMembership.hub_id.in_(hub_ids),
-                        HubBotMembership.is_active == True
-                    ).all()
-                    bot_id_to_name = {b.id: b.name for b in bots}
-                    for m in memberships:
-                        hub_bot_map.setdefault(m.hub_id, []).append(
-                            bot_id_to_name.get(m.bot_profile_id, f"Bot#{m.bot_profile_id}")
-                        )
-                        for h in hubs:
-                            if h.id == m.hub_id:
-                                bot_hub_map.setdefault(m.bot_profile_id, []).append(h.name)
-
-                    # Contact counts per hub
-                    contact_counts = dict(
-                        db.query(Contact.hub_id, func.count(Contact.id))
-                        .filter(Contact.hub_id.in_(hub_ids))
-                        .group_by(Contact.hub_id)
-                        .all()
-                    )
-
-                lines = ["YOUR USER'S CURRENT RESOURCES:"]
-
-                if bots:
-                    lines.append("Bots:")
-                    for b in bots:
-                        status = "running" if b.is_running else "stopped"
-                        hub_names = bot_hub_map.get(b.id, [])
-                        hub_str = f", hub={'|'.join(hub_names)}" if hub_names else ""
-                        lines.append(f"  - {b.name} (id={b.id}, status={status}, platform={b.platform_type or 'whatsapp'}{hub_str})")
-
-                if hubs:
-                    lines.append("Hubs:")
-                    for h in hubs:
-                        bot_count = len(hub_bot_map.get(h.id, []))
-                        contacts = contact_counts.get(h.id, 0)
-                        lines.append(f"  - {h.name} (id={h.id}, type={h.task_type}, {bot_count} bots, {contacts} contacts)")
-
-                return "\n".join(lines)
-            finally:
-                db.close()
-        except Exception as e:
-            logger.error(f"Failed to build resource summary for user {user_id}: {e}")
-            return ""
 
     async def _read_stderr(self, session: ActiveSession):
         """Read stderr line-by-line to prevent pipe deadlock and log debug output."""

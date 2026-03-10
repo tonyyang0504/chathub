@@ -3,14 +3,17 @@ ChatHub Agent Routes - HTTP + WebSocket endpoints for ChatHub Agent.
 """
 
 import json
+import re
 import sys
 import asyncio
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect
+import httpx
+from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -136,6 +139,153 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
 
 
 # ============================================================================
+# File Upload & External Connectors
+# ============================================================================
+
+UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "chathub_agent_uploads"
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_EXTENSIONS = {
+    # Images
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico',
+    # Documents
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods',
+    '.csv', '.tsv',
+    # Code & text
+    '.py', '.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.less',
+    '.json', '.yaml', '.yml', '.toml', '.xml', '.md', '.txt', '.rst',
+    '.sh', '.bash', '.zsh', '.bat', '.ps1',
+    '.java', '.kt', '.go', '.rs', '.c', '.cpp', '.h', '.hpp', '.cs',
+    '.rb', '.php', '.swift', '.r', '.sql', '.graphql',
+    '.env', '.ini', '.cfg', '.conf', '.dockerfile',
+    # Archives (for reference)
+    '.zip', '.tar', '.gz',
+    # Data
+    '.log', '.jsonl', '.ndjson',
+}
+
+
+@router.post("/api/chathub-agent/upload")
+async def upload_files(request: Request, files: list[UploadFile] = File(...), db: Session = Depends(get_db)):
+    """Upload files for ChatHub Agent to work with."""
+    user = await get_current_user(request, None, db)
+
+    user_upload_dir = UPLOAD_DIR / str(user.id)
+    user_upload_dir.mkdir(parents=True, exist_ok=True)
+
+    results = []
+    for file in files:
+        # Validate extension
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in ALLOWED_EXTENSIONS and ext != '':
+            results.append({"filename": file.filename, "error": f"File type '{ext}' not allowed"})
+            continue
+
+        # Read and validate size
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            results.append({"filename": file.filename, "error": "File exceeds 10MB limit"})
+            continue
+
+        # Save with UUID prefix to avoid collisions
+        safe_name = f"{uuid.uuid4().hex[:8]}_{file.filename or 'file'}"
+        file_path = user_upload_dir / safe_name
+        file_path.write_bytes(content)
+
+        results.append({
+            "filename": file.filename,
+            "saved_as": safe_name,
+            "path": str(file_path.resolve()),
+            "size": len(content),
+            "type": ext or "unknown"
+        })
+
+    return {"files": results}
+
+
+@router.post("/api/chathub-agent/fetch-url")
+async def fetch_url(request: Request, db: Session = Depends(get_db)):
+    """Download a file from a URL (Google Drive, Dropbox, raw URL) for ChatHub Agent."""
+    user = await get_current_user(request, None, db)
+    data = await request.json()
+    url = data.get("url", "").strip()
+
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    # Convert Google Drive share links to direct download
+    gdrive_match = re.match(r'https://drive\.google\.com/file/d/([^/]+)', url)
+    if gdrive_match:
+        file_id = gdrive_match.group(1)
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    elif 'drive.google.com' in url and 'id=' in url:
+        file_id_match = re.search(r'id=([^&]+)', url)
+        if file_id_match:
+            url = f"https://drive.google.com/uc?export=download&id={file_id_match.group(1)}"
+
+    # Convert Dropbox share links to direct download
+    if 'dropbox.com' in url:
+        url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com')
+        if '?dl=0' in url:
+            url = url.replace('?dl=0', '?dl=1')
+        elif '?dl=1' not in url:
+            url += ('&' if '?' in url else '?') + 'dl=1'
+
+    user_upload_dir = UPLOAD_DIR / str(user.id)
+    user_upload_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+
+            if len(resp.content) > MAX_FILE_SIZE:
+                raise HTTPException(status_code=400, detail="Downloaded file exceeds 10MB limit")
+
+            # Determine filename from Content-Disposition or URL
+            filename = "downloaded_file"
+            cd = resp.headers.get("content-disposition", "")
+            if "filename=" in cd:
+                fn_match = re.search(r'filename[*]?=["\']?([^"\';\n]+)', cd)
+                if fn_match:
+                    filename = fn_match.group(1).strip()
+            else:
+                url_path = url.split('?')[0].split('#')[0]
+                url_filename = url_path.rstrip('/').split('/')[-1]
+                if '.' in url_filename:
+                    filename = url_filename
+
+            safe_name = f"{uuid.uuid4().hex[:8]}_{filename}"
+            file_path = user_upload_dir / safe_name
+            file_path.write_bytes(resp.content)
+
+            ext = Path(filename).suffix.lower()
+            return {
+                "file": {
+                    "filename": filename,
+                    "saved_as": safe_name,
+                    "path": str(file_path.resolve()),
+                    "size": len(resp.content),
+                    "type": ext or "unknown"
+                }
+            }
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download: HTTP {e.response.status_code}")
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download: {str(e)}")
+
+
+@router.delete("/api/chathub-agent/uploads")
+async def clear_uploads(request: Request, db: Session = Depends(get_db)):
+    """Clear all uploaded files for the current user."""
+    import shutil
+    user = await get_current_user(request, None, db)
+    user_upload_dir = UPLOAD_DIR / str(user.id)
+    if user_upload_dir.exists():
+        shutil.rmtree(user_upload_dir, ignore_errors=True)
+    return {"status": "ok"}
+
+
+# ============================================================================
 # Session API
 # ============================================================================
 
@@ -146,6 +296,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     user = await get_current_user(request, None, db)
     data = await request.json()
     prompt = data.get("prompt", "").strip()
+    file_paths = data.get("file_paths", [])
 
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required")
@@ -239,6 +390,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         prompt=prompt,
         settings_dict=settings_dict,
         agent_config_dict=agent_config_dict,
+        file_paths=file_paths,
     )
 
     if not active_session:
@@ -381,6 +533,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     user = await get_current_user(request, None, db)
     data = await request.json()
     prompt = data.get("prompt", "").strip() or data.get("content", "").strip()
+    file_paths = data.get("file_paths", [])
 
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required")
@@ -405,7 +558,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     db.commit()
 
     # Send via manager
-    sent = await chathub_agent_manager.send_message(user.id, prompt)
+    sent = await chathub_agent_manager.send_message(user.id, prompt, file_paths=file_paths)
     if not sent:
         # Session not in memory — attempt to resume from DB
         from app.database import ChatHubAgentSettings
@@ -461,7 +614,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
         session.status = "running"
         db.commit()
 
-        sent = await chathub_agent_manager.send_message(user.id, prompt)
+        sent = await chathub_agent_manager.send_message(user.id, prompt, file_paths=file_paths)
         if not sent:
             raise HTTPException(status_code=400, detail="Session is not ready for input")
 

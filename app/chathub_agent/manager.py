@@ -129,6 +129,7 @@ class ChatHubAgentManager:
         prompt: str,
         settings_dict: dict,
         agent_config_dict: dict,
+        file_paths: list = None,
     ) -> Optional[AgentSession]:
         """Create an AgentLoop and start it in a background task."""
         # Enforce one session per user
@@ -181,7 +182,7 @@ class ChatHubAgentManager:
 
             # Run agent loop in background task
             session._loop_task = asyncio.create_task(
-                self._run_session(session, prompt)
+                self._run_session(session, prompt, file_paths=file_paths)
             )
 
             logger.info(f"Started ChatHub Agent session {session_id} for user {user_id}")
@@ -193,10 +194,18 @@ class ChatHubAgentManager:
                 del self._sessions[user_id]
             return None
 
-    async def _run_session(self, session: AgentSession, prompt: str):
+    async def _run_session(self, session: AgentSession, prompt: str, file_paths: list = None):
         """Run the agent loop and handle completion."""
         try:
-            await session.agent_loop.run(prompt)
+            effective_prompt = prompt
+            if file_paths:
+                file_lines = "\n".join(f"  - {p}" for p in file_paths)
+                effective_prompt = (
+                    f"The user has attached the following files (available on the server filesystem):\n"
+                    f"{file_lines}\n\n"
+                    f"User's message: {prompt}"
+                )
+            await session.agent_loop.run(effective_prompt)
             session.is_waiting = True
         except asyncio.CancelledError:
             logger.info(f"Agent loop cancelled for session {session.session_id}")
@@ -209,7 +218,7 @@ class ChatHubAgentManager:
             if session.user_id in self._sessions and self._sessions[session.user_id] is session:
                 del self._sessions[session.user_id]
 
-    async def send_message(self, user_id: int, message: str) -> bool:
+    async def send_message(self, user_id: int, message: str, file_paths: list = None) -> bool:
         """Send a follow-up message to an active session."""
         session = self.get_active_session(user_id)
         if not session or not session.agent_loop:
@@ -224,14 +233,22 @@ class ChatHubAgentManager:
 
         # Run follow-up in background task
         session._loop_task = asyncio.create_task(
-            self._run_followup(session, message)
+            self._run_followup(session, message, file_paths=file_paths)
         )
         return True
 
-    async def _run_followup(self, session: AgentSession, message: str):
+    async def _run_followup(self, session: AgentSession, message: str, file_paths: list = None):
         """Run a follow-up message through the agent loop."""
         try:
-            await session.agent_loop.handle_followup(message)
+            effective_message = message
+            if file_paths:
+                file_lines = "\n".join(f"  - {p}" for p in file_paths)
+                effective_message = (
+                    f"The user has attached the following files (available on the server filesystem):\n"
+                    f"{file_lines}\n\n"
+                    f"User's message: {message}"
+                )
+            await session.agent_loop.handle_followup(effective_message)
         except Exception as e:
             logger.error(f"Follow-up error for session {session.session_id}: {e}")
             await session.broadcast({"type": "error", "content": str(e)})

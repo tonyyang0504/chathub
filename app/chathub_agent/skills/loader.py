@@ -107,8 +107,7 @@ class SkillRegistry:
     def get_system_prompt_injection(self, enabled_skills: list[str] = None) -> str:
         parts = []
         for skill in self._skills.values():
-            if skill.auto_activate or (enabled_skills and skill.name in enabled_skills):
-                parts.append(f"## Skill: {skill.display_name}\n{skill.instructions}")
+            parts.append(f"## Skill: {skill.display_name}\n{skill.instructions}")
         return "\n\n".join(parts)
 
     def get_slash_commands(self) -> list[dict]:
