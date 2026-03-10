@@ -1700,9 +1700,6 @@ async function startSession(prompt) {
         connectWebSocket(data.session_id);
         loadSessions();
 
-        if (data.git_commit_hash) {
-            appendSystemMessage(`Safety commit: ${data.git_commit_hash.substring(0, 8)}`);
-        }
     } catch (e) {
         removeThinkingIndicator();
         appendSystemMessage('Network error: ' + e.message);

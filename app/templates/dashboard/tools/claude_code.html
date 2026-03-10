@@ -1864,13 +1864,6 @@ async function startSession(prompt) {
         }
 
         const data = await res.json();
-        if (data.redirect) {
-            // Server told us to use existing waiting session
-            currentSessionId = data.id;
-            isWaiting = true;
-            sendFollowUp(prompt);
-            return;
-        }
         currentSessionId = data.session_id;
         setStatus('running');
         connectWebSocket(data.session_id);
