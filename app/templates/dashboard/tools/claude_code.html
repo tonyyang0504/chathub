@@ -1785,6 +1785,8 @@ async function viewSession(sessionId) {
             }
             // Fallback for messages without event_data
             if (msg.role === 'user') {
+                flushAssistantBuffer();
+                turnHasStreamedText = false;
                 appendUserMessage(msg.content);
             } else if (msg.role === 'assistant') {
                 if (msg.content) appendAssistantMessage(msg.content);
