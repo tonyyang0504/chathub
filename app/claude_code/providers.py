@@ -324,9 +324,27 @@ class GeminiProvider(CLIProvider):
                 "error": {"message": raw.get("message", raw.get("error", str(raw)))}
             }
 
+        # Gemini tool_use: tool_name, tool_id, parameters → normalized format
+        if evt_type == "tool_use":
+            return {
+                "type": "tool_use",
+                "tool": {
+                    "name": raw.get("tool_name", raw.get("name", "tool")),
+                    "id": raw.get("tool_id", raw.get("id", ""))
+                },
+                "input": raw.get("parameters", raw.get("input", raw.get("arguments", {})))
+            }
+
+        # Gemini tool_result: output → content
+        if evt_type == "tool_result":
+            return {
+                "type": "tool_result",
+                "content": raw.get("output", raw.get("content", ""))
+            }
+
         # Pass through Claude-compatible events
         if evt_type in ("content_block_start", "content_block_delta", "content_block_stop",
-                        "assistant", "tool_use", "tool_result", "system"):
+                        "assistant", "system"):
             return raw
 
         return None
