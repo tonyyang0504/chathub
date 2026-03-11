@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Tools - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tools-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tools-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.tools-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 600px;
+}
+
+.tools-section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color, #e5e7eb);
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.tool-card {
+    background: var(--card-bg, #fff);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.tool-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    text-decoration: none;
+    color: inherit;
+}
+
+.tool-card-accent {
+    height: 4px;
+}
+
+.tool-card-body {
+    padding: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.tool-card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.tool-card-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.tool-card-info p {
+    font-size: 0.9rem;
+    color: var(--text-muted, #6b7280);
+    margin: 0;
+    line-height: 1.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="tools-hero">
+        <h1><i class="bi bi-grid-3x3-gap-fill me-3"></i>Tools</h1>
+        <p>Manage messaging, automate workflows, and leverage AI across all your connected platforms.</p>
+    </div>
+
+    <!-- Messaging Tools -->
+    <h2 class="tools-section-title"><i class="bi bi-chat-dots me-2"></i>Messaging Tools</h2>
+    <div class="tools-grid">
+        <a class="tool-card" href="/tools/group-management">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #11998e, #38ef7d);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Group Management</h3>
+                    <p>Manage bot assignments, roles, and expertise across your hub groups.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/scheduled-content">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Scheduled Content</h3>
+                    <p>Schedule and automate content delivery across your messaging platforms.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/scripted-conversations">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #6366f1, #4f46e5);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <i class="bi bi-chat-square-text"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Scripted Conversations</h3>
+                    <p>Create and manage scripted conversation flows for your bots.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/contact-analyzer">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #f093fb, #f5576c);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Contact Analyzer</h3>
+                    <p>Analyze contacts with AI to understand engagement and sentiment patterns.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/contact-followup">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #10b981, #059669);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <i class="bi bi-reply-all"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Contact Follow Up</h3>
+                    <p>Track and automate follow-up actions for your contacts.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/content-generator">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #fa709a, #fee140);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #fa709a, #fee140);">
+                    <i class="bi bi-magic"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Content Generator</h3>
+                    <p>Generate engaging content for your messaging campaigns with AI.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/message-routing">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #4facfe, #00f2fe);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <i class="bi bi-signpost-split"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>Message Routing</h3>
+                    <p>Route messages intelligently across bots and platforms.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- AI Tools -->
+    <h2 class="tools-section-title"><i class="bi bi-cpu me-2"></i>AI Tools</h2>
+    <div class="tools-grid">
+        <a class="tool-card" href="/tools/claude-code">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #1a1a2e, #16213e);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                    <i class="bi bi-terminal"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>AI Code</h3>
+                    <p>Write, review, and debug code with AI-powered assistance.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/chathub-agent">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #7c3aed, #a855f7);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>ChatHub Agent</h3>
+                    <p>Deploy autonomous AI agents to handle tasks across your platforms.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

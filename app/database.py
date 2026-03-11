@@ -664,6 +664,7 @@ class ClaudeCodeSession(Base):
     pid = Column(Integer)  # OS process ID
     model = Column(String(100))
     provider = Column(String(20), default="claude")  # claude, codex, gemini
+    title = Column(String(200), nullable=True)  # AI-generated session title
     claude_session_uuid = Column(String(36))  # Claude CLI session UUID for --resume
     rolled_back = Column(Boolean, default=False)
     rolled_back_at = Column(DateTime)
@@ -779,6 +780,7 @@ class ChatHubAgentSession(Base):
     db_backup_path = Column(String(500))
     ai_provider = Column(String(50))
     model = Column(String(100))
+    title = Column(String(200), nullable=True)  # AI-generated session title
     total_turns = Column(Integer, default=0)
     total_tool_calls = Column(Integer, default=0)
     total_tokens = Column(Integer, default=0)

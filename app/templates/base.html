@@ -57,26 +57,10 @@
                             Hubs
                         </a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if active_page and active_page.startswith('tools') %}active{% endif %}" href="#" data-bs-toggle="dropdown">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page and active_page.startswith('tools') %}active{% endif %}" href="/tools">
                             Tools
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/tools/group-management">Group Management</a></li>
-                            <li><a class="dropdown-item" href="/tools/scheduled-content">Scheduled Content</a></li>
-                            <li><a class="dropdown-item" href="/tools/scripted-conversations">Scripted Conversations</a></li>
-                            <li><a class="dropdown-item" href="/tools/contact-analyzer">Contact Analyzer</a></li>
-                            <li><a class="dropdown-item" href="/tools/contact-followup">Contact Follow Up</a></li>
-                            <li><a class="dropdown-item" href="/tools/content-generator">Content Generator</a></li>
-                            <li><a class="dropdown-item" href="/tools/message-routing">Message Routing</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/tools/claude-code">
-                                <i class="bi bi-terminal me-2"></i>AI Code
-                            </a></li>
-                            <li><a class="dropdown-item" href="/tools/chathub-agent">
-                                <i class="bi bi-robot me-2"></i>ChatHub Agent
-                            </a></li>
-                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'agents' %}active{% endif %}" href="/agents">

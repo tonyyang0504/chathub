@@ -12,7 +12,7 @@
 .claude-app, #settingsModal { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
 .claude-app[data-provider="codex"], #settingsModal[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
 .claude-app[data-provider="gemini"], #settingsModal[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
-.claude-app[data-provider="chathub"], #settingsModal[data-provider="chathub"] { --provider-color: #06b6d4; --provider-color-rgb: 6,182,212; --provider-gradient: linear-gradient(135deg, #06b6d4, #0284c7); }
+.claude-app[data-provider="chathub"], #settingsModal[data-provider="chathub"] { --provider-color: #8b5cf6; --provider-color-rgb: 139,92,246; --provider-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed); }
 
 /* Provider pill selector */
 .provider-pills { display: flex; gap: 4px; background: var(--border-color); border-radius: 10px; padding: 3px; }
@@ -23,7 +23,7 @@
 .provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
 .provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
 .provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
-.provider-pill[data-provider="chathub"] .pill-dot { background: #06b6d4; }
+.provider-pill[data-provider="chathub"] .pill-dot { background: #8b5cf6; }
 .provider-pill.disabled { opacity: 0.5; pointer-events: none; cursor: default; }
 
 /* Provider badge on session items */
@@ -31,7 +31,7 @@
 .provider-badge.pb-claude { background: rgba(218,106,70,0.12); color: #da6a46; }
 .provider-badge.pb-codex { background: rgba(16,163,127,0.12); color: #10a37f; }
 .provider-badge.pb-gemini { background: rgba(66,133,244,0.12); color: #4285f4; }
-.provider-badge.pb-chathub { background: rgba(6,182,212,0.12); color: #06b6d4; }
+.provider-badge.pb-chathub { background: rgba(139,92,246,0.12); color: #8b5cf6; }
 
 /* App shell */
 .claude-app {
@@ -1003,10 +1003,10 @@
     font-weight: 400;
 }
 .msg-tool-pill.has-result {
-    border-color: rgba(16,185,129,0.3);
+    border-color: rgba(var(--provider-color-rgb),0.4);
 }
 .msg-tool-pill.has-result .pill-status {
-    color: #10b981;
+    color: var(--provider-color);
 }
 
 @media (max-width: 991px) {
@@ -1471,7 +1471,7 @@ const PROVIDER_INFO = {
     claude: { name: 'Claude Code', color: '#da6a46', engine: 'cli' },
     codex: { name: 'OpenAI Codex', color: '#10a37f', engine: 'cli' },
     gemini: { name: 'Gemini CLI', color: '#4285f4', engine: 'cli' },
-    chathub: { name: 'ChatHub Agent', color: '#06b6d4', engine: 'agent' }
+    chathub: { name: 'ChatHub Agent', color: '#8b5cf6', engine: 'agent' }
 };
 
 // ChatHub Agent provider/model data
@@ -2088,7 +2088,7 @@ async function loadSessions() {
             const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id}, '${engine}')" title="Delete session"><i class="bi bi-trash3"></i></button>`;
 
             return `<div class="session-item ${active}" onclick="viewSession(${s.id}, '${engine}', '${provider}')" data-provider="${provider}" data-engine="${engine}">
-                    <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
+                    <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.title || s.prompt)}</div>
                     <div class="session-meta">
                         ${providerBadge}
                         <span class="${statusClass}">${s.status}</span>
@@ -2746,6 +2746,12 @@ function renderStreamEvent(data, timestamp) {
         removeThinkingIndicator();
         isWaiting = true;
         setStatus('ready');
+    } else if (type === 'title_update') {
+        // Update sidebar item title with AI-generated summary
+        const activeItem = document.querySelector('.session-item.active .prompt-preview');
+        if (activeItem) {
+            activeItem.textContent = data.title;
+        }
     } else if (type === 'user_message') {
         // Follow-up user message broadcast from server — skip since frontend already appended it
     } else if (type === 'error') {

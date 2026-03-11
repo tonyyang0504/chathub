@@ -872,6 +872,10 @@ class ClaudeCodeManager:
                 await session.broadcast({"type": "turn_end", "exit_code": 0})
                 session.output_buffer.clear()
                 logger.info(f"Turn completed for session {session.session_id}, waiting for follow-up")
+
+                # Generate title after first turn
+                if session.turn_number <= 1:
+                    asyncio.create_task(self._generate_title(session))
             else:
                 # Process failed — session is done
                 session.is_running = False
@@ -1041,6 +1045,61 @@ class ClaudeCodeManager:
                 logger.error(f"DB rollback error: {e}")
 
         return result
+
+    async def _generate_title(self, session: ActiveSession):
+        """Generate a short AI title for the session after first turn."""
+        try:
+            from app.database import ClaudeCodeSession, ClaudeCodeMessage, ClaudeCodeSettings
+            from app.ai.factory import get_ai_provider
+            from app.auth.utils import decrypt_string
+
+            db = SessionLocal()
+            try:
+                db_session = db.query(ClaudeCodeSession).filter(
+                    ClaudeCodeSession.id == session.session_id
+                ).first()
+                if not db_session or db_session.title:
+                    return  # Already has a title
+
+                prompt = db_session.prompt[:500]
+                first_response = db.query(ClaudeCodeMessage).filter(
+                    ClaudeCodeMessage.session_id == session.session_id,
+                    ClaudeCodeMessage.role == "assistant"
+                ).first()
+                response_preview = first_response.content[:500] if first_response and first_response.content else ""
+
+                # Get user's API key from settings
+                settings = db.query(ClaudeCodeSettings).filter(
+                    ClaudeCodeSettings.user_id == session.user_id
+                ).first()
+                if not settings or not settings.anthropic_api_key_encrypted:
+                    return
+
+                api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+                provider_name = db_session.provider or "claude"
+                provider_map = {"claude": "anthropic", "codex": "openai", "gemini": "google"}
+                factory_provider = provider_map.get(provider_name, provider_name)
+
+                provider = get_ai_provider(factory_provider, api_key)
+                result = provider.chat_completion(
+                    messages=[{
+                        "role": "user",
+                        "content": f"Summarize this coding task in 5-8 words (no quotes, no period):\n\nUser request: {prompt}\n\nAssistant response: {response_preview}"
+                    }],
+                    temperature=0,
+                    max_tokens=30
+                )
+
+                title = result.content.strip().strip('"').strip("'").strip(".")[:200]
+                db_session.title = title
+                db.commit()
+
+                # Broadcast title update to WebSocket clients
+                await session.broadcast({"type": "title_update", "title": title})
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Failed to generate session title: {e}")
 
     async def stop_all(self):
         """Stop all active sessions (shutdown hook)."""

@@ -207,6 +207,9 @@ class ChatHubAgentManager:
                 )
             await session.agent_loop.run(effective_prompt)
             session.is_waiting = True
+
+            # Generate title after first turn
+            asyncio.create_task(self._generate_title(session))
         except asyncio.CancelledError:
             logger.info(f"Agent loop cancelled for session {session.session_id}")
         except Exception as e:
@@ -522,6 +525,61 @@ class ChatHubAgentManager:
                 logger.error(f"DB rollback error: {e}")
 
         return result
+
+    async def _generate_title(self, session: AgentSession):
+        """Generate a short AI title for the session after first turn."""
+        try:
+            from app.database import (
+                SessionLocal, ChatHubAgentSession, ChatHubAgentMessage, ChatHubAgentSettings
+            )
+            from app.ai.factory import get_ai_provider
+            from app.auth.utils import decrypt_string
+
+            db = SessionLocal()
+            try:
+                db_session = db.query(ChatHubAgentSession).filter(
+                    ChatHubAgentSession.id == session.session_id
+                ).first()
+                if not db_session or db_session.title:
+                    return  # Already has a title
+
+                prompt = db_session.prompt[:500]
+                first_response = db.query(ChatHubAgentMessage).filter(
+                    ChatHubAgentMessage.session_id == session.session_id,
+                    ChatHubAgentMessage.role == "assistant"
+                ).first()
+                response_preview = first_response.content[:500] if first_response and first_response.content else ""
+
+                # Get user's API key from settings
+                settings = db.query(ChatHubAgentSettings).filter(
+                    ChatHubAgentSettings.user_id == session.user_id
+                ).first()
+                if not settings or not settings.api_key_encrypted:
+                    return
+
+                api_key = decrypt_string(settings.api_key_encrypted)
+                factory_provider = settings.ai_provider or "openai"
+
+                provider = get_ai_provider(factory_provider, api_key)
+                result = provider.chat_completion(
+                    messages=[{
+                        "role": "user",
+                        "content": f"Summarize this coding task in 5-8 words (no quotes, no period):\n\nUser request: {prompt}\n\nAssistant response: {response_preview}"
+                    }],
+                    temperature=0,
+                    max_tokens=30
+                )
+
+                title = result.content.strip().strip('"').strip("'").strip(".")[:200]
+                db_session.title = title
+                db.commit()
+
+                # Broadcast title update to WebSocket clients
+                await session.broadcast({"type": "title_update", "title": title})
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Failed to generate session title: {e}")
 
     async def stop_all(self):
         """Stop all active sessions (shutdown hook)."""

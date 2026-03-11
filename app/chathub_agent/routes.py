@@ -454,6 +454,7 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
 
     return [{
         "id": s.id,
+        "title": s.title,
         "status": s.status,
         "prompt": s.prompt[:100] if s.prompt else "",
         "ai_provider": s.ai_provider,
@@ -498,6 +499,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
 
     return {
         "id": session.id,
+        "title": session.title,
         "status": session.status,
         "is_waiting": is_waiting,
         "prompt": session.prompt,
