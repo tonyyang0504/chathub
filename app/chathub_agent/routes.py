@@ -16,6 +16,7 @@ import httpx
 from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db, SessionLocal
@@ -450,7 +451,7 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
 
     sessions = db.query(ChatHubAgentSession).filter(
         ChatHubAgentSession.user_id == user.id
-    ).order_by(ChatHubAgentSession.created_at.desc()).limit(50).all()
+    ).order_by(func.coalesce(ChatHubAgentSession.ended_at, ChatHubAgentSession.created_at).desc()).limit(50).all()
 
     return [{
         "id": s.id,
