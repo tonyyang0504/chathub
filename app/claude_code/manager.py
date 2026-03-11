@@ -747,7 +747,8 @@ class ClaudeCodeManager:
                     skip_db = True  # Duplicates assistant/tool_use events during replay
                 elif msg_type == "content_block_delta":
                     # High-frequency streaming event — skip DB persistence
-                    skip_db = True
+                    # Exception: non-Claude providers send one delta per full text block, not streaming chunks
+                    skip_db = (session.provider == "claude")
                     role = "assistant"
                     delta = data.get("delta", {})
                     content = delta.get("text", "")
