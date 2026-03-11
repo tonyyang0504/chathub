@@ -1049,7 +1049,7 @@ class AiWorkspaceManager:
     async def _generate_title(self, session: ActiveSession):
         """Generate a short AI title for the session after first turn."""
         try:
-            from app.database import AiWorkspaceSession, AiWorkspaceMessage, AiWorkspaceSettings
+            from app.database import SessionLocal, AiWorkspaceSession, AiWorkspaceMessage, AiWorkspaceSettings
             from app.ai.factory import get_ai_provider
             from app.auth.utils import decrypt_string
 
