@@ -2078,7 +2078,7 @@ async function loadSessions() {
             const isActive = s.id === currentSessionId && s._engine === (isChathubEngine() ? 'agent' : 'cli');
             const active = isActive ? 'active' : '';
             const provider = s._provider;
-            const providerLabel = provider === 'chathub' && s.ai_provider ? `${s.ai_provider}` : provider;
+            const providerLabel = provider;
             const providerBadge = `<span class="provider-badge pb-${provider}">${providerLabel}</span>`;
             const engine = s._engine;
             const rollbackBtn = (s.status === 'completed' || s.status === 'failed' || s.status === 'stopped') && !s.rolled_back && s.git_commit_hash
