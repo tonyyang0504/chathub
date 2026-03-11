@@ -9,9 +9,10 @@
 .main-content { overflow-y: hidden !important; }
 
 /* Provider theming — CSS custom properties driven by data-provider on .claude-app */
-.claude-app { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
-.claude-app[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
-.claude-app[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
+.claude-app, #settingsModal { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
+.claude-app[data-provider="codex"], #settingsModal[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
+.claude-app[data-provider="gemini"], #settingsModal[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
+.claude-app[data-provider="chathub"], #settingsModal[data-provider="chathub"] { --provider-color: #06b6d4; --provider-color-rgb: 6,182,212; --provider-gradient: linear-gradient(135deg, #06b6d4, #0284c7); }
 
 /* Provider pill selector */
 .provider-pills { display: flex; gap: 4px; background: var(--border-color); border-radius: 10px; padding: 3px; }
@@ -22,6 +23,7 @@
 .provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
 .provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
 .provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
+.provider-pill[data-provider="chathub"] .pill-dot { background: #06b6d4; }
 .provider-pill.disabled { opacity: 0.5; pointer-events: none; cursor: default; }
 
 /* Provider badge on session items */
@@ -29,6 +31,7 @@
 .provider-badge.pb-claude { background: rgba(218,106,70,0.12); color: #da6a46; }
 .provider-badge.pb-codex { background: rgba(16,163,127,0.12); color: #10a37f; }
 .provider-badge.pb-gemini { background: rgba(66,133,244,0.12); color: #4285f4; }
+.provider-badge.pb-chathub { background: rgba(6,182,212,0.12); color: #06b6d4; }
 
 /* App shell */
 .claude-app {
@@ -230,6 +233,7 @@
 .status-completed { background: rgba(16,185,129,0.15); color: #10b981; }
 .status-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
 .status-stopped { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.status-awaiting_approval { background: rgba(245,158,11,0.15); color: #f59e0b; }
 
 /* Messages area */
 .claude-messages {
@@ -696,13 +700,13 @@
     transition: all 0.15s;
 }
 .auth-method-btn.active {
-    background: linear-gradient(135deg, #da6a46, #d4562a);
+    background: var(--provider-gradient);
     color: white;
     border-color: transparent;
 }
 .auth-method-btn:not(.active):hover {
-    border-color: #da6a46;
-    color: #da6a46;
+    border-color: var(--provider-color);
+    color: var(--provider-color);
 }
 
 /* Membership status panel */
@@ -738,7 +742,7 @@
 }
 #settingsModal .form-control:focus,
 #settingsModal .form-select:focus {
-    border-color: #da6a46;
+    border-color: var(--provider-color);
     box-shadow: none;
 }
 #settingsModal .form-switch .form-check-input {
@@ -749,8 +753,8 @@
     cursor: pointer;
 }
 #settingsModal .form-switch .form-check-input:checked {
-    background-color: #da6a46;
-    border-color: #da6a46;
+    background-color: var(--provider-color);
+    border-color: var(--provider-color);
 }
 #settingsModal .form-switch .form-check-input:focus {
     box-shadow: none;
@@ -1031,6 +1035,75 @@
         opacity: 1;
     }
 }
+
+/* Approval card (ChatHub Agent) */
+.approval-card {
+    background: linear-gradient(135deg, rgba(var(--provider-color-rgb),0.08) 0%, rgba(var(--provider-color-rgb),0.03) 100%);
+    border: 1px solid rgba(var(--provider-color-rgb),0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0.5rem 0;
+    max-width: 480px;
+}
+.approval-card.resolved { opacity: 0.6; }
+.approval-card.resolved .approval-actions .btn-approve,
+.approval-card.resolved .approval-actions .btn-deny { pointer-events: none; }
+.approval-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--provider-color);
+}
+.approval-header i { font-size: 1.1rem; }
+.approval-description {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+.approval-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+.approval-card .btn-approve {
+    background: var(--provider-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.approval-card .btn-approve:hover { opacity: 0.85; }
+.approval-card .btn-deny {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.35rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.approval-card .btn-deny:hover { border-color: #ef4444; color: #ef4444; }
+.approval-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.approval-badge.approved { background: rgba(16,185,129,0.15); color: #10b981; }
+.approval-badge.denied { background: rgba(239,68,68,0.15); color: #ef4444; }
 </style>
 {% endblock %}
 
@@ -1072,6 +1145,9 @@
                     </button>
                     <button class="provider-pill" data-provider="gemini" onclick="switchProvider('gemini')">
                         <span class="pill-dot"></span>Gemini
+                    </button>
+                    <button class="provider-pill" data-provider="chathub" onclick="switchProvider('chathub')">
+                        <span class="pill-dot"></span>ChatHub
                     </button>
                 </div>
                 <span class="status-badge status-idle" id="statusBadge">
@@ -1226,7 +1302,7 @@
                                 <span class="text-muted">Checking status...</span>
                             </div>
                             <div id="membershipActions">
-                                <button class="btn btn-sm rounded-pill" id="membershipLoginBtn" onclick="membershipLogin()" style="background: linear-gradient(135deg, #da6a46, #d4562a); color: white; display: none;">
+                                <button class="btn btn-sm rounded-pill" id="membershipLoginBtn" onclick="membershipLogin()" style="background: var(--provider-gradient); color: white; display: none;">
                                     <i class="bi bi-box-arrow-in-right me-1"></i>Login with Claude
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary rounded-pill" id="membershipLogoutBtn" onclick="membershipLogout()" style="display: none;">
@@ -1313,6 +1389,42 @@
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                         </select>
                     </div>
+
+                    <!-- ChatHub Agent Settings -->
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">AI Provider</label>
+                        <select class="form-select" id="chathubProviderSelect" onchange="onChathubProviderChange()">
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="google">Google (Gemini)</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="qwen">Qwen</option>
+                            <option value="grok">xAI (Grok)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">Model</label>
+                        <select class="form-select" id="chathubModelSelect"></select>
+                    </div>
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="chathubApiKeyInput" placeholder="Enter API key...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis('chathubApiKeyInput','chathubKeyIcon')">
+                                <i class="bi bi-eye" id="chathubKeyIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="chathubApiKeyStatus"></small>
+                    </div>
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">Tool Approval</label>
+                        <select class="form-select" id="chathubApprovalModeSelect">
+                            <option value="auto_approve_all">Auto-approve all</option>
+                            <option value="auto_approve_reads">Auto-approve reads only</option>
+                            <option value="ask_every_tool">Ask before each tool</option>
+                        </select>
+                    </div>
+
                     <div class="col-md-3">
                         <div class="form-check form-switch mt-4">
                             <input class="form-check-input" type="checkbox" id="autoCommitToggle" checked>
@@ -1328,7 +1440,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm rounded-pill" onclick="saveSettings()" style="background: linear-gradient(135deg, #da6a46, #d4562a); color: white; padding: 6px 20px;">
+                <button class="btn btn-sm rounded-pill" onclick="saveSettings()" style="background: var(--provider-gradient); color: white; padding: 6px 20px;">
                     <i class="bi bi-check-lg me-1"></i>Save Settings
                 </button>
             </div>
@@ -1352,13 +1464,170 @@ let assistantBuffer = '';  // Buffer for streaming assistant text
 let turnHasStreamedText = false;  // Track if text was shown via deltas (live) vs needs result (replay)
 let wsSkipCount = 0;  // Skip buffered WS events already rendered from DB
 let wsEventsReceived = 0;  // Total WS events received (for reconnect skip count)
-let currentProvider = 'claude';  // Active provider: claude, codex, gemini
+let currentProvider = 'claude';  // Active provider: claude, codex, gemini, chathub
+let currentSessionEngine = 'cli';  // 'cli' or 'agent' — tracks which backend owns current session
 
 const PROVIDER_INFO = {
-    claude: { name: 'Claude Code', color: '#da6a46' },
-    codex: { name: 'OpenAI Codex', color: '#10a37f' },
-    gemini: { name: 'Gemini CLI', color: '#4285f4' }
+    claude: { name: 'Claude Code', color: '#da6a46', engine: 'cli' },
+    codex: { name: 'OpenAI Codex', color: '#10a37f', engine: 'cli' },
+    gemini: { name: 'Gemini CLI', color: '#4285f4', engine: 'cli' },
+    chathub: { name: 'ChatHub Agent', color: '#06b6d4', engine: 'agent' }
 };
+
+// ChatHub Agent provider/model data
+const CHATHUB_PROVIDER_MODELS = {
+    openai: {
+        defaultModel: 'gpt-4o-mini',
+        groups: [
+            { header: 'GPT-5.4 Series (Latest)', models: [
+                { value: 'gpt-5.4', label: 'GPT-5.4' },
+                { value: 'gpt-5.4-pro', label: 'GPT-5.4 Pro' },
+            ]},
+            { header: 'GPT-5.3 Series', models: [
+                { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex' },
+                { value: 'gpt-5.3-chat-latest', label: 'GPT-5.3 Chat' },
+            ]},
+            { header: 'GPT-5.2 Series', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            ]},
+            { header: 'GPT-5 Series', models: [
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'Reasoning Models', models: [
+                { value: 'o4-mini', label: 'o4-mini' },
+                { value: 'o3', label: 'o3' },
+                { value: 'o3-mini', label: 'o3-mini' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+            ]},
+            { header: 'GPT-4 Series (Legacy)', models: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+            ]},
+        ]
+    },
+    anthropic: {
+        defaultModel: 'claude-sonnet-4-5-20241022',
+        groups: [
+            { header: 'Claude 4.6 Series (Latest)', models: [
+                { value: 'claude-opus-4-6-20260205', label: 'Claude Opus 4.6' },
+                { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+            ]},
+            { header: 'Claude 4.5 Series', models: [
+                { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
+                { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
+                { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-1-20250414', label: 'Claude Opus 4.1' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+            ]},
+            { header: 'Claude 3.5 Series (Legacy)', models: [
+                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+            ]},
+        ]
+    },
+    google: {
+        defaultModel: 'gemini-3-flash',
+        groups: [
+            { header: 'Gemini 3.1 Series (Latest)', models: [
+                { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
+                { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite Preview' },
+            ]},
+            { header: 'Gemini 3 Series', models: [
+                { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview (Default)' },
+            ]},
+            { header: 'Gemini 2.5 Series', models: [
+                { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+            ]},
+        ]
+    },
+    deepseek: {
+        defaultModel: 'deepseek-chat',
+        groups: [
+            { header: 'DeepSeek V3.2 (Latest)', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek V3.2 Chat (Default)' },
+            ]},
+            { header: 'DeepSeek Reasoning', models: [
+                { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
+            ]},
+        ]
+    },
+    qwen: {
+        defaultModel: 'qwen3-turbo',
+        groups: [
+            { header: 'Qwen3.5 Series (Latest)', models: [
+                { value: 'qwen3.5-plus', label: 'Qwen3.5 Plus' },
+            ]},
+            { header: 'Qwen3 Series', models: [
+                { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-plus', label: 'Qwen3 Plus' },
+                { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
+            ]},
+        ]
+    },
+    grok: {
+        defaultModel: 'grok-4',
+        groups: [
+            { header: 'Grok 4 Series (Latest)', models: [
+                { value: 'grok-4', label: 'Grok 4 (Default)' },
+                { value: 'grok-4-1-fast-reasoning', label: 'Grok 4.1 Fast Reasoning' },
+                { value: 'grok-4-1-fast-non-reasoning', label: 'Grok 4.1 Fast' },
+            ]},
+            { header: 'Grok Code', models: [
+                { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+            { header: 'Grok 3 Series', models: [
+                { value: 'grok-3', label: 'Grok 3' },
+                { value: 'grok-3-fast', label: 'Grok 3 Fast' },
+            ]},
+        ]
+    },
+};
+
+function getApiBase() {
+    return currentProvider === 'chathub' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+}
+
+function getWsBase() {
+    return currentProvider === 'chathub' ? '/tools/api/chathub-agent/stream' : '/tools/api/claude-code/stream';
+}
+
+function isChathubEngine() {
+    // When a session is active, use its engine; otherwise use current provider
+    if (currentSessionId) return currentSessionEngine === 'agent';
+    return currentProvider === 'chathub';
+}
+
+function onChathubProviderChange() {
+    const provider = document.getElementById('chathubProviderSelect').value;
+    const modelSelect = document.getElementById('chathubModelSelect');
+    const currentVal = modelSelect.value;
+    const providerData = CHATHUB_PROVIDER_MODELS[provider];
+    if (!providerData) { modelSelect.innerHTML = ''; return; }
+
+    let html = '';
+    for (const group of providerData.groups) {
+        html += `<optgroup label="${group.header}">`;
+        for (const m of group.models) {
+            html += `<option value="${m.value}">${m.label}</option>`;
+        }
+        html += '</optgroup>';
+    }
+    modelSelect.innerHTML = html;
+
+    const allModels = providerData.groups.flatMap(g => g.models);
+    const hasCurrentVal = allModels.some(m => m.value === currentVal);
+    modelSelect.value = hasCurrentVal ? currentVal : (providerData.defaultModel || '');
+}
 
 // File upload state
 let pendingFiles = [];  // { id, filename, path, size, type, uploading }
@@ -1397,11 +1666,12 @@ function switchProvider(provider) {
     });
     // Update app theme
     document.getElementById('claudeApp').dataset.provider = provider;
+    document.getElementById('settingsModal').dataset.provider = provider;
     // Update empty state text
     const info = PROVIDER_INFO[provider];
     document.getElementById('emptyStateText').textContent = `Describe what you need and ${info.name} will work on it.`;
     // Toggle provider-specific settings sections
-    ['claude', 'codex', 'gemini'].forEach(p => {
+    ['claude', 'codex', 'gemini', 'chathub'].forEach(p => {
         document.querySelectorAll(`.settings-provider-${p}`).forEach(el => {
             el.style.display = (p === provider) ? '' : 'none';
         });
@@ -1411,6 +1681,7 @@ function switchProvider(provider) {
 function newSession() {
     currentSessionId = null;
     currentSessionStatus = null;
+    currentSessionEngine = isChathubEngine() ? 'agent' : 'cli';
     // Unlock provider pills for new session
     document.querySelectorAll('.provider-pill').forEach(pill => {
         pill.classList.remove('disabled');
@@ -1456,6 +1727,7 @@ let currentAuthMethod = 'api_key';
 let membershipPollTimer = null;
 
 async function loadSettings() {
+    // Load CLI settings
     try {
         const res = await fetch('/tools/api/claude-code/settings', { credentials: 'include' });
         const data = await res.json();
@@ -1485,11 +1757,33 @@ async function loadSettings() {
             switchProvider(data.default_provider);
         }
     } catch (e) {
-        console.error('Failed to load settings:', e);
+        console.error('Failed to load CLI settings:', e);
+    }
+
+    // Load ChatHub Agent settings
+    try {
+        const res = await fetch('/tools/api/chathub-agent/settings', { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.api_key_set) {
+                document.getElementById('chathubApiKeyInput').placeholder = data.api_key_masked || '****';
+                document.getElementById('chathubApiKeyStatus').textContent = 'API key configured';
+                document.getElementById('chathubApiKeyStatus').className = 'text-success small';
+            }
+            document.getElementById('chathubProviderSelect').value = data.ai_provider || 'openai';
+            onChathubProviderChange();
+            document.getElementById('chathubModelSelect').value = data.default_model || (CHATHUB_PROVIDER_MODELS[data.ai_provider || 'openai'] || {}).defaultModel || '';
+            document.getElementById('chathubApprovalModeSelect').value = data.approval_mode || 'auto_approve_all';
+        }
+    } catch (e) {
+        console.error('Failed to load ChatHub settings:', e);
     }
 }
 
 async function saveSettings() {
+    let ok = true;
+
+    // Save CLI settings
     const apiKey = document.getElementById('apiKeyInput').value;
     const openaiKey = document.getElementById('openaiKeyInput').value;
     const geminiKey = document.getElementById('geminiKeyInput').value;
@@ -1518,21 +1812,54 @@ async function saveSettings() {
             credentials: 'include',
             body: JSON.stringify(payload)
         });
-        if (res.ok) {
-            showToast('Settings saved', 'success');
-            document.getElementById('apiKeyInput').value = '';
-            document.getElementById('openaiKeyInput').value = '';
-            document.getElementById('geminiKeyInput').value = '';
-            loadSettings();
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-            if (modal) modal.hide();
-        } else {
+        if (!res.ok) {
             const err = await res.json();
-            showToast(err.detail || 'Failed to save', 'error');
+            showToast(err.detail || 'Failed to save CLI settings', 'error');
+            ok = false;
         }
     } catch (e) {
-        showToast('Network error', 'error');
+        showToast('Network error saving CLI settings', 'error');
+        ok = false;
+    }
+
+    // Save ChatHub Agent settings
+    const chathubKey = document.getElementById('chathubApiKeyInput').value;
+    const chathubPayload = {
+        ai_provider: document.getElementById('chathubProviderSelect').value,
+        default_model: document.getElementById('chathubModelSelect').value,
+        approval_mode: document.getElementById('chathubApprovalModeSelect').value,
+        auto_commit: document.getElementById('autoCommitToggle').checked,
+        auto_backup_db: document.getElementById('autoBackupToggle').checked
+    };
+    if (chathubKey && !chathubKey.startsWith('****')) {
+        chathubPayload.api_key = chathubKey;
+    }
+    try {
+        const res = await fetch('/tools/api/chathub-agent/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(chathubPayload)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to save ChatHub settings', 'error');
+            ok = false;
+        }
+    } catch (e) {
+        showToast('Network error saving ChatHub settings', 'error');
+        ok = false;
+    }
+
+    if (ok) {
+        showToast('Settings saved', 'success');
+        document.getElementById('apiKeyInput').value = '';
+        document.getElementById('openaiKeyInput').value = '';
+        document.getElementById('geminiKeyInput').value = '';
+        document.getElementById('chathubApiKeyInput').value = '';
+        loadSettings();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+        if (modal) modal.hide();
     }
 }
 
@@ -1716,8 +2043,25 @@ function stopMembershipPoll() {
 // --- Sessions ---
 async function loadSessions() {
     try {
-        const res = await fetch('/tools/api/claude-code/sessions', { credentials: 'include' });
-        const sessions = await res.json();
+        // Load sessions from both backends
+        const [cliRes, agentRes] = await Promise.all([
+            fetch('/tools/api/claude-code/sessions', { credentials: 'include' }).catch(() => null),
+            fetch('/tools/api/chathub-agent/sessions', { credentials: 'include' }).catch(() => null)
+        ]);
+        let cliSessions = [];
+        let agentSessions = [];
+        if (cliRes && cliRes.ok) {
+            cliSessions = (await cliRes.json()).map(s => ({ ...s, _engine: 'cli', _provider: s.provider || 'claude' }));
+        }
+        if (agentRes && agentRes.ok) {
+            agentSessions = (await agentRes.json()).map(s => ({ ...s, _engine: 'agent', _provider: 'chathub' }));
+        }
+        const sessions = [...cliSessions, ...agentSessions].sort((a, b) => {
+            const da = a.created_at ? new Date(a.created_at) : new Date(0);
+            const db = b.created_at ? new Date(b.created_at) : new Date(0);
+            return db - da;
+        });
+
         const list = document.getElementById('sessionList');
         const noSessions = document.getElementById('noSessions');
 
@@ -1731,16 +2075,19 @@ async function loadSessions() {
         list.innerHTML = sessions.map(s => {
             const statusClass = `mini-badge status-${s.status}`;
             const date = s.created_at ? new Date(s.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-            const active = s.id === currentSessionId ? 'active' : '';
-            const provider = s.provider || 'claude';
-            const providerBadge = `<span class="provider-badge pb-${provider}">${provider}</span>`;
+            const isActive = s.id === currentSessionId && s._engine === (isChathubEngine() ? 'agent' : 'cli');
+            const active = isActive ? 'active' : '';
+            const provider = s._provider;
+            const providerLabel = provider === 'chathub' && s.ai_provider ? `${s.ai_provider}` : provider;
+            const providerBadge = `<span class="provider-badge pb-${provider}">${providerLabel}</span>`;
+            const engine = s._engine;
             const rollbackBtn = (s.status === 'completed' || s.status === 'failed' || s.status === 'stopped') && !s.rolled_back && s.git_commit_hash
-                ? `<button class="btn-rollback" onclick="event.stopPropagation(); rollbackSession(${s.id})" title="Rollback changes"><i class="bi bi-arrow-counterclockwise"></i></button>`
+                ? `<button class="btn-rollback" onclick="event.stopPropagation(); rollbackSession(${s.id}, '${engine}')" title="Rollback changes"><i class="bi bi-arrow-counterclockwise"></i></button>`
                 : s.rolled_back ? '<span class="text-muted" style="font-size:0.6rem;">rolled back</span>' : '';
 
-            const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id})" title="Delete session"><i class="bi bi-trash3"></i></button>`;
+            const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id}, '${engine}')" title="Delete session"><i class="bi bi-trash3"></i></button>`;
 
-            return `<div class="session-item ${active}" onclick="viewSession(${s.id})" data-provider="${provider}">
+            return `<div class="session-item ${active}" onclick="viewSession(${s.id}, '${engine}', '${provider}')" data-provider="${provider}" data-engine="${engine}">
                     <div class="prompt-preview" title="${escapeHtml(s.prompt)}">${escapeHtml(s.prompt)}</div>
                     <div class="session-meta">
                         ${providerBadge}
@@ -1756,73 +2103,122 @@ async function loadSessions() {
     }
 }
 
-async function viewSession(sessionId) {
+async function viewSession(sessionId, engine, provider) {
+    // Auto-switch provider if needed
+    if (engine === 'agent') {
+        if (currentProvider !== 'chathub') switchProvider('chathub');
+    } else if (provider && provider !== currentProvider) {
+        switchProvider(provider);
+    }
+
+    const apiBase = engine === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+
     try {
-        const res = await fetch(`/tools/api/claude-code/sessions/${sessionId}`, { credentials: 'include' });
+        const res = await fetch(`${apiBase}/sessions/${sessionId}`, { credentials: 'include' });
         const session = await res.json();
 
         currentSessionId = sessionId;
-        // Switch to the session's provider theme
-        if (session.provider) {
+        currentSessionEngine = engine || (currentProvider === 'chathub' ? 'agent' : 'cli');
+
+        // For CLI sessions, switch to the session's provider theme
+        if (engine !== 'agent' && session.provider) {
             switchProvider(session.provider);
-            // Lock provider pills — provider is immutable per session
-            document.querySelectorAll('.provider-pill').forEach(pill => {
-                pill.classList.toggle('disabled', pill.dataset.provider !== session.provider);
-            });
         }
+
+        // Lock provider pills — provider is immutable per session
+        document.querySelectorAll('.provider-pill').forEach(pill => {
+            pill.classList.toggle('disabled', pill.dataset.provider !== currentProvider);
+        });
+
         clearChat();
 
-        // Render stored messages using event_data for full artifact support
-        let dbEventCount = 0;
-        for (const msg of session.messages) {
-            if (msg.event_data) {
-                dbEventCount++;
-                try {
-                    const data = JSON.parse(msg.event_data);
-                    renderStreamEvent(data, msg.created_at);
-                    continue;
-                } catch {}
+        let dbEventCount = 0;  // Used by CLI branch for WS skip count
+
+        if (currentSessionEngine === 'agent') {
+            // ChatHub Agent message format
+            for (const msg of (session.messages || [])) {
+                if (msg.role === 'user') {
+                    appendUserMessage(msg.content);
+                } else if (msg.role === 'assistant') {
+                    if (msg.content) appendAssistantMessage(msg.content);
+                } else if (msg.role === 'tool_call') {
+                    appendToolUse(msg.content, msg.tool_name);
+                } else if (msg.role === 'tool_result') {
+                    appendToolResult(msg.content);
+                } else if (msg.role === 'approval_request') {
+                    const toolResult = (session.messages || []).find(m =>
+                        m.role === 'tool_result' && m.tool_call_id === msg.tool_call_id
+                    );
+                    const wasApproved = toolResult && toolResult.content !== 'Tool execution denied by user.';
+                    appendApprovalResolved(msg.content, msg.tool_name, wasApproved);
+                } else if (msg.role === 'system') {
+                    appendSystemMessage(msg.content);
+                }
             }
-            // Fallback for messages without event_data
-            if (msg.role === 'user') {
-                flushAssistantBuffer();
-                appendUserMessage(msg.content);
-            } else if (msg.role === 'assistant') {
-                if (msg.content) appendAssistantMessage(msg.content);
-            } else if (msg.role === 'tool_use') {
-                appendToolUse(msg.content);
-            } else if (msg.role === 'tool_result') {
-                appendToolResult(msg.content);
-            } else if (msg.role === 'system') {
-                // Skip old raw JSON user events that leaked into DB
-                if (msg.message_type === 'user' || (msg.content && msg.content.startsWith('{"type":"user"'))) continue;
-                appendSystemMessage(msg.content);
+        } else {
+            // CLI message format — render stored messages using event_data
+            for (const msg of session.messages) {
+                if (msg.event_data) {
+                    dbEventCount++;
+                    try {
+                        const data = JSON.parse(msg.event_data);
+                        renderStreamEvent(data, msg.created_at);
+                        continue;
+                    } catch {}
+                }
+                if (msg.role === 'user') {
+                    flushAssistantBuffer();
+                    appendUserMessage(msg.content);
+                } else if (msg.role === 'assistant') {
+                    if (msg.content) appendAssistantMessage(msg.content);
+                } else if (msg.role === 'tool_use') {
+                    appendToolUse(msg.content);
+                } else if (msg.role === 'tool_result') {
+                    appendToolResult(msg.content);
+                } else if (msg.role === 'system') {
+                    if (msg.message_type === 'user' || (msg.content && msg.content.startsWith('{"type":"user"'))) continue;
+                    appendSystemMessage(msg.content);
+                }
             }
+            flushAssistantBuffer();
         }
-        flushAssistantBuffer();
 
         currentSessionStatus = session.status;
 
-        // If session is running, connect WebSocket (skip already-rendered buffer)
-        if (session.status === 'running') {
-            if (session.is_waiting) {
-                // Session is waiting for follow-up — set ready state
+        if (currentSessionEngine === 'agent') {
+            // ChatHub Agent WebSocket handling
+            if (session.status === 'running' && session.is_waiting) {
                 isWaiting = true;
                 setStatus('ready');
-                wsSkipCount = 0;  // Buffer cleared at turn end, no events to skip
+            } else if ((session.status === 'running' && !session.is_waiting) || session.status === 'awaiting_approval') {
+                setStatus(session.status);
                 connectWebSocket(sessionId);
             } else {
-                // Session is actively running — connect and stream
                 setStatus(session.status);
-                wsSkipCount = dbEventCount;
-                connectWebSocket(sessionId);
+                isWaiting = false;
+                if (['completed', 'stopped'].includes(session.status)) {
+                    document.getElementById('promptInput').placeholder = 'Continue this conversation...';
+                }
             }
         } else {
-            setStatus(session.status);
-            isWaiting = false;
-            // Show resume hint for resumable sessions
-            if (session.resumable) {
-                document.getElementById('promptInput').placeholder = 'Continue this conversation...';
+            // CLI WebSocket handling
+            if (session.status === 'running') {
+                if (session.is_waiting) {
+                    isWaiting = true;
+                    setStatus('ready');
+                    wsSkipCount = 0;
+                    connectWebSocket(sessionId);
+                } else {
+                    setStatus(session.status);
+                    wsSkipCount = dbEventCount;
+                    connectWebSocket(sessionId);
+                }
+            } else {
+                setStatus(session.status);
+                isWaiting = false;
+                if (session.resumable) {
+                    document.getElementById('promptInput').placeholder = 'Continue this conversation...';
+                }
             }
         }
 
@@ -1846,7 +2242,7 @@ function handleSend() {
     if (prompt.startsWith('/')) {
         const slashHints = {
             '/model': 'Use the Model dropdown in Settings above.',
-            '/help': 'Type your request in natural language — Claude Code will handle it.',
+            '/help': 'Type your request in natural language — the AI will handle it.',
             '/clear': 'Click a new session or refresh the page.',
             '/compact': 'Not needed — each session starts fresh.',
         };
@@ -1860,10 +2256,14 @@ function handleSend() {
     if (currentSessionId && isWaiting) {
         sendFollowUp(prompt);
     } else if (currentSessionId && !isRunning && !isWaiting && currentSessionStatus && ['stopped', 'completed', 'failed'].includes(currentSessionStatus)) {
-        // Session is stopped/completed — resume it
-        resumeSession(prompt);
+        if (isChathubEngine()) {
+            // ChatHub Agent: use follow-up instead of resume
+            sendFollowUp(prompt);
+        } else {
+            // CLI: resume session
+            resumeSession(prompt);
+        }
     } else if (!isRunning) {
-        // Before starting a new session, check if server has a waiting one
         checkAndSend(prompt);
     }
 }
@@ -1884,19 +2284,29 @@ async function startSession(prompt) {
     showThinkingIndicator();
 
     try {
-        const modelSelect = currentProvider === 'codex' ? 'codexModelSelect'
-                           : currentProvider === 'gemini' ? 'geminiModelSelect'
-                           : 'modelSelect';
-        const res = await fetch('/tools/api/claude-code/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
+        let body, url;
+        if (isChathubEngine()) {
+            url = '/tools/api/chathub-agent/sessions';
+            body = { prompt, file_paths: filePaths };
+            const model = document.getElementById('chathubModelSelect').value;
+            if (model) body.model = model;
+        } else {
+            url = '/tools/api/claude-code/sessions';
+            const modelSelect = currentProvider === 'codex' ? 'codexModelSelect'
+                               : currentProvider === 'gemini' ? 'geminiModelSelect'
+                               : 'modelSelect';
+            body = {
                 prompt: prompt,
                 provider: currentProvider,
                 model: document.getElementById(modelSelect).value,
                 file_paths: filePaths
-            })
+            };
+        }
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body)
         });
 
         if (!res.ok) {
@@ -1909,6 +2319,7 @@ async function startSession(prompt) {
 
         const data = await res.json();
         currentSessionId = data.session_id;
+        currentSessionEngine = isChathubEngine() ? 'agent' : 'cli';
         setStatus('running');
         connectWebSocket(data.session_id);
         loadSessions();
@@ -1934,12 +2345,15 @@ async function sendFollowUp(prompt) {
     currentAssistantEl = null;
     turnHasStreamedText = false;
 
+    const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+    const bodyKey = isChathubEngine() ? 'content' : 'prompt';
+
     try {
-        const res = await fetch(`/tools/api/claude-code/sessions/${currentSessionId}/message`, {
+        const res = await fetch(`${apiBase}/sessions/${currentSessionId}/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ prompt: prompt, file_paths: filePaths })
+            body: JSON.stringify({ [bodyKey]: prompt, file_paths: filePaths })
         });
 
         if (!res.ok) {
@@ -1952,7 +2366,6 @@ async function sendFollowUp(prompt) {
         }
 
         // Only reconnect WebSocket if not already connected
-        // The WS from the previous turn is still alive (session is in is_waiting state)
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             wsSkipCount = 0;
             connectWebSocket(currentSessionId);
@@ -2019,8 +2432,9 @@ async function resumeSession(prompt) {
 
 async function stopSession() {
     if (!currentSessionId) return;
+    const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
     try {
-        await fetch(`/tools/api/claude-code/sessions/${currentSessionId}/stop`, {
+        await fetch(`${apiBase}/sessions/${currentSessionId}/stop`, {
             method: 'POST',
             credentials: 'include'
         });
@@ -2029,11 +2443,12 @@ async function stopSession() {
     }
 }
 
-async function rollbackSession(sessionId) {
+async function rollbackSession(sessionId, engine) {
     if (!confirm('This will reset git and restore the database to before this session. Continue?')) return;
 
+    const apiBase = engine === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
     try {
-        const res = await fetch(`/tools/api/claude-code/sessions/${sessionId}/rollback`, {
+        const res = await fetch(`${apiBase}/sessions/${sessionId}/rollback`, {
             method: 'POST',
             credentials: 'include'
         });
@@ -2049,11 +2464,12 @@ async function rollbackSession(sessionId) {
     }
 }
 
-async function deleteSession(sessionId) {
+async function deleteSession(sessionId, engine) {
     if (!confirm('Delete this session and all its messages?')) return;
 
+    const apiBase = (engine || (isChathubEngine() ? 'agent' : 'cli')) === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
     try {
-        const res = await fetch(`/tools/api/claude-code/sessions/${sessionId}`, {
+        const res = await fetch(`${apiBase}/sessions/${sessionId}`, {
             method: 'DELETE',
             credentials: 'include'
         });
@@ -2092,7 +2508,9 @@ function connectWebSocket(sessionId) {
     assistantBuffer = '';
     wsEventsReceived = 0;
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const newWs = new WebSocket(`${protocol}//${location.host}/tools/api/claude-code/stream/${sessionId}`);
+    const wsBase = isChathubEngine() ? '/tools/api/chathub-agent/stream' : '/tools/api/claude-code/stream';
+    const wsParams = isChathubEngine() ? '?no_replay=1' : '';
+    const newWs = new WebSocket(`${protocol}//${location.host}${wsBase}/${sessionId}${wsParams}`);
     ws = newWs;
 
     newWs.onopen = () => {
@@ -2186,6 +2604,35 @@ function renderStreamEvent(data, timestamp) {
     const type = data.type;
 
     if (type === 'pong' || type === 'ping') return;
+
+    // ChatHub Agent event types
+    if (type === 'assistant_text') {
+        flushAssistantBuffer();
+        appendAssistantMessage(data.content || '');
+        return;
+    }
+    if (type === 'tool_call' && data.tool_name) {
+        flushAssistantBuffer();
+        appendToolUse(JSON.stringify(data.arguments || {}, null, 2), data.tool_name);
+        return;
+    }
+    if (type === 'tool_result' && !data.content_block) {
+        const content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content || '');
+        appendToolResult(content);
+        return;
+    }
+    if (type === 'approval_request') {
+        removeThinkingIndicator();
+        appendApprovalRequest(data.tool_call_id, data.tool_name, data.arguments, data.description);
+        setStatus('awaiting_approval');
+        return;
+    }
+    if (type === 'turn_complete') {
+        removeThinkingIndicator();
+        isWaiting = true;
+        setStatus('ready');
+        return;
+    }
 
     if (type === 'assistant' && data.message) {
         flushAssistantBuffer();
@@ -2364,13 +2811,32 @@ function appendAssistantMessage(text) {
     scrollToBottom();
 }
 
-function appendToolUse(content, timestamp) {
+function appendToolUse(content, timestampOrToolName) {
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = { tool: 'unknown', input: content }; }
 
-    const toolName = parsed.tool || 'Tool';
-    const inputData = parsed.input || {};
-    const inputStr = typeof inputData === 'object' ? JSON.stringify(inputData, null, 2) : (inputData || '');
+    // timestampOrToolName can be a timestamp string or a tool name (from ChatHub agent)
+    let timestamp = null;
+    let explicitToolName = null;
+    if (timestampOrToolName) {
+        // If it looks like a date string, it's a timestamp; otherwise it's a tool name
+        if (/^\d{4}-/.test(timestampOrToolName) || timestampOrToolName instanceof Date) {
+            timestamp = timestampOrToolName;
+        } else {
+            explicitToolName = timestampOrToolName;
+        }
+    }
+
+    const toolName = explicitToolName || parsed.tool || 'Tool';
+    let inputData, inputStr;
+    if (explicitToolName) {
+        // ChatHub agent: content is already the input JSON string
+        inputData = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+        inputStr = typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : (content || '');
+    } else {
+        inputData = parsed.input || {};
+        inputStr = typeof inputData === 'object' ? JSON.stringify(inputData, null, 2) : (inputData || '');
+    }
     const toolUseId = parsed.id || null;
 
     // Create artifact
@@ -2437,42 +2903,142 @@ function appendToolResult(content) {
     scrollToBottom();
 }
 
+// --- Approval Flow (ChatHub Agent) ---
+async function approveToolCall(toolCallId, approved) {
+    if (!currentSessionId) return;
+    const card = document.getElementById(`approval-${toolCallId}`);
+    if (card) {
+        const btns = card.querySelectorAll('button');
+        btns.forEach(b => b.disabled = true);
+    }
+    try {
+        await fetch(`/tools/api/chathub-agent/sessions/${currentSessionId}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ tool_call_id: toolCallId, approved: approved })
+        });
+        if (card) {
+            card.classList.add('resolved');
+            const statusEl = card.querySelector('.approval-status');
+            if (statusEl) {
+                statusEl.innerHTML = approved
+                    ? '<span class="approval-badge approved"><i class="bi bi-check-circle"></i> Approved</span>'
+                    : '<span class="approval-badge denied"><i class="bi bi-x-circle"></i> Denied</span>';
+            }
+        }
+    } catch (e) {
+        console.error('Failed to approve:', e);
+        showToast('Failed to send approval', 'error');
+    }
+}
+
+function describeToolAction(toolName, args) {
+    const a = typeof args === 'object' ? args : (() => { try { return JSON.parse(args); } catch { return {}; } })();
+    if (a.description) return a.description;
+    if (toolName === 'exec_command') return 'Run a shell command';
+    if (toolName === 'write_file') {
+        const name = (a.path || '').split('/').pop() || a.path;
+        return `Create or overwrite file: ${name}`;
+    }
+    if (toolName === 'edit_file') {
+        const name = (a.path || '').split('/').pop() || a.path;
+        return `Edit file: ${name}`;
+    }
+    return `Use ${toolName}` + (a.path ? `: ${a.path}` : '');
+}
+
+function appendApprovalRequest(toolCallId, toolName, args, description) {
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-assistant';
+    const desc = description || describeToolAction(toolName, args);
+    div.innerHTML = `<div class="approval-card" id="approval-${escapeHtml(toolCallId)}">
+        <div class="approval-header">
+            <i class="bi bi-shield-lock"></i> Permission Required
+        </div>
+        <div class="approval-description">${escapeHtml(desc)}</div>
+        <div class="approval-actions">
+            <button class="btn-approve" onclick="approveToolCall('${escapeHtml(toolCallId)}', true)">
+                <i class="bi bi-check-lg me-1"></i>Allow
+            </button>
+            <button class="btn-deny" onclick="approveToolCall('${escapeHtml(toolCallId)}', false)">
+                <i class="bi bi-x-lg me-1"></i>Deny
+            </button>
+        </div>
+    </div>`;
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
+function appendApprovalResolved(content, toolName, wasApproved) {
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-assistant';
+    const badgeClass = wasApproved ? 'approved' : 'denied';
+    const badgeIcon = wasApproved ? 'bi-check-circle' : 'bi-x-circle';
+    const badgeText = wasApproved ? 'Approved' : 'Denied';
+    const isApprovalPrefix = /^Approval needed for /i.test(content);
+    const displayDesc = (!isApprovalPrefix && content) ? content : toolName;
+    div.innerHTML = `<div class="approval-card resolved">
+        <div class="approval-header">
+            <i class="bi bi-shield-lock"></i> Permission Required
+        </div>
+        ${displayDesc ? `<div class="approval-description">${escapeHtml(displayDesc)}</div>` : ''}
+        <div class="approval-actions">
+            <span class="approval-badge ${badgeClass}"><i class="bi ${badgeIcon}"></i> ${badgeText}</span>
+        </div>
+    </div>`;
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
 // --- Artifacts ---
 function getToolIcon(toolName) {
     const icons = {
         'Bash': 'bi-terminal',
+        'bash': 'bi-terminal',
         'Read': 'bi-file-earmark-text',
+        'read_file': 'bi-file-earmark-text',
         'Edit': 'bi-pencil-square',
+        'edit_file': 'bi-pencil-square',
         'Write': 'bi-file-earmark-plus',
+        'write_file': 'bi-file-earmark-plus',
         'Grep': 'bi-search',
+        'grep': 'bi-search',
+        'search_files': 'bi-search',
         'Glob': 'bi-folder-check',
+        'glob': 'bi-folder-check',
+        'list_files': 'bi-folder-check',
         'ToolSearch': 'bi-search',
         'Agent': 'bi-robot',
         'WebSearch': 'bi-globe',
         'WebFetch': 'bi-cloud-download',
+        'execute_command': 'bi-terminal',
     };
     return icons[toolName] || 'bi-wrench';
 }
 
 function getArtifactTitle(toolName, input) {
     if (!input || typeof input !== 'object') return toolName;
-    if (toolName === 'Bash' && input.command) {
-        const cmd = input.command.length > 40 ? input.command.substring(0, 40) + '...' : input.command;
-        return `$ ${cmd}`;
+    if ((toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') && (input.command || input.cmd)) {
+        const cmd = (input.command || input.cmd);
+        const display = cmd.length > 40 ? cmd.substring(0, 40) + '...' : cmd;
+        return `$ ${display}`;
     }
-    if (toolName === 'Read' && input.file_path) {
+    if ((toolName === 'Read' || toolName === 'read_file') && input.file_path) {
         return input.file_path.split('/').pop();
     }
-    if (toolName === 'Edit' && input.file_path) {
+    if ((toolName === 'Edit' || toolName === 'edit_file') && input.file_path) {
         return `Edit: ${input.file_path.split('/').pop()}`;
     }
-    if (toolName === 'Write' && input.file_path) {
+    if ((toolName === 'Write' || toolName === 'write_file') && input.file_path) {
         return `New: ${input.file_path.split('/').pop()}`;
     }
-    if (toolName === 'Grep' && input.pattern) {
+    if ((toolName === 'Grep' || toolName === 'grep' || toolName === 'search_files') && input.pattern) {
         return `Search: ${input.pattern.length > 30 ? input.pattern.substring(0, 30) + '...' : input.pattern}`;
     }
-    if (toolName === 'Glob' && input.pattern) {
+    if ((toolName === 'Glob' || toolName === 'glob' || toolName === 'list_files') && input.pattern) {
         return `Files: ${input.pattern}`;
     }
     return toolName;
@@ -2580,17 +3146,18 @@ function renderArtifactInputHtml(artifact) {
     const toolName = artifact.toolName;
     let html = '';
     if (artifact.input) {
-        if (toolName === 'Bash') {
+        if (toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') {
             html += `<div class="artifact-section-label">Command</div>`;
             let cmd = artifact.input;
-            try { cmd = JSON.parse(artifact.input).command || artifact.input; } catch {}
+            try { cmd = JSON.parse(artifact.input).command || JSON.parse(artifact.input).cmd || artifact.input; } catch {}
             html += `<div class="artifact-terminal">$ ${escapeHtml(typeof cmd === 'string' ? cmd : JSON.stringify(cmd, null, 2))}</div>`;
-        } else if (toolName === 'Edit') {
+        } else if (toolName === 'Edit' || toolName === 'edit_file') {
             html += `<div class="artifact-section-label">Edit Operation</div>`;
             html += renderEditArtifact(artifact.inputData);
-        } else if (toolName === 'Read' || toolName === 'Write') {
-            html += `<div class="artifact-section-label">${toolName === 'Write' ? 'File Content' : 'Parameters'}</div>`;
-            if (toolName === 'Write' && artifact.inputData && artifact.inputData.content) {
+        } else if (toolName === 'Read' || toolName === 'read_file' || toolName === 'Write' || toolName === 'write_file') {
+            const isWrite = toolName === 'Write' || toolName === 'write_file';
+            html += `<div class="artifact-section-label">${isWrite ? 'File Content' : 'Parameters'}</div>`;
+            if (isWrite && artifact.inputData && artifact.inputData.content) {
                 const fname = artifact.inputData.file_path || '';
                 html += `<div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px;">${escapeHtml(fname)}</div>`;
                 html += `<div class="artifact-code"><button class="artifact-copy-btn" onclick="copyArtifactContent(this)">Copy</button>${escapeHtml(artifact.inputData.content)}</div>`;
@@ -2606,10 +3173,10 @@ function renderArtifactInputHtml(artifact) {
 }
 
 function renderArtifactResultHtml(toolName, resultText) {
-    if (toolName === 'Bash') {
+    if (toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') {
         return `<div class="artifact-section-label">Output</div>
             <div class="artifact-terminal">${escapeHtml(resultText)}</div>`;
-    } else if (toolName === 'Read') {
+    } else if (toolName === 'Read' || toolName === 'read_file') {
         return `<div class="artifact-section-label">File Content</div>
             <div class="artifact-code"><button class="artifact-copy-btn" onclick="copyArtifactContent(this)">Copy</button>${escapeHtml(resultText)}</div>`;
     } else {
@@ -2699,11 +3266,20 @@ function setStatus(status) {
     const sendBtn = document.getElementById('sendBtn');
 
     badge.className = 'status-badge status-' + status;
-    text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    const labels = {
+        idle: 'Ready', pending: 'Starting', running: 'Running',
+        ready: 'Ready', completed: 'Completed', failed: 'Failed',
+        stopped: 'Stopped', awaiting_approval: 'Awaiting Approval'
+    };
+    text.textContent = labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
 
     if (status === 'running') {
         stopBtn.style.display = 'inline-flex';
         sendBtn.disabled = true;
+        isRunning = true;
+    } else if (status === 'awaiting_approval') {
+        stopBtn.style.display = 'inline-flex';
+        sendBtn.disabled = false;
         isRunning = true;
     } else if (status === 'ready') {
         stopBtn.style.display = 'inline-flex';
@@ -2802,7 +3378,8 @@ async function uploadFiles(fileList) {
     if (tempIds.length === 0) return;
 
     try {
-        const res = await fetch('/tools/api/claude-code/upload', {
+        const uploadBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+        const res = await fetch(`${uploadBase}/upload`, {
             method: 'POST',
             credentials: 'include',
             body: formData
@@ -2924,7 +3501,8 @@ async function fetchUrlFile() {
     renderFileChips();
 
     try {
-        const res = await fetch('/tools/api/claude-code/fetch-url', {
+        const fetchBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+        const res = await fetch(`${fetchBase}/fetch-url`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -3083,14 +3661,15 @@ async function checkActiveSession() {
         const data = await res.json();
         if (data.active) {
             currentSessionId = data.session_id;
+            currentSessionEngine = 'cli';
             if (data.is_waiting) {
                 isWaiting = true;
                 isRunning = true;
-                await viewSession(data.session_id);
+                await viewSession(data.session_id, 'cli', data.provider || 'claude');
                 setStatus('ready');
                 connectWebSocket(data.session_id);
             } else if (data.is_running) {
-                await viewSession(data.session_id);
+                await viewSession(data.session_id, 'cli', data.provider || 'claude');
                 connectWebSocket(data.session_id);
             }
         }
