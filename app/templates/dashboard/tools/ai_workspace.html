@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}AI Code - ChatHub{% endblock %}
+{% block title %}AI Workspace - ChatHub{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
@@ -240,7 +240,7 @@
 }
 
 /* Empty state */
-.claude-empty-state {
+.ai-workspace-empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -250,11 +250,11 @@
     text-align: center;
     padding: 2rem;
 }
-.claude-code-logo {
+.ai-workspace-logo {
     margin-bottom: 0.75rem;
 }
-.claude-empty-state p { margin: 0; font-size: 0.95rem; }
-.claude-empty-state small { opacity: 0.7; margin-top: 0.25rem; }
+.ai-workspace-empty-state p { margin: 0; font-size: 0.95rem; }
+.ai-workspace-empty-state small { opacity: 0.7; margin-top: 0.25rem; }
 
 /* Messages */
 .msg { max-width: 95%; }
@@ -1161,8 +1161,8 @@
 
         <!-- Messages -->
         <div class="claude-messages" id="chatBodyWrapper">
-            <div class="claude-empty-state" id="emptyState">
-                <div class="claude-code-logo">
+            <div class="ai-workspace-empty-state" id="emptyState">
+                <div class="ai-workspace-logo">
                     <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="64" height="64" rx="16" fill="var(--provider-color)"/>
                         <path d="M16 40L28 28L16 16" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1252,7 +1252,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>AI Code Settings</h6>
+                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>AI Workspace Settings</h6>
                 <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -1583,11 +1583,11 @@ const CHATHUB_PROVIDER_MODELS = {
 };
 
 function getApiBase() {
-    return currentProvider === 'chathub' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+    return currentProvider === 'chathub' ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
 }
 
 function getWsBase() {
-    return currentProvider === 'chathub' ? '/tools/api/chathub-agent/stream' : '/tools/api/claude-code/stream';
+    return currentProvider === 'chathub' ? '/tools/api/chathub-agent/stream' : '/tools/api/ai-workspace/stream';
 }
 
 function isChathubEngine() {
@@ -1718,7 +1718,7 @@ let membershipPollTimer = null;
 async function loadSettings() {
     // Load CLI settings
     try {
-        const res = await fetch('/tools/api/claude-code/settings', { credentials: 'include' });
+        const res = await fetch('/tools/api/ai-workspace/settings', { credentials: 'include' });
         const data = await res.json();
         if (data.api_key_set) {
             document.getElementById('apiKeyInput').placeholder = data.api_key_masked || '****';
@@ -1795,7 +1795,7 @@ async function saveSettings() {
         payload.gemini_api_key = geminiKey;
     }
     try {
-        const res = await fetch('/tools/api/claude-code/settings', {
+        const res = await fetch('/tools/api/ai-workspace/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -1885,7 +1885,7 @@ async function checkMembershipStatus() {
     logoutBtn.style.display = 'none';
 
     try {
-        const res = await fetch('/tools/api/claude-code/membership-status', { credentials: 'include' });
+        const res = await fetch('/tools/api/ai-workspace/membership-status', { credentials: 'include' });
         const data = await res.json();
 
         if (data.loggedIn) {
@@ -1914,7 +1914,7 @@ async function membershipLogin() {
     loginBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Starting login...';
 
     try {
-        const res = await fetch('/tools/api/claude-code/membership-login', {
+        const res = await fetch('/tools/api/ai-workspace/membership-login', {
             method: 'POST',
             credentials: 'include'
         });
@@ -1965,7 +1965,7 @@ async function submitLoginCode() {
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Submitting...';
     try {
-        const res = await fetch('/tools/api/claude-code/membership-login-code', {
+        const res = await fetch('/tools/api/ai-workspace/membership-login-code', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
@@ -1990,7 +1990,7 @@ async function submitLoginCode() {
 
 async function membershipLogout() {
     try {
-        const res = await fetch('/tools/api/claude-code/membership-logout', {
+        const res = await fetch('/tools/api/ai-workspace/membership-logout', {
             method: 'POST',
             credentials: 'include'
         });
@@ -2010,7 +2010,7 @@ function startMembershipPoll() {
     stopMembershipPoll();
     membershipPollTimer = setInterval(async () => {
         try {
-            const res = await fetch('/tools/api/claude-code/membership-status', { credentials: 'include' });
+            const res = await fetch('/tools/api/ai-workspace/membership-status', { credentials: 'include' });
             const data = await res.json();
             if (data.loggedIn) {
                 stopMembershipPoll();
@@ -2034,7 +2034,7 @@ async function loadSessions() {
     try {
         // Load sessions from both backends
         const [cliRes, agentRes] = await Promise.all([
-            fetch('/tools/api/claude-code/sessions', { credentials: 'include' }).catch(() => null),
+            fetch('/tools/api/ai-workspace/sessions', { credentials: 'include' }).catch(() => null),
             fetch('/tools/api/chathub-agent/sessions', { credentials: 'include' }).catch(() => null)
         ]);
         let cliSessions = [];
@@ -2095,7 +2095,7 @@ async function viewSession(sessionId, engine, provider) {
         switchProvider(provider);
     }
 
-    const apiBase = engine === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+    const apiBase = engine === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
 
     try {
         const res = await fetch(`${apiBase}/sessions/${sessionId}`, { credentials: 'include' });
@@ -2275,7 +2275,7 @@ async function startSession(prompt) {
             const model = document.getElementById('chathubModelSelect').value;
             if (model) body.model = model;
         } else {
-            url = '/tools/api/claude-code/sessions';
+            url = '/tools/api/ai-workspace/sessions';
             const modelSelect = currentProvider === 'codex' ? 'codexModelSelect'
                                : currentProvider === 'gemini' ? 'geminiModelSelect'
                                : 'modelSelect';
@@ -2330,7 +2330,7 @@ async function sendFollowUp(prompt) {
     currentAssistantEl = null;
     turnHasStreamedText = false;
 
-    const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+    const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
     const bodyKey = isChathubEngine() ? 'content' : 'prompt';
 
     try {
@@ -2381,7 +2381,7 @@ async function resumeSession(prompt) {
         const resumeModelSelect = currentProvider === 'codex' ? 'codexModelSelect'
                                 : currentProvider === 'gemini' ? 'geminiModelSelect'
                                 : 'modelSelect';
-        const res = await fetch(`/tools/api/claude-code/sessions/${oldSessionId}/resume`, {
+        const res = await fetch(`/tools/api/ai-workspace/sessions/${oldSessionId}/resume`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -2417,7 +2417,7 @@ async function resumeSession(prompt) {
 
 async function stopSession() {
     if (!currentSessionId) return;
-    const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+    const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
     try {
         await fetch(`${apiBase}/sessions/${currentSessionId}/stop`, {
             method: 'POST',
@@ -2432,7 +2432,7 @@ async function stopSession() {
 async function deleteSession(sessionId, engine) {
     if (!confirm('Delete this session and all its messages?')) return;
 
-    const apiBase = (engine || (isChathubEngine() ? 'agent' : 'cli')) === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+    const apiBase = (engine || (isChathubEngine() ? 'agent' : 'cli')) === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
     try {
         const res = await fetch(`${apiBase}/sessions/${sessionId}`, {
             method: 'DELETE',
@@ -2473,7 +2473,7 @@ function connectWebSocket(sessionId) {
     assistantBuffer = '';
     wsEventsReceived = 0;
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsBase = isChathubEngine() ? '/tools/api/chathub-agent/stream' : '/tools/api/claude-code/stream';
+    const wsBase = isChathubEngine() ? '/tools/api/chathub-agent/stream' : '/tools/api/ai-workspace/stream';
     const wsParams = '?no_replay=1';
     const newWs = new WebSocket(`${protocol}//${location.host}${wsBase}/${sessionId}${wsParams}`);
     ws = newWs;
@@ -3358,7 +3358,7 @@ async function uploadFiles(fileList) {
     if (tempIds.length === 0) return;
 
     try {
-        const uploadBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+        const uploadBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
         const res = await fetch(`${uploadBase}/upload`, {
             method: 'POST',
             credentials: 'include',
@@ -3481,7 +3481,7 @@ async function fetchUrlFile() {
     renderFileChips();
 
     try {
-        const fetchBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
+        const fetchBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/ai-workspace';
         const res = await fetch(`${fetchBase}/fetch-url`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3637,7 +3637,7 @@ function showToast(message, type = 'info') {
 // --- Init ---
 async function checkActiveSession() {
     try {
-        const res = await fetch('/tools/api/claude-code/active-session', { credentials: 'include' });
+        const res = await fetch('/tools/api/ai-workspace/active-session', { credentials: 'include' });
         const data = await res.json();
         if (data.active) {
             currentSessionId = data.session_id;

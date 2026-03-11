@@ -70,9 +70,9 @@ chathub/
 │   │   └── routes.py              # Agent CRUD, templates, testing (13 routes)
 │   ├── analytics/
 │   │   └── routes.py              # Overview, daily stats, activity feed (5 routes)
-│   ├── claude_code/
-│   │   ├── __init__.py            # Exports claude_code_manager
-│   │   ├── manager.py             # ClaudeCodeManager — CLI subprocess management
+│   ├── ai_workspace/
+│   │   ├── __init__.py            # Exports ai_workspace_manager
+│   │   ├── manager.py             # AiWorkspaceManager — CLI subprocess management
 │   │   └── routes.py              # HTTP + WebSocket routes (8 routes)
 │   ├── middleware/
 │   │   └── rate_limit.py          # SlowAPI rate limiter
@@ -85,7 +85,7 @@ chathub/
 │           ├── bots.html, hubs.html, conversations.html, analytics.html, settings.html, agents.html
 │           └── tools/              # group_management, scheduled_content, scripted_conversations,
 │                                   # contact_analyzer, contact_followup, content_generator,
-│                                   # message_routing, claude_code
+│                                   # message_routing, ai_workspace
 ├── static/
 │   ├── css/style.css, tools.css
 │   ├── js/app.js
@@ -118,16 +118,16 @@ chathub/
 - `coordinator.py`: `RoutingCache` prevents duplicate AI calls when multiple bots receive same message
 - Agents: classifier (categorizes messages), router (determines which bot responds)
 
-**Claude Code Integration** (`app/claude_code/`):
-- Embeds Claude Code CLI as a subprocess with real-time WebSocket streaming
-- `manager.py`: `ClaudeCodeManager` singleton — spawns CLI, reads stream-json output, broadcasts to WebSockets
+**AI Workspace Integration** (`app/ai_workspace/`):
+- Embeds AI CLI tools as subprocesses with real-time WebSocket streaming
+- `manager.py`: `AiWorkspaceManager` singleton — spawns CLI, reads stream-json output, broadcasts to WebSockets
 - Safety: auto git commit + DB backup before each session, rollback support
 - One active session per user enforced
 
 **WebSocket Real-time**:
 - QR code display: `WS /api/bots/{id}/qr`
 - Conversation updates via `conversation_ws_manager`
-- Claude Code streaming: `WS /tools/api/claude-code/stream/{session_id}`
+- AI Workspace streaming: `WS /tools/api/ai-workspace/stream/{session_id}`
 - Cross-thread calls: `conversation_ws_manager.set_main_loop()` stores asyncio loop
 
 ### Key Patterns
@@ -196,7 +196,7 @@ All models in `app/database.py`:
 **Hubs** (`/api/hubs`): CRUD, bot membership, agents, contacts (CRUD + analyze + export), groups, topics, scheduled content, generation
 **Scripts** (`/scripts`): script CRUD, messages, execution, scheduling
 **Tools** (`/tools`): tool pages (7 pages), monitoring API, tool-specific stats/simulation/operations
-**Claude Code** (`/tools`): page, settings, session CRUD, stop, rollback, WS stream
+**AI Workspace** (`/tools`): page, settings, session CRUD, stop, rollback, WS stream
 **Agents** (`/agents`): CRUD, templates, test, history
 **Analytics** (`/api/analytics`): overview, daily, per-bot, top conversations, activity feed
 **Dashboard** (root): 6 page routes (dashboard, bots, conversations, analytics, settings, hubs)
@@ -206,7 +206,7 @@ All models in `app/database.py`:
 - **Bootstrap 5.3.2** — CSS framework + JS components
 - **Bootstrap Icons 1.11.1** — Icon library
 - **HTMX 1.9.9** — Progressive enhancement
-- **marked.js** — Markdown rendering (Claude Code page)
+- **marked.js** — Markdown rendering (AI Workspace page)
 - **Custom CSS** — `static/css/style.css` (main), `static/css/tools.css` (tool pages)
 - **Custom JS** — `static/js/app.js` (auth, toast, utilities)
 
@@ -288,7 +288,7 @@ For toggle switches that match the bot card style:
 - **Scheduled Content**: Purple-blue gradient (`#667eea` to `#764ba2`)
 - **Message Routing**: Purple gradient (`#a855f7` to `#7c3aed`)
 - **Scripted Conversations**: Indigo gradient (`#6366f1` to `#4f46e5`)
-- **Claude Code**: Orange/coral gradient (`#da6a46` to `#d4562a`)
+- **AI Workspace**: Orange/coral gradient (`#da6a46` to `#d4562a`)
 
 ### Card Grid Layout (Equal Height)
 When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:

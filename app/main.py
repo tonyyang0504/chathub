@@ -38,8 +38,8 @@ from .hubs.followup_scheduler import followup_send_scheduler
 from .scripts.scheduler import script_scheduler
 from .tools import tools_router, builder_router, marketplace_router
 from .agents import agents_router
-from .claude_code.routes import router as claude_code_router
-from .claude_code.manager import claude_code_manager
+from .ai_workspace.routes import router as ai_workspace_router
+from .ai_workspace.manager import ai_workspace_manager
 from .chathub_agent.routes import router as chathub_agent_router
 from .chathub_agent.manager import chathub_agent_manager
 from .scripts.routes import router as scripts_router
@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
     print("Logging system initialized.")
 
-    # Clean up stale Claude Code / ChatHub Agent sessions from previous crash
+    # Clean up stale AI Workspace / ChatHub Agent sessions from previous crash
     await cleanup_stale_sessions()
 
     # Auto-recover bots that were marked as running
@@ -159,9 +159,9 @@ async def lifespan(app: FastAPI):
     # Stop the content scheduler
     await content_scheduler.stop()
 
-    # Stop all Claude Code sessions
-    await claude_code_manager.stop_all()
-    print("All Claude Code sessions stopped.")
+    # Stop all AI Workspace sessions
+    await ai_workspace_manager.stop_all()
+    print("All AI Workspace sessions stopped.")
 
     # Stop all ChatHub Agent sessions
     await chathub_agent_manager.stop_all()
@@ -174,19 +174,19 @@ async def lifespan(app: FastAPI):
 
 async def cleanup_stale_sessions():
     """Mark orphaned running sessions as stopped on startup (from previous crash)."""
-    from .database import SessionLocal, ClaudeCodeSession, ChatHubAgentSession
+    from .database import SessionLocal, AiWorkspaceSession, ChatHubAgentSession
 
     db = SessionLocal()
     try:
-        stale_claude = db.query(ClaudeCodeSession).filter(
-            ClaudeCodeSession.status.in_(["running", "pending"])
+        stale_claude = db.query(AiWorkspaceSession).filter(
+            AiWorkspaceSession.status.in_(["running", "pending"])
         ).all()
         for s in stale_claude:
             s.status = "stopped"
             s.ended_at = datetime.utcnow() if not s.ended_at else s.ended_at
         if stale_claude:
             db.commit()
-            print(f"Cleaned up {len(stale_claude)} stale Claude Code session(s).")
+            print(f"Cleaned up {len(stale_claude)} stale AI Workspace session(s).")
 
         stale_agent = db.query(ChatHubAgentSession).filter(
             ChatHubAgentSession.status.in_(["running", "pending"])
@@ -380,7 +380,7 @@ app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(builder_router, tags=["Tool Builder"])
 app.include_router(marketplace_router, tags=["Marketplace"])
-app.include_router(claude_code_router, tags=["Claude Code"])
+app.include_router(ai_workspace_router, tags=["AI Workspace"])
 app.include_router(chathub_agent_router, tags=["ChatHub Agent"])
 app.include_router(agents_router, tags=["Agents"])
 app.include_router(line_webhook_router, tags=["LINE"])

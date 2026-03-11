@@ -81,7 +81,7 @@ class ToolBuilderSession:
                  oauth_token: Optional[str] = None,
                  user_email: Optional[str] = None, user_name: Optional[str] = None):
         self.session_id = session_id  # UUID string
-        self.db_session_id = db_session_id  # DB ClaudeCodeSession.id
+        self.db_session_id = db_session_id  # DB AiWorkspaceSession.id
         self.user_id = user_id
         self.claude_session_id = str(uuid.uuid4())  # For Claude CLI --session-id/--resume
         self._api_key = api_key
@@ -93,7 +93,7 @@ class ToolBuilderSession:
         self.provider = provider
 
         # Load CLI provider adapter
-        from app.claude_code.providers import get_provider
+        from app.ai_workspace.providers import get_provider
         self.cli_provider = get_provider(provider)
 
         self.worktree: Optional[WorktreeInfo] = None
@@ -151,10 +151,10 @@ class ToolBuilderManager:
         session_id = str(uuid.uuid4())
 
         # Create DB session record
-        from app.database import SessionLocal, ClaudeCodeSession
+        from app.database import SessionLocal, AiWorkspaceSession
         db = SessionLocal()
         try:
-            db_session = ClaudeCodeSession(
+            db_session = AiWorkspaceSession(
                 user_id=user_id,
                 status="pending",
                 prompt="[Tool Builder Session]",
@@ -190,7 +190,7 @@ class ToolBuilderManager:
         # Update DB with worktree info and session UUID
         db = SessionLocal()
         try:
-            db_sess = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == db_session_id).first()
+            db_sess = db.query(AiWorkspaceSession).filter(AiWorkspaceSession.id == db_session_id).first()
             if db_sess:
                 db_sess.worktree_path = str(worktree_info.path)
                 db_sess.worktree_branch = worktree_info.branch
@@ -322,7 +322,7 @@ class ToolBuilderManager:
 
     async def _read_output(self, session: ToolBuilderSession):
         """Read stdout, parse JSON, persist to DB, broadcast to WebSockets."""
-        from app.database import SessionLocal, ClaudeCodeSession, ClaudeCodeMessage
+        from app.database import SessionLocal, AiWorkspaceSession, AiWorkspaceMessage
 
         process = session.process
         stderr_task = session._stderr_task
@@ -414,7 +414,7 @@ class ToolBuilderManager:
                                 tool_result_event = {"type": "tool_result", "content": result_content}
                                 try:
                                     tr_db = SessionLocal()
-                                    tr_msg = ClaudeCodeMessage(
+                                    tr_msg = AiWorkspaceMessage(
                                         session_id=session.db_session_id,
                                         role="tool_result",
                                         content=(result_content[:10000] if result_content else ""),
@@ -441,7 +441,7 @@ class ToolBuilderManager:
                         db = SessionLocal()
                         event_json = json.dumps(data)
                         max_event = 50000 if msg_type in ("result", "assistant") else 5000
-                        msg = ClaudeCodeMessage(
+                        msg = AiWorkspaceMessage(
                             session_id=session.db_session_id,
                             role=role,
                             content=content[:10000] if content else "",
@@ -498,8 +498,8 @@ class ToolBuilderManager:
             # Update DB status
             try:
                 db = SessionLocal()
-                db_sess = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == session.db_session_id
+                db_sess = db.query(AiWorkspaceSession).filter(
+                    AiWorkspaceSession.id == session.db_session_id
                 ).first()
                 if db_sess:
                     db_sess.status = "completed" if exit_code == 0 else "failed"
@@ -515,12 +515,12 @@ class ToolBuilderManager:
 
     def _build_conversation_history(self, session: ToolBuilderSession) -> str:
         """Build conversation history for stateless providers."""
-        from app.database import SessionLocal, ClaudeCodeMessage
+        from app.database import SessionLocal, AiWorkspaceMessage
         try:
             db = SessionLocal()
-            messages = db.query(ClaudeCodeMessage).filter(
-                ClaudeCodeMessage.session_id == session.db_session_id
-            ).order_by(ClaudeCodeMessage.id.asc()).all()
+            messages = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == session.db_session_id
+            ).order_by(AiWorkspaceMessage.id.asc()).all()
             db.close()
 
             if not messages:
@@ -704,10 +704,10 @@ class ToolBuilderManager:
 
         # Update DB
         try:
-            from app.database import SessionLocal, ClaudeCodeSession
+            from app.database import SessionLocal, AiWorkspaceSession
             db = SessionLocal()
-            db_sess = db.query(ClaudeCodeSession).filter(
-                ClaudeCodeSession.id == session.db_session_id
+            db_sess = db.query(AiWorkspaceSession).filter(
+                AiWorkspaceSession.id == session.db_session_id
             ).first()
             if db_sess:
                 db_sess.status = "stopped"

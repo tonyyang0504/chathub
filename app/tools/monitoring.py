@@ -25,7 +25,7 @@ class ToolMonitor:
         'scheduled_content',
         'message_routing',
         'agent_execution',
-        'claude_code',
+        'ai_workspace',
         'chathub_agent'
     ]
 

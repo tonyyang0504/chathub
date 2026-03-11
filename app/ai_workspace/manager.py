@@ -1,6 +1,6 @@
 """
-Claude Code Process Manager
-Spawns and manages Claude Code CLI subprocesses with safety commits and DB backups.
+AI Workspace Process Manager
+Spawns and manages AI CLI subprocesses with safety commits and DB backups.
 
 Uses `-p "prompt"` CLI invocation (one process per turn) with `--session-id` / `--resume`
 for multi-turn conversations. This avoids stdin pipe issues with `--input-format stream-json`.
@@ -31,7 +31,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 class ActiveSession:
-    """Represents an active Claude Code CLI session."""
+    """Represents an active AI Workspace CLI session."""
 
     def __init__(self, session_id: int, user_id: int, api_key: str, model: Optional[str] = None, auth_method: str = "api_key", oauth_token: Optional[str] = None, user_email: Optional[str] = None, user_name: Optional[str] = None, provider: str = "claude"):
         self.session_id = session_id
@@ -69,9 +69,9 @@ class ActiveSession:
         self.websockets -= dead_ws
 
 
-class ClaudeCodeManager:
+class AiWorkspaceManager:
     """
-    Singleton manager for Claude Code CLI sessions.
+    Singleton manager for AI Workspace CLI sessions.
     One active session per user enforced.
     """
 
@@ -86,7 +86,7 @@ class ClaudeCodeManager:
         return None
 
     def create_safety_commit(self) -> Optional[str]:
-        """Create a safety git commit before running Claude Code. Returns commit hash or None."""
+        """Create a safety git commit before running AI Workspace. Returns commit hash or None."""
         try:
             # Check if there are changes to commit
             result = subprocess.run(
@@ -134,7 +134,7 @@ class ClaudeCodeManager:
                 logger.warning(f"Database file not found at {db_path}")
                 return None
 
-            backup_dir = PROJECT_ROOT / "data" / "backups" / "claude_code"
+            backup_dir = PROJECT_ROOT / "data" / "backups" / "ai_workspace"
             backup_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -454,9 +454,9 @@ class ClaudeCodeManager:
 
         # Persist the CLI session UUID to DB for future --resume
         try:
-            from app.database import SessionLocal, ClaudeCodeSession
+            from app.database import SessionLocal, AiWorkspaceSession
             db = SessionLocal()
-            db_session = db.query(ClaudeCodeSession).filter(ClaudeCodeSession.id == session_id).first()
+            db_session = db.query(AiWorkspaceSession).filter(AiWorkspaceSession.id == session_id).first()
             if db_session:
                 db_session.claude_session_uuid = session.claude_session_id
                 db.commit()
@@ -473,7 +473,7 @@ class ClaudeCodeManager:
             del self._sessions[user_id]
             return None
         except Exception as e:
-            logger.error(f"Failed to start Claude Code session: {e}")
+            logger.error(f"Failed to start AI Workspace session: {e}")
             if user_id in self._sessions and self._sessions[user_id] is session:
                 del self._sessions[user_id]
             return None
@@ -485,12 +485,12 @@ class ClaudeCodeManager:
         This reconstructs a condensed history from DB messages so the CLI understands
         what "it" and "the color" refer to in follow-up messages.
         """
-        from app.database import SessionLocal, ClaudeCodeMessage
+        from app.database import SessionLocal, AiWorkspaceMessage
         try:
             db = SessionLocal()
-            messages = db.query(ClaudeCodeMessage).filter(
-                ClaudeCodeMessage.session_id == session.session_id
-            ).order_by(ClaudeCodeMessage.id.asc()).all()
+            messages = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == session.session_id
+            ).order_by(AiWorkspaceMessage.id.asc()).all()
             db.close()
 
             if not messages:
@@ -700,7 +700,7 @@ class ClaudeCodeManager:
 
     async def _read_output(self, session: ActiveSession):
         """Read stdout line-by-line, parse JSON, persist to DB, broadcast to WebSockets."""
-        from app.database import SessionLocal, ClaudeCodeSession, ClaudeCodeMessage
+        from app.database import SessionLocal, AiWorkspaceSession, AiWorkspaceMessage
 
         # Capture process reference at start — session.process may be overwritten by a follow-up turn
         process = session.process
@@ -796,7 +796,7 @@ class ClaudeCodeManager:
                                 # Save to DB
                                 try:
                                     tr_db = SessionLocal()
-                                    tr_msg = ClaudeCodeMessage(
+                                    tr_msg = AiWorkspaceMessage(
                                         session_id=session.session_id,
                                         role="tool_result",
                                         content=(result_content[:10000] if result_content else ""),
@@ -825,7 +825,7 @@ class ClaudeCodeManager:
                         event_json = json.dumps(data)
                         # Result events carry final assistant text needed for replay
                         max_event = 50000 if msg_type in ("result", "assistant") else 5000
-                        msg = ClaudeCodeMessage(
+                        msg = AiWorkspaceMessage(
                             session_id=session.session_id,
                             role=role,
                             content=content[:10000] if content else "",
@@ -884,8 +884,8 @@ class ClaudeCodeManager:
                 # Update session status in DB
                 try:
                     db = SessionLocal()
-                    db_session = db.query(ClaudeCodeSession).filter(
-                        ClaudeCodeSession.id == session.session_id
+                    db_session = db.query(AiWorkspaceSession).filter(
+                        AiWorkspaceSession.id == session.session_id
                     ).first()
                     if db_session:
                         db_session.status = "failed"
@@ -984,11 +984,11 @@ class ClaudeCodeManager:
                 session._stderr_task.cancel()
 
             # Update DB
-            from app.database import SessionLocal, ClaudeCodeSession
+            from app.database import SessionLocal, AiWorkspaceSession
             try:
                 db = SessionLocal()
-                db_session = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == session.session_id
+                db_session = db.query(AiWorkspaceSession).filter(
+                    AiWorkspaceSession.id == session.session_id
                 ).first()
                 if db_session:
                     db_session.status = "stopped"
@@ -1049,28 +1049,28 @@ class ClaudeCodeManager:
     async def _generate_title(self, session: ActiveSession):
         """Generate a short AI title for the session after first turn."""
         try:
-            from app.database import ClaudeCodeSession, ClaudeCodeMessage, ClaudeCodeSettings
+            from app.database import AiWorkspaceSession, AiWorkspaceMessage, AiWorkspaceSettings
             from app.ai.factory import get_ai_provider
             from app.auth.utils import decrypt_string
 
             db = SessionLocal()
             try:
-                db_session = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == session.session_id
+                db_session = db.query(AiWorkspaceSession).filter(
+                    AiWorkspaceSession.id == session.session_id
                 ).first()
                 if not db_session or db_session.title:
                     return  # Already has a title
 
                 prompt = db_session.prompt[:500]
-                first_response = db.query(ClaudeCodeMessage).filter(
-                    ClaudeCodeMessage.session_id == session.session_id,
-                    ClaudeCodeMessage.role == "assistant"
+                first_response = db.query(AiWorkspaceMessage).filter(
+                    AiWorkspaceMessage.session_id == session.session_id,
+                    AiWorkspaceMessage.role == "assistant"
                 ).first()
                 response_preview = first_response.content[:500] if first_response and first_response.content else ""
 
                 # Get user's API key from settings
-                settings = db.query(ClaudeCodeSettings).filter(
-                    ClaudeCodeSettings.user_id == session.user_id
+                settings = db.query(AiWorkspaceSettings).filter(
+                    AiWorkspaceSettings.user_id == session.user_id
                 ).first()
                 if not settings or not settings.anthropic_api_key_encrypted:
                     return
@@ -1112,4 +1112,4 @@ class ClaudeCodeManager:
 
 
 # Singleton instance
-claude_code_manager = ClaudeCodeManager()
+ai_workspace_manager = AiWorkspaceManager()

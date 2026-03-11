@@ -63,15 +63,15 @@ class RunTestRequest(BaseModel):
 
 
 # ============================================================================
-# Helper: Get API key from ClaudeCodeSettings (multi-provider)
+# Helper: Get API key from AiWorkspaceSettings (multi-provider)
 # ============================================================================
 
-def _get_claude_code_settings(user, db: Session, provider: str = None):
-    """Get provider, API key, model from ClaudeCodeSettings."""
-    from app.database import ClaudeCodeSettings
+def _get_ai_workspace_settings(user, db: Session, provider: str = None):
+    """Get provider, API key, model from AiWorkspaceSettings."""
+    from app.database import AiWorkspaceSettings
 
-    settings = db.query(ClaudeCodeSettings).filter(
-        ClaudeCodeSettings.user_id == user.id
+    settings = db.query(AiWorkspaceSettings).filter(
+        AiWorkspaceSettings.user_id == user.id
     ).first()
 
     if not settings:
@@ -119,14 +119,14 @@ async def create_session(request: Request, data: CreateSessionRequest = None, db
     # Handle both JSON body and empty POST
     provider_requested = data.provider if data else None
 
-    provider, api_key, model, auth_method, oauth_token = _get_claude_code_settings(
+    provider, api_key, model, auth_method, oauth_token = _get_ai_workspace_settings(
         user, db, provider_requested
     )
 
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="No API key configured for the selected provider. Please set up your API keys in Claude Code settings."
+            detail="No API key configured for the selected provider. Please set up your API keys in AI Workspace settings."
         )
 
     session = await tool_builder_manager.create_session(

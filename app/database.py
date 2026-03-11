@@ -649,10 +649,10 @@ class ToolExecution(Base):
     user = relationship("User", backref="tool_executions")
 
 
-# ============== Claude Code Models ==============
+# ============== AI Workspace Models ==============
 
-class ClaudeCodeSession(Base):
-    """Claude Code CLI session - tracks each spawned CLI subprocess."""
+class AiWorkspaceSession(Base):
+    """AI Workspace CLI session - tracks each spawned CLI subprocess."""
     __tablename__ = "claude_code_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -676,12 +676,12 @@ class ClaudeCodeSession(Base):
     ended_at = Column(DateTime)
 
     # Relationships
-    user = relationship("User", backref="claude_code_sessions")
-    messages = relationship("ClaudeCodeMessage", back_populates="session", cascade="all, delete-orphan", order_by="ClaudeCodeMessage.created_at")
+    user = relationship("User", backref="ai_workspace_sessions")
+    messages = relationship("AiWorkspaceMessage", back_populates="session", cascade="all, delete-orphan", order_by="AiWorkspaceMessage.created_at")
 
 
-class ClaudeCodeMessage(Base):
-    """Claude Code message - individual stream events from CLI."""
+class AiWorkspaceMessage(Base):
+    """AI Workspace message - individual stream events from CLI."""
     __tablename__ = "claude_code_messages"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -693,11 +693,11 @@ class ClaudeCodeMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    session = relationship("ClaudeCodeSession", back_populates="messages")
+    session = relationship("AiWorkspaceSession", back_populates="messages")
 
 
-class ClaudeCodeSettings(Base):
-    """Claude Code settings - per-user configuration."""
+class AiWorkspaceSettings(Base):
+    """AI Workspace settings - per-user configuration."""
     __tablename__ = "claude_code_settings"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -719,7 +719,7 @@ class ClaudeCodeSettings(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    user = relationship("User", backref="claude_code_settings")
+    user = relationship("User", backref="ai_workspace_settings")
 
 
 # ============== ChatHub Agent Models ==============

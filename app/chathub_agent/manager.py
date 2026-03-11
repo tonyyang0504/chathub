@@ -1,7 +1,7 @@
 """
 ChatHub Agent Manager
 Singleton manager for ChatHub Agent sessions with safety commits and DB backups.
-Follows the same pattern as ClaudeCodeManager but uses AgentLoop instead of subprocess.
+Follows the same pattern as AiWorkspaceManager but uses AgentLoop instead of subprocess.
 """
 
 import asyncio

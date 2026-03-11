@@ -1,5 +1,5 @@
 """
-Claude Code Routes - HTTP + WebSocket endpoints for Claude Code CLI integration
+AI Workspace Routes - HTTP + WebSocket endpoints for AI Workspace CLI integration
 """
 
 import json
@@ -21,15 +21,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import (
-    get_db, SessionLocal, ClaudeCodeSession, ClaudeCodeMessage, ClaudeCodeSettings
+    get_db, SessionLocal, AiWorkspaceSession, AiWorkspaceMessage, AiWorkspaceSettings
 )
 from app.auth.utils import get_current_user, get_current_user_optional, get_websocket_user, encrypt_string, decrypt_string
-from .manager import claude_code_manager
+from .manager import ai_workspace_manager
 from app.tools.monitoring import ToolMonitor
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/tools", tags=["Claude Code"])
+router = APIRouter(prefix="/tools", tags=["AI Workspace"])
 
 # Template setup
 if getattr(sys, 'frozen', False):
@@ -44,21 +44,21 @@ templates = Jinja2Templates(directory=str(_BASE_DIR / "app" / "templates"))
 # Page Route
 # ============================================================================
 
-@router.get("/claude-code", response_class=HTMLResponse)
-async def claude_code_page(request: Request, db: Session = Depends(get_db)):
-    """Claude Code tool page."""
+@router.get("/ai-workspace", response_class=HTMLResponse)
+async def ai_workspace_page(request: Request, db: Session = Depends(get_db)):
+    """AI Workspace tool page."""
     user = await get_current_user_optional(request, None, db)
     if not user:
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/auth/login")
 
     return templates.TemplateResponse(
-        "dashboard/tools/claude_code.html",
+        "dashboard/tools/ai_workspace.html",
         {
             "request": request,
             "user": user,
-            "active_page": "tools_claude_code",
-            "page_title": "Claude Code"
+            "active_page": "tools_ai_workspace",
+            "page_title": "AI Workspace"
         }
     )
 
@@ -67,12 +67,12 @@ async def claude_code_page(request: Request, db: Session = Depends(get_db)):
 # Settings API
 # ============================================================================
 
-@router.get("/api/claude-code/settings")
+@router.get("/api/ai-workspace/settings")
 async def get_settings(request: Request, db: Session = Depends(get_db)):
-    """Get Claude Code settings (API key masked)."""
+    """Get AI Workspace settings (API key masked)."""
     user = await get_current_user(request, None, db)
-    settings = db.query(ClaudeCodeSettings).filter(
-        ClaudeCodeSettings.user_id == user.id
+    settings = db.query(AiWorkspaceSettings).filter(
+        AiWorkspaceSettings.user_id == user.id
     ).first()
 
     if not settings:
@@ -108,18 +108,18 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
     }
 
 
-@router.put("/api/claude-code/settings")
+@router.put("/api/ai-workspace/settings")
 async def save_settings(request: Request, db: Session = Depends(get_db)):
-    """Save Claude Code settings."""
+    """Save AI Workspace settings."""
     user = await get_current_user(request, None, db)
     data = await request.json()
 
-    settings = db.query(ClaudeCodeSettings).filter(
-        ClaudeCodeSettings.user_id == user.id
+    settings = db.query(AiWorkspaceSettings).filter(
+        AiWorkspaceSettings.user_id == user.id
     ).first()
 
     if not settings:
-        settings = ClaudeCodeSettings(user_id=user.id)
+        settings = AiWorkspaceSettings(user_id=user.id)
         db.add(settings)
 
     # Only update API key if provided (non-empty)
@@ -162,25 +162,25 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
 # Membership Auth API
 # ============================================================================
 
-@router.get("/api/claude-code/membership-status")
+@router.get("/api/ai-workspace/membership-status")
 async def membership_status(request: Request, db: Session = Depends(get_db)):
     """Check Claude membership auth status."""
     await get_current_user(request, None, db)
-    result = await claude_code_manager.check_membership_status()
+    result = await ai_workspace_manager.check_membership_status()
     return result
 
 
-@router.post("/api/claude-code/membership-login")
+@router.post("/api/ai-workspace/membership-login")
 async def membership_login(request: Request, db: Session = Depends(get_db)):
     """Trigger Claude membership login (opens browser)."""
     await get_current_user(request, None, db)
-    result = await claude_code_manager.trigger_membership_login()
+    result = await ai_workspace_manager.trigger_membership_login()
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
     return result
 
 
-@router.post("/api/claude-code/membership-login-code")
+@router.post("/api/ai-workspace/membership-login-code")
 async def membership_login_code(request: Request, db: Session = Depends(get_db)):
     """Submit OAuth authorization code to the running login process."""
     await get_current_user(request, None, db)
@@ -188,17 +188,17 @@ async def membership_login_code(request: Request, db: Session = Depends(get_db))
     code = body.get("code", "").strip()
     if not code:
         raise HTTPException(status_code=400, detail="Authorization code is required")
-    result = await claude_code_manager.submit_login_code(code)
+    result = await ai_workspace_manager.submit_login_code(code)
     if result["status"] == "error":
         raise HTTPException(status_code=400, detail=result["message"])
     return result
 
 
-@router.post("/api/claude-code/membership-logout")
+@router.post("/api/ai-workspace/membership-logout")
 async def membership_logout(request: Request, db: Session = Depends(get_db)):
     """Trigger Claude membership logout."""
     await get_current_user(request, None, db)
-    result = await claude_code_manager.trigger_membership_logout()
+    result = await ai_workspace_manager.trigger_membership_logout()
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
     return result
@@ -208,7 +208,7 @@ async def membership_logout(request: Request, db: Session = Depends(get_db)):
 # File Upload & External Connectors
 # ============================================================================
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "claude_code_uploads"
+UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "ai_workspace_uploads"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {
     # Images
@@ -230,9 +230,9 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-@router.post("/api/claude-code/upload")
+@router.post("/api/ai-workspace/upload")
 async def upload_files(request: Request, files: list[UploadFile] = File(...), db: Session = Depends(get_db)):
-    """Upload files for Claude Code to work with."""
+    """Upload files for AI Workspace to work with."""
     user = await get_current_user(request, None, db)
 
     user_upload_dir = UPLOAD_DIR / str(user.id)
@@ -268,9 +268,9 @@ async def upload_files(request: Request, files: list[UploadFile] = File(...), db
     return {"files": results}
 
 
-@router.post("/api/claude-code/fetch-url")
+@router.post("/api/ai-workspace/fetch-url")
 async def fetch_url(request: Request, db: Session = Depends(get_db)):
-    """Download a file from a URL (Google Drive, Dropbox, raw URL) for Claude Code."""
+    """Download a file from a URL (Google Drive, Dropbox, raw URL) for AI Workspace."""
     user = await get_current_user(request, None, db)
     data = await request.json()
     url = data.get("url", "").strip()
@@ -340,7 +340,7 @@ async def fetch_url(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=f"Failed to download: {str(e)}")
 
 
-@router.delete("/api/claude-code/uploads")
+@router.delete("/api/ai-workspace/uploads")
 async def clear_uploads(request: Request, db: Session = Depends(get_db)):
     """Clear all uploaded files for the current user."""
     user = await get_current_user(request, None, db)
@@ -355,9 +355,9 @@ async def clear_uploads(request: Request, db: Session = Depends(get_db)):
 # Session API
 # ============================================================================
 
-@router.post("/api/claude-code/sessions")
+@router.post("/api/ai-workspace/sessions")
 async def create_session(request: Request, db: Session = Depends(get_db)):
-    """Create a new Claude Code session."""
+    """Create a new AI Workspace session."""
     user = await get_current_user(request, None, db)
     data = await request.json()
     prompt = data.get("prompt", "").strip()
@@ -366,13 +366,13 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Prompt is required")
 
     # Auto-stop any existing session (running or waiting) before creating a new one
-    active = claude_code_manager.get_active_session(user.id)
+    active = ai_workspace_manager.get_active_session(user.id)
     if active:
-        await claude_code_manager.stop_session(user.id)
+        await ai_workspace_manager.stop_session(user.id)
 
     # Get settings
-    settings = db.query(ClaudeCodeSettings).filter(
-        ClaudeCodeSettings.user_id == user.id
+    settings = db.query(AiWorkspaceSettings).filter(
+        AiWorkspaceSettings.user_id == user.id
     ).first()
 
     # Determine provider
@@ -415,13 +415,13 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     db_backup_path = None
 
     if settings.auto_commit:
-        git_hash = claude_code_manager.create_safety_commit()
+        git_hash = ai_workspace_manager.create_safety_commit()
 
     if settings.auto_backup_db:
-        db_backup_path = claude_code_manager.create_db_backup()
+        db_backup_path = ai_workspace_manager.create_db_backup()
 
     # Create session record
-    session = ClaudeCodeSession(
+    session = AiWorkspaceSession(
         user_id=user.id,
         prompt=prompt,
         git_commit_hash=git_hash,
@@ -435,7 +435,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     db.refresh(session)
 
     # Also add the user prompt as a message
-    user_msg = ClaudeCodeMessage(
+    user_msg = AiWorkspaceMessage(
         session_id=session.id,
         role="user",
         content=prompt,
@@ -448,7 +448,7 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     file_paths = data.get("file_paths", [])
 
     # Spawn CLI subprocess
-    active_session = await claude_code_manager.start_session(
+    active_session = await ai_workspace_manager.start_session(
         user_id=user.id,
         session_id=session.id,
         prompt=prompt,
@@ -499,11 +499,11 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/api/claude-code/active-session")
+@router.get("/api/ai-workspace/active-session")
 async def get_active_session(request: Request, db: Session = Depends(get_db)):
     """Check if user has an active (running or waiting) session."""
     user = await get_current_user(request, None, db)
-    active = claude_code_manager.get_active_session(user.id)
+    active = ai_workspace_manager.get_active_session(user.id)
     if active:
         return {
             "active": True,
@@ -514,13 +514,13 @@ async def get_active_session(request: Request, db: Session = Depends(get_db)):
     return {"active": False}
 
 
-@router.get("/api/claude-code/sessions")
+@router.get("/api/ai-workspace/sessions")
 async def list_sessions(request: Request, db: Session = Depends(get_db)):
-    """List user's Claude Code sessions."""
+    """List user's AI Workspace sessions."""
     user = await get_current_user(request, None, db)
-    sessions = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.user_id == user.id
-    ).order_by(func.coalesce(ClaudeCodeSession.ended_at, ClaudeCodeSession.created_at).desc()).limit(50).all()
+    sessions = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.user_id == user.id
+    ).order_by(func.coalesce(AiWorkspaceSession.ended_at, AiWorkspaceSession.created_at).desc()).limit(50).all()
 
     return [{
         "id": s.id,
@@ -536,24 +536,24 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
     } for s in sessions]
 
 
-@router.get("/api/claude-code/sessions/{session_id}")
+@router.get("/api/ai-workspace/sessions/{session_id}")
 async def get_session(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Get a session with its messages."""
     user = await get_current_user(request, None, db)
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == session_id,
+        AiWorkspaceSession.user_id == user.id
     ).first()
 
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    messages = db.query(ClaudeCodeMessage).filter(
-        ClaudeCodeMessage.session_id == session_id
-    ).order_by(ClaudeCodeMessage.created_at.asc(), ClaudeCodeMessage.id.asc()).all()
+    messages = db.query(AiWorkspaceMessage).filter(
+        AiWorkspaceMessage.session_id == session_id
+    ).order_by(AiWorkspaceMessage.created_at.asc(), AiWorkspaceMessage.id.asc()).all()
 
     # Check if this session is actively waiting for follow-up
-    active = claude_code_manager.get_active_session(user.id)
+    active = ai_workspace_manager.get_active_session(user.id)
     session_is_waiting = bool(
         active and active.session_id == session.id and active.is_waiting and not active.is_running
     )
@@ -584,13 +584,13 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
     }
 
 
-@router.delete("/api/claude-code/sessions/{session_id}")
+@router.delete("/api/ai-workspace/sessions/{session_id}")
 async def delete_session(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Delete a session and its messages."""
     user = await get_current_user(request, None, db)
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == session_id,
+        AiWorkspaceSession.user_id == user.id
     ).first()
 
     if not session:
@@ -598,19 +598,19 @@ async def delete_session(session_id: int, request: Request, db: Session = Depend
 
     # If session is running, stop it first
     if session.status in ("running", "pending"):
-        await claude_code_manager.stop_session(user.id)
+        await ai_workspace_manager.stop_session(user.id)
         session.status = "stopped"
         session.ended_at = datetime.utcnow()
 
     # Delete messages first, then session
-    db.query(ClaudeCodeMessage).filter(ClaudeCodeMessage.session_id == session_id).delete()
+    db.query(AiWorkspaceMessage).filter(AiWorkspaceMessage.session_id == session_id).delete()
     db.delete(session)
     db.commit()
 
     return {"status": "ok"}
 
 
-@router.post("/api/claude-code/sessions/{session_id}/resume")
+@router.post("/api/ai-workspace/sessions/{session_id}/resume")
 async def resume_session(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Resume a stopped/completed session with a new prompt."""
     user = await get_current_user(request, None, db)
@@ -621,13 +621,13 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
         raise HTTPException(status_code=400, detail="Prompt is required")
 
     # Check for existing active session
-    active = claude_code_manager.get_active_session(user.id)
+    active = ai_workspace_manager.get_active_session(user.id)
     if active:
         if active.is_waiting and not active.is_running:
             # Clean up idle waiting session
             try:
-                db_old = db.query(ClaudeCodeSession).filter(
-                    ClaudeCodeSession.id == active.session_id
+                db_old = db.query(AiWorkspaceSession).filter(
+                    AiWorkspaceSession.id == active.session_id
                 ).first()
                 if db_old and db_old.status == "running":
                     db_old.status = "completed"
@@ -635,15 +635,15 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
                     db.commit()
             except Exception:
                 pass
-            if user.id in claude_code_manager._sessions:
-                del claude_code_manager._sessions[user.id]
+            if user.id in ai_workspace_manager._sessions:
+                del ai_workspace_manager._sessions[user.id]
         else:
             raise HTTPException(status_code=409, detail="You already have an active session")
 
     # Verify the old session belongs to user and is resumable
-    old_session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
+    old_session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == session_id,
+        AiWorkspaceSession.user_id == user.id
     ).first()
 
     if not old_session:
@@ -656,8 +656,8 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
         raise HTTPException(status_code=400, detail="Session does not have a CLI session UUID (created before resume support)")
 
     # Get settings
-    settings = db.query(ClaudeCodeSettings).filter(
-        ClaudeCodeSettings.user_id == user.id
+    settings = db.query(AiWorkspaceSettings).filter(
+        AiWorkspaceSettings.user_id == user.id
     ).first()
 
     # Determine provider from the old session
@@ -698,10 +698,10 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     db_backup_path = None
 
     if settings and settings.auto_commit:
-        git_hash = claude_code_manager.create_safety_commit()
+        git_hash = ai_workspace_manager.create_safety_commit()
 
     if settings and settings.auto_backup_db:
-        db_backup_path = claude_code_manager.create_db_backup()
+        db_backup_path = ai_workspace_manager.create_db_backup()
 
     # Reuse the existing session — update it back to running
     old_session.status = "pending"
@@ -711,7 +711,7 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     db.commit()
 
     # Add user prompt as a message to the SAME session
-    user_msg = ClaudeCodeMessage(
+    user_msg = AiWorkspaceMessage(
         session_id=old_session.id,
         role="user",
         content=prompt,
@@ -724,7 +724,7 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     file_paths = data.get("file_paths", [])
 
     # Spawn CLI subprocess with --resume
-    active_session = await claude_code_manager.resume_session(
+    active_session = await ai_workspace_manager.resume_session(
         user_id=user.id,
         session_id=session_id,
         prompt=prompt,
@@ -742,7 +742,7 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     if not active_session:
         old_session.status = "failed"
         db.commit()
-        raise HTTPException(status_code=500, detail="Failed to resume Claude Code session")
+        raise HTTPException(status_code=500, detail="Failed to resume AI Workspace session")
 
     old_session.status = "running"
     old_session.pid = active_session.process.pid if active_session.process else None
@@ -771,7 +771,7 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     }
 
 
-@router.post("/api/claude-code/sessions/{session_id}/message")
+@router.post("/api/ai-workspace/sessions/{session_id}/message")
 async def send_message(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Send a follow-up message to an active session."""
     user = await get_current_user(request, None, db)
@@ -782,16 +782,16 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
         raise HTTPException(status_code=400, detail="Prompt is required")
 
     # Verify ownership
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == session_id,
+        AiWorkspaceSession.user_id == user.id
     ).first()
 
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Persist the user message
-    user_msg = ClaudeCodeMessage(
+    user_msg = AiWorkspaceMessage(
         session_id=session.id,
         role="user",
         content=prompt,
@@ -804,10 +804,10 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     file_paths = data.get("file_paths", [])
 
     # Send via stdin
-    sent = await claude_code_manager.send_message(user.id, prompt, file_paths=file_paths)
+    sent = await ai_workspace_manager.send_message(user.id, prompt, file_paths=file_paths)
     if not sent:
         # Check if session is actively running in memory (not just stale)
-        active = claude_code_manager.get_active_session(user.id)
+        active = ai_workspace_manager.get_active_session(user.id)
         if active and active.is_running:
             raise HTTPException(status_code=409, detail="Session is currently processing. Please wait.")
 
@@ -815,8 +815,8 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
         if not session.claude_session_uuid:
             raise HTTPException(status_code=400, detail="Session is not ready for input")
 
-        settings = db.query(ClaudeCodeSettings).filter(
-            ClaudeCodeSettings.user_id == user.id
+        settings = db.query(AiWorkspaceSettings).filter(
+            AiWorkspaceSettings.user_id == user.id
         ).first()
 
         # Determine provider from session
@@ -852,7 +852,7 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
         db.commit()
 
         # Resume CLI subprocess with --resume
-        active_session = await claude_code_manager.resume_session(
+        active_session = await ai_workspace_manager.resume_session(
             user_id=user.id,
             session_id=session.id,
             prompt=prompt,
@@ -875,35 +875,35 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     return {"status": "ok"}
 
 
-@router.post("/api/claude-code/sessions/{session_id}/stop")
+@router.post("/api/ai-workspace/sessions/{session_id}/stop")
 async def stop_session(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Stop a running session."""
     user = await get_current_user(request, None, db)
 
     # Verify ownership
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == session_id,
+        AiWorkspaceSession.user_id == user.id
     ).first()
 
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    stopped = await claude_code_manager.stop_session(user.id)
+    stopped = await ai_workspace_manager.stop_session(user.id)
     if not stopped:
         raise HTTPException(status_code=400, detail="No active session to stop")
 
     return {"status": "stopped"}
 
 
-@router.post("/api/claude-code/sessions/{session_id}/rollback")
+@router.post("/api/ai-workspace/sessions/{session_id}/rollback")
 async def rollback_session(session_id: int, request: Request, db: Session = Depends(get_db)):
     """Rollback git + DB to pre-session state."""
     user = await get_current_user(request, None, db)
 
-    session = db.query(ClaudeCodeSession).filter(
-        ClaudeCodeSession.id == session_id,
-        ClaudeCodeSession.user_id == user.id
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == session_id,
+        AiWorkspaceSession.user_id == user.id
     ).first()
 
     if not session:
@@ -915,7 +915,7 @@ async def rollback_session(session_id: int, request: Request, db: Session = Depe
     if session.rolled_back:
         raise HTTPException(status_code=400, detail="Session already rolled back")
 
-    result = claude_code_manager.rollback_session(
+    result = ai_workspace_manager.rollback_session(
         session.git_commit_hash,
         session.db_backup_path
     )
@@ -944,7 +944,7 @@ async def rollback_session(session_id: int, request: Request, db: Session = Depe
 # WebSocket Streaming
 # ============================================================================
 
-@router.websocket("/api/claude-code/stream/{session_id}")
+@router.websocket("/api/ai-workspace/stream/{session_id}")
 async def stream_session(websocket: WebSocket, session_id: int, no_replay: int = 0):
     """WebSocket for real-time session output streaming."""
     await websocket.accept()
@@ -958,9 +958,9 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
             return
 
         # Verify ownership
-        session = db.query(ClaudeCodeSession).filter(
-            ClaudeCodeSession.id == session_id,
-            ClaudeCodeSession.user_id == user.id
+        session = db.query(AiWorkspaceSession).filter(
+            AiWorkspaceSession.id == session_id,
+            AiWorkspaceSession.user_id == user.id
         ).first()
 
         if not session:
@@ -969,7 +969,7 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
             return
 
         # Get active session
-        active = claude_code_manager.get_active_session(user.id)
+        active = ai_workspace_manager.get_active_session(user.id)
 
         # If no_replay and session not yet active, wait briefly for CLI to start
         waited_for_session = False
@@ -977,7 +977,7 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
             waited_for_session = True
             for _ in range(10):  # Wait up to 5 seconds
                 await asyncio.sleep(0.5)
-                active = claude_code_manager.get_active_session(user.id)
+                active = ai_workspace_manager.get_active_session(user.id)
                 if active and active.session_id == session_id:
                     break
 
@@ -1022,9 +1022,9 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
                 db.commit()
 
             # Session not active, send historical messages
-            messages = db.query(ClaudeCodeMessage).filter(
-                ClaudeCodeMessage.session_id == session_id
-            ).order_by(ClaudeCodeMessage.created_at.asc(), ClaudeCodeMessage.id.asc()).all()
+            messages = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == session_id
+            ).order_by(AiWorkspaceMessage.created_at.asc(), AiWorkspaceMessage.id.asc()).all()
 
             for m in messages:
                 # Skip system/init events (large session metadata)
@@ -1054,3 +1054,21 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
             await websocket.close()
         except Exception:
             pass
+
+
+# ============================================================================
+# Backward-Compatibility Redirects (old /claude-code URLs)
+# ============================================================================
+
+@router.get("/claude-code", include_in_schema=False)
+async def redirect_old_page(request: Request):
+    """Redirect old Claude Code page URL to AI Workspace."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/tools/ai-workspace", status_code=301)
+
+
+@router.api_route("/api/claude-code/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+async def redirect_old_api(path: str, request: Request):
+    """Redirect old Claude Code API URLs to AI Workspace."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/tools/api/ai-workspace/{path}", status_code=307)
