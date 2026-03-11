@@ -36,7 +36,7 @@ from .hubs.scheduler import content_scheduler
 from .hubs.analysis_scheduler import contact_analysis_scheduler
 from .hubs.followup_scheduler import followup_send_scheduler
 from .scripts.scheduler import script_scheduler
-from .tools import tools_router
+from .tools import tools_router, builder_router, marketplace_router
 from .agents import agents_router
 from .claude_code.routes import router as claude_code_router
 from .claude_code.manager import claude_code_manager
@@ -378,6 +378,8 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
 app.include_router(scripts_router, tags=["Scripts"])
 app.include_router(tools_router, tags=["Tools"])
+app.include_router(builder_router, tags=["Tool Builder"])
+app.include_router(marketplace_router, tags=["Marketplace"])
 app.include_router(claude_code_router, tags=["Claude Code"])
 app.include_router(chathub_agent_router, tags=["ChatHub Agent"])
 app.include_router(agents_router, tags=["Agents"])

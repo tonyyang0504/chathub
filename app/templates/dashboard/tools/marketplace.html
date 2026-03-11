@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Marketplace - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
+<style>
+.marketplace-hero {
+    background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 40%, #06b6d4 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+.marketplace-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.marketplace-hero p {
+    font-size: 1.05rem;
+    opacity: 0.85;
+    max-width: 500px;
+    margin: 0 auto 1.5rem;
+}
+.search-box {
+    max-width: 500px;
+    margin: 0 auto;
+    position: relative;
+}
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 1rem;
+    backdrop-filter: blur(10px);
+}
+.search-box input::placeholder { color: rgba(255,255,255,0.6); }
+.search-box input:focus {
+    outline: none;
+    border-color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.15);
+}
+.search-box .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,0.6);
+    font-size: 1.1rem;
+}
+
+.filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.filter-pill {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.filter-pill:hover { border-color: #8b5cf6; color: #a78bfa; }
+.filter-pill.active {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    border-color: transparent;
+    color: white;
+}
+
+.listing-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.2s;
+    height: 100%;
+}
+.listing-card:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.listing-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.listing-card h5 { font-size: 1rem; font-weight: 600; margin: 0; }
+.listing-card .listing-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+    flex: 1;
+}
+.listing-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+.listing-meta .author { display: flex; align-items: center; gap: 0.25rem; }
+.listing-meta .installs { display: flex; align-items: center; gap: 0.25rem; }
+.listing-meta .category-tag {
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    background: rgba(139, 92, 246, 0.1);
+    color: #a78bfa;
+    font-size: 0.7rem;
+    text-transform: capitalize;
+}
+
+.listing-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 0.5rem;
+}
+.listing-actions .btn { font-size: 0.8rem; border-radius: 8px; }
+
+.btn-install {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    border: none;
+    color: white;
+}
+.btn-install:hover { opacity: 0.9; color: white; }
+
+.installed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 8px;
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.empty-marketplace {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+.empty-marketplace i {
+    font-size: 4rem;
+    opacity: 0.2;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.results-count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="marketplace-hero">
+        <h1><i class="bi bi-shop me-2"></i>Marketplace</h1>
+        <p>Discover and install community-built tools to extend your ChatHub capabilities.</p>
+        <div class="search-box">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search tools..."
+                   oninput="debounceSearch()">
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-pills" id="filterPills">
+        <button class="filter-pill active" data-category="all" onclick="setCategory('all', this)">All</button>
+        <button class="filter-pill" data-category="messaging" onclick="setCategory('messaging', this)">
+            <i class="bi bi-chat-dots me-1"></i>Messaging
+        </button>
+        <button class="filter-pill" data-category="ai" onclick="setCategory('ai', this)">
+            <i class="bi bi-stars me-1"></i>AI
+        </button>
+        <button class="filter-pill" data-category="automation" onclick="setCategory('automation', this)">
+            <i class="bi bi-gear me-1"></i>Automation
+        </button>
+        <button class="filter-pill" data-category="analytics" onclick="setCategory('analytics', this)">
+            <i class="bi bi-graph-up me-1"></i>Analytics
+        </button>
+    </div>
+
+    <!-- Results count -->
+    <div class="results-count" id="resultsCount"></div>
+
+    <!-- Listings Grid -->
+    <div class="row g-3" id="listingsGrid">
+        <div class="col-12 text-center py-4" id="loadingState">
+            <div class="spinner-border text-secondary" role="status"></div>
+            <p class="text-muted mt-2">Loading marketplace...</p>
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-marketplace" id="emptyState" style="display: none;">
+        <i class="bi bi-shop-window"></i>
+        <h4>No tools found</h4>
+        <p>Be the first to publish a tool! Use the <a href="/tools/tool-builder">Tool Builder</a> to create one.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentCategory = 'all';
+let searchTimer = null;
+
+function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadListings, 300);
+}
+
+function setCategory(category, el) {
+    currentCategory = category;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    loadListings();
+}
+
+async function loadListings() {
+    const grid = document.getElementById('listingsGrid');
+    const empty = document.getElementById('emptyState');
+    const loading = document.getElementById('loadingState');
+    const search = document.getElementById('searchInput').value.trim();
+
+    loading.style.display = '';
+    empty.style.display = 'none';
+
+    grid.querySelectorAll('.listing-col').forEach(el => el.remove());
+
+    try {
+        let url = `/tools/api/marketplace/listings?limit=50`;
+        if (currentCategory !== 'all') url += `&category=${currentCategory}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        loading.style.display = 'none';
+
+        document.getElementById('resultsCount').textContent =
+            `${data.total} tool${data.total !== 1 ? 's' : ''} found`;
+
+        if (!data.listings || data.listings.length === 0) {
+            empty.style.display = '';
+            return;
+        }
+
+        data.listings.forEach(listing => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 col-xl-3 listing-col';
+            col.innerHTML = `
+                <div class="listing-card">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="listing-icon" style="background: linear-gradient(135deg, ${listing.gradient_start}, ${listing.gradient_end});">
+                            <i class="bi ${listing.icon}"></i>
+                        </div>
+                        <div>
+                            <h5>${escapeHtml(listing.display_name)}</h5>
+                            <div class="listing-meta mt-1">
+                                <span class="author"><i class="bi bi-person"></i> ${escapeHtml(listing.author_name)}</span>
+                                <span class="installs"><i class="bi bi-download"></i> ${listing.install_count}</span>
+                                <span class="category-tag">${listing.category}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="listing-desc">${escapeHtml(listing.description || '')}</p>
+                    <div class="listing-actions">
+                        ${listing.is_installed
+                            ? `<span class="installed-badge"><i class="bi bi-check-circle"></i> Installed</span>
+                               <button class="btn btn-sm btn-outline-danger" onclick="uninstallTool(${listing.id}, this)">Uninstall</button>`
+                            : listing.is_own
+                                ? `<span class="installed-badge" style="background: rgba(99,102,241,0.1); color: #818cf8;"><i class="bi bi-person-check"></i> Your Tool</span>`
+                                : `<button class="btn btn-sm btn-install" onclick="installTool(${listing.id}, this)">
+                                    <i class="bi bi-download me-1"></i> Install
+                                   </button>`
+                        }
+                    </div>
+                </div>
+            `;
+            grid.appendChild(col);
+        });
+    } catch(e) {
+        loading.style.display = 'none';
+        console.error('Failed to load listings:', e);
+        grid.innerHTML = '<div class="col-12 text-center text-danger py-4">Failed to load marketplace</div>';
+    }
+}
+
+async function installTool(listingId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Installing...';
+
+    try {
+        const resp = await fetch(`/tools/api/marketplace/install/${listingId}`, { method: 'POST' });
+        const data = await resp.json();
+
+        if (resp.ok) {
+            showToast('Tool installed successfully!', 'success');
+            loadListings();
+        } else {
+            showToast(data.detail || 'Install failed', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-download me-1"></i> Install';
+        }
+    } catch(e) {
+        showToast('Error installing tool', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-download me-1"></i> Install';
+    }
+}
+
+async function uninstallTool(listingId, btn) {
+    if (!confirm('Uninstall this tool?')) return;
+
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch(`/tools/api/marketplace/uninstall/${listingId}`, { method: 'DELETE' });
+        if (resp.ok) {
+            showToast('Tool uninstalled', 'success');
+            loadListings();
+        } else {
+            const data = await resp.json();
+            showToast(data.detail || 'Uninstall failed', 'danger');
+            btn.disabled = false;
+        }
+    } catch(e) {
+        showToast('Error uninstalling tool', 'danger');
+        btn.disabled = false;
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer') || document.body;
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0 show`;
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;min-width:250px;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', loadListings);
+</script>
+{% endblock %}

@@ -38,3 +38,6 @@ nul
 # CLI provider instruction files (auto-generated)
 AGENTS.md
 GEMINI.md
+
+# Tool Builder worktree sandboxes
+.worktrees/

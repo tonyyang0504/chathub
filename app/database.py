@@ -666,6 +666,9 @@ class ClaudeCodeSession(Base):
     provider = Column(String(20), default="claude")  # claude, codex, gemini
     title = Column(String(200), nullable=True)  # AI-generated session title
     claude_session_uuid = Column(String(36))  # Claude CLI session UUID for --resume
+    session_type = Column(String(20), default="claude_code")  # "claude_code" | "tool_builder"
+    worktree_path = Column(String(500), nullable=True)
+    worktree_branch = Column(String(200), nullable=True)
     rolled_back = Column(Boolean, default=False)
     rolled_back_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -831,8 +834,60 @@ class ChatHubAgentSkill(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # New columns for Tool Builder
+    display_name = Column(String(200), nullable=True)
+    icon = Column(String(50), default="bi-gear")
+    gradient_start = Column(String(7), default="#6366f1")
+    gradient_end = Column(String(7), default="#8b5cf6")
+    skill_md_content = Column(Text, nullable=True)
+
     # Relationships
     user = relationship("User", backref="chathub_agent_skills")
+    listing = relationship("CustomToolListing", back_populates="skill", uselist=False)
+
+
+class CustomToolListing(Base):
+    """Marketplace listing for a published custom tool."""
+    __tablename__ = "custom_tool_listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("chathub_agent_skills.id", ondelete="CASCADE"), unique=True, nullable=False)
+    name = Column(String(200), unique=True, nullable=False)
+    display_name = Column(String(200))
+    description = Column(Text)
+    long_description = Column(Text)
+    category = Column(String(50), default="automation")
+    version = Column(String(20), default="1.0.0")
+    icon = Column(String(50), default="bi-gear")
+    gradient_start = Column(String(7), default="#6366f1")
+    gradient_end = Column(String(7), default="#8b5cf6")
+    install_count = Column(Integer, default=0)
+    status = Column(String(20), default="draft")  # draft, published, removed
+    skill_md_content = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    author = relationship("User", backref="custom_tool_listings")
+    skill = relationship("ChatHubAgentSkill", back_populates="listing")
+    installs = relationship("CustomToolInstall", back_populates="listing")
+
+
+class CustomToolInstall(Base):
+    """Record of a user installing a marketplace tool."""
+    __tablename__ = "custom_tool_installs"
+    __table_args__ = (UniqueConstraint("user_id", "listing_id", name="uq_user_listing"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    listing_id = Column(Integer, ForeignKey("custom_tool_listings.id", ondelete="CASCADE"), nullable=False, index=True)
+    installed_version = Column(String(20))
+    installed_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="custom_tool_installs")
+    listing = relationship("CustomToolListing", back_populates="installs")
 
 
 # ============== Database Functions ==============
@@ -1471,6 +1526,99 @@ def run_migrations():
                     print("Added approval_mode column to chathub_agent_settings")
                 except Exception as e:
                     print(f"Could not add approval_mode column: {e}")
+
+        # ============== Tool Builder columns on chathub_agent_skills ==============
+        if 'chathub_agent_skills' in existing_tables:
+            skill_cols = [col['name'] for col in inspector.get_columns('chathub_agent_skills')]
+            for col_name, col_def in [
+                ('display_name', 'VARCHAR(200)'),
+                ('icon', "VARCHAR(50) DEFAULT 'bi-gear'"),
+                ('gradient_start', "VARCHAR(7) DEFAULT '#6366f1'"),
+                ('gradient_end', "VARCHAR(7) DEFAULT '#8b5cf6'"),
+                ('skill_md_content', 'TEXT'),
+            ]:
+                if col_name not in skill_cols:
+                    try:
+                        conn.execute(text(f'ALTER TABLE chathub_agent_skills ADD COLUMN {col_name} {col_def}'))
+                        conn.commit()
+                        print(f"Added {col_name} column to chathub_agent_skills")
+                    except Exception as e:
+                        print(f"Could not add {col_name} column: {e}")
+
+        # ============== Custom Tool Listings table ==============
+        if 'custom_tool_listings' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE IF NOT EXISTS custom_tool_listings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        skill_id INTEGER NOT NULL UNIQUE REFERENCES chathub_agent_skills(id) ON DELETE CASCADE,
+                        name VARCHAR(200) NOT NULL UNIQUE,
+                        display_name VARCHAR(200),
+                        description TEXT,
+                        long_description TEXT,
+                        category VARCHAR(50) DEFAULT 'automation',
+                        version VARCHAR(20) DEFAULT '1.0.0',
+                        icon VARCHAR(50) DEFAULT 'bi-gear',
+                        gradient_start VARCHAR(7) DEFAULT '#6366f1',
+                        gradient_end VARCHAR(7) DEFAULT '#8b5cf6',
+                        install_count INTEGER DEFAULT 0,
+                        status VARCHAR(20) DEFAULT 'draft',
+                        skill_md_content TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+                conn.commit()
+                print("Created custom_tool_listings table")
+            except Exception as e:
+                print(f"Could not create custom_tool_listings table: {e}")
+
+        # ============== Custom Tool Installs table ==============
+        if 'custom_tool_installs' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE IF NOT EXISTS custom_tool_installs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        listing_id INTEGER NOT NULL REFERENCES custom_tool_listings(id) ON DELETE CASCADE,
+                        installed_version VARCHAR(20),
+                        installed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, listing_id)
+                    )
+                '''))
+                conn.commit()
+                print("Created custom_tool_installs table")
+            except Exception as e:
+                print(f"Could not create custom_tool_installs table: {e}")
+
+        # Add tool builder columns to claude_code_sessions
+        if 'claude_code_sessions' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('claude_code_sessions')]
+
+            if 'session_type' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE claude_code_sessions ADD COLUMN session_type VARCHAR(20) DEFAULT 'claude_code'"))
+                    conn.commit()
+                    print("Added session_type column to claude_code_sessions table")
+                except Exception as e:
+                    print(f"Could not add session_type column: {e}")
+
+            if 'worktree_path' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE claude_code_sessions ADD COLUMN worktree_path VARCHAR(500)"))
+                    conn.commit()
+                    print("Added worktree_path column to claude_code_sessions table")
+                except Exception as e:
+                    print(f"Could not add worktree_path column: {e}")
+
+            if 'worktree_branch' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE claude_code_sessions ADD COLUMN worktree_branch VARCHAR(200)"))
+                    conn.commit()
+                    print("Added worktree_branch column to claude_code_sessions table")
+                except Exception as e:
+                    print(f"Could not add worktree_branch column: {e}")
 
 
 # Run migrations on import

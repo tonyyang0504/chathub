@@ -2193,3 +2193,33 @@ Return only the message text, no explanations or quotes."""
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
+
+# ============================================================================
+# Tool Builder & Marketplace Page Routes
+# ============================================================================
+
+@router.get("/tool-builder", response_class=HTMLResponse)
+async def tool_builder_page(request: Request, db: Session = Depends(get_db)):
+    """Tool Builder page."""
+    from fastapi.responses import RedirectResponse
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+    return templates.TemplateResponse(
+        "dashboard/tools/tool_builder.html",
+        {"request": request, "user": user, "active_page": "tools_builder", "page_title": "Tool Builder"},
+    )
+
+
+@router.get("/marketplace", response_class=HTMLResponse)
+async def marketplace_page(request: Request, db: Session = Depends(get_db)):
+    """Marketplace page."""
+    from fastapi.responses import RedirectResponse
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+    return templates.TemplateResponse(
+        "dashboard/tools/marketplace.html",
+        {"request": request, "user": user, "active_page": "tools_marketplace", "page_title": "Marketplace"},
+    )

@@ -140,17 +140,6 @@
     border-radius: 10px;
     flex-shrink: 0;
 }
-.btn-rollback {
-    font-size: 0.65rem;
-    padding: 1px 6px;
-    border-radius: 6px;
-    border: 1px solid rgba(239,68,68,0.3);
-    color: #ef4444;
-    background: transparent;
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-.btn-rollback:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 .btn-delete-session {
     font-size: 0.65rem;
     padding: 1px 6px;
@@ -2081,10 +2070,6 @@ async function loadSessions() {
             const providerLabel = provider;
             const providerBadge = `<span class="provider-badge pb-${provider}">${providerLabel}</span>`;
             const engine = s._engine;
-            const rollbackBtn = (s.status === 'completed' || s.status === 'failed' || s.status === 'stopped') && !s.rolled_back && s.git_commit_hash
-                ? `<button class="btn-rollback" onclick="event.stopPropagation(); rollbackSession(${s.id}, '${engine}')" title="Rollback changes"><i class="bi bi-arrow-counterclockwise"></i></button>`
-                : s.rolled_back ? '<span class="text-muted" style="font-size:0.6rem;">rolled back</span>' : '';
-
             const deleteBtn = `<button class="btn-delete-session" onclick="event.stopPropagation(); deleteSession(${s.id}, '${engine}')" title="Delete session"><i class="bi bi-trash3"></i></button>`;
 
             return `<div class="session-item ${active}" onclick="viewSession(${s.id}, '${engine}', '${provider}')" data-provider="${provider}" data-engine="${engine}">
@@ -2093,7 +2078,6 @@ async function loadSessions() {
                         ${providerBadge}
                         <span class="${statusClass}">${s.status}</span>
                         <span>${date}</span>
-                        ${rollbackBtn}
                         ${deleteBtn}
                     </div>
             </div>`;
@@ -2444,26 +2428,6 @@ async function stopSession() {
     }
 }
 
-async function rollbackSession(sessionId, engine) {
-    if (!confirm('This will reset git and restore the database to before this session. Continue?')) return;
-
-    const apiBase = engine === 'agent' ? '/tools/api/chathub-agent' : '/tools/api/claude-code';
-    try {
-        const res = await fetch(`${apiBase}/sessions/${sessionId}/rollback`, {
-            method: 'POST',
-            credentials: 'include'
-        });
-        if (res.ok) {
-            showToast('Rollback successful', 'success');
-            loadSessions();
-        } else {
-            const err = await res.json();
-            showToast(err.detail || 'Rollback failed', 'error');
-        }
-    } catch (e) {
-        showToast('Network error', 'error');
-    }
-}
 
 async function deleteSession(sessionId, engine) {
     if (!confirm('Delete this session and all its messages?')) return;
