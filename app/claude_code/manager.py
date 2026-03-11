@@ -564,6 +564,9 @@ class ClaudeCodeManager:
         env["CHATHUB_API_TOKEN"] = api_token
         env["CHATHUB_API_URL"] = f"http://localhost:{settings.PORT}"
 
+        # Write instruction file for non-Claude providers
+        session.cli_provider.prepare_session(str(PROJECT_ROOT), system_context)
+
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdin=asyncio.subprocess.DEVNULL,
@@ -788,6 +791,7 @@ class ClaudeCodeManager:
                 # Turn completed successfully — session stays alive for follow-ups
                 session.is_running = False
                 session.is_waiting = True
+                session.cli_provider.cleanup_session(str(PROJECT_ROOT))
 
                 await session.broadcast({"type": "turn_end", "exit_code": 0})
                 session.output_buffer.clear()
@@ -818,6 +822,7 @@ class ClaudeCodeManager:
                 })
 
                 logger.info(f"Session {session.session_id} ended with exit code {exit_code}")
+                session.cli_provider.cleanup_session(str(PROJECT_ROOT))
 
                 # Clean up
                 if session.user_id in self._sessions and self._sessions[session.user_id] is session:
@@ -825,10 +830,12 @@ class ClaudeCodeManager:
 
         except asyncio.CancelledError:
             logger.info(f"Output reader cancelled for session {session.session_id}")
+            session.cli_provider.cleanup_session(str(PROJECT_ROOT))
         except Exception as e:
             logger.error(f"Error reading output for session {session.session_id}: {e}")
             session.is_running = False
             session.is_waiting = False
+            session.cli_provider.cleanup_session(str(PROJECT_ROOT))
             if session.user_id in self._sessions and self._sessions[session.user_id] is session:
                 del self._sessions[session.user_id]
 
@@ -910,6 +917,9 @@ class ClaudeCodeManager:
                 db.close()
             except Exception as e:
                 logger.error(f"Failed to update stopped session: {e}")
+
+            # Clean up instruction files
+            session.cli_provider.cleanup_session(str(PROJECT_ROOT))
 
             # Notify clients
             await session.broadcast({"type": "session_end", "exit_code": -1, "stopped": True, "status": "stopped"})

@@ -35,6 +35,14 @@ class CLIProvider(ABC):
         """Convert a raw JSON event to Claude's stream-json format. Return None to skip."""
         pass
 
+    def prepare_session(self, cwd: str, system_context: str) -> None:
+        """Write instruction files before CLI spawn. Override in subclasses."""
+        pass
+
+    def cleanup_session(self, cwd: str) -> None:
+        """Remove instruction files after CLI exits. Override in subclasses."""
+        pass
+
     def get_cli_binary(self) -> Optional[str]:
         """Return the path to the CLI binary, or None if not found."""
         return shutil.which(self.name)
@@ -92,11 +100,26 @@ class CodexProvider(CLIProvider):
         cmd = ["codex", "exec", "--full-auto", "--json"]
         if model:
             cmd.extend(["--model", model])
-        effective_prompt = prompt
-        if system_context:
-            effective_prompt = f"[System context: {system_context}]\n\n{prompt}"
-        cmd.append(effective_prompt)
+        cmd.append(prompt)
         return cmd
+
+    def prepare_session(self, cwd, system_context):
+        path = os.path.join(cwd, "AGENTS.md")
+        if os.path.exists(path):
+            os.rename(path, path + ".chathub_bak")
+        with open(path, "w") as f:
+            f.write(system_context)
+
+    def cleanup_session(self, cwd):
+        path = os.path.join(cwd, "AGENTS.md")
+        bak = path + ".chathub_bak"
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            if os.path.exists(bak):
+                os.rename(bak, path)
+        except OSError:
+            pass
 
     def build_env(self, base_env, api_key, **kwargs):
         env = dict(base_env)
@@ -182,11 +205,26 @@ class GeminiProvider(CLIProvider):
         cmd = ["gemini", "--yolo", "--output-format", "stream-json"]
         if model:
             cmd.extend(["--model", model])
-        effective_prompt = prompt
-        if system_context:
-            effective_prompt = f"[System context: {system_context}]\n\n{prompt}"
-        cmd.append(effective_prompt)
+        cmd.append(prompt)
         return cmd
+
+    def prepare_session(self, cwd, system_context):
+        path = os.path.join(cwd, "GEMINI.md")
+        if os.path.exists(path):
+            os.rename(path, path + ".chathub_bak")
+        with open(path, "w") as f:
+            f.write(system_context)
+
+    def cleanup_session(self, cwd):
+        path = os.path.join(cwd, "GEMINI.md")
+        bak = path + ".chathub_bak"
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            if os.path.exists(bak):
+                os.rename(bak, path)
+        except OSError:
+            pass
 
     def build_env(self, base_env, api_key, **kwargs):
         env = dict(base_env)
