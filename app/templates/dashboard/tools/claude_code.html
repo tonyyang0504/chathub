@@ -1192,7 +1192,7 @@
             <div class="modal-body">
                 <div class="row g-3">
                     <!-- Auth Method Selection -->
-                    <div class="col-12">
+                    <div class="col-12 settings-provider-claude">
                         <label class="form-label">Authentication Method</label>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-sm rounded-pill auth-method-btn active" id="authMethodApiKey" onclick="setAuthMethod('api_key')">
@@ -1205,7 +1205,7 @@
                     </div>
 
                     <!-- API Key Section -->
-                    <div class="col-md-6" id="apiKeySection">
+                    <div class="col-md-6 settings-provider-claude" id="apiKeySection">
                         <label class="form-label">Anthropic API Key</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="apiKeyInput" placeholder="sk-ant-...">
@@ -1217,7 +1217,7 @@
                     </div>
 
                     <!-- Membership Section -->
-                    <div class="col-md-6" id="membershipSection" style="display: none;">
+                    <div class="col-md-6 settings-provider-claude" id="membershipSection" style="display: none;">
                         <label class="form-label">Claude Membership Status</label>
                         <div class="membership-status-panel" id="membershipStatusPanel">
                             <div class="d-flex align-items-center gap-2 mb-2" id="membershipStatusContent">
@@ -1255,7 +1255,7 @@
                     </div>
 
                     <!-- OpenAI API Key (for Codex) -->
-                    <div class="col-md-6" id="openaiKeySection">
+                    <div class="col-md-6 settings-provider-codex" id="openaiKeySection">
                         <label class="form-label">OpenAI API Key <small class="text-muted">(for Codex)</small></label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="openaiKeyInput" placeholder="sk-...">
@@ -1267,7 +1267,7 @@
                     </div>
 
                     <!-- Gemini API Key -->
-                    <div class="col-md-6" id="geminiKeySection">
+                    <div class="col-md-6 settings-provider-gemini" id="geminiKeySection">
                         <label class="form-label">Gemini API Key</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="geminiKeyInput" placeholder="AIza...">
@@ -1279,7 +1279,7 @@
                     </div>
 
                     <!-- Claude Model -->
-                    <div class="col-md-4">
+                    <div class="col-md-6 settings-provider-claude">
                         <label class="form-label">Claude Model</label>
                         <select class="form-select" id="modelSelect">
                             <option value="opus">Opus 4.6 - Most capable</option>
@@ -1291,7 +1291,7 @@
                     </div>
 
                     <!-- Codex Model -->
-                    <div class="col-md-4">
+                    <div class="col-md-6 settings-provider-codex">
                         <label class="form-label">Codex Model</label>
                         <select class="form-select" id="codexModelSelect">
                             <option value="gpt-5.3-codex" selected>GPT-5.3-Codex</option>
@@ -1303,7 +1303,7 @@
                     </div>
 
                     <!-- Gemini Model -->
-                    <div class="col-md-4">
+                    <div class="col-md-6 settings-provider-gemini">
                         <label class="form-label">Gemini Model</label>
                         <select class="form-select" id="geminiModelSelect">
                             <option value="auto-gemini-3" selected>Auto (Gemini 3)</option>
@@ -1399,6 +1399,12 @@ function switchProvider(provider) {
     // Update empty state text
     const info = PROVIDER_INFO[provider];
     document.getElementById('emptyStateText').textContent = `Describe what you need and ${info.name} will work on it.`;
+    // Toggle provider-specific settings sections
+    ['claude', 'codex', 'gemini'].forEach(p => {
+        document.querySelectorAll(`.settings-provider-${p}`).forEach(el => {
+            el.style.display = (p === provider) ? '' : 'none';
+        });
+    });
 }
 
 function newSession() {
