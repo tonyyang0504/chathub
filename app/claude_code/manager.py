@@ -842,7 +842,9 @@ class ClaudeCodeManager:
                 await session.broadcast(data)
 
                 # After result event, broadcast result_done marker
-                if msg_type == "result":
+                # Only for Claude — other providers may emit "result" mid-stream
+                # (e.g., Codex emits one per agent_message); they rely on turn_end instead
+                if msg_type == "result" and session.provider == "claude":
                     await session.broadcast({"type": "result_done"})
 
             # Wait for stderr reader to finish
