@@ -2509,7 +2509,7 @@ function connectWebSocket(sessionId) {
     wsEventsReceived = 0;
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsBase = isChathubEngine() ? '/tools/api/chathub-agent/stream' : '/tools/api/claude-code/stream';
-    const wsParams = isChathubEngine() ? '?no_replay=1' : '';
+    const wsParams = '?no_replay=1';
     const newWs = new WebSocket(`${protocol}//${location.host}${wsBase}/${sessionId}${wsParams}`);
     ws = newWs;
 

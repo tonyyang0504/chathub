@@ -944,7 +944,7 @@ async def rollback_session(session_id: int, request: Request, db: Session = Depe
 # ============================================================================
 
 @router.websocket("/api/claude-code/stream/{session_id}")
-async def stream_session(websocket: WebSocket, session_id: int):
+async def stream_session(websocket: WebSocket, session_id: int, no_replay: int = 0):
     """WebSocket for real-time session output streaming."""
     await websocket.accept()
 
@@ -969,9 +969,18 @@ async def stream_session(websocket: WebSocket, session_id: int):
 
         # Get active session
         active = claude_code_manager.get_active_session(user.id)
+
+        # If no_replay and session not yet active, wait briefly for CLI to start
+        if no_replay and (not active or active.session_id != session_id):
+            for _ in range(10):  # Wait up to 5 seconds
+                await asyncio.sleep(0.5)
+                active = claude_code_manager.get_active_session(user.id)
+                if active and active.session_id == session_id:
+                    break
+
         if active and active.session_id == session_id:
-            # Send buffered output first
-            if active.output_buffer:
+            # Send buffered output first (skip if no_replay)
+            if not no_replay and active.output_buffer:
                 for data in active.output_buffer:
                     await websocket.send_text(json.dumps(data))
 
