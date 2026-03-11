@@ -22,6 +22,7 @@
 .provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
 .provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
 .provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
+.provider-pill.disabled { opacity: 0.5; pointer-events: none; cursor: default; }
 
 /* Provider badge on session items */
 .provider-badge { font-size: 0.55rem; padding: 1px 5px; border-radius: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
@@ -1410,6 +1411,10 @@ function switchProvider(provider) {
 function newSession() {
     currentSessionId = null;
     currentSessionStatus = null;
+    // Unlock provider pills for new session
+    document.querySelectorAll('.provider-pill').forEach(pill => {
+        pill.classList.remove('disabled');
+    });
     clearChat();
     document.getElementById('emptyState').style.display = 'flex';
     document.getElementById('promptInput').placeholder = 'Describe what you need...';
@@ -1760,6 +1765,10 @@ async function viewSession(sessionId) {
         // Switch to the session's provider theme
         if (session.provider) {
             switchProvider(session.provider);
+            // Lock provider pills — provider is immutable per session
+            document.querySelectorAll('.provider-pill').forEach(pill => {
+                pill.classList.toggle('disabled', pill.dataset.provider !== session.provider);
+            });
         }
         clearChat();
 
