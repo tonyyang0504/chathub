@@ -18,11 +18,17 @@ class CLIProvider(ABC):
     name: str
     display_name: str
     brand_color: str
+    supports_resume: bool = False  # Whether CLI supports multi-turn session continuity
 
     @abstractmethod
     def build_command(self, prompt: str, session_uuid: str, is_first: bool,
                       model: Optional[str] = None, system_context: Optional[str] = None) -> list:
-        """Build the CLI command list."""
+        """Build the CLI command list.
+
+        Args:
+            system_context: Used by Claude (--append-system-prompt). Codex/Gemini ignore this
+                            because they receive system context via instruction files instead.
+        """
         pass
 
     @abstractmethod
@@ -53,6 +59,7 @@ class ClaudeProvider(CLIProvider):
     name = "claude"
     display_name = "Claude Code"
     brand_color = "#da6a46"
+    supports_resume = True  # Claude CLI has --session-id / --resume
 
     def build_command(self, prompt, session_uuid, is_first, model=None, system_context=None):
         cmd = [

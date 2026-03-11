@@ -478,6 +478,62 @@ class ClaudeCodeManager:
                 del self._sessions[user_id]
             return None
 
+    def _build_conversation_history(self, session: ActiveSession) -> str:
+        """Build a conversation history summary for stateless providers (Codex/Gemini).
+
+        Since these CLIs have no --resume support, follow-up turns lose all context.
+        This reconstructs a condensed history from DB messages so the CLI understands
+        what "it" and "the color" refer to in follow-up messages.
+        """
+        from app.database import SessionLocal, ClaudeCodeMessage
+        try:
+            db = SessionLocal()
+            messages = db.query(ClaudeCodeMessage).filter(
+                ClaudeCodeMessage.session_id == session.session_id
+            ).order_by(ClaudeCodeMessage.id.asc()).all()
+            db.close()
+
+            if not messages:
+                return ""
+
+            history_parts = []
+            current_turn = 0
+            for msg in messages:
+                # Include user messages and assistant results (skip tool_use/tool_result noise)
+                if msg.message_type == "user_message" or (msg.role == "user" and msg.message_type == "text"):
+                    current_turn += 1
+                    content = msg.content[:500] if msg.content else ""
+                    history_parts.append(f"[Turn {current_turn}] User: {content}")
+                elif msg.message_type == "result" and msg.role == "assistant":
+                    content = msg.content[:1000] if msg.content else ""
+                    history_parts.append(f"[Turn {current_turn}] Assistant: {content}")
+                elif msg.role == "tool_use" and msg.content:
+                    # Include a brief note about tools used (truncated)
+                    try:
+                        tool_data = json.loads(msg.content)
+                        tool_name = tool_data.get("tool", "unknown")
+                        history_parts.append(f"[Turn {current_turn}] Used tool: {tool_name}")
+                    except (json.JSONDecodeError, AttributeError):
+                        pass
+
+            if not history_parts:
+                return ""
+
+            # Cap total history to ~3000 chars to avoid bloating the prompt
+            history = "\n".join(history_parts)
+            if len(history) > 3000:
+                history = history[:3000] + "\n... (earlier history truncated)"
+
+            return (
+                f"CONVERSATION HISTORY (previous turns in this session):\n"
+                f"{history}\n\n"
+                f"Continue the conversation based on the above context. "
+                f"The user's new message follows:\n\n"
+            )
+        except Exception as e:
+            logger.error(f"Failed to build conversation history: {e}")
+            return ""
+
     async def _run_turn(self, session: ActiveSession, prompt: str, is_first: bool = False, file_paths: list = None):
         """Spawn one CLI process for a single turn (prompt on command line)."""
         session.turn_number += 1
@@ -491,6 +547,12 @@ class ClaudeCodeManager:
                 f"{file_lines}\n\n"
                 f"User's message: {prompt}"
             )
+
+        # For stateless providers (no --resume), prepend conversation history on follow-up turns
+        if not is_first and not session.cli_provider.supports_resume:
+            history = self._build_conversation_history(session)
+            if history:
+                effective_prompt = history + effective_prompt
 
         # Build system context for the CLI
         system_context = (
@@ -564,8 +626,19 @@ class ClaudeCodeManager:
         env["CHATHUB_API_TOKEN"] = api_token
         env["CHATHUB_API_URL"] = f"http://localhost:{settings.PORT}"
 
-        # Write instruction file for non-Claude providers
+        # Write instruction file for non-Claude providers (AGENTS.md / GEMINI.md)
         session.cli_provider.prepare_session(str(PROJECT_ROOT), system_context)
+
+        # P4: Verify instruction file was written for file-based providers
+        if session.provider != "claude":
+            instruction_files = {"codex": "AGENTS.md", "gemini": "GEMINI.md"}
+            expected_file = instruction_files.get(session.provider)
+            if expected_file:
+                full_path = os.path.join(str(PROJECT_ROOT), expected_file)
+                if os.path.exists(full_path):
+                    logger.debug(f"Instruction file {expected_file} written ({os.path.getsize(full_path)} bytes)")
+                else:
+                    logger.warning(f"Instruction file {expected_file} not found after prepare_session — system context may be lost")
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
