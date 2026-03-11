@@ -548,7 +548,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
 
     messages = db.query(ClaudeCodeMessage).filter(
         ClaudeCodeMessage.session_id == session_id
-    ).order_by(ClaudeCodeMessage.created_at.asc()).all()
+    ).order_by(ClaudeCodeMessage.created_at.asc(), ClaudeCodeMessage.id.asc()).all()
 
     # Check if this session is actively waiting for follow-up
     active = claude_code_manager.get_active_session(user.id)
@@ -1009,7 +1009,7 @@ async def stream_session(websocket: WebSocket, session_id: int):
             # Session not active, send historical messages
             messages = db.query(ClaudeCodeMessage).filter(
                 ClaudeCodeMessage.session_id == session_id
-            ).order_by(ClaudeCodeMessage.created_at.asc()).all()
+            ).order_by(ClaudeCodeMessage.created_at.asc(), ClaudeCodeMessage.id.asc()).all()
 
             for m in messages:
                 # Skip system/init events (large session metadata)
