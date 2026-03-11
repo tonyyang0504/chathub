@@ -579,6 +579,8 @@ async function createSession() {
             return false;
         }
         const data = await resp.json();
+        // Close old WS before updating sessionId to prevent stale reconnect
+        if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
         sessionId = data.session_id;
         setStatus('connected');
         connectWebSocket();
@@ -676,13 +678,16 @@ function connectWebSocket() {
         }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
         clearInterval(pingInterval);
         if (assistantBuffer) flushAssistantBuffer();
-        // Auto-reconnect if session is still active
-        setTimeout(() => {
-            if (sessionId && !isRunning) connectWebSocket();
-        }, 3000);
+        // Only reconnect on unexpected disconnects (1006=abnormal, 1001=going away)
+        // Do NOT reconnect on 4004 (session not found), 4001 (auth), or 1000 (normal close)
+        if (event.code === 1006 || event.code === 1001) {
+            setTimeout(() => {
+                if (sessionId && !isRunning) connectWebSocket();
+            }, 3000);
+        }
     };
 
     ws.onerror = () => console.error('WebSocket error');
