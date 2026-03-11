@@ -121,7 +121,7 @@ class CodexProvider(CLIProvider):
         if evt_type in ("thread.started", "turn.started", "turn.completed"):
             return None
 
-        # Command started → tool_use
+        # Command started → tool_use, agent_message started → content_block_delta
         if evt_type == "item.started":
             item = raw.get("item", {})
             if item.get("type") == "command_execution":
@@ -130,6 +130,13 @@ class CodexProvider(CLIProvider):
                     "tool": {"name": "execute_command"},
                     "input": {"command": item.get("command", "")}
                 }
+            if item.get("type") == "agent_message":
+                text = item.get("text", "")
+                if text:
+                    return {
+                        "type": "content_block_delta",
+                        "delta": {"type": "text_delta", "text": text}
+                    }
             return None
 
         # Item completed — command result or agent message
@@ -144,6 +151,14 @@ class CodexProvider(CLIProvider):
                 return {
                     "type": "result",
                     "result": item.get("text", "")
+                }
+            if item.get("type") == "file_change":
+                file_path = item.get("file_path", item.get("path", "unknown"))
+                change_kind = item.get("change_kind", item.get("kind", "edit"))
+                return {
+                    "type": "tool_use",
+                    "tool": {"name": "file_edit"},
+                    "input": {"file_path": file_path, "change_kind": change_kind}
                 }
             return None
 
@@ -170,13 +185,13 @@ class GeminiProvider(CLIProvider):
         effective_prompt = prompt
         if system_context:
             effective_prompt = f"[System context: {system_context}]\n\n{prompt}"
-        cmd.extend(["-p", effective_prompt])
+        cmd.append(effective_prompt)
         return cmd
 
     def build_env(self, base_env, api_key, **kwargs):
         env = dict(base_env)
         if api_key:
-            env["GEMINI_API_KEY"] = api_key
+            env["GOOGLE_API_KEY"] = api_key
         return env
 
     def normalize_event(self, raw):
