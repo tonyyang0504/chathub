@@ -2321,6 +2321,7 @@ async function startSession(prompt) {
         currentSessionId = data.session_id;
         currentSessionEngine = isChathubEngine() ? 'agent' : 'cli';
         setStatus('running');
+        wsSkipCount = 0;
         connectWebSocket(data.session_id);
         loadSessions();
 

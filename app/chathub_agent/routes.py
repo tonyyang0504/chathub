@@ -857,7 +857,9 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
         active = chathub_agent_manager.get_active_session(user.id)
 
         # If no_replay and session not yet active, wait briefly for resume to register
+        waited_for_session = False
         if no_replay and (not active or active.session_id != session_id):
+            waited_for_session = True
             for _ in range(10):  # Wait up to 5 seconds
                 await asyncio.sleep(0.5)
                 active = chathub_agent_manager.get_active_session(user.id)
@@ -865,8 +867,9 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
                     break
 
         if active and active.session_id == session_id:
-            # Send buffered output first (skip if reconnecting after resume)
-            if not no_replay:
+            # Send buffer if: full replay requested, OR we waited for session startup
+            # (events generated while waiting would otherwise be lost)
+            if (not no_replay or waited_for_session) and active.output_buffer:
                 for data in active.output_buffer:
                     await websocket.send_text(json.dumps(data))
 
