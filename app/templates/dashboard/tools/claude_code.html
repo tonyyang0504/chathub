@@ -2188,7 +2188,7 @@ function renderStreamEvent(data, timestamp) {
             } else if (block.type === 'tool_use') {
                 // During live streaming, artifact may already exist from content_block_start
                 const last = artifacts.length > 0 ? artifacts[artifacts.length - 1] : null;
-                if (last && last.toolName === block.name && !last.result) {
+                if (last && last.toolUseId && last.toolUseId === block.id && !last.result) {
                     // Update input data (content_block_start has minimal input, assistant has full input)
                     last.inputData = block.input || {};
                     last.input = typeof block.input === 'object' ? JSON.stringify(block.input, null, 2) : (block.input || '');
@@ -2204,7 +2204,7 @@ function renderStreamEvent(data, timestamp) {
                         }
                     }
                 } else {
-                    appendToolUse(JSON.stringify({ tool: block.name, input: block.input }), timestamp);
+                    appendToolUse(JSON.stringify({ tool: block.name, input: block.input, id: block.id }), timestamp);
                 }
             }
         }
@@ -2254,12 +2254,14 @@ function renderStreamEvent(data, timestamp) {
         // During live streaming, artifact already exists from content_block_start + deltas
         // Only create if no matching pending artifact (e.g., during replay from DB)
         const last = artifacts.length > 0 ? artifacts[artifacts.length - 1] : null;
-        if (last && last.toolName === toolName && !last.result) {
+        const toolUseId = data.tool?.id || data.id || null;
+        if (last && last.toolUseId && last.toolUseId === toolUseId && !last.result) {
             // Already created by content_block_start — skip duplicate
         } else {
             appendToolUse(JSON.stringify({
                 tool: toolName,
-                input: data.tool?.input || data.input || {}
+                input: data.tool?.input || data.input || {},
+                id: toolUseId
             }), timestamp);
         }
     } else if (type === 'tool_result') {
@@ -2356,9 +2358,10 @@ function appendToolUse(content, timestamp) {
     const toolName = parsed.tool || 'Tool';
     const inputData = parsed.input || {};
     const inputStr = typeof inputData === 'object' ? JSON.stringify(inputData, null, 2) : (inputData || '');
+    const toolUseId = parsed.id || null;
 
     // Create artifact
-    const artifact = createArtifact(toolName, inputData, inputStr, timestamp);
+    const artifact = createArtifact(toolName, inputData, inputStr, timestamp, toolUseId);
 
     // Render compact pill in chat
     const chatBody = document.getElementById('chatBody');
@@ -2462,11 +2465,12 @@ function getArtifactTitle(toolName, input) {
     return toolName;
 }
 
-function createArtifact(toolName, inputData, inputStr, timestamp) {
+function createArtifact(toolName, inputData, inputStr, timestamp, toolUseId) {
     const id = ++artifactIdCounter;
     const artifact = {
         id,
         toolName,
+        toolUseId: toolUseId || null,
         title: getArtifactTitle(toolName, inputData),
         input: inputStr || '',
         inputData,
