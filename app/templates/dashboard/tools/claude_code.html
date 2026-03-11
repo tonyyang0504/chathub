@@ -2607,16 +2607,19 @@ function renderStreamEvent(data, timestamp) {
 
     // ChatHub Agent event types
     if (type === 'assistant_text') {
+        removeThinkingIndicator();
         flushAssistantBuffer();
         appendAssistantMessage(data.content || '');
         return;
     }
     if (type === 'tool_call' && data.tool_name) {
+        removeThinkingIndicator();
         flushAssistantBuffer();
         appendToolUse(JSON.stringify(data.arguments || {}, null, 2), data.tool_name);
         return;
     }
     if (type === 'tool_result' && !data.content_block) {
+        removeThinkingIndicator();
         const content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content || '');
         appendToolResult(content);
         return;
@@ -2635,6 +2638,7 @@ function renderStreamEvent(data, timestamp) {
     }
 
     if (type === 'assistant' && data.message) {
+        removeThinkingIndicator();
         flushAssistantBuffer();
         turnHasStreamedText = false;  // New turn starting
         const blocks = data.message.content || [];
@@ -2666,6 +2670,7 @@ function renderStreamEvent(data, timestamp) {
             }
         }
     } else if (type === 'content_block_start') {
+        removeThinkingIndicator();
         const block = data.content_block || {};
         if (block.type === 'text') {
             flushAssistantBuffer();
@@ -2675,6 +2680,7 @@ function renderStreamEvent(data, timestamp) {
             appendToolUse(JSON.stringify({ tool: block.name, id: block.id }), timestamp);
         }
     } else if (type === 'content_block_delta') {
+        removeThinkingIndicator();
         const delta = data.delta || {};
         if (delta.type === 'text_delta' && delta.text) {
             assistantBuffer += delta.text;
@@ -2706,6 +2712,7 @@ function renderStreamEvent(data, timestamp) {
         currentAssistantEl = null;
         currentToolUseEl = null;
     } else if (type === 'tool_use') {
+        removeThinkingIndicator();
         flushAssistantBuffer();
         currentAssistantEl = null;  // Reset so next text creates a new bubble (Gemini has no content_block_stop)
         const toolName = data.tool?.name || data.name || 'tool';
@@ -2723,9 +2730,11 @@ function renderStreamEvent(data, timestamp) {
             }), timestamp);
         }
     } else if (type === 'tool_result') {
+        removeThinkingIndicator();
         currentAssistantEl = null;  // Reset so next text creates a new bubble
         appendToolResult(typeof data.content === 'string' ? data.content : JSON.stringify(data.content || data.output || ''));
     } else if (type === 'result') {
+        removeThinkingIndicator();
         flushAssistantBuffer();
         // During replay, content_block_delta events aren't in DB so text was never streamed.
         // Render the result text only if deltas didn't already show it (live streaming).
