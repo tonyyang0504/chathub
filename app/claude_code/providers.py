@@ -104,7 +104,7 @@ class CodexProvider(CLIProvider):
     brand_color = "#10a37f"
 
     def build_command(self, prompt, session_uuid, is_first, model=None, system_context=None):
-        cmd = ["codex", "exec", "--full-auto", "--json"]
+        cmd = ["codex", "exec", "--dangerously-bypass-approvals-and-sandbox", "--json"]
         if model:
             cmd.extend(["--model", model])
         cmd.append(prompt)
