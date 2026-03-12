@@ -287,7 +287,16 @@ async def publish_session(
     if session.is_running:
         raise HTTPException(status_code=409, detail="Agent is still running. Wait for it to finish.")
 
-    result = await tool_builder_manager.publish(user.id)
+    # Read optional JSON body with tool metadata (name, display_name, description, icon)
+    metadata = None
+    try:
+        body = await request.json()
+        if isinstance(body, dict) and body.get("name"):
+            metadata = body
+    except Exception:
+        pass
+
+    result = await tool_builder_manager.publish(user.id, metadata=metadata)
 
     if result.get("error"):
         raise HTTPException(status_code=400, detail=result["error"])

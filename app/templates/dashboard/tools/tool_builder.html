@@ -5,269 +5,580 @@
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
 <style>
-:root {
-    --provider-color: #da6a46;
-    --provider-color-rgb: 218,106,70;
-    --provider-gradient: linear-gradient(135deg, #da6a46, #e8956a);
-}
-.provider-claude { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #e8956a); }
-.provider-codex { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #1fd69e); }
-.provider-gemini { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #669df6); }
-.provider-chathub { --provider-color: #7c3aed; --provider-color-rgb: 124,58,237; --provider-gradient: linear-gradient(135deg, #7c3aed, #a78bfa); }
+/* Override parent main-content overflow so our app shell manages scrolling */
+.main-content { overflow-y: hidden !important; }
 
-.builder-layout {
-    display: grid;
-    grid-template-columns: 260px 1fr 340px;
-    gap: 1rem;
-    height: calc(100vh - 80px);
-    padding: 1rem;
+/* Provider theming — CSS custom properties driven by data-provider on .claude-app */
+.claude-app, #settingsModal { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
+.claude-app[data-provider="codex"], #settingsModal[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
+.claude-app[data-provider="gemini"], #settingsModal[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
+.claude-app[data-provider="chathub"], #settingsModal[data-provider="chathub"] { --provider-color: #8b5cf6; --provider-color-rgb: 139,92,246; --provider-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+
+/* Provider pill selector */
+.provider-pills { display: flex; gap: 4px; background: var(--border-color); border-radius: 10px; padding: 3px; }
+.provider-pill { border: none; background: transparent; color: var(--text-secondary); font-size: 0.75rem; font-weight: 500; padding: 4px 12px; border-radius: 8px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.provider-pill:hover { color: var(--text-primary); }
+.provider-pill.active { background: var(--card-bg); color: var(--provider-color); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.provider-pill .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
+.provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
+.provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
+.provider-pill[data-provider="chathub"] .pill-dot { background: #8b5cf6; }
+
+/* App shell — flex layout matching AI Workspace */
+.claude-app {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    gap: 6px;
+    padding: 6px;
+    background: #f0f2f5;
 }
 
-/* Left sidebar */
+/* Left sidebar — My Tools (kept as-is) */
 .builder-sidebar {
+    width: 260px;
+    min-width: 260px;
+    height: 100%;
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 .builder-sidebar .sidebar-header {
-    padding: 1rem;
+    padding: 0.65rem 1rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
 }
-.builder-sidebar .sidebar-header h5 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.builder-sidebar .sidebar-header h5 { margin: 0; font-size: 0.85rem; font-weight: 600; }
 .tools-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
 .tool-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
     cursor: pointer;
     transition: background 0.15s;
     border: 1px solid transparent;
+    margin-bottom: 0.25rem;
 }
-.tool-item:hover { background: rgba(99, 102, 241, 0.08); }
-.tool-item.active { background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.3); }
+.tool-item:hover { background: rgba(var(--provider-color-rgb),0.08); }
+.tool-item.active { background: rgba(var(--provider-color-rgb),0.12); border-color: rgba(var(--provider-color-rgb),0.25); }
 .tool-item-icon {
     width: 36px; height: 36px; border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     font-size: 1rem; color: white; flex-shrink: 0;
 }
 .tool-item-info h6 { font-size: 0.85rem; font-weight: 600; margin: 0; }
-.tool-item-info small { font-size: 0.75rem; color: var(--text-muted); }
+.tool-item-info small { font-size: 0.75rem; color: var(--text-secondary); }
 .tool-item-actions { margin-left: auto; display: flex; gap: 0.25rem; }
 .tool-item-actions .btn { padding: 0.15rem 0.35rem; font-size: 0.75rem; border-radius: 4px; }
-.empty-tools { text-align: center; padding: 2rem 1rem; color: var(--text-muted); }
+.empty-tools { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); }
 .empty-tools i { font-size: 2.5rem; opacity: 0.3; display: block; margin-bottom: 0.75rem; }
 
-/* Center chat */
-.builder-chat {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+/* Main chat area — matches AI Workspace .claude-main */
+.claude-main {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-}
-.chat-header {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-shrink: 0;
-}
-.chat-header .status-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #6b7280; transition: background 0.3s;
-}
-.chat-header .status-dot.connected { background: #22c55e; }
-.chat-header .status-dot.running { background: #f59e0b; animation: pulse-dot 1.5s infinite; }
-.chat-header h5 { margin: 0; font-size: 0.95rem; font-weight: 600; }
-
-@keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-
-/* Provider pills */
-.provider-pills {
-    display: flex;
-    gap: 4px;
-    padding: 2px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 8px;
-}
-.provider-pill {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    transition: all 0.2s;
-}
-.provider-pill.active {
-    background: var(--card-bg);
-    color: var(--provider-color);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.provider-pill .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-}
-.provider-pill.active .dot { background: var(--provider-color); }
-
-/* Chat messages */
-.chat-messages {
-    flex: 1; overflow-y: auto; padding: 1rem;
-    display: flex; flex-direction: column; gap: 0.75rem;
-}
-.message {
-    max-width: 85%;
-    padding: 0.75rem 1rem;
+    min-width: 0;
+    height: 100%;
     border-radius: 12px;
-    font-size: 0.9rem;
-    line-height: 1.6;
+    background: var(--card-bg);
+    overflow: hidden;
+    position: relative;
 }
-.message.user {
+
+/* Top bar */
+.claude-topbar {
+    padding: 0.65rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background: var(--card-bg);
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+.status-idle { background: var(--border-color); color: var(--text-secondary); }
+.status-running { background: rgba(var(--provider-color-rgb),0.15); color: var(--provider-color); }
+.status-pending { background: rgba(var(--provider-color-rgb),0.15); color: var(--provider-color); }
+.status-connected { background: rgba(16,185,129,0.15); color: #10b981; }
+.status-ready { background: rgba(16,185,129,0.15); color: #10b981; }
+.status-completed { background: rgba(16,185,129,0.15); color: #10b981; }
+.status-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
+.status-stopped { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+/* Messages area */
+.claude-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1rem;
+    min-height: 0;
+}
+.claude-messages-inner {
+    max-width: 48rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Empty state */
+.builder-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+.builder-empty-state p { margin: 0; font-size: 0.95rem; }
+.builder-empty-state small { opacity: 0.7; margin-top: 0.25rem; }
+
+/* Messages — AI Workspace style */
+.msg { max-width: 95%; }
+.msg-user {
     align-self: flex-end;
     background: var(--provider-gradient);
     color: white;
-    border-bottom-right-radius: 4px;
+    padding: 0.65rem 1rem;
+    border-radius: 18px;
+    max-width: 85%;
+    font-size: 0.9rem;
+    line-height: 1.5;
 }
-.message.assistant {
+.msg-assistant {
     align-self: flex-start;
-    background: var(--card-bg, #ffffff);
-    border: 1px solid var(--border-color);
-    border-bottom-left-radius: 4px;
-    max-width: 95%;
+    padding: 0.25rem 0;
+    width: 100%;
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: var(--text-primary);
 }
-.message.assistant pre {
-    background: rgba(0,0,0,0.06);
-    border-radius: 6px;
-    padding: 0.75rem;
-    margin: 0.5rem 0;
+.msg-assistant p { margin-bottom: 0.6rem; }
+.msg-assistant p:last-child { margin-bottom: 0; }
+.msg-assistant pre {
+    background: var(--border-color);
+    border: 1px solid rgba(128,128,128,0.15);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
     overflow-x: auto;
-    font-size: 0.8rem;
+    margin: 0.6rem 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
 }
-.message.assistant code { font-size: 0.8rem; }
-.message.system-msg {
-    align-self: center;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    font-size: 0.8rem;
-    max-width: 90%;
-}
-
-/* Tool use/result cards */
-.tool-card {
-    align-self: flex-start;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    max-width: 95%;
-    overflow: hidden;
+.msg-assistant code { font-size: 0.82rem; }
+.msg-assistant :not(pre) > code {
+    background: var(--border-color);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
     font-size: 0.82rem;
 }
-.tool-card-header {
+.msg-assistant ul, .msg-assistant ol { margin-bottom: 0.6rem; padding-left: 1.5rem; }
+.msg-assistant li { margin-bottom: 0.25rem; }
+.msg-assistant h1, .msg-assistant h2, .msg-assistant h3,
+.msg-assistant h4, .msg-assistant h5, .msg-assistant h6 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+.msg-assistant h1 { font-size: 1.3rem; }
+.msg-assistant h2 { font-size: 1.15rem; }
+.msg-assistant h3 { font-size: 1.05rem; }
+.msg-assistant .table-scroll-wrapper { overflow-x: auto; margin: 0.75rem 0; border-radius: 8px; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); }
+.msg-assistant table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.msg-assistant th, .msg-assistant td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+.msg-assistant th { background: var(--card-bg, #fff); font-weight: 600; position: sticky; top: 0; z-index: 1; border-bottom: 2px solid var(--border-color); }
+.msg-assistant tr:nth-child(even) { background: rgba(0,0,0,0.02); }
+.msg-assistant tr:hover { background: rgba(0,0,0,0.04); }
+
+/* Tool pill (compact, inline) */
+.msg-tool {
+    align-self: flex-start;
+    width: 100%;
+    font-size: 0.82rem;
+}
+.msg-tool-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    background: rgba(var(--provider-color-rgb),0.08);
+    border: 1px solid rgba(var(--provider-color-rgb),0.2);
+    color: var(--provider-color);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin: 2px 0;
+}
+.msg-tool-pill:hover {
+    background: rgba(var(--provider-color-rgb),0.15);
+    border-color: rgba(var(--provider-color-rgb),0.4);
+}
+.msg-tool-pill i { font-size: 0.7rem; }
+.msg-tool-pill .pill-hint { font-size: 0.62rem; opacity: 0.6; font-weight: 400; }
+
+/* Tool result — collapsible block */
+.tool-block {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.tool-block-header {
+    background: rgba(var(--provider-color-rgb),0.06);
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(var(--provider-color-rgb), 0.08);
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
+    gap: 6px;
+    font-weight: 500;
+    font-size: 0.78rem;
+    user-select: none;
+    color: var(--text-secondary);
 }
-.tool-card-header i { color: var(--provider-color); font-size: 0.85rem; }
-.tool-card-header .tool-name { font-weight: 600; font-size: 0.8rem; }
-.tool-card-header .toggle-icon { margin-left: auto; font-size: 0.7rem; color: var(--text-muted); }
-.tool-card-body {
+.tool-block-header:hover { background: rgba(var(--provider-color-rgb),0.12); }
+.tool-block-header .chevron {
+    transition: transform 0.2s;
+    font-size: 0.65rem;
+}
+.tool-block-header.collapsed .chevron { transform: rotate(-90deg); }
+.tool-block-body {
     padding: 0.5rem 0.75rem;
     max-height: 300px;
     overflow-y: auto;
-}
-.tool-card-body pre {
-    margin: 0;
+    font-family: monospace;
+    font-size: 0.75rem;
     white-space: pre-wrap;
     word-break: break-all;
-    font-size: 0.75rem;
+    background: rgba(0,0,0,0.08);
 }
-.tool-card.collapsed .tool-card-body { display: none; }
-.tool-card.result .tool-card-header { background: rgba(34, 197, 94, 0.08); }
-.tool-card.result .tool-card-header i { color: #22c55e; }
 
-/* Chat input */
-.chat-input-area {
-    padding: 0.75rem 1rem;
+.msg-system {
+    align-self: center;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-style: italic;
+    padding: 0.15rem 0.75rem;
+}
+
+/* Typing indicator — 3 bouncing dots */
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.5rem 0;
+}
+.typing-indicator span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--provider-color);
+    animation: typing 1.2s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+#thinkingIndicator { order: 9999; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+}
+
+/* Input bar — AI Workspace style */
+.claude-input-bar {
     border-top: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+    background: var(--card-bg);
+}
+.claude-input-inner {
+    max-width: 48rem;
+    margin: 0 auto;
+}
+.prompt-wrapper {
+    border-radius: 22px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    background: var(--body-bg, var(--card-bg));
     display: flex;
-    gap: 0.5rem;
+    flex-direction: column;
+}
+.prompt-wrapper:focus-within {
+    border-color: var(--provider-color);
+}
+
+/* Bottom toolbar row inside prompt-wrapper */
+.input-bottom-row {
+    display: flex;
+    align-items: center;
+    padding: 0.2rem 0.35rem 0.35rem 0.5rem;
     flex-shrink: 0;
 }
-.chat-input-area textarea {
-    flex: 1; resize: none; border-radius: 8px;
-    padding: 0.6rem 0.75rem; font-size: 0.9rem;
-    min-height: 42px; max-height: 120px;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg, #ffffff);
-    color: var(--bs-body-color, #111b21);
+.input-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
 }
-.chat-input-area textarea:focus { outline: none; border-color: var(--provider-color); }
-.chat-input-area .btn-send {
-    background: var(--provider-gradient);
-    border: none; color: white; border-radius: 8px;
-    padding: 0 1rem; font-size: 1rem;
-    display: flex; align-items: center; cursor: pointer;
+.input-toolbar .toolbar-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
 }
-.chat-input-area .btn-send:hover { opacity: 0.9; }
-.chat-input-area .btn-stop {
-    background: #ef4444; border: none; color: white; border-radius: 8px;
-    padding: 0 1rem; font-size: 0.85rem;
-    display: flex; align-items: center; gap: 0.25rem; cursor: pointer;
+.input-toolbar .toolbar-btn:hover {
+    background: rgba(var(--provider-color-rgb),0.1);
+    color: var(--provider-color);
+}
+.input-toolbar .toolbar-btn.recording {
+    color: #ef4444;
+    animation: pulse-mic 1s ease-in-out infinite;
+}
+@keyframes pulse-mic {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
-/* Right panel: Build Status */
-.builder-panel {
+/* Connector dropdown */
+.connector-dropdown {
+    position: fixed;
+    z-index: 1050;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    min-width: 200px;
+    display: none;
+    overflow: hidden;
+}
+.connector-dropdown.show { display: block; }
+.connector-dropdown .connector-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    transition: background 0.1s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+.connector-dropdown .connector-item:hover {
+    background: rgba(var(--provider-color-rgb),0.08);
+}
+.connector-dropdown .connector-item i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* URL input bar (inline) */
+.url-input-bar {
+    display: none;
+    padding: 0.4rem 0.6rem;
+    gap: 0.4rem;
+    align-items: center;
+}
+.url-input-bar.show { display: flex; }
+.url-input-bar input {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    outline: none;
+}
+.url-input-bar input:focus { border-color: var(--provider-color); }
+.url-input-bar .btn-fetch {
+    background: var(--provider-gradient);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.url-input-bar .btn-cancel-url {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.35rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+/* File chips */
+.file-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+}
+.file-chips:empty { display: none; }
+.file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(var(--provider-color-rgb),0.1);
+    border: 1px solid rgba(var(--provider-color-rgb),0.25);
+    border-radius: 16px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75rem;
+    color: var(--provider-color);
+    max-width: 180px;
+}
+.file-chip .chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-chip .chip-remove {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 0.65rem;
+    transition: opacity 0.1s;
+    flex-shrink: 0;
+}
+.file-chip .chip-remove:hover { opacity: 1; }
+.file-chip.uploading {
+    opacity: 0.6;
+    border-style: dashed;
+}
+.file-chip .chip-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(var(--provider-color-rgb),0.3);
+    border-top-color: var(--provider-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Drag-drop overlay */
+.drag-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(var(--provider-color-rgb),0.08);
+    border: 2px dashed var(--provider-color);
+    border-radius: 12px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+}
+.drag-overlay.show { display: flex; }
+.drag-overlay span {
+    background: rgba(var(--provider-color-rgb),0.15);
+    color: var(--provider-color);
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+#promptInput {
+    width: 100%;
+    resize: none;
+    border: none;
+    border-radius: 0;
+    padding: 0.65rem 1rem 0.35rem;
+    font-size: 0.9rem;
+    min-height: 42px;
+    max-height: 150px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: transparent;
+    color: var(--text-primary);
+    line-height: 1.4;
+    scrollbar-width: none;
+}
+#promptInput::-webkit-scrollbar { display: none; }
+#promptInput:focus { box-shadow: none; outline: none; }
+#sendBtn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: none;
+    background: var(--provider-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: opacity 0.15s;
+    margin-left: auto;
+}
+#sendBtn:disabled { opacity: 0.35; }
+#sendBtn:not(:disabled):hover { opacity: 0.85; }
+
+/* Right panel: Build Status (kept as-is) */
+.builder-panel {
+    width: 340px;
+    min-width: 340px;
+    height: 100%;
+    background: var(--card-bg);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 .panel-header {
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
 }
-.panel-header h5 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.panel-header h5 { margin: 0; font-size: 0.85rem; font-weight: 600; }
 .panel-content {
     flex: 1; overflow-y: auto; padding: 1rem;
 }
-.panel-section {
-    margin-bottom: 1rem;
-}
+.panel-section { margin-bottom: 1rem; }
 .panel-section-title {
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin-bottom: 0.5rem;
 }
 .branch-badge {
@@ -295,7 +606,7 @@
 .no-changes {
     text-align: center;
     padding: 1.5rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.82rem;
 }
 .no-changes i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.3; }
@@ -335,21 +646,6 @@
 }
 .skill-preview code { font-size: 0.75rem; white-space: pre-wrap; }
 
-/* Thinking indicator */
-.thinking-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.82rem;
-    color: var(--text-muted);
-}
-.thinking-indicator .spinner-border {
-    width: 14px; height: 14px;
-    border-width: 2px;
-    color: var(--provider-color);
-}
-
 /* Publish modal */
 .publish-form .form-label { font-weight: 500; font-size: 0.85rem; }
 .publish-form .form-control, .publish-form .form-select {
@@ -358,20 +654,74 @@
     color: var(--bs-body-color, #111b21);
 }
 
+/* Auth method buttons */
+.auth-method-btn {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 4px 14px;
+    transition: all 0.15s;
+}
+.auth-method-btn.active {
+    background: var(--provider-gradient);
+    color: white;
+    border-color: transparent;
+}
+.auth-method-btn:not(.active):hover {
+    border-color: var(--provider-color);
+    color: var(--provider-color);
+}
+
+/* Membership status panel */
+.membership-status-panel {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.05);
+}
+.membership-logged-in { color: #10b981; }
+.membership-logged-out { color: var(--text-secondary); }
+
+/* Settings modal refinements */
+#settingsModal .modal-content {
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+#settingsModal .modal-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+}
+#settingsModal .modal-body { padding: 1.25rem; }
+#settingsModal .modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 0.75rem 1.25rem;
+}
+#settingsModal .form-label {
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+#settingsModal .form-control:focus,
+#settingsModal .form-select:focus {
+    border-color: var(--provider-color);
+    box-shadow: none;
+}
+
 @media (max-width: 1200px) {
-    .builder-layout { grid-template-columns: 220px 1fr 280px; }
+    .builder-panel { width: 280px; min-width: 280px; }
+    .builder-sidebar { width: 220px; min-width: 220px; }
 }
 @media (max-width: 992px) {
-    .builder-layout { grid-template-columns: 1fr; height: auto; }
-    .builder-sidebar { max-height: 300px; }
-    .builder-chat { min-height: 500px; }
-    .builder-panel { min-height: 400px; }
+    .claude-app { flex-direction: column; height: auto; }
+    .builder-sidebar { width: 100%; min-width: 0; max-height: 300px; }
+    .claude-main { min-height: 500px; }
+    .builder-panel { width: 100%; min-width: 0; min-height: 400px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="builder-layout">
+<div class="claude-app" id="claudeApp" data-provider="claude">
     <!-- Left: My Tools -->
     <div class="builder-sidebar">
         <div class="sidebar-header">
@@ -389,49 +739,108 @@
     </div>
 
     <!-- Center: Chat -->
-    <div class="builder-chat">
-        <div class="chat-header">
-            <div class="status-dot" id="statusDot"></div>
-            <h5>Tool Builder</h5>
-            <!-- Provider Pills -->
-            <div class="provider-pills" id="providerPills">
-                <button class="provider-pill active" data-provider="claude" onclick="selectProvider('claude')">
-                    <span class="dot"></span> Claude
+    <div class="claude-main">
+        <!-- Top bar -->
+        <div class="claude-topbar">
+            <div class="d-flex align-items-center gap-2">
+                <div class="provider-pills" id="providerPills">
+                    <button class="provider-pill active" data-provider="claude" onclick="selectProvider('claude')">
+                        <span class="pill-dot"></span>Claude
+                    </button>
+                    <button class="provider-pill" data-provider="codex" onclick="selectProvider('codex')">
+                        <span class="pill-dot"></span>Codex
+                    </button>
+                    <button class="provider-pill" data-provider="gemini" onclick="selectProvider('gemini')">
+                        <span class="pill-dot"></span>Gemini
+                    </button>
+                    <button class="provider-pill" data-provider="chathub" onclick="selectProvider('chathub')">
+                        <span class="pill-dot"></span>ChatHub
+                    </button>
+                </div>
+                <span class="status-badge status-idle" id="statusBadge">
+                    <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                    <span id="statusText">Ready</span>
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
+                    <i class="bi bi-gear me-1"></i>Settings
                 </button>
-                <button class="provider-pill" data-provider="codex" onclick="selectProvider('codex')">
-                    <span class="dot"></span> Codex
-                </button>
-                <button class="provider-pill" data-provider="gemini" onclick="selectProvider('gemini')">
-                    <span class="dot"></span> Gemini
-                </button>
-                <button class="provider-pill" data-provider="chathub" onclick="selectProvider('chathub')">
-                    <span class="dot"></span> ChatHub
+                <button class="btn btn-sm btn-outline-danger rounded-pill" id="stopBtn" style="display: none;" onclick="stopAgent()">
+                    <i class="bi bi-stop-fill me-1"></i>Stop
                 </button>
             </div>
-            <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;" id="sessionStatus">Ready</span>
         </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="message assistant">
-                <strong>Welcome to Tool Builder!</strong><br><br>
-                I'm a coding agent running in an isolated git sandbox. I can write code, create files, run tests, and iterate until your tool works.<br><br>
-                Tell me what tool you want to build:
-                <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem;">
-                    <li>Create a translation tool that translates messages</li>
-                    <li>Build a sentiment analyzer for message tone</li>
-                    <li>Make a code formatter with syntax highlighting</li>
-                </ul>
+
+        <!-- Messages -->
+        <div class="claude-messages" id="chatBodyWrapper">
+            <div class="builder-empty-state" id="emptyState">
+                <div style="margin-bottom: 0.75rem;">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="64" height="64" rx="16" fill="var(--provider-color)"/>
+                        <path d="M20 22h24v4H20z" fill="white" opacity="0.6"/>
+                        <path d="M20 30h18v4H20z" fill="white" opacity="0.8"/>
+                        <path d="M20 38h22v4H20z" fill="white"/>
+                    </svg>
+                </div>
+                <p>Describe the tool you want to build and the AI will create it.</p>
+                <small>Configure your API key in Settings first.</small>
+            </div>
+            <div class="claude-messages-inner" id="chatBody"></div>
+        </div>
+
+        <!-- Input bar -->
+        <div class="claude-input-bar">
+            <div class="claude-input-inner">
+                <div class="prompt-wrapper">
+                    <!-- URL input (inline, hidden by default) -->
+                    <div class="url-input-bar" id="urlInputBar">
+                        <input type="text" id="urlInput" placeholder="Paste URL here..." onkeydown="if(event.key==='Enter'){fetchUrlFile();event.preventDefault();}">
+                        <button class="btn-fetch" onclick="fetchUrlFile()" id="fetchUrlBtn">Fetch</button>
+                        <button class="btn-cancel-url" onclick="closeUrlInput()" title="Cancel"><i class="bi bi-x"></i></button>
+                    </div>
+                    <!-- File chips -->
+                    <div class="file-chips" id="fileChips"></div>
+                    <!-- Textarea -->
+                    <textarea class="form-control" id="promptInput" rows="1"
+                        placeholder="Describe the tool you want to build..."
+                        onkeydown="handleKeydown(event)"
+                        onpaste="handlePaste(event)"></textarea>
+                    <!-- Bottom row: toolbar left, send right -->
+                    <div class="input-bottom-row">
+                        <div class="input-toolbar">
+                            <button class="toolbar-btn" id="attachBtn" onclick="triggerFileInput()" title="Attach files">
+                                <i class="bi bi-paperclip"></i>
+                            </button>
+                            <span class="toolbar-btn-wrap">
+                                <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectorDropdown()" title="Import from URL">
+                                    <i class="bi bi-link-45deg"></i>
+                                </button>
+                                <div class="connector-dropdown" id="connectorDropdown">
+                                    <div class="connector-item" onclick="openUrlInput('url')">
+                                        <i class="bi bi-globe"></i> From URL
+                                    </div>
+                                    <div class="connector-item" onclick="openUrlInput('gdrive')">
+                                        <i class="bi bi-google"></i> Google Drive
+                                    </div>
+                                    <div class="connector-item" onclick="openUrlInput('dropbox')">
+                                        <i class="bi bi-dropbox"></i> Dropbox
+                                    </div>
+                                </div>
+                            </span>
+                            <button class="toolbar-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input" style="display:none;">
+                                <i class="bi bi-mic"></i>
+                            </button>
+                        </div>
+                        <button id="sendBtn" onclick="handleSend()" title="Send">
+                            <i class="bi bi-arrow-up" style="font-size: 1rem;"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="chat-input-area">
-            <textarea id="chatInput" placeholder="Describe the tool you want to build..." rows="1"
-                      onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); handleSend();}"></textarea>
-            <button class="btn-send" onclick="handleSend()" id="sendBtn">
-                <i class="bi bi-send"></i>
-            </button>
-            <button class="btn-stop" onclick="stopAgent()" id="stopBtn" style="display:none;">
-                <i class="bi bi-stop-circle"></i> Stop
-            </button>
-        </div>
+        <!-- Drag overlay -->
+        <div class="drag-overlay" id="dragOverlay"><span><i class="bi bi-cloud-upload me-2"></i>Drop files to attach</span></div>
     </div>
 
     <!-- Right: Build Status Panel -->
@@ -486,9 +895,51 @@
             </button>
         </div>
     </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" multiple style="display:none;" onchange="handleFileSelect(event)"
+        accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.csv,.py,.js,.ts,.html,.css,.json,.yaml,.yml,.toml,.xml,.md,.txt,.sh,.java,.go,.rs,.c,.cpp,.h,.rb,.php,.sql,.log,.zip,.tar,.gz">
 </div>
 
-<!-- Publish Modal -->
+<!-- Publish Build Modal — collects tool metadata before merging -->
+<div class="modal fade" id="publishBuildModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Publish Tool</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tool Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="publishBuildName" placeholder="my-awesome-tool" required>
+                    <small class="text-muted">Kebab-case slug used internally</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Display Name</label>
+                    <input type="text" class="form-control" id="publishBuildDisplayName" placeholder="My Awesome Tool">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea class="form-control" id="publishBuildDescription" rows="2" placeholder="What does this tool do?"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Icon</label>
+                    <input type="text" class="form-control" id="publishBuildIcon" value="bi-gear" placeholder="bi-gear">
+                    <small class="text-muted">Bootstrap Icon class (e.g. bi-lightning, bi-robot)</small>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmPublishBtn" onclick="confirmPublish()">
+                    <i class="bi bi-check-circle me-1"></i> Publish
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Marketplace Publish Modal — for publishing an existing tool to the marketplace -->
 <div class="modal fade" id="publishModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
@@ -524,9 +975,179 @@
         </div>
     </div>
 </div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>Tool Builder Settings</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <!-- Auth Method Selection -->
+                    <div class="col-12 settings-provider-claude">
+                        <label class="form-label">Authentication Method</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm rounded-pill auth-method-btn active" id="authMethodApiKey" onclick="setAuthMethod('api_key')">
+                                <i class="bi bi-key me-1"></i>API Key
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill auth-method-btn" id="authMethodMembership" onclick="setAuthMethod('membership')">
+                                <i class="bi bi-person-badge me-1"></i>Membership
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- API Key Section -->
+                    <div class="col-md-6 settings-provider-claude" id="apiKeySection">
+                        <label class="form-label">Anthropic API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="apiKeyInput" placeholder="sk-ant-...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVisibility()">
+                                <i class="bi bi-eye" id="keyToggleIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="apiKeyStatus"></small>
+                    </div>
+
+                    <!-- Membership Section -->
+                    <div class="col-md-6 settings-provider-claude" id="membershipSection" style="display: none;">
+                        <label class="form-label">Claude Membership Status</label>
+                        <div class="membership-status-panel" id="membershipStatusPanel">
+                            <div class="d-flex align-items-center gap-2 mb-2" id="membershipStatusContent">
+                                <i class="bi bi-hourglass-split text-muted"></i>
+                                <span class="text-muted">Checking status...</span>
+                            </div>
+                            <div id="membershipActions">
+                                <button class="btn btn-sm rounded-pill" id="membershipLoginBtn" onclick="membershipLogin()" style="background: var(--provider-gradient); color: white; display: none;">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>Login with Claude
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill" id="membershipLogoutBtn" onclick="membershipLogout()" style="display: none;">
+                                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                                </button>
+                            </div>
+                        </div>
+                        <div id="oauthUrlPanel" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.75rem; background: rgba(218,106,70,0.06); border: 1px solid rgba(218,106,70,0.2); border-radius: 0.5rem;">
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                                <small class="text-muted"><i class="bi bi-link-45deg me-1"></i>Open this URL on any device to authorize:</small>
+                                <button type="button" class="btn-close" style="font-size: 0.6rem;" onclick="document.getElementById('oauthUrlPanel').style.display='none'" aria-label="Close"></button>
+                            </div>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control form-control-sm" id="oauthUrlInput" readonly style="font-size: 0.75rem; background: rgba(255,255,255,0.5);">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="copyOAuthUrl()" title="Copy URL">
+                                    <i class="bi bi-clipboard" id="copyOAuthIcon"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mb-1"><i class="bi bi-key me-1"></i>Paste the authorization code you received:</small>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control form-control-sm" id="oauthCodeInput" placeholder="Paste authorization code here" style="font-size: 0.75rem;">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="submitLoginCode()" id="submitCodeBtn">
+                                    <i class="bi bi-check-lg me-1"></i>Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OpenAI API Key (for Codex) -->
+                    <div class="col-md-6 settings-provider-codex" id="openaiKeySection">
+                        <label class="form-label">OpenAI API Key <small class="text-muted">(for Codex)</small></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="openaiKeyInput" placeholder="sk-...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis('openaiKeyInput','openaiKeyIcon')">
+                                <i class="bi bi-eye" id="openaiKeyIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="openaiKeyStatus"></small>
+                    </div>
+
+                    <!-- Gemini API Key -->
+                    <div class="col-md-6 settings-provider-gemini" id="geminiKeySection">
+                        <label class="form-label">Gemini API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="geminiKeyInput" placeholder="AIza...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis('geminiKeyInput','geminiKeyIcon')">
+                                <i class="bi bi-eye" id="geminiKeyIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="geminiKeyStatus"></small>
+                    </div>
+
+                    <!-- Claude Model -->
+                    <div class="col-md-6 settings-provider-claude">
+                        <label class="form-label">Claude Model</label>
+                        <select class="form-select" id="modelSelect">
+                            <option value="opus">Opus 4.6 - Most capable</option>
+                            <option value="opus-1m">Opus (1M context)</option>
+                            <option value="sonnet" selected>Sonnet 4.6 - Best for everyday tasks</option>
+                            <option value="sonnet-1m">Sonnet (1M context)</option>
+                            <option value="haiku">Haiku 4.5 - Fastest</option>
+                        </select>
+                    </div>
+
+                    <!-- Codex Model -->
+                    <div class="col-md-6 settings-provider-codex">
+                        <label class="form-label">Codex Model</label>
+                        <select class="form-select" id="codexModelSelect">
+                            <option value="gpt-5.3-codex" selected>GPT-5.3-Codex</option>
+                            <option value="gpt-5.2-codex">GPT-5.2-Codex</option>
+                            <option value="gpt-5.1-codex-max">GPT-5.1-Codex-Max</option>
+                            <option value="gpt-5.2">GPT-5.2</option>
+                            <option value="gpt-5.1-codex-mini">GPT-5.1-Codex-Mini</option>
+                        </select>
+                    </div>
+
+                    <!-- Gemini Model -->
+                    <div class="col-md-6 settings-provider-gemini">
+                        <label class="form-label">Gemini Model</label>
+                        <select class="form-select" id="geminiModelSelect">
+                            <option value="auto-gemini-3" selected>Auto (Gemini 3)</option>
+                            <option value="auto-gemini-2.5">Auto (Gemini 2.5)</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        </select>
+                    </div>
+
+                    <!-- ChatHub Agent Settings -->
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">AI Provider</label>
+                        <select class="form-select" id="chathubProviderSelect" onchange="onChathubProviderChange()">
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="google">Google (Gemini)</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="qwen">Qwen</option>
+                            <option value="grok">xAI (Grok)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">Model</label>
+                        <select class="form-select" id="chathubModelSelect"></select>
+                    </div>
+                    <div class="col-md-6 settings-provider-chathub">
+                        <label class="form-label">API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="chathubApiKeyInput" placeholder="Enter API key...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVis('chathubApiKeyInput','chathubKeyIcon')">
+                                <i class="bi bi-eye" id="chathubKeyIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted" id="chathubApiKeyStatus"></small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm rounded-pill" onclick="saveSettings()" style="background: var(--provider-gradient); color: white; padding: 6px 20px;">
+                    <i class="bi bi-check-lg me-1"></i>Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Marked.js for markdown rendering -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 // ============================================================
@@ -544,6 +1165,155 @@ let currentAssistantEl = null;
 let turnHasStreamedText = false;
 let statusPollInterval = null;
 let publishedSkillId = null;
+let autoScroll = true;
+
+// File upload state
+let pendingFiles = [];
+
+// Voice recognition
+let recognition = null;
+let isRecording = false;
+
+// Auth
+let currentAuthMethod = 'api_key';
+let membershipPollTimer = null;
+
+// ChatHub Agent provider/model data (for settings)
+const CHATHUB_PROVIDER_MODELS = {
+    openai: {
+        defaultModel: 'gpt-4o-mini',
+        groups: [
+            { header: 'GPT-5.4 Series (Latest)', models: [
+                { value: 'gpt-5.4', label: 'GPT-5.4' },
+                { value: 'gpt-5.4-pro', label: 'GPT-5.4 Pro' },
+            ]},
+            { header: 'GPT-5.3 Series', models: [
+                { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex' },
+                { value: 'gpt-5.3-chat-latest', label: 'GPT-5.3 Chat' },
+            ]},
+            { header: 'GPT-5.2 Series', models: [
+                { value: 'gpt-5.2', label: 'GPT-5.2' },
+            ]},
+            { header: 'GPT-5 Series', models: [
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+            ]},
+            { header: 'Reasoning Models', models: [
+                { value: 'o4-mini', label: 'o4-mini' },
+                { value: 'o3', label: 'o3' },
+                { value: 'o3-mini', label: 'o3-mini' },
+            ]},
+            { header: 'GPT-4.1 Series', models: [
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+            ]},
+            { header: 'GPT-4 Series (Legacy)', models: [
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+            ]},
+        ]
+    },
+    anthropic: {
+        defaultModel: 'claude-sonnet-4-5-20241022',
+        groups: [
+            { header: 'Claude 4.6 Series (Latest)', models: [
+                { value: 'claude-opus-4-6-20260205', label: 'Claude Opus 4.6' },
+                { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+            ]},
+            { header: 'Claude 4.5 Series', models: [
+                { value: 'claude-opus-4-5-20251124', label: 'Claude Opus 4.5' },
+                { value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet 4.5 (Default)' },
+                { value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku 4.5' },
+            ]},
+            { header: 'Claude 4 Series', models: [
+                { value: 'claude-opus-4-1-20250414', label: 'Claude Opus 4.1' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+            ]},
+            { header: 'Claude 3.5 Series (Legacy)', models: [
+                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+            ]},
+        ]
+    },
+    google: {
+        defaultModel: 'gemini-3-flash',
+        groups: [
+            { header: 'Gemini 3.1 Series (Latest)', models: [
+                { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
+                { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite Preview' },
+            ]},
+            { header: 'Gemini 3 Series', models: [
+                { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview (Default)' },
+            ]},
+            { header: 'Gemini 2.5 Series', models: [
+                { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+                { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+            ]},
+        ]
+    },
+    deepseek: {
+        defaultModel: 'deepseek-chat',
+        groups: [
+            { header: 'DeepSeek V3.2 (Latest)', models: [
+                { value: 'deepseek-chat', label: 'DeepSeek V3.2 Chat (Default)' },
+            ]},
+            { header: 'DeepSeek Reasoning', models: [
+                { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
+            ]},
+        ]
+    },
+    qwen: {
+        defaultModel: 'qwen3-turbo',
+        groups: [
+            { header: 'Qwen3.5 Series (Latest)', models: [
+                { value: 'qwen3.5-plus', label: 'Qwen3.5 Plus' },
+            ]},
+            { header: 'Qwen3 Series', models: [
+                { value: 'qwen3-max', label: 'Qwen3 Max' },
+                { value: 'qwen3-plus', label: 'Qwen3 Plus' },
+                { value: 'qwen3-turbo', label: 'Qwen3 Turbo (Default)' },
+            ]},
+        ]
+    },
+    grok: {
+        defaultModel: 'grok-4',
+        groups: [
+            { header: 'Grok 4 Series (Latest)', models: [
+                { value: 'grok-4', label: 'Grok 4 (Default)' },
+                { value: 'grok-4-1-fast-reasoning', label: 'Grok 4.1 Fast Reasoning' },
+                { value: 'grok-4-1-fast-non-reasoning', label: 'Grok 4.1 Fast' },
+            ]},
+            { header: 'Grok Code', models: [
+                { value: 'grok-code-fast-1', label: 'Grok Code Fast' },
+            ]},
+            { header: 'Grok 3 Series', models: [
+                { value: 'grok-3', label: 'Grok 3' },
+                { value: 'grok-3-fast', label: 'Grok 3 Fast' },
+            ]},
+        ]
+    },
+};
+
+function onChathubProviderChange() {
+    const provider = document.getElementById('chathubProviderSelect').value;
+    const modelSelect = document.getElementById('chathubModelSelect');
+    const currentVal = modelSelect.value;
+    const providerData = CHATHUB_PROVIDER_MODELS[provider];
+    if (!providerData) { modelSelect.innerHTML = ''; return; }
+    let html = '';
+    for (const group of providerData.groups) {
+        html += `<optgroup label="${group.header}">`;
+        for (const m of group.models) html += `<option value="${m.value}">${m.label}</option>`;
+        html += '</optgroup>';
+    }
+    modelSelect.innerHTML = html;
+    const allModels = providerData.groups.flatMap(g => g.models);
+    const hasCurrentVal = allModels.some(m => m.value === currentVal);
+    modelSelect.value = hasCurrentVal ? currentVal : (providerData.defaultModel || '');
+}
 
 // ============================================================
 // Provider Selection
@@ -551,20 +1321,309 @@ let publishedSkillId = null;
 
 function selectProvider(provider) {
     currentProvider = provider;
-    document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
-    document.querySelector(`.provider-pill[data-provider="${provider}"]`).classList.add('active');
+    document.querySelectorAll('.provider-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.provider === provider);
+    });
+    // Update app theme via data-provider attribute
+    document.getElementById('claudeApp').dataset.provider = provider;
+    document.getElementById('settingsModal').dataset.provider = provider;
+    // Toggle provider-specific settings sections
+    ['claude', 'codex', 'gemini', 'chathub'].forEach(p => {
+        document.querySelectorAll(`.settings-provider-${p}`).forEach(el => {
+            el.style.display = (p === provider) ? '' : 'none';
+        });
+    });
+}
 
-    // Update CSS theme
-    const root = document.documentElement;
-    const themes = {
-        claude: { color: '#da6a46', rgb: '218,106,70' },
-        codex: { color: '#10a37f', rgb: '16,163,127' },
-        gemini: { color: '#4285f4', rgb: '66,133,244' },
-        chathub: { color: '#7c3aed', rgb: '124,58,237' },
+// ============================================================
+// Settings Modal
+// ============================================================
+
+function openSettingsModal() {
+    new bootstrap.Modal(document.getElementById('settingsModal')).show();
+}
+
+function toggleKeyVisibility() {
+    toggleKeyVis('apiKeyInput', 'keyToggleIcon');
+}
+function toggleKeyVis(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+async function loadSettings() {
+    // Load CLI settings
+    try {
+        const res = await fetch('/tools/api/ai-workspace/settings', { credentials: 'include' });
+        const data = await res.json();
+        if (data.api_key_set) {
+            document.getElementById('apiKeyInput').placeholder = data.api_key_masked || '****';
+            document.getElementById('apiKeyStatus').textContent = 'API key configured';
+            document.getElementById('apiKeyStatus').className = 'text-success small';
+        }
+        if (data.openai_api_key_set) {
+            document.getElementById('openaiKeyInput').placeholder = data.openai_api_key_masked || '****';
+            document.getElementById('openaiKeyStatus').textContent = 'API key configured';
+            document.getElementById('openaiKeyStatus').className = 'text-success small';
+        }
+        if (data.gemini_api_key_set) {
+            document.getElementById('geminiKeyInput').placeholder = data.gemini_api_key_masked || '****';
+            document.getElementById('geminiKeyStatus').textContent = 'API key configured';
+            document.getElementById('geminiKeyStatus').className = 'text-success small';
+        }
+        document.getElementById('modelSelect').value = data.default_model || 'sonnet';
+        document.getElementById('codexModelSelect').value = data.codex_default_model || 'gpt-5.3-codex';
+        document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'auto-gemini-3';
+        setAuthMethod(data.auth_method || 'api_key', true);
+        if (data.default_provider) {
+            selectProvider(data.default_provider);
+        }
+    } catch (e) {
+        console.error('Failed to load CLI settings:', e);
+    }
+
+    // Load ChatHub Agent settings
+    try {
+        const res = await fetch('/tools/api/chathub-agent/settings', { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.api_key_set) {
+                document.getElementById('chathubApiKeyInput').placeholder = data.api_key_masked || '****';
+                document.getElementById('chathubApiKeyStatus').textContent = 'API key configured';
+                document.getElementById('chathubApiKeyStatus').className = 'text-success small';
+            }
+            document.getElementById('chathubProviderSelect').value = data.ai_provider || 'openai';
+            onChathubProviderChange();
+            document.getElementById('chathubModelSelect').value = data.default_model || (CHATHUB_PROVIDER_MODELS[data.ai_provider || 'openai'] || {}).defaultModel || '';
+        }
+    } catch (e) {
+        console.error('Failed to load ChatHub settings:', e);
+    }
+}
+
+async function saveSettings() {
+    let ok = true;
+
+    // Save CLI settings
+    const apiKey = document.getElementById('apiKeyInput').value;
+    const openaiKey = document.getElementById('openaiKeyInput').value;
+    const geminiKey = document.getElementById('geminiKeyInput').value;
+    const payload = {
+        default_model: document.getElementById('modelSelect').value,
+        codex_default_model: document.getElementById('codexModelSelect').value,
+        gemini_default_model: document.getElementById('geminiModelSelect').value,
+        auth_method: currentAuthMethod,
+        default_provider: currentProvider
     };
-    const t = themes[provider] || themes.claude;
-    root.style.setProperty('--provider-color', t.color);
-    root.style.setProperty('--provider-color-rgb', t.rgb);
+    if (apiKey && !apiKey.startsWith('****')) payload.anthropic_api_key = apiKey;
+    if (openaiKey && !openaiKey.startsWith('****')) payload.openai_api_key = openaiKey;
+    if (geminiKey && !geminiKey.startsWith('****')) payload.gemini_api_key = geminiKey;
+    try {
+        const res = await fetch('/tools/api/ai-workspace/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to save CLI settings', 'error');
+            ok = false;
+        }
+    } catch (e) {
+        showToast('Network error saving CLI settings', 'error');
+        ok = false;
+    }
+
+    // Save ChatHub Agent settings
+    const chathubKey = document.getElementById('chathubApiKeyInput').value;
+    const chathubPayload = {
+        ai_provider: document.getElementById('chathubProviderSelect').value,
+        default_model: document.getElementById('chathubModelSelect').value,
+    };
+    if (chathubKey && !chathubKey.startsWith('****')) chathubPayload.api_key = chathubKey;
+    try {
+        const res = await fetch('/tools/api/chathub-agent/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(chathubPayload)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to save ChatHub settings', 'error');
+            ok = false;
+        }
+    } catch (e) {
+        showToast('Network error saving ChatHub settings', 'error');
+        ok = false;
+    }
+
+    if (ok) {
+        showToast('Settings saved', 'success');
+        document.getElementById('apiKeyInput').value = '';
+        document.getElementById('openaiKeyInput').value = '';
+        document.getElementById('geminiKeyInput').value = '';
+        document.getElementById('chathubApiKeyInput').value = '';
+        loadSettings();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+        if (modal) modal.hide();
+    }
+}
+
+// --- Auth Method ---
+function setAuthMethod(method, skipSave) {
+    currentAuthMethod = method;
+    const apiKeyBtn = document.getElementById('authMethodApiKey');
+    const membershipBtn = document.getElementById('authMethodMembership');
+    const apiKeySection = document.getElementById('apiKeySection');
+    const membershipSection = document.getElementById('membershipSection');
+
+    if (method === 'membership') {
+        apiKeyBtn.classList.remove('active');
+        membershipBtn.classList.add('active');
+        apiKeySection.style.display = 'none';
+        membershipSection.style.display = 'block';
+        checkMembershipStatus();
+    } else {
+        apiKeyBtn.classList.add('active');
+        membershipBtn.classList.remove('active');
+        apiKeySection.style.display = 'block';
+        membershipSection.style.display = 'none';
+        stopMembershipPoll();
+    }
+}
+
+async function checkMembershipStatus() {
+    const content = document.getElementById('membershipStatusContent');
+    const loginBtn = document.getElementById('membershipLoginBtn');
+    const logoutBtn = document.getElementById('membershipLogoutBtn');
+    content.innerHTML = '<i class="bi bi-hourglass-split text-muted"></i><span class="text-muted">Checking...</span>';
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'none';
+    try {
+        const res = await fetch('/tools/api/ai-workspace/membership-status', { credentials: 'include' });
+        const data = await res.json();
+        if (data.loggedIn) {
+            const email = data.email ? ` (${data.email})` : '';
+            const plan = data.subscriptionType && data.subscriptionType.trim() ? `<span class="badge ms-1" style="font-size: 0.7rem; background: #10b981; color: #fff; border-radius: 20px; padding: 3px 10px;">${data.subscriptionType}</span>` : '';
+            content.innerHTML = `<i class="bi bi-check-circle-fill membership-logged-in"></i><span class="membership-logged-in fw-medium">Logged in${escapeHtml(email)}</span>${plan}`;
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-flex';
+            stopMembershipPoll();
+        } else {
+            const errorMsg = data.error ? ` - ${data.error}` : '';
+            content.innerHTML = `<i class="bi bi-x-circle membership-logged-out"></i><span class="membership-logged-out">Not logged in${escapeHtml(errorMsg)}</span>`;
+            loginBtn.style.display = 'inline-flex';
+            logoutBtn.style.display = 'none';
+        }
+    } catch (e) {
+        content.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i><span class="text-warning">Failed to check status</span>';
+        loginBtn.style.display = 'inline-flex';
+        logoutBtn.style.display = 'none';
+    }
+}
+
+async function membershipLogin() {
+    const loginBtn = document.getElementById('membershipLoginBtn');
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Starting login...';
+    try {
+        const res = await fetch('/tools/api/ai-workspace/membership-login', { method: 'POST', credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.oauth_url) {
+                document.getElementById('oauthUrlInput').value = data.oauth_url;
+                document.getElementById('oauthUrlPanel').style.display = 'block';
+                showToast('OAuth URL ready — open it on any device to authorize.', 'success');
+            } else {
+                showToast('Browser opened for login. Complete the login there.', 'success');
+            }
+            startMembershipPoll();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to start login', 'error');
+        }
+    } catch (e) {
+        showToast('Network error', 'error');
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i>Login with Claude';
+    }
+}
+
+function copyOAuthUrl() {
+    const input = document.getElementById('oauthUrlInput');
+    navigator.clipboard.writeText(input.value).then(() => {
+        const icon = document.getElementById('copyOAuthIcon');
+        icon.className = 'bi bi-check-lg';
+        setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 1500);
+        showToast('URL copied to clipboard', 'success');
+    }).catch(() => {
+        input.select();
+        showToast('Press Ctrl+C to copy', 'info');
+    });
+}
+
+async function submitLoginCode() {
+    const codeInput = document.getElementById('oauthCodeInput');
+    const btn = document.getElementById('submitCodeBtn');
+    const code = codeInput.value.trim();
+    if (!code) { showToast('Please paste the authorization code', 'warning'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Submitting...';
+    try {
+        const res = await fetch('/tools/api/ai-workspace/membership-login-code', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        if (res.ok) {
+            showToast('Authorization code submitted. Checking login status...', 'success');
+            codeInput.value = '';
+            document.getElementById('oauthUrlPanel').style.display = 'none';
+            setTimeout(() => checkMembershipStatus(), 2000);
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed to submit code', 'error');
+        }
+    } catch (e) { showToast('Network error', 'error'); }
+    finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Submit'; }
+}
+
+async function membershipLogout() {
+    try {
+        const res = await fetch('/tools/api/ai-workspace/membership-logout', { method: 'POST', credentials: 'include' });
+        if (res.ok) { showToast('Logged out', 'success'); checkMembershipStatus(); }
+        else { const err = await res.json(); showToast(err.detail || 'Failed to logout', 'error'); }
+    } catch (e) { showToast('Network error', 'error'); }
+}
+
+function startMembershipPoll() {
+    stopMembershipPoll();
+    membershipPollTimer = setInterval(async () => {
+        try {
+            const res = await fetch('/tools/api/ai-workspace/membership-status', { credentials: 'include' });
+            const data = await res.json();
+            if (data.loggedIn) {
+                stopMembershipPoll();
+                document.getElementById('oauthUrlPanel').style.display = 'none';
+                checkMembershipStatus();
+                showToast('Login successful!', 'success');
+            }
+        } catch (e) {}
+    }, 3000);
+}
+
+function stopMembershipPoll() {
+    if (membershipPollTimer) { clearInterval(membershipPollTimer); membershipPollTimer = null; }
 }
 
 // ============================================================
@@ -580,11 +1639,10 @@ async function createSession() {
         });
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            showToast(err.detail || 'Failed to create session', 'danger');
+            showToast(err.detail || 'Failed to create session', 'error');
             return false;
         }
         const data = await resp.json();
-        // Close old WS before updating sessionId to prevent stale reconnect
         if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
         sessionId = data.session_id;
         setStatus('connected');
@@ -592,26 +1650,24 @@ async function createSession() {
         startStatusPolling();
         return true;
     } catch(e) {
-        showToast('Connection error: ' + e.message, 'danger');
+        showToast('Connection error: ' + e.message, 'error');
         return false;
     }
 }
 
 async function handleSend() {
-    const input = document.getElementById('chatInput');
+    const input = document.getElementById('promptInput');
     const text = input.value.trim();
     if (!text) return;
 
-    // If no session, create one first
     if (!sessionId) {
         appendUserMessage(text);
         input.value = '';
         input.style.height = 'auto';
+        document.getElementById('emptyState').style.display = 'none';
 
         const created = await createSession();
         if (!created) return;
-
-        // Now send the message
         sendMessage(text);
         return;
     }
@@ -627,14 +1683,18 @@ async function handleSend() {
 async function sendMessage(text) {
     if (!sessionId) return;
 
+    const filePaths = getFilePaths();
+    clearPendingFiles();
     showThinking();
     setRunningState(true);
 
     try {
+        const body = { message: text };
+        if (filePaths.length) body.file_paths = filePaths;
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify(body)
         });
 
         if (!resp.ok) {
@@ -686,8 +1746,6 @@ function connectWebSocket() {
     ws.onclose = (event) => {
         clearInterval(pingInterval);
         if (assistantBuffer) flushAssistantBuffer();
-        // Only reconnect on unexpected disconnects (1006=abnormal, 1001=going away)
-        // Do NOT reconnect on 4004 (session not found), 4001 (auth), or 1000 (normal close)
         if (event.code === 1006 || event.code === 1001) {
             setTimeout(() => {
                 if (sessionId && !isRunning) connectWebSocket();
@@ -700,40 +1758,61 @@ function connectWebSocket() {
 
 function renderStreamEvent(data) {
     const type = data.type;
+    console.log('[TB stream]', type, data);
 
-    // Tool use card
+    // Tool use — render as pill
     if (type === 'tool_use' || (type === 'content_block_start' && data.content_block?.type === 'tool_use')) {
         removeThinking();
         flushAssistantBuffer();
-
+        currentAssistantEl = null;
         const toolName = data.tool?.name || data.name || data.content_block?.name || 'tool';
         const toolInput = data.tool?.input || data.input || data.content_block?.input || {};
         appendToolUse(toolName, toolInput);
         return;
     }
 
-    // Tool result
+    // content_block_start for text — creates fresh bubble after tool calls
+    if (type === 'content_block_start' && data.content_block?.type === 'text') {
+        removeThinking();
+        flushAssistantBuffer();
+        currentAssistantEl = document.createElement('div');
+        currentAssistantEl.className = 'msg msg-assistant';
+        document.getElementById('chatBody').appendChild(currentAssistantEl);
+        scrollToBottom();
+        return;
+    }
+
+    // Tool result — render as collapsible block
     if (type === 'tool_result') {
         removeThinking();
+        currentAssistantEl = null;
         const content = data.content || data.output || '';
         appendToolResult(typeof content === 'string' ? content : JSON.stringify(content));
         return;
     }
 
-    // Streaming text
+    // Streaming text delta
     if (type === 'content_block_delta') {
         removeThinking();
-        const text = data.delta?.text || '';
-        if (text) {
+        const delta = data.delta || {};
+        if (delta.type === 'text_delta' && delta.text) {
             turnHasStreamedText = true;
-            assistantBuffer += text;
-            updateAssistantBubble();
+            assistantBuffer += delta.text;
+            if (!currentAssistantEl) {
+                currentAssistantEl = document.createElement('div');
+                currentAssistantEl.className = 'msg msg-assistant';
+                document.getElementById('chatBody').appendChild(currentAssistantEl);
+            }
+            currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
+            wrapTables(currentAssistantEl);
+            scrollToBottom();
         }
         return;
     }
 
     if (type === 'content_block_stop') {
         flushAssistantBuffer();
+        currentAssistantEl = null;
         return;
     }
 
@@ -749,7 +1828,6 @@ function renderStreamEvent(data) {
         return;
     }
 
-    // Old-style assistant_message (from legacy/simple providers)
     if (type === 'assistant_message') {
         removeThinking();
         flushAssistantBuffer();
@@ -762,23 +1840,13 @@ function renderStreamEvent(data) {
         removeThinking();
         if (!turnHasStreamedText) {
             let text = data.result || '';
-            if (Array.isArray(text)) {
-                text = text.filter(b => b.type === 'text').map(b => b.text).join('\n');
-            }
-            if (text) {
-                flushAssistantBuffer();
-                appendAssistantMessage(text);
-            }
-        } else {
-            flushAssistantBuffer();
-        }
+            if (Array.isArray(text)) text = text.filter(b => b.type === 'text').map(b => b.text).join('\n');
+            if (text) { flushAssistantBuffer(); appendAssistantMessage(text); }
+        } else { flushAssistantBuffer(); }
         return;
     }
 
-    if (type === 'result_done') {
-        flushAssistantBuffer();
-        return;
-    }
+    if (type === 'result_done') { flushAssistantBuffer(); return; }
 
     // Turn end
     if (type === 'turn_end') {
@@ -796,18 +1864,13 @@ function renderStreamEvent(data) {
     if (type === 'error') {
         removeThinking();
         flushAssistantBuffer();
-        const msg = data.error?.message || data.content || 'Unknown error';
-        appendSystemMessage(msg);
+        appendSystemMessage(data.error?.message || data.content || 'Unknown error');
         setRunningState(false);
         return;
     }
 
-    // User message echo
-    if (type === 'user_message') {
-        return; // Already shown by handleSend
-    }
+    if (type === 'user_message') return;
 
-    // Done (legacy)
     if (type === 'done') {
         removeThinking();
         flushAssistantBuffer();
@@ -817,44 +1880,45 @@ function renderStreamEvent(data) {
 }
 
 // ============================================================
-// Message Rendering
+// Message Rendering — AI Workspace style
 // ============================================================
 
 function appendUserMessage(text) {
-    const container = document.getElementById('chatMessages');
+    const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'message user';
+    div.className = 'msg msg-user';
     div.textContent = text;
-    container.appendChild(div);
-    scrollChat();
+    chatBody.appendChild(div);
+    scrollToBottom();
 }
 
 function appendAssistantMessage(text) {
-    const container = document.getElementById('chatMessages');
+    turnHasStreamedText = true;
+    const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.innerHTML = renderMarkdown(text);
-    container.appendChild(div);
+    div.className = 'msg msg-assistant';
+    div.innerHTML = marked.parse(text);
+    wrapTables(div);
+    chatBody.appendChild(div);
     currentAssistantEl = null;
-    scrollChat();
+    scrollToBottom();
 }
 
 function updateAssistantBubble() {
     if (!currentAssistantEl) {
-        const container = document.getElementById('chatMessages');
+        const chatBody = document.getElementById('chatBody');
         currentAssistantEl = document.createElement('div');
-        currentAssistantEl.className = 'message assistant';
-        container.appendChild(currentAssistantEl);
+        currentAssistantEl.className = 'msg msg-assistant';
+        chatBody.appendChild(currentAssistantEl);
     }
-    currentAssistantEl.innerHTML = renderMarkdown(assistantBuffer);
-    scrollChat();
+    currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
+    wrapTables(currentAssistantEl);
+    scrollToBottom();
 }
 
 function flushAssistantBuffer() {
-    if (assistantBuffer.trim()) {
-        if (currentAssistantEl) {
-            currentAssistantEl.innerHTML = renderMarkdown(assistantBuffer);
-        } else {
+    if (assistantBuffer) {
+        if (!currentAssistantEl) {
             appendAssistantMessage(assistantBuffer);
         }
     }
@@ -862,64 +1926,70 @@ function flushAssistantBuffer() {
     currentAssistantEl = null;
 }
 
+// Tool use — render as inline pill
 function appendToolUse(toolName, toolInput) {
-    const container = document.getElementById('chatMessages');
-    const card = document.createElement('div');
-    card.className = 'tool-card collapsed';
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-tool';
 
-    const inputStr = typeof toolInput === 'string' ? toolInput : JSON.stringify(toolInput, null, 2);
-    // Truncate long inputs
-    const displayInput = inputStr.length > 2000 ? inputStr.slice(0, 2000) + '\n... (truncated)' : inputStr;
+    const icon = getToolIcon(toolName);
+    const inputData = typeof toolInput === 'object' ? toolInput : {};
+    const title = getToolTitle(toolName, inputData);
 
-    card.innerHTML = `
-        <div class="tool-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
-            <i class="bi bi-gear-wide-connected"></i>
-            <span class="tool-name">${escapeHtml(toolName)}</span>
-            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+    div.innerHTML = `<span class="msg-tool-pill" onclick="this.nextElementSibling && this.nextElementSibling.classList.toggle('d-none')">
+        <i class="bi ${icon}"></i>
+        <span>${escapeHtml(title)}</span>
+        <span class="pill-hint">click to expand</span>
+    </span>
+    <div class="tool-block d-none" style="margin-top: 4px;">
+        <div class="tool-block-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('d-none');">
+            <i class="bi bi-chevron-down chevron"></i>
+            <span>${escapeHtml(toolName)}</span>
         </div>
-        <div class="tool-card-body"><pre>${escapeHtml(displayInput)}</pre></div>
-    `;
-    container.appendChild(card);
-    scrollChat();
+        <div class="tool-block-body">${escapeHtml(typeof toolInput === 'string' ? toolInput : JSON.stringify(toolInput, null, 2))}</div>
+    </div>`;
+    chatBody.appendChild(div);
+    scrollToBottom();
 }
 
+// Tool result — render as collapsible block
 function appendToolResult(content) {
-    const container = document.getElementById('chatMessages');
-    const card = document.createElement('div');
-    card.className = 'tool-card result collapsed';
-
     const displayContent = content.length > 3000 ? content.slice(0, 3000) + '\n... (truncated)' : content;
-
-    card.innerHTML = `
-        <div class="tool-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
-            <i class="bi bi-check-circle"></i>
-            <span class="tool-name">Result</span>
-            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-tool';
+    div.innerHTML = `<div class="tool-block">
+        <div class="tool-block-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('d-none');">
+            <i class="bi bi-chevron-down chevron"></i>
+            <i class="bi bi-check-circle" style="color: #10b981;"></i>
+            <span>Result</span>
         </div>
-        <div class="tool-card-body"><pre>${escapeHtml(displayContent)}</pre></div>
-    `;
-    container.appendChild(card);
-    scrollChat();
+        <div class="tool-block-body d-none">${escapeHtml(displayContent)}</div>
+    </div>`;
+    chatBody.appendChild(div);
+    scrollToBottom();
 }
 
 function appendSystemMessage(text) {
-    const container = document.getElementById('chatMessages');
+    if (!text) return;
+    const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'message system-msg';
-    div.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + escapeHtml(text);
-    container.appendChild(div);
-    scrollChat();
+    div.className = 'msg msg-system';
+    div.textContent = text;
+    chatBody.appendChild(div);
+    scrollToBottom();
 }
 
+// Thinking indicator — 3 bouncing dots
 function showThinking() {
     removeThinking();
-    const container = document.getElementById('chatMessages');
+    const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
-    div.className = 'thinking-indicator';
     div.id = 'thinkingIndicator';
-    div.innerHTML = '<span class="spinner-border"></span> Agent is working...';
-    container.appendChild(div);
-    scrollChat();
+    div.className = 'msg msg-assistant';
+    div.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+    chatBody.appendChild(div);
+    scrollToBottom();
 }
 
 function removeThinking() {
@@ -927,9 +1997,287 @@ function removeThinking() {
     if (el) el.remove();
 }
 
-function scrollChat() {
-    const c = document.getElementById('chatMessages');
-    c.scrollTop = c.scrollHeight;
+function getToolIcon(toolName) {
+    const icons = {
+        'Bash': 'bi-terminal', 'bash': 'bi-terminal', 'execute_command': 'bi-terminal',
+        'Read': 'bi-file-earmark-text', 'read_file': 'bi-file-earmark-text',
+        'Edit': 'bi-pencil-square', 'edit_file': 'bi-pencil-square',
+        'Write': 'bi-file-earmark-plus', 'write_file': 'bi-file-earmark-plus',
+        'Grep': 'bi-search', 'grep': 'bi-search', 'search_files': 'bi-search',
+        'Glob': 'bi-folder-check', 'glob': 'bi-folder-check', 'list_files': 'bi-folder-check',
+        'Agent': 'bi-robot', 'WebSearch': 'bi-globe', 'WebFetch': 'bi-cloud-download',
+    };
+    return icons[toolName] || 'bi-wrench';
+}
+
+function getToolTitle(toolName, input) {
+    if (!input || typeof input !== 'object') return toolName;
+    if ((toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') && (input.command || input.cmd)) {
+        const cmd = input.command || input.cmd;
+        return '$ ' + (cmd.length > 40 ? cmd.substring(0, 40) + '...' : cmd);
+    }
+    if ((toolName === 'Read' || toolName === 'read_file') && input.file_path) return input.file_path.split('/').pop();
+    if ((toolName === 'Edit' || toolName === 'edit_file') && input.file_path) return 'Edit: ' + input.file_path.split('/').pop();
+    if ((toolName === 'Write' || toolName === 'write_file') && input.file_path) return 'New: ' + input.file_path.split('/').pop();
+    if ((toolName === 'Grep' || toolName === 'grep' || toolName === 'search_files') && input.pattern) return 'Search: ' + (input.pattern.length > 30 ? input.pattern.substring(0, 30) + '...' : input.pattern);
+    if ((toolName === 'Glob' || toolName === 'glob' || toolName === 'list_files') && input.pattern) return 'Files: ' + input.pattern;
+    return toolName;
+}
+
+function wrapTables(el) {
+    el.querySelectorAll('table').forEach(table => {
+        if (table.parentElement.classList.contains('table-scroll-wrapper')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-scroll-wrapper';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+    });
+}
+
+function scrollToBottom() {
+    if (!autoScroll) return;
+    const wrapper = document.getElementById('chatBodyWrapper');
+    wrapper.scrollTop = wrapper.scrollHeight;
+}
+
+function handleKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+    }
+}
+
+// ============================================================
+// File Upload, Voice Input & Connectors
+// ============================================================
+
+function getFilePaths() {
+    return pendingFiles.filter(f => f.path && !f.uploading).map(f => f.path);
+}
+
+function triggerFileInput() {
+    document.getElementById('fileInput').click();
+}
+
+async function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    if (files.length) await uploadFiles(files);
+    event.target.value = '';
+}
+
+function handlePaste(event) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    const files = [];
+    for (const item of items) {
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file) files.push(file);
+        }
+    }
+    if (files.length) {
+        event.preventDefault();
+        uploadFiles(files);
+    }
+}
+
+async function uploadFiles(fileList) {
+    const formData = new FormData();
+    const tempIds = [];
+    for (const file of fileList) {
+        if (file.size > 10 * 1024 * 1024) { showToast(`${file.name} exceeds 10MB limit`, 'error'); continue; }
+        formData.append('files', file);
+        const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        tempIds.push(tempId);
+        pendingFiles.push({ id: tempId, filename: file.name, path: null, size: file.size, type: file.name.split('.').pop(), uploading: true });
+    }
+    renderFileChips();
+    if (tempIds.length === 0) return;
+    try {
+        const res = await fetch('/tools/api/ai-workspace/upload', {
+            method: 'POST', credentials: 'include', body: formData
+        });
+        const data = await res.json();
+        let idx = 0;
+        for (const result of (data.files || [])) {
+            const tempId = tempIds[idx++];
+            const pf = pendingFiles.find(f => f.id === tempId);
+            if (!pf) continue;
+            if (result.error) {
+                pendingFiles = pendingFiles.filter(f => f.id !== tempId);
+                showToast(`${result.filename}: ${result.error}`, 'error');
+            } else {
+                pf.path = result.path;
+                pf.uploading = false;
+                pf.filename = result.filename;
+                pf.size = result.size;
+            }
+        }
+    } catch (e) {
+        for (const id of tempIds) pendingFiles = pendingFiles.filter(f => f.id !== id);
+        showToast('Upload failed: ' + e.message, 'error');
+    }
+    renderFileChips();
+}
+
+function removeFile(fileId) {
+    pendingFiles = pendingFiles.filter(f => f.id !== fileId);
+    renderFileChips();
+}
+
+function renderFileChips() {
+    const container = document.getElementById('fileChips');
+    if (!pendingFiles.length) { container.innerHTML = ''; return; }
+    container.innerHTML = pendingFiles.map(f => `
+        <span class="file-chip ${f.uploading ? 'uploading' : ''}" title="${escapeHtml(f.filename)}">
+            ${f.uploading ? '<span class="chip-spinner"></span>' : '<i class="bi bi-file-earmark" style="font-size:0.7rem;"></i>'}
+            <span class="chip-name">${escapeHtml(f.filename)}</span>
+            <span class="chip-remove" onclick="removeFile('${f.id}')"><i class="bi bi-x"></i></span>
+        </span>
+    `).join('');
+}
+
+function clearPendingFiles() {
+    pendingFiles = [];
+    renderFileChips();
+}
+
+// --- Connector / URL Fetch ---
+let connectorType = null;
+
+function toggleConnectorDropdown() {
+    const dd = document.getElementById('connectorDropdown');
+    dd.classList.toggle('show');
+    if (dd.classList.contains('show')) {
+        const btn = document.getElementById('connectBtn');
+        const rect = btn.getBoundingClientRect();
+        dd.style.left = rect.left + 'px';
+        dd.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+        setTimeout(() => {
+            document.addEventListener('click', closeConnectorOnOutside, { once: true });
+        }, 0);
+    }
+}
+
+function closeConnectorOnOutside(e) {
+    const dd = document.getElementById('connectorDropdown');
+    if (!document.getElementById('connectBtn').contains(e.target)) dd.classList.remove('show');
+}
+
+function openUrlInput(type) {
+    connectorType = type;
+    document.getElementById('connectorDropdown').classList.remove('show');
+    const bar = document.getElementById('urlInputBar');
+    const input = document.getElementById('urlInput');
+    bar.classList.add('show');
+    const placeholders = { 'url': 'Paste any file URL...', 'gdrive': 'Paste Google Drive share link...', 'dropbox': 'Paste Dropbox share link...' };
+    input.placeholder = placeholders[type] || 'Paste URL...';
+    input.value = '';
+    input.focus();
+}
+
+function closeUrlInput() {
+    document.getElementById('urlInputBar').classList.remove('show');
+    document.getElementById('urlInput').value = '';
+    connectorType = null;
+}
+
+async function fetchUrlFile() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    const fetchBtn = document.getElementById('fetchUrlBtn');
+    fetchBtn.textContent = 'Fetching...';
+    fetchBtn.disabled = true;
+    const tempId = 'url_' + Date.now();
+    const urlFilename = url.split('/').pop().split('?')[0] || 'remote_file';
+    pendingFiles.push({ id: tempId, filename: urlFilename, path: null, size: 0, type: '?', uploading: true });
+    renderFileChips();
+    try {
+        const res = await fetch('/tools/api/ai-workspace/fetch-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ url })
+        });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Fetch failed'); }
+        const data = await res.json();
+        const pf = pendingFiles.find(f => f.id === tempId);
+        if (pf && data.file) {
+            pf.path = data.file.path; pf.uploading = false; pf.filename = data.file.filename; pf.size = data.file.size; pf.type = data.file.type;
+        }
+        closeUrlInput();
+    } catch (e) {
+        pendingFiles = pendingFiles.filter(f => f.id !== tempId);
+        showToast(e.message, 'error');
+    }
+    fetchBtn.textContent = 'Fetch';
+    fetchBtn.disabled = false;
+    renderFileChips();
+}
+
+// --- Voice Input ---
+function initVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    document.getElementById('micBtn').style.display = '';
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    let finalTranscript = '';
+    recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+            else interim += event.results[i][0].transcript;
+        }
+        const textarea = document.getElementById('promptInput');
+        textarea.value = finalTranscript + interim;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    };
+    recognition.onend = () => {
+        if (isRecording) {
+            document.getElementById('promptInput').value = finalTranscript;
+            finalTranscript = '';
+        }
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic';
+    };
+    recognition.onerror = (event) => {
+        if (event.error !== 'no-speech') console.error('Speech recognition error:', event.error);
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic';
+    };
+}
+
+function toggleVoiceRecording() {
+    if (!recognition) return;
+    if (isRecording) {
+        recognition.stop();
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic';
+    } else {
+        recognition.start();
+        isRecording = true;
+        document.getElementById('micBtn').classList.add('recording');
+        document.getElementById('micBtn').querySelector('i').className = 'bi bi-mic-fill';
+    }
+}
+
+// --- Drag & Drop ---
+function initDragDrop() {
+    const chatArea = document.querySelector('.claude-main');
+    if (!chatArea) return;
+    let dragCounter = 0;
+    const overlay = document.getElementById('dragOverlay');
+    chatArea.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; if (dragCounter === 1) overlay.classList.add('show'); });
+    chatArea.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; overlay.classList.remove('show'); } });
+    chatArea.addEventListener('dragover', (e) => e.preventDefault());
+    chatArea.addEventListener('drop', (e) => { e.preventDefault(); dragCounter = 0; overlay.classList.remove('show'); const files = Array.from(e.dataTransfer.files); if (files.length) uploadFiles(files); });
 }
 
 // ============================================================
@@ -943,20 +2291,17 @@ function startStatusPolling() {
 
 async function refreshStatus() {
     if (!sessionId) return;
-
     try {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/status`);
         if (!resp.ok) return;
         const status = await resp.json();
-
         if (status.error) return;
 
         document.getElementById('emptyPanel').style.display = 'none';
         document.getElementById('panelActions').style.display = '';
 
         // Branch
-        const branchSection = document.getElementById('branchSection');
-        branchSection.style.display = '';
+        document.getElementById('branchSection').style.display = '';
         const branchParts = (status.branch || '').split('/');
         document.getElementById('branchName').querySelector('span').textContent =
             branchParts.length > 2 ? branchParts.slice(0, 2).join('/') + '/...' : status.branch;
@@ -965,28 +2310,19 @@ async function refreshStatus() {
         const filesSection = document.getElementById('filesSection');
         const filesList = document.getElementById('changedFilesList');
         const files = status.changed_files || [];
-
         if (files.length > 0) {
             filesSection.style.display = '';
-            filesList.innerHTML = files.map(f => `
-                <div class="changed-file">
-                    <i class="bi bi-file-earmark-code"></i>
-                    <span>${escapeHtml(f)}</span>
-                </div>
-            `).join('');
+            filesList.innerHTML = files.map(f => `<div class="changed-file"><i class="bi bi-file-earmark-code"></i><span>${escapeHtml(f)}</span></div>`).join('');
         } else {
             filesSection.style.display = 'none';
             filesList.innerHTML = '';
         }
 
-        // Check for SKILL.md in changed files
         const skillFile = files.find(f => f.toUpperCase().includes('SKILL.MD'));
         if (skillFile) {
             document.getElementById('skillSection').style.display = '';
-            // We could fetch the content but for now just show the filename
             document.getElementById('skillPreviewCode').textContent = 'SKILL.md found in: ' + skillFile;
         }
-
     } catch(e) {
         console.error('Status refresh failed:', e);
     }
@@ -1000,41 +2336,59 @@ async function publishBuild() {
     if (!sessionId) return;
     if (isRunning) { showToast('Wait for the agent to finish', 'warning'); return; }
 
-    const publishBtn = document.getElementById('publishBtn');
-    publishBtn.disabled = true;
-    publishBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Publishing...';
+    // Open the publish-build modal so the user can provide tool metadata
+    document.getElementById('publishBuildName').value = '';
+    document.getElementById('publishBuildDisplayName').value = '';
+    document.getElementById('publishBuildDescription').value = '';
+    document.getElementById('publishBuildIcon').value = 'bi-gear';
+    new bootstrap.Modal(document.getElementById('publishBuildModal')).show();
+}
+
+async function confirmPublish() {
+    const name = document.getElementById('publishBuildName').value.trim();
+    if (!name) { showToast('Tool name is required', 'warning'); return; }
+
+    const metadata = {
+        name: name,
+        display_name: document.getElementById('publishBuildDisplayName').value.trim() || name,
+        description: document.getElementById('publishBuildDescription').value.trim(),
+        icon: document.getElementById('publishBuildIcon').value.trim() || 'bi-gear',
+    };
+
+    const confirmBtn = document.getElementById('confirmPublishBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Publishing...';
 
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/publish`, { method: 'POST' });
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(metadata),
+        });
         const data = await resp.json();
-
         if (resp.ok && data.success) {
+            // Close modal, reset panel, refresh sidebar
+            bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
             showToast('Build published successfully!', 'success');
             publishedSkillId = data.skill_id;
             sessionId = null;
             if (statusPollInterval) clearInterval(statusPollInterval);
             resetPanel();
             loadMyTools();
-
-            // If a skill was created, offer marketplace publish
-            if (data.skill_id) {
-                currentToolId = data.skill_id;
-                showPublishModal();
-            }
+            if (data.skill_id) { currentToolId = data.skill_id; showPublishModal(); }
         } else {
-            showToast(data.detail || data.error || 'Publish failed', 'danger');
+            // On failure: show error but keep build panel visible (don't resetPanel)
+            showToast(data.detail || data.error || 'Publish failed', 'error');
         }
     } catch(e) {
-        showToast('Error publishing build', 'danger');
+        showToast('Error publishing build', 'error');
     }
-
-    publishBtn.disabled = false;
-    publishBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Publish';
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Publish';
 }
 
 async function runTests() {
     if (!sessionId) return;
-
     const testBtn = document.getElementById('testBtn');
     testBtn.disabled = true;
     testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
@@ -1046,19 +2400,15 @@ async function runTests() {
             body: JSON.stringify({})
         });
         const data = await resp.json();
-
         const testSection = document.getElementById('testSection');
         const testResult = document.getElementById('testResult');
         testSection.style.display = '';
-
         const output = (data.stdout || '') + (data.stderr || '');
         testResult.textContent = output || '(no output)';
         testResult.className = 'test-result ' + (data.success ? 'pass' : 'fail');
-
     } catch(e) {
-        showToast('Error running tests', 'danger');
+        showToast('Error running tests', 'error');
     }
-
     testBtn.disabled = false;
     testBtn.innerHTML = '<i class="bi bi-play me-1"></i> Test';
 }
@@ -1066,7 +2416,6 @@ async function runTests() {
 async function discardBuild() {
     if (!sessionId) return;
     if (!confirm('Discard this build? All changes will be lost.')) return;
-
     try {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/discard`, { method: 'POST' });
         if (resp.ok) {
@@ -1075,16 +2424,15 @@ async function discardBuild() {
             if (statusPollInterval) clearInterval(statusPollInterval);
             if (ws) { ws.onclose = null; ws.close(); ws = null; }
             resetPanel();
-            setStatus('ready');
+            setStatus('idle');
         }
     } catch(e) {
-        showToast('Error discarding build', 'danger');
+        showToast('Error discarding build', 'error');
     }
 }
 
 async function stopAgent() {
     if (!sessionId) return;
-
     try {
         await fetch(`/tools/api/tool-builder/sessions/${sessionId}/stop`, { method: 'POST' });
         setRunningState(false);
@@ -1108,53 +2456,40 @@ function resetPanel() {
 
 function setRunningState(running) {
     isRunning = running;
-    document.getElementById('sendBtn').style.display = running ? 'none' : '';
-    document.getElementById('stopBtn').style.display = running ? '' : 'none';
-    document.getElementById('chatInput').disabled = running;
+    document.getElementById('sendBtn').disabled = running;
+    document.getElementById('stopBtn').style.display = running ? 'inline-flex' : 'none';
+    document.getElementById('promptInput').disabled = running;
 
-    const dot = document.getElementById('statusDot');
     if (running) {
-        dot.className = 'status-dot running';
-        document.getElementById('sessionStatus').textContent = 'Agent working...';
+        setStatus('running');
     }
 }
 
 function setStatus(status) {
-    const dot = document.getElementById('statusDot');
-    const statusEl = document.getElementById('sessionStatus');
-
-    dot.className = 'status-dot';
-    if (status === 'connected') {
-        dot.classList.add('connected');
-        statusEl.textContent = 'Ready';
-    } else if (status === 'running') {
-        dot.classList.add('running');
-        statusEl.textContent = 'Agent working...';
-    } else {
-        statusEl.textContent = status;
-    }
+    const badge = document.getElementById('statusBadge');
+    const text = document.getElementById('statusText');
+    badge.className = 'status-badge status-' + status;
+    const labels = {
+        idle: 'Ready', pending: 'Starting', running: 'Running',
+        connected: 'Connected', ready: 'Ready', completed: 'Completed',
+        failed: 'Failed', stopped: 'Stopped'
+    };
+    text.textContent = labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 // ============================================================
-// My Tools Sidebar (unchanged)
+// My Tools Sidebar
 // ============================================================
 
 async function loadMyTools() {
     try {
         const resp = await fetch('/tools/api/tool-builder/my-tools');
         const data = await resp.json();
-
         const list = document.getElementById('toolsList');
         const empty = document.getElementById('emptyTools');
-
-        if (!data.tools || data.tools.length === 0) {
-            empty.style.display = '';
-            return;
-        }
-
+        if (!data.tools || data.tools.length === 0) { empty.style.display = ''; return; }
         empty.style.display = 'none';
         list.querySelectorAll('.tool-item').forEach(el => el.remove());
-
         data.tools.forEach(tool => {
             const div = document.createElement('div');
             div.className = `tool-item ${tool.id === currentToolId ? 'active' : ''}`;
@@ -1195,20 +2530,15 @@ async function loadToolDetail(toolId) {
             }
             document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
         }
-    } catch(e) {
-        console.error('Failed to load tool detail:', e);
-    }
+    } catch(e) { console.error('Failed to load tool detail:', e); }
 }
 
 async function toggleTool(toolId) {
     try {
         const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}/toggle`, { method: 'PUT' });
         const data = await resp.json();
-        if (resp.ok) {
-            showToast(data.message, 'success');
-            loadMyTools();
-        }
-    } catch(e) { showToast('Error toggling tool', 'danger'); }
+        if (resp.ok) { showToast(data.message, 'success'); loadMyTools(); }
+    } catch(e) { showToast('Error toggling tool', 'error'); }
 }
 
 async function deleteTool(toolId) {
@@ -1220,13 +2550,13 @@ async function deleteTool(toolId) {
             showToast('Tool deleted', 'success');
             loadMyTools();
         }
-    } catch(e) { showToast('Error deleting tool', 'danger'); }
+    } catch(e) { showToast('Error deleting tool', 'error'); }
 }
 
 function startNewTool() {
     currentToolId = null;
     document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
-    document.getElementById('chatInput').focus();
+    document.getElementById('promptInput').focus();
 }
 
 // ============================================================
@@ -1256,9 +2586,9 @@ async function publishToolToMarketplace() {
             bootstrap.Modal.getInstance(document.getElementById('publishModal')).hide();
             loadMyTools();
         } else {
-            showToast(data.detail || 'Failed to publish', 'danger');
+            showToast(data.detail || 'Failed to publish', 'error');
         }
-    } catch(e) { showToast('Error publishing tool', 'danger'); }
+    } catch(e) { showToast('Error publishing tool', 'error'); }
 }
 
 // ============================================================
@@ -1272,47 +2602,53 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function renderMarkdown(text) {
-    if (!text) return '';
-    try {
-        if (typeof marked !== 'undefined') {
-            return marked.parse(text);
-        }
-    } catch(e) {}
-    // Fallback
-    let html = escapeHtml(text);
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\n/g, '<br>');
-    return html;
-}
-
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer') || document.body;
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-bg-${type} border-0 show`;
-    toast.setAttribute('role', 'alert');
-    toast.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;min-width:250px;';
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const id = 'toast_' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning';
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${escapeHtml(message)}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
         </div>
-    `;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+    `);
+    const el = document.getElementById(id);
+    const toast = new bootstrap.Toast(el, { delay: 3000 });
+    toast.show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
 }
 
-// Auto-resize textarea
-document.getElementById('chatInput').addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-});
-
+// ============================================================
 // Init
+// ============================================================
+
 document.addEventListener('DOMContentLoaded', () => {
     loadMyTools();
+    loadSettings();
+    initVoiceRecognition();
+    initDragDrop();
+
+    // Configure marked
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({ breaks: true, gfm: true, highlight: null });
+    }
+
+    // Smart auto-scroll: pause when user scrolls up
+    const wrapper = document.getElementById('chatBodyWrapper');
+    wrapper.addEventListener('scroll', () => {
+        const atBottom = wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight < 50;
+        autoScroll = atBottom;
+    });
+
+    // Auto-resize textarea
+    const textarea = document.getElementById('promptInput');
+    textarea.addEventListener('input', () => {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    });
 });
 </script>
 {% endblock %}
