@@ -588,7 +588,7 @@ class ToolBuilderManager:
             "log": status.get("log", ""),
         }
 
-    async def publish(self, user_id: int) -> dict:
+    async def publish(self, user_id: int, metadata: Optional[Dict] = None) -> dict:
         """Merge worktree branch into main, extract skill, create ChatHubAgentSkill record."""
         session = self._sessions.get(user_id)
         if not session or not session.worktree:
@@ -613,10 +613,12 @@ class ToolBuilderManager:
         if not result.success:
             return {"error": result.message}
 
-        # Create skill record if SKILL.md was found
+        # Create skill record: try SKILL.md first, fall back to user-provided metadata
         skill_id = None
         if skill_md_content:
             skill_id = self._create_skill_from_md(user_id, skill_md_content)
+        if not skill_id and metadata:
+            skill_id = self._create_skill_from_metadata(user_id, metadata)
 
         # Clean up session
         if user_id in self._sessions:
@@ -685,6 +687,58 @@ class ToolBuilderManager:
                 return skill.id
         except Exception as e:
             logger.error(f"Failed to create skill from SKILL.md: {e}")
+            db.rollback()
+            return None
+        finally:
+            db.close()
+
+    def _create_skill_from_metadata(self, user_id: int, metadata: Dict) -> Optional[int]:
+        """Create a ChatHubAgentSkill record from user-provided form metadata."""
+        from app.database import SessionLocal, ChatHubAgentSkill
+
+        name = metadata.get("name", "").strip()
+        if not name:
+            return None
+
+        display_name = metadata.get("display_name", "") or name
+        description = metadata.get("description", "")
+        icon = metadata.get("icon", "bi-gear") or "bi-gear"
+        gradient_start = metadata.get("gradient_start", "#6366f1")
+        gradient_end = metadata.get("gradient_end", "#8b5cf6")
+
+        db = SessionLocal()
+        try:
+            existing = db.query(ChatHubAgentSkill).filter(
+                ChatHubAgentSkill.user_id == user_id,
+                ChatHubAgentSkill.name == name
+            ).first()
+
+            if existing:
+                existing.display_name = display_name
+                existing.description = description
+                existing.icon = icon
+                existing.updated_at = datetime.utcnow()
+                db.commit()
+                return existing.id
+            else:
+                skill = ChatHubAgentSkill(
+                    user_id=user_id,
+                    name=name,
+                    display_name=display_name,
+                    description=description,
+                    icon=icon,
+                    gradient_start=gradient_start,
+                    gradient_end=gradient_end,
+                    skill_md_content="",
+                    is_active=True,
+                    tier="managed"
+                )
+                db.add(skill)
+                db.commit()
+                db.refresh(skill)
+                return skill.id
+        except Exception as e:
+            logger.error(f"Failed to create skill from metadata: {e}")
             db.rollback()
             return None
         finally:
