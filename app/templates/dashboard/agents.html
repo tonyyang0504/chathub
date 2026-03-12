@@ -868,6 +868,10 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-grid me-2"></i>Your Agents</h3>
             <div class="d-flex align-items-center gap-2">
+                <div class="input-group" style="width: 250px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="agentSearchInput" placeholder="Search agents..." onkeyup="renderAgents()">
+                </div>
                 <input type="hidden" id="hubFilterValue" value="">
                 <div class="dropdown instance-dropdown">
                     <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="hubFilterDropdown" data-bs-toggle="dropdown">
@@ -1415,14 +1419,24 @@ function updateActivityAgentDropdown() {
 
 function renderAgents() {
     const container = document.getElementById('agentsContainer');
-    document.getElementById('agentCount').textContent = `${agents.length} agents`;
+    
+    const searchInput = document.getElementById('agentSearchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    
+    const filteredAgents = agents.filter(agent => 
+        (agent.name && agent.name.toLowerCase().includes(searchTerm)) || 
+        (agent.agent_type && agent.agent_type.toLowerCase().includes(searchTerm)) ||
+        (agent.hub_name && agent.hub_name.toLowerCase().includes(searchTerm))
+    );
 
-    if (agents.length === 0) {
+    document.getElementById('agentCount').textContent = `${filteredAgents.length} agents`;
+
+    if (filteredAgents.length === 0) {
         container.innerHTML = `
             <div class="empty-state py-4">
                 <i class="bi bi-robot" style="font-size: 3rem;"></i>
                 <h5 class="mt-3">No Agents Found</h5>
-                <p class="text-muted">Create your first AI agent to get started</p>
+                <p class="text-muted">No agents match your criteria</p>
                 <button class="btn btn-theme btn-sm" onclick="openAgentModal()">
                     <i class="bi bi-plus-lg me-1"></i>Create Agent
                 </button>
@@ -1432,7 +1446,7 @@ function renderAgents() {
     }
 
     let html = '';
-    agents.forEach(agent => {
+    filteredAgents.forEach(agent => {
         const statusClass = `status-${agent.status || 'idle'}`;
         const cardClass = agent.status === 'running' ? 'running' : agent.status === 'error' ? 'error' : '';
         const colorClass = getAgentColor(agent.id);
