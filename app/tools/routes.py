@@ -1278,6 +1278,31 @@ async def message_routing_page(
     )
 
 
+@router.get("/group-creation", response_class=HTMLResponse)
+async def group_creation_page(
+    request: Request,
+    hub_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Group Creation tool page - Create groups and invite users."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "error": "Please log in to access this page"}
+        )
+
+    return templates.TemplateResponse(
+        "dashboard/tools/group_creation.html",
+        {
+            "request": request,
+            "user": user,
+            "hub_id": hub_id,
+            "page_title": "Group Creator"
+        }
+    )
+
+
 @router.get("/scripted-conversations", response_class=HTMLResponse)
 async def scripted_conversations_page(
     request: Request,

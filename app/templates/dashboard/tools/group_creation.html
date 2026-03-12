@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Group Creator - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+    color: #333;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.tool-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.tool-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 600px;
+}
+
+.creation-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.creation-card h3 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+.btn-theme {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    border: none;
+    color: #333;
+    font-weight: 600;
+}
+
+.btn-theme:hover {
+    box-shadow: 0 4px 12px rgba(255, 154, 158, 0.4);
+    color: #333;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="tool-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-people-fill me-3"></i>Group Creator</h1>
+                <p>Create groups and invite users automatically using your AI bots across connected messaging platforms.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-person-plus-fill" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="creation-card">
+                <h3>Create a New Group</h3>
+                <form id="groupCreationForm">
+                    <div class="mb-3">
+                        <label for="groupName" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="groupName" placeholder="Enter group name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="platform" class="form-label">Platform</label>
+                        <select class="form-select" id="platform" required>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="telegram">Telegram</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="invitees" class="form-label">Invite Users</label>
+                        <textarea class="form-control" id="invitees" rows="3" placeholder="Enter phone numbers or usernames, separated by commas..."></textarea>
+                        <div class="form-text">Example: +1234567890, +0987654321</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="botSelect" class="form-label">Select Bot to Create Group</label>
+                        <select class="form-select" id="botSelect" required>
+                            <!-- Options populated via JS -->
+                            <option value="">Loading bots...</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn btn-theme w-100 mt-3" onclick="createGroup()">
+                        <i class="bi bi-magic me-2"></i> Create Group & Invite
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="creation-card">
+                <h3><i class="bi bi-activity me-2"></i>Recent Creations</h3>
+                <div id="activityLog" class="text-center py-4 text-muted">
+                    <p>No recent group creations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadBots();
+});
+
+async function loadBots() {
+    try {
+        const response = await fetch('/api/bots');
+        if (response.ok) {
+            const bots = await response.json();
+            const botSelect = document.getElementById('botSelect');
+            botSelect.innerHTML = '';
+            
+            if (bots.length === 0) {
+                botSelect.innerHTML = '<option value="">No bots available</option>';
+                return;
+            }
+            
+            bots.forEach(bot => {
+                botSelect.innerHTML += `<option value="${bot.id}">${bot.name}</option>`;
+            });
+        }
+    } catch (e) {
+        console.error('Failed to load bots', e);
+        document.getElementById('botSelect').innerHTML = '<option value="">Error loading bots</option>';
+    }
+}
+
+function createGroup() {
+    const groupName = document.getElementById('groupName').value;
+    const platform = document.getElementById('platform').value;
+    const invitees = document.getElementById('invitees').value;
+    const botId = document.getElementById('botSelect').value;
+
+    if (!groupName || !botId) {
+        alert("Group Name and Bot selection are required.");
+        return;
+    }
+
+    // In a real implementation, this would make an API call to the backend
+    // to instruct the specific bot to create the group via the platform API.
+    alert(`Simulation: Command sent to Bot ID ${botId} to create ${platform} group "${groupName}" and invite: ${invitees || 'none'}`);
+    
+    // Update activity log simulation
+    const activityLog = document.getElementById('activityLog');
+    activityLog.classList.remove('text-center', 'text-muted');
+    
+    const time = new Date().toLocaleTimeString();
+    activityLog.innerHTML = `
+        <div class="border-bottom py-2">
+            <div class="d-flex justify-content-between">
+                <strong>${groupName}</strong>
+                <span class="badge bg-success">Success</span>
+            </div>
+            <div class="small text-muted">
+                Created on ${platform} | ${time}
+            </div>
+        </div>
+    ` + activityLog.innerHTML;
+    
+    document.getElementById('groupCreationForm').reset();
+}
+</script>
+{% endblock %}
