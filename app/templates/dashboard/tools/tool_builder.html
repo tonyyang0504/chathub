@@ -13,6 +13,7 @@
 .provider-claude { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #e8956a); }
 .provider-codex { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #1fd69e); }
 .provider-gemini { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #669df6); }
+.provider-chathub { --provider-color: #7c3aed; --provider-color-rgb: 124,58,237; --provider-gradient: linear-gradient(135deg, #7c3aed, #a78bfa); }
 
 .builder-layout {
     display: grid;
@@ -403,6 +404,9 @@
                 <button class="provider-pill" data-provider="gemini" onclick="selectProvider('gemini')">
                     <span class="dot"></span> Gemini
                 </button>
+                <button class="provider-pill" data-provider="chathub" onclick="selectProvider('chathub')">
+                    <span class="dot"></span> ChatHub
+                </button>
             </div>
             <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;" id="sessionStatus">Ready</span>
         </div>
@@ -556,6 +560,7 @@ function selectProvider(provider) {
         claude: { color: '#da6a46', rgb: '218,106,70' },
         codex: { color: '#10a37f', rgb: '16,163,127' },
         gemini: { color: '#4285f4', rgb: '66,133,244' },
+        chathub: { color: '#7c3aed', rgb: '124,58,237' },
     };
     const t = themes[provider] || themes.claude;
     root.style.setProperty('--provider-color', t.color);

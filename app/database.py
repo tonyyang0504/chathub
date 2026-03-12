@@ -715,6 +715,9 @@ class AiWorkspaceSettings(Base):
     codex_default_model = Column(String(100), default="gpt-5.3-codex")
     gemini_default_model = Column(String(100), default="auto-gemini-3")
     default_provider = Column(String(20), default="claude")
+    # ChatHub CLI provider settings
+    chathub_ai_provider = Column(String(50), default="openai")
+    chathub_default_model = Column(String(100), default="gpt-4o")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1619,6 +1622,26 @@ def run_migrations():
                     print("Added worktree_branch column to claude_code_sessions table")
                 except Exception as e:
                     print(f"Could not add worktree_branch column: {e}")
+
+        # Add ChatHub CLI provider columns to claude_code_settings
+        if 'claude_code_settings' in existing_tables:
+            existing_columns = [col['name'] for col in inspector.get_columns('claude_code_settings')]
+
+            if 'chathub_ai_provider' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE claude_code_settings ADD COLUMN chathub_ai_provider VARCHAR(50) DEFAULT 'openai'"))
+                    conn.commit()
+                    print("Added chathub_ai_provider column to claude_code_settings table")
+                except Exception as e:
+                    print(f"Could not add chathub_ai_provider column: {e}")
+
+            if 'chathub_default_model' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE claude_code_settings ADD COLUMN chathub_default_model VARCHAR(100) DEFAULT 'gpt-4o'"))
+                    conn.commit()
+                    print("Added chathub_default_model column to claude_code_settings table")
+                except Exception as e:
+                    print(f"Could not add chathub_default_model column: {e}")
 
 
 # Run migrations on import

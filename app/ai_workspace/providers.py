@@ -1,5 +1,5 @@
 """
-CLI Provider Adapters for Claude Code, OpenAI Codex, and Google Gemini CLI.
+CLI Provider Adapters for Claude Code, OpenAI Codex, Google Gemini CLI, and ChatHub CLI.
 
 Each provider knows how to:
 - Build the CLI command for a prompt
@@ -350,11 +350,66 @@ class GeminiProvider(CLIProvider):
         return None
 
 
+class ChatHubProvider(CLIProvider):
+    """ChatHub CLI adapter — invokes ChatHub Agent in-process via wrapper script."""
+    name = "chathub"
+    display_name = "ChatHub CLI"
+    brand_color = "#7c3aed"
+
+    def build_command(self, prompt, session_uuid, is_first, model=None, system_context=None):
+        cli_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "bin", "chathub-cli")
+        cli_path = os.path.normpath(cli_path)
+        cmd = [
+            "python3", cli_path,
+            "-p", prompt,
+            "--auto-approve",
+        ]
+        if model:
+            cmd.extend(["--model", model])
+        if session_uuid:
+            cmd.extend(["--session-id", session_uuid])
+        if not is_first:
+            cmd.append("--resume")
+        return cmd
+
+    def prepare_session(self, cwd, system_context):
+        path = os.path.join(cwd, "CHATHUB.md")
+        if os.path.exists(path):
+            os.rename(path, path + ".chathub_bak")
+        with open(path, "w") as f:
+            f.write(system_context)
+
+    def cleanup_session(self, cwd):
+        path = os.path.join(cwd, "CHATHUB.md")
+        bak = path + ".chathub_bak"
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            if os.path.exists(bak):
+                os.rename(bak, path)
+        except OSError:
+            pass
+
+    def build_env(self, base_env, api_key, **kwargs):
+        env = dict(base_env)
+        if api_key:
+            env["CHATHUB_API_KEY"] = api_key
+        # Pass through the AI provider name so the CLI knows which backend to use
+        ai_provider = kwargs.get("ai_provider", "openai")
+        env["CHATHUB_AI_PROVIDER"] = ai_provider
+        return env
+
+    def normalize_event(self, raw):
+        # Events are already normalized by the wrapper script to Claude format
+        return raw
+
+
 # Provider registry
 PROVIDERS = {
     "claude": ClaudeProvider(),
     "codex": CodexProvider(),
     "gemini": GeminiProvider(),
+    "chathub": ChatHubProvider(),
 }
 
 

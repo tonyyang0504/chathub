@@ -55,7 +55,7 @@ class SendMessageRequest(BaseModel):
 
 
 class CreateSessionRequest(BaseModel):
-    provider: Optional[str] = None  # claude, codex, gemini — defaults to user's default_provider
+    provider: Optional[str] = None  # claude, codex, gemini, chathub — defaults to user's default_provider
 
 
 class RunTestRequest(BaseModel):
@@ -75,7 +75,7 @@ def _get_ai_workspace_settings(user, db: Session, provider: str = None):
     ).first()
 
     if not settings:
-        return None, None, None, None, None
+        return None, None, None, None, None, None
 
     # Determine provider
     selected_provider = provider or settings.default_provider or "claude"
@@ -85,6 +85,7 @@ def _get_ai_workspace_settings(user, db: Session, provider: str = None):
     model = None
     auth_method = settings.auth_method or "api_key"
     oauth_token = None
+    ai_provider = None  # AI backend for ChatHub provider (openai/anthropic/google)
 
     if selected_provider == "claude":
         if auth_method == "membership":
@@ -101,8 +102,25 @@ def _get_ai_workspace_settings(user, db: Session, provider: str = None):
         if settings.gemini_api_key_encrypted:
             api_key = decrypt_string(settings.gemini_api_key_encrypted)
         model = settings.gemini_default_model or "auto-gemini-3"
+    elif selected_provider == "chathub":
+        # ChatHub Agent reuses whichever AI provider the user has configured
+        from app.database import ChatHubAgentSettings
+        agent_settings = db.query(ChatHubAgentSettings).filter(
+            ChatHubAgentSettings.user_id == user.id
+        ).first()
+        if agent_settings:
+            ai_provider = agent_settings.ai_provider or "openai"
+            if agent_settings.api_key_encrypted:
+                api_key = decrypt_string(agent_settings.api_key_encrypted)
+            model = settings.chathub_default_model if hasattr(settings, 'chathub_default_model') and settings.chathub_default_model else (agent_settings.default_model or "gpt-4o")
+        else:
+            # Fall back to the user's default AI workspace key
+            ai_provider = "openai"
+            if settings.openai_api_key_encrypted:
+                api_key = decrypt_string(settings.openai_api_key_encrypted)
+            model = settings.chathub_default_model if hasattr(settings, 'chathub_default_model') and settings.chathub_default_model else "gpt-4o"
 
-    return selected_provider, api_key, model, auth_method, oauth_token
+    return selected_provider, api_key, model, auth_method, oauth_token, ai_provider
 
 
 # ============================================================================
@@ -119,7 +137,7 @@ async def create_session(request: Request, data: CreateSessionRequest = None, db
     # Handle both JSON body and empty POST
     provider_requested = data.provider if data else None
 
-    provider, api_key, model, auth_method, oauth_token = _get_ai_workspace_settings(
+    provider, api_key, model, auth_method, oauth_token, ai_provider = _get_ai_workspace_settings(
         user, db, provider_requested
     )
 
@@ -138,6 +156,7 @@ async def create_session(request: Request, data: CreateSessionRequest = None, db
         oauth_token=oauth_token,
         user_email=getattr(user, 'email', None),
         user_name=getattr(user, 'username', None) or getattr(user, 'name', None),
+        ai_provider=ai_provider,
     )
 
     return {

@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""
+ChatHub CLI — Thin wrapper that invokes ChatHub Agent in-process
+and outputs normalized JSONL (Claude stream-json format) to stdout.
+
+Used by the Tool Builder to spawn ChatHub Agent as a CLI subprocess.
+"""
+
+import argparse
+import asyncio
+import json
+import os
+import sys
+
+# Add project root to path so we can import app modules
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
+
+
+def emit(event: dict):
+    """Write a single JSONL event to stdout."""
+    sys.stdout.write(json.dumps(event) + "\n")
+    sys.stdout.flush()
+
+
+def map_event(evt: dict) -> dict | None:
+    """Map ChatHub Agent event to Claude stream-json format."""
+    evt_type = evt.get("type", "")
+
+    if evt_type == "assistant_text":
+        return {
+            "type": "content_block_delta",
+            "delta": {"type": "text_delta", "text": evt.get("content", "")}
+        }
+
+    if evt_type == "tool_call":
+        return {
+            "type": "tool_use",
+            "tool": {"name": evt.get("tool_name", evt.get("name", "tool"))},
+            "input": evt.get("arguments", evt.get("input", {}))
+        }
+
+    if evt_type == "tool_result":
+        content = evt.get("content", evt.get("output", ""))
+        if isinstance(content, dict):
+            content = json.dumps(content)
+        return {
+            "type": "tool_result",
+            "content": content
+        }
+
+    if evt_type == "turn_complete":
+        return {
+            "type": "result",
+            "result": ""
+        }
+
+    if evt_type == "error":
+        return {
+            "type": "error",
+            "error": {"message": evt.get("content", evt.get("message", str(evt)))}
+        }
+
+    if evt_type == "approval_request":
+        # Auto-approve — don't emit to stdout
+        return None
+
+    if evt_type == "session_end":
+        return None
+
+    return None
+
+
+async def broadcast_fn(event: dict):
+    """Custom broadcast function that writes JSONL to stdout."""
+    mapped = map_event(event)
+    if mapped is not None:
+        emit(mapped)
+
+
+async def run_agent(args):
+    """Start a ChatHub Agent session and run the prompt."""
+    # Import app modules
+    from app.ai.factory import get_ai_provider
+    from app.chathub_agent.tool_executor import ToolExecutor
+    from app.chathub_agent.agent_loop import AgentLoop
+
+    provider_name = os.environ.get("CHATHUB_AI_PROVIDER") or args.provider or "openai"
+    api_key = args.api_key or os.environ.get("CHATHUB_API_KEY", "")
+    model = args.model or "gpt-4o"
+    workspace = args.workspace or os.getcwd()
+
+    if not api_key:
+        emit({"type": "error", "error": {"message": "No API key provided. Use --api-key or set CHATHUB_API_KEY."}})
+        sys.exit(1)
+
+    # Create AI provider
+    ai_provider = get_ai_provider(
+        provider_name=provider_name,
+        api_key=api_key,
+        model=model,
+    )
+
+    # Create tool executor
+    tool_executor = ToolExecutor(workspace_root=workspace)
+
+    # Agent config — auto-approve everything in Tool Builder sandbox
+    agent_config = {
+        "approval_mode": "auto_approve_all",
+        "auto_commit": False,
+        "auto_backup_db": False,
+        "ai_provider": provider_name,
+        "model": model,
+    }
+
+    # Create agent loop
+    agent_loop = AgentLoop(
+        session_id=args.session_id or "cli-session",
+        provider=ai_provider,
+        tool_executor=tool_executor,
+        agent_config=agent_config,
+        broadcast_fn=broadcast_fn,
+    )
+
+    # Run the prompt
+    await agent_loop.run(args.prompt)
+
+    # If --resume or stdin follow-up mode, read from stdin
+    if args.resume or not sys.stdin.isatty():
+        try:
+            for line in sys.stdin:
+                line = line.strip()
+                if not line:
+                    continue
+                agent_loop.is_waiting = True
+                await agent_loop.run(line)
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="chathub-cli",
+        description="ChatHub Agent CLI — runs ChatHub Agent and outputs Claude stream-json JSONL"
+    )
+    parser.add_argument("--prompt", "-p", required=True, help="The prompt to send to the agent")
+    parser.add_argument("--model", "-m", default=None, help="AI model to use (default: gpt-4o)")
+    parser.add_argument("--api-key", default=None, help="API key for the AI provider")
+    parser.add_argument("--provider", default="openai", help="AI backend: openai, anthropic, google (default: openai)")
+    parser.add_argument("--workspace", "-w", default=None, help="Working directory for the agent")
+    parser.add_argument("--session-id", default=None, help="Session identifier")
+    parser.add_argument("--auto-approve", action="store_true", default=True, help="Auto-approve all tool calls (default: true)")
+    parser.add_argument("--resume", action="store_true", default=False, help="Read follow-up prompts from stdin")
+
+    args = parser.parse_args()
+    asyncio.run(run_agent(args))
+
+
+if __name__ == "__main__":
+    main()

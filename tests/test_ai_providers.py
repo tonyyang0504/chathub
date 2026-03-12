@@ -148,7 +148,7 @@ class TestGoogleProvider:
 
         provider = GoogleProvider(api_key="test-key")
         assert provider.provider_name == "google"
-        assert provider.model == "gemini-1.5-flash"
+        assert provider.model == "gemini-2.0-flash"
 
 
 class TestDeepSeekProvider:

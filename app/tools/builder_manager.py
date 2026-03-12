@@ -79,7 +79,8 @@ class ToolBuilderSession:
                  api_key: str, model: Optional[str] = None,
                  provider: str = "claude", auth_method: str = "api_key",
                  oauth_token: Optional[str] = None,
-                 user_email: Optional[str] = None, user_name: Optional[str] = None):
+                 user_email: Optional[str] = None, user_name: Optional[str] = None,
+                 ai_provider: Optional[str] = None):
         self.session_id = session_id  # UUID string
         self.db_session_id = db_session_id  # DB AiWorkspaceSession.id
         self.user_id = user_id
@@ -90,6 +91,7 @@ class ToolBuilderSession:
         self._oauth_token = oauth_token
         self._user_email = user_email
         self._user_name = user_name
+        self._ai_provider = ai_provider  # AI backend for ChatHub provider (openai/anthropic/google)
         self.provider = provider
 
         # Load CLI provider adapter
@@ -141,7 +143,8 @@ class ToolBuilderManager:
         auth_method: str = "api_key",
         oauth_token: Optional[str] = None,
         user_email: Optional[str] = None,
-        user_name: Optional[str] = None
+        user_name: Optional[str] = None,
+        ai_provider: Optional[str] = None,
     ) -> ToolBuilderSession:
         """Create a new tool builder session with a worktree sandbox."""
         # Stop existing session if any
@@ -184,6 +187,7 @@ class ToolBuilderManager:
             oauth_token=oauth_token,
             user_email=user_email,
             user_name=user_name,
+            ai_provider=ai_provider,
         )
         session.worktree = worktree_info
 
@@ -264,7 +268,8 @@ class ToolBuilderManager:
             base_env,
             api_key=session._api_key,
             auth_method=session._auth_method,
-            oauth_token=session._oauth_token
+            oauth_token=session._oauth_token,
+            ai_provider=session._ai_provider,
         )
 
         # Add API token for server access
