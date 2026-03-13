@@ -4,6 +4,7 @@ Creates, inspects, merges, and cleans up git worktrees for Tool Builder sandbox 
 """
 
 import logging
+import shutil
 import subprocess
 import time
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ class WorktreeInfo:
     user_id: int
     path: Path
     branch: str
+    base_commit: str = ""  # SHA the worktree branched from
 
 
 @dataclass
@@ -68,11 +70,19 @@ class WorktreeManager:
         if result.returncode != 0:
             raise RuntimeError(f"Failed to create worktree: {result.stderr.strip()}")
 
+        # Record the commit SHA the worktree branched from
+        head_result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
+        base_commit = head_result.stdout.strip() if head_result.returncode == 0 else ""
+
         info = WorktreeInfo(
             session_id=session_id,
             user_id=user_id,
             path=worktree_path,
-            branch=branch
+            branch=branch,
+            base_commit=base_commit
         )
         self._active[user_id] = info
         logger.info(f"Created worktree at {worktree_path} on branch {branch}")
@@ -83,22 +93,23 @@ class WorktreeManager:
         return self._active.get(user_id)
 
     def get_status(self, session_id: str) -> dict:
-        """Get worktree diff stats and log relative to main."""
+        """Get worktree diff stats and log relative to base commit."""
         info = self._find_by_session(session_id)
         if not info:
             return {"error": "Worktree not found"}
 
         wt = str(info.path)
+        base = info.base_commit or "HEAD~1"
 
         # Get diff stat
         diff_stat = subprocess.run(
-            ["git", "diff", "--stat", "main..HEAD"],
+            ["git", "diff", "--stat", f"{base}..HEAD"],
             capture_output=True, text=True, cwd=wt
         )
 
         # Get log
         log = subprocess.run(
-            ["git", "log", "main..HEAD", "--oneline"],
+            ["git", "log", f"{base}..HEAD", "--oneline"],
             capture_output=True, text=True, cwd=wt
         )
 
@@ -111,18 +122,39 @@ class WorktreeManager:
         }
 
     def get_changed_files(self, session_id: str) -> list[str]:
-        """Get list of files changed relative to main."""
+        """Get list of files changed relative to base commit (committed + uncommitted + untracked)."""
         info = self._find_by_session(session_id)
         if not info:
             return []
 
-        result = subprocess.run(
-            ["git", "diff", "--name-only", "main..HEAD"],
-            capture_output=True, text=True, cwd=str(info.path)
+        wt = str(info.path)
+        base = info.base_commit or "HEAD~1"
+
+        # Committed changes vs base commit
+        committed = subprocess.run(
+            ["git", "diff", "--name-only", f"{base}..HEAD"],
+            capture_output=True, text=True, cwd=wt
         )
-        if result.returncode != 0:
-            return []
-        return [f for f in result.stdout.strip().split("\n") if f]
+        # Uncommitted changes (working tree)
+        uncommitted = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            capture_output=True, text=True, cwd=wt
+        )
+        # Staged but not yet committed
+        staged = subprocess.run(
+            ["git", "diff", "--name-only", "--cached"],
+            capture_output=True, text=True, cwd=wt
+        )
+        # Untracked new files (never git add'ed)
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            capture_output=True, text=True, cwd=wt
+        )
+        files = set()
+        for r in [committed, uncommitted, staged, untracked]:
+            if r.returncode == 0:
+                files.update(f for f in r.stdout.strip().split("\n") if f)
+        return sorted(files)
 
     def get_file_diff(self, session_id: str, file_path: str = None) -> str:
         """Get the actual diff content. If file_path given, diff for that file only."""
@@ -130,7 +162,8 @@ class WorktreeManager:
         if not info:
             return ""
 
-        cmd = ["git", "diff", "main..HEAD"]
+        base = info.base_commit or "HEAD~1"
+        cmd = ["git", "diff", f"{base}..HEAD"]
         if file_path:
             cmd.extend(["--", file_path])
 
@@ -140,7 +173,11 @@ class WorktreeManager:
         return result.stdout.strip() if result.returncode == 0 else ""
 
     def merge(self, session_id: str) -> MergeResult:
-        """Merge worktree branch into main and clean up."""
+        """Apply worktree changes into main working tree and commit.
+
+        Copies files directly from the worktree directory instead of using
+        git checkout/merge, which avoids all pathspec and branch resolution issues.
+        """
         info = self._find_by_session(session_id)
         if not info:
             return MergeResult(success=False, message="Worktree not found")
@@ -153,19 +190,38 @@ class WorktreeManager:
             self.discard(session_id)
             return MergeResult(success=False, message="No changes to merge")
 
-        # Merge from main repo
-        result = subprocess.run(
-            ["git", "merge", branch, "--no-edit"],
+        # Copy each changed file from worktree to PROJECT_ROOT
+        copied = []
+        for rel_path in changed:
+            src = info.path / rel_path
+            dst = PROJECT_ROOT / rel_path
+            try:
+                if src.exists():
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(str(src), str(dst))
+                    copied.append(rel_path)
+                elif dst.exists():
+                    dst.unlink()  # file deleted in worktree
+                    copied.append(rel_path)
+            except Exception as e:
+                logger.warning(f"Failed to copy {rel_path}: {e}")
+
+        if not copied:
+            self.discard(session_id)
+            return MergeResult(success=False, message="No files could be applied")
+
+        # Stage and commit the applied changes
+        subprocess.run(
+            ["git", "add", "--"] + copied,
             capture_output=True, text=True, cwd=str(PROJECT_ROOT)
         )
-        if result.returncode != 0:
-            return MergeResult(
-                success=False,
-                message=f"Merge failed: {result.stderr.strip()}",
-                merged_branch=branch
-            )
+        commit_msg = f"Tool Builder: publish {session_id[:8]}"
+        subprocess.run(
+            ["git", "commit", "-m", commit_msg],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
 
-        # Get merged commit hash
+        # Get commit hash
         head = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             capture_output=True, text=True, cwd=str(PROJECT_ROOT)
@@ -177,7 +233,7 @@ class WorktreeManager:
 
         return MergeResult(
             success=True,
-            message="Branch merged successfully",
+            message="Changes published successfully",
             merged_branch=branch,
             commit_hash=commit_hash
         )

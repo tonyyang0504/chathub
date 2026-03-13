@@ -183,7 +183,7 @@ async def login(
 
     # Set cookie
     response.set_cookie(
-        key="access_token",
+        key=settings.COOKIE_NAME,
         value=access_token,
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
@@ -201,7 +201,7 @@ async def login(
 @router.post("/logout")
 async def logout(response: Response):
     """Logout and clear token cookie."""
-    response.delete_cookie(key="access_token")
+    response.delete_cookie(key=settings.COOKIE_NAME)
     logger.info("User logged out")
     return {"message": "Logged out successfully"}
 

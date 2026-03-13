@@ -32,6 +32,9 @@ class Settings:
     # Encryption key for API keys (should be 32 bytes for Fernet)
     ENCRYPTION_KEY: Optional[str] = os.getenv("ENCRYPTION_KEY")
 
+    # Cookie
+    COOKIE_NAME: str = os.getenv("COOKIE_NAME", "access_token")
+
     # Session
     SESSION_PATH: str = os.getenv("SESSION_PATH", os.path.join("data", "sessions"))
 

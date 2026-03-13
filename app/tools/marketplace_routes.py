@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
 
-from app.database import get_db, CustomToolListing, CustomToolInstall, ChatHubAgentSkill, User
+from app.database import get_db, CustomToolListing, CustomToolInstall, BuiltTool, User
 from app.auth.utils import get_current_user_optional
 
 
@@ -117,7 +117,7 @@ async def get_listing_detail(
         "gradient_start": listing.gradient_start,
         "gradient_end": listing.gradient_end,
         "install_count": listing.install_count,
-        "skill_md_content": listing.skill_md_content,
+        "tool_md_content": listing.tool_md_content,
         "author_name": listing.author.name or listing.author.email if listing.author else "Unknown",
         "is_installed": install is not None,
         "is_own": listing.author_id == user.id,
@@ -131,7 +131,7 @@ async def install_tool(
     listing_id: int,
     db: Session = Depends(get_db)
 ):
-    """Install a marketplace tool. Creates a ChatHubAgentSkill for the user."""
+    """Install a marketplace tool. Creates a BuiltTool for the user."""
     user = await get_current_user_optional(request, None, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -152,7 +152,7 @@ async def install_tool(
     if existing:
         raise HTTPException(status_code=400, detail="Tool already installed")
 
-    skill = ChatHubAgentSkill(
+    tool = BuiltTool(
         user_id=user.id,
         name=f"{listing.name}-installed",
         display_name=listing.display_name,
@@ -160,11 +160,10 @@ async def install_tool(
         icon=listing.icon,
         gradient_start=listing.gradient_start,
         gradient_end=listing.gradient_end,
-        skill_md_content=listing.skill_md_content,
+        tool_md_content=listing.tool_md_content,
         is_active=True,
-        tier="community"
     )
-    db.add(skill)
+    db.add(tool)
 
     install = CustomToolInstall(
         user_id=user.id,
@@ -177,7 +176,7 @@ async def install_tool(
 
     db.commit()
 
-    return {"message": "Tool installed successfully", "skill_id": skill.id}
+    return {"message": "Tool installed successfully", "tool_id": tool.id}
 
 
 @router.delete("/uninstall/{listing_id}")
@@ -204,14 +203,13 @@ async def uninstall_tool(
     ).first()
 
     if listing:
-        installed_skill = db.query(ChatHubAgentSkill).filter(
-            ChatHubAgentSkill.user_id == user.id,
-            ChatHubAgentSkill.name == f"{listing.name}-installed",
-            ChatHubAgentSkill.tier == "community"
+        installed_tool = db.query(BuiltTool).filter(
+            BuiltTool.user_id == user.id,
+            BuiltTool.name == f"{listing.name}-installed",
         ).first()
 
-        if installed_skill:
-            db.delete(installed_skill)
+        if installed_tool:
+            db.delete(installed_tool)
 
         if listing.install_count and listing.install_count > 0:
             listing.install_count -= 1

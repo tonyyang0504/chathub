@@ -2,16 +2,16 @@ import re
 from typing import Dict, List, Optional
 
 
-SKILL_FRONTMATTER_RE = re.compile(r"^---\s*\n([\s\S]*?)\n---", re.MULTILINE)
+TOOL_FRONTMATTER_RE = re.compile(r"^---\s*\n([\s\S]*?)\n---", re.MULTILINE)
 YAML_LINE_RE = re.compile(r"^(\w+)\s*:\s*(.+)$")
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
-def parse_skill_frontmatter(skill_md_content: Optional[str]) -> Dict[str, str]:
-    if not skill_md_content:
+def parse_tool_frontmatter(tool_md_content: Optional[str]) -> Dict[str, str]:
+    if not tool_md_content:
         return {}
 
-    match = SKILL_FRONTMATTER_RE.match(skill_md_content.strip())
+    match = TOOL_FRONTMATTER_RE.match(tool_md_content.strip())
     if not match:
         return {}
 
@@ -30,9 +30,9 @@ def build_publish_readiness(
     skill_md_content: Optional[str] = None,
 ) -> Dict:
     metadata = metadata or {}
-    frontmatter = parse_skill_frontmatter(skill_md_content)
+    frontmatter = parse_tool_frontmatter(skill_md_content)
 
-    has_skill_file = any(path.upper().endswith("SKILL.MD") for path in changed_files)
+    has_tool_file = any(path.upper().endswith("TOOL.MD") for path in changed_files)
 
     name = (metadata.get("name") or frontmatter.get("name") or "").strip()
     display_name = (metadata.get("display_name") or frontmatter.get("display_name") or "").strip()
@@ -43,10 +43,10 @@ def build_publish_readiness(
     checks = [
         {
             "key": "skill_file",
-            "label": "SKILL.md file present",
-            "ok": has_skill_file,
+            "label": "TOOL.md file present",
+            "ok": has_tool_file,
             "hard": True,
-            "hint": "Create a SKILL.md file in your changes.",
+            "hint": "Create a TOOL.md file in your changes.",
         },
         {
             "key": "name",
@@ -67,7 +67,7 @@ def build_publish_readiness(
             "label": "Frontmatter trigger",
             "ok": bool(trigger),
             "hard": True,
-            "hint": "Add a trigger in SKILL.md frontmatter.",
+            "hint": "Add a trigger in TOOL.md frontmatter.",
         },
         {
             "key": "display_name",
@@ -105,4 +105,5 @@ def build_publish_readiness(
         "hard_failures": [item["key"] for item in hard_failures],
         "soft_failures": [item["key"] for item in soft_failures],
         "checks": checks,
+        "frontmatter": frontmatter,
     }

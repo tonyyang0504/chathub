@@ -580,21 +580,7 @@
 }
 .no-changes i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.3; }
 
-/* Test results */
-.test-result {
-    background: rgba(0,0,0,0.03);
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    font-family: monospace;
-    font-size: 0.75rem;
-    max-height: 200px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-}
-.test-result.pass { border-left: 3px solid #22c55e; }
-.test-result.fail { border-left: 3px solid #ef4444; }
-
-/* SKILL.md preview */
+/* TOOL.md preview */
 .skill-preview {
     background: rgba(0,0,0,0.03);
     border: 1px solid var(--border-color);
@@ -836,16 +822,10 @@
                 <div id="changedFilesList"></div>
             </div>
 
-            <!-- SKILL.md preview -->
+            <!-- TOOL.md preview -->
             <div class="panel-section" id="skillSection" style="display:none;">
-                <div class="panel-section-title">SKILL.MD Preview</div>
+                <div class="panel-section-title">TOOL.MD Preview</div>
                 <div class="skill-preview"><code id="skillPreviewCode"></code></div>
-            </div>
-
-            <!-- Test results -->
-            <div class="panel-section" id="testSection" style="display:none;">
-                <div class="panel-section-title">Test Results</div>
-                <div class="test-result" id="testResult"></div>
             </div>
 
             <!-- Sandbox status indicator -->
@@ -860,9 +840,6 @@
             </button>
             <button class="btn btn-success" id="publishBtn" onclick="publishBuild()">
                 <i class="bi bi-check-circle me-1"></i> Publish
-            </button>
-            <button class="btn btn-outline-secondary" id="testBtn" onclick="runTests()">
-                <i class="bi bi-play me-1"></i> Test
             </button>
             <button class="btn btn-outline-danger" id="discardBtn" onclick="discardBuild()">
                 <i class="bi bi-trash me-1"></i> Discard
@@ -1085,8 +1062,11 @@
                         <select class="form-select" id="geminiModelSelect">
                             <option value="auto-gemini-3" selected>Auto (Gemini 3)</option>
                             <option value="auto-gemini-2.5">Auto (Gemini 2.5)</option>
+                            <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
                             <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                         </select>
                     </div>
 
@@ -1148,6 +1128,7 @@ let turnHasStreamedText = false;
 let statusPollInterval = null;
 let publishedSkillId = null;
 let previewUrl = null;
+let previewWindow = null;
 let autoScroll = true;
 let publishReadiness = null;
 let publishReadinessTimer = null;
@@ -1731,6 +1712,7 @@ async function sendMessage(text) {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(body)
         });
 
@@ -1783,7 +1765,7 @@ function connectWebSocket() {
     ws.onclose = (event) => {
         clearInterval(pingInterval);
         if (assistantBuffer) flushAssistantBuffer();
-        if (event.code === 1006 || event.code === 1001) {
+        if (event.code === 1006 || event.code === 1001 || event.code === 4001) {
             setTimeout(() => {
                 if (sessionId && !isRunning) connectWebSocket();
             }, 3000);
@@ -2323,13 +2305,16 @@ function initDragDrop() {
 
 function startStatusPolling() {
     if (statusPollInterval) clearInterval(statusPollInterval);
+    refreshStatus();
     statusPollInterval = setInterval(refreshStatus, 8000);
 }
 
 async function refreshStatus() {
     if (!sessionId) return;
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/status`);
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/status`, {
+            credentials: 'include'
+        });
         if (resp.status === 401) {
             if (statusPollInterval) clearInterval(statusPollInterval);
             showToast('Session expired. Please refresh the page and log in again.', 'error');
@@ -2369,10 +2354,10 @@ async function refreshStatus() {
             filesList.innerHTML = '';
         }
 
-        const skillFile = files.find(f => f.toUpperCase().includes('SKILL.MD'));
-        if (skillFile) {
+        const toolFile = files.find(f => f.toUpperCase().includes('TOOL.MD'));
+        if (toolFile) {
             document.getElementById('skillSection').style.display = '';
-            document.getElementById('skillPreviewCode').textContent = 'SKILL.md found in: ' + skillFile;
+            document.getElementById('skillPreviewCode').textContent = 'TOOL.md found in: ' + toolFile;
         }
     } catch(e) {
         console.error('Status refresh failed:', e);
@@ -2453,10 +2438,38 @@ function focusReadinessFix(key) {
         }
     }
 
-    if (key === 'trigger') {
-        showToast('Add a trigger field in your SKILL.md frontmatter.', 'warning');
-    } else if (key === 'skill_file') {
-        showToast('Add a SKILL.md file in your tool changes, then retry.', 'warning');
+    // For skill_file: auto-generate TOOL.md from form fields via API
+    if (key === 'skill_file') {
+        const name = document.getElementById('publishBuildName').value.trim() || 'my-tool';
+        const displayName = document.getElementById('publishBuildDisplayName').value.trim() || 'My Tool';
+        const desc = document.getElementById('publishBuildDescription').value.trim() || '';
+        const icon = document.getElementById('publishBuildIcon').value.trim() || 'bi-gear';
+        generateToolFile(name, displayName, desc, icon);
+    } else if (key === 'trigger') {
+        bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
+        sendMessage('Add a `trigger` field to the TOOL.md frontmatter. The trigger should be a keyword or pattern that activates this tool. Then commit the change.');
+    }
+}
+
+async function generateToolFile(name, displayName, description, icon) {
+    if (!sessionId) return;
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/generate-tool`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ name, display_name: displayName, description, icon, trigger: name })
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to generate TOOL.md', 'error');
+            return;
+        }
+        const readiness = await resp.json();
+        showToast('TOOL.md generated and committed', 'success');
+        renderReadiness(readiness);
+    } catch (e) {
+        showToast('Error generating TOOL.md', 'error');
     }
 }
 
@@ -2473,6 +2486,7 @@ async function refreshPublishReadiness() {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/readiness`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(getPublishMetadataDraft()),
         });
         const data = await resp.json();
@@ -2501,7 +2515,7 @@ async function publishBuild() {
     if (!sessionId) return;
     if (isRunning) { showToast('Wait for the agent to finish', 'warning'); return; }
 
-    // Open the publish-build modal so the user can provide tool metadata
+    // Reset fields to defaults before populating
     document.getElementById('publishBuildName').value = '';
     document.getElementById('publishBuildDisplayName').value = '';
     document.getElementById('publishBuildDescription').value = '';
@@ -2509,7 +2523,29 @@ async function publishBuild() {
     publishReadiness = null;
     applyPublishButtonState();
     new bootstrap.Modal(document.getElementById('publishBuildModal')).show();
-    refreshPublishReadiness();
+
+    // Fetch readiness with empty metadata to get TOOL.md frontmatter
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/readiness`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ name: '', display_name: '', description: '', icon: '' }),
+        });
+        const data = await resp.json();
+        if (resp.ok && data.frontmatter) {
+            const fm = data.frontmatter;
+            if (fm.name) document.getElementById('publishBuildName').value = fm.name;
+            if (fm.display_name) document.getElementById('publishBuildDisplayName').value = fm.display_name;
+            if (fm.description) document.getElementById('publishBuildDescription').value = fm.description;
+            if (fm.icon) document.getElementById('publishBuildIcon').value = fm.icon;
+        }
+        // Re-run readiness with now-populated fields
+        await refreshPublishReadiness();
+    } catch (e) {
+        // Fallback: just run normal readiness check
+        refreshPublishReadiness();
+    }
 }
 
 async function confirmPublish() {
@@ -2537,6 +2573,7 @@ async function confirmPublish() {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/publish`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(metadata),
         });
         const data = await resp.json();
@@ -2545,6 +2582,8 @@ async function confirmPublish() {
         } else if (resp.ok && data.success) {
             // Close modal, reset panel, refresh sidebar
             bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
+            if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
+            previewWindow = null;
             showToast('Changes deployed! Restart your app to see them live.', 'success');
             publishedSkillId = data.skill_id;
             sessionId = null;
@@ -2565,38 +2604,14 @@ async function confirmPublish() {
     applyPublishButtonState();
 }
 
-async function runTests() {
-    if (!sessionId) return;
-    const testBtn = document.getElementById('testBtn');
-    testBtn.disabled = true;
-    testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
-
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/test`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-        });
-        const data = await resp.json();
-        const testSection = document.getElementById('testSection');
-        const testResult = document.getElementById('testResult');
-        testSection.style.display = '';
-        const output = (data.stdout || '') + (data.stderr || '');
-        testResult.textContent = output || '(no output)';
-        testResult.className = 'test-result ' + (data.success ? 'pass' : 'fail');
-    } catch(e) {
-        showToast('Error running tests', 'error');
-    }
-    testBtn.disabled = false;
-    testBtn.innerHTML = '<i class="bi bi-play me-1"></i> Test';
-}
-
 async function discardBuild() {
     if (!sessionId) return;
     if (!confirm('Discard this build? All changes will be lost.')) return;
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/discard`, { method: 'POST' });
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/discard`, { method: 'POST', credentials: 'include' });
         if (resp.ok) {
+            if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
+            previewWindow = null;
             showToast('Build discarded', 'info');
             sessionId = null;
             previewUrl = null;
@@ -2613,7 +2628,7 @@ async function discardBuild() {
 async function stopAgent() {
     if (!sessionId) return;
     try {
-        await fetch(`/tools/api/tool-builder/sessions/${sessionId}/stop`, { method: 'POST' });
+        await fetch(`/tools/api/tool-builder/sessions/${sessionId}/stop`, { method: 'POST', credentials: 'include' });
         setRunningState(false);
     } catch(e) {
         console.error('Stop failed:', e);
@@ -2622,7 +2637,7 @@ async function stopAgent() {
 
 async function openPreview() {
     if (previewUrl) {
-        window.open(previewUrl, '_blank');
+        previewWindow = window.open(previewUrl, '_blank');
         return;
     }
     if (!sessionId) {
@@ -2636,7 +2651,8 @@ async function openPreview() {
     try {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/preview`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
         });
         if (resp.status === 503) {
             const err = await resp.json().catch(() => ({}));
@@ -2652,7 +2668,7 @@ async function openPreview() {
         document.getElementById('sandboxStatus').style.display = '';
         document.getElementById('sandboxStatusText').textContent =
             `Sandbox running on port ${data.preview_port}`;
-        window.open(previewUrl, '_blank');
+        previewWindow = window.open(previewUrl, '_blank');
     } catch (e) {
         showToast('Preview error: ' + e.message, 'error');
     } finally {
@@ -2662,6 +2678,8 @@ async function openPreview() {
 }
 
 function resetPanel() {
+    if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
+    previewWindow = null;
     previewUrl = null;
     document.getElementById('previewBtn').style.display = 'none';
     document.getElementById('sandboxStatus').style.display = 'none';
@@ -2669,7 +2687,6 @@ function resetPanel() {
     document.getElementById('branchSection').style.display = 'none';
     document.getElementById('filesSection').style.display = 'none';
     document.getElementById('skillSection').style.display = 'none';
-    document.getElementById('testSection').style.display = 'none';
     document.getElementById('panelActions').style.display = 'none';
 }
 
@@ -2714,7 +2731,7 @@ let currentDbSessionId = null;  // tracks which DB session is displayed in sideb
 async function loadSessions() {
     try {
         const resp = await fetch('/tools/api/tool-builder/sessions', { credentials: 'include' });
-        if (!resp.ok) return;
+        if (!resp.ok) return [];
         const sessions = await resp.json();
         const list = document.getElementById('sessionList');
         const noSessions = document.getElementById('noSessions');
@@ -2724,7 +2741,7 @@ async function loadSessions() {
 
         if (!sessions || sessions.length === 0) {
             noSessions.style.display = '';
-            return;
+            return [];
         }
         noSessions.style.display = 'none';
 
@@ -2755,8 +2772,10 @@ async function loadSessions() {
             div.onclick = () => viewSession(s.db_id);
             list.appendChild(div);
         });
+        return sessions;
     } catch(e) {
         console.error('Failed to load sessions:', e);
+        return [];
     }
 }
 
@@ -2897,6 +2916,7 @@ async function publishToolToMarketplace() {
         const resp = await fetch(`/tools/api/tool-builder/tools/${currentToolId}/publish`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
             body: JSON.stringify({
                 category: document.getElementById('publishCategory').value,
                 version: document.getElementById('publishVersion').value,
@@ -2950,11 +2970,19 @@ function showToast(message, type = 'info') {
 // Init
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadSessions();
+document.addEventListener('DOMContentLoaded', async () => {
+    const sessions = await loadSessions();
     loadSettings();
     initVoiceRecognition();
     initDragDrop();
+
+    // Auto-resume active session if one exists
+    if (sessions && sessions.length > 0) {
+        const activeSession = sessions.find(s => s.active_session_id);
+        if (activeSession) {
+            viewSession(activeSession.db_id);
+        }
+    }
 
     // Configure marked
     if (typeof marked !== 'undefined') {

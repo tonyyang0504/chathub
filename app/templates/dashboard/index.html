@@ -315,24 +315,6 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                <div class="p-3 border-bottom bg-light-subtle">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-md-8">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="text" id="botSearchInput" class="form-control" placeholder="Search bots by name...">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <select id="botStatusFilter" class="form-select form-select-sm">
-                                <option value="all">All statuses</option>
-                                <option value="running">Running</option>
-                                <option value="stopped">Stopped</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-2 small text-muted" id="botFilterSummary"></div>
-                </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 bots-table">
                         <thead>
@@ -396,35 +378,6 @@
             </div>
         </div>
 
-        <!-- Platform Shortcuts -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">Platform Shortcuts</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="/dashboard/hubs" class="btn btn-outline-secondary">
-                        <i class="bi bi-diagram-3 me-2"></i> Manage Hubs
-                    </a>
-                    <a href="/tools" class="btn btn-outline-secondary">
-                        <i class="bi bi-grid-1x2 me-2"></i> Open Tool Marketplace
-                    </a>
-                    <a href="/agents" class="btn btn-outline-secondary">
-                        <i class="bi bi-cpu me-2"></i> Configure Agents
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- New Section -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">New Section</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-0">This is a new custom section on the dashboard.</p>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -552,17 +505,8 @@
             const botsData = await botsRes.json();
             const tbody = document.getElementById('botsTableBody');
 
-            if (!window.botFilters) {
-                window.botFilters = { search: '', status: 'all' };
-            }
-
-            if (typeof window.botsExpanded !== 'boolean') {
-                window.botsExpanded = false;
-            }
-
             if (botsData.bots.length === 0) {
                 window.allBotsData = [];
-                updateFilterSummary(0, 0);
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center py-4">
@@ -584,7 +528,8 @@
                 window.botsDisplayLimit = displayLimit;
 
                 // Render bots table with expand/collapse support
-                renderBotsTable(window.botsExpanded);
+                window.botsExpanded = false;
+                renderBotsTable(false);
             }
         } catch (e) {
             console.error('Error loading bots:', e);
@@ -617,59 +562,13 @@
         }
     }
 
-    function getFilteredBots() {
-        const bots = window.allBotsData || [];
-        const filters = window.botFilters || { search: '', status: 'all' };
-        const searchText = filters.search.trim().toLowerCase();
-
-        return bots.filter(bot => {
-            const matchesSearch = !searchText || (bot.name || '').toLowerCase().includes(searchText);
-            const matchesStatus =
-                filters.status === 'all' ||
-                (filters.status === 'running' && bot.is_running) ||
-                (filters.status === 'stopped' && !bot.is_running);
-
-            return matchesSearch && matchesStatus;
-        });
-    }
-
-    function updateFilterSummary(filteredCount, totalCount) {
-        const summary = document.getElementById('botFilterSummary');
-        if (!summary) return;
-
-        if (totalCount === 0) {
-            summary.textContent = '';
-            return;
-        }
-
-        const hasFilters = (window.botFilters?.search || '').trim() || window.botFilters?.status !== 'all';
-        summary.textContent = hasFilters
-            ? `Showing ${filteredCount} of ${totalCount} bots`
-            : `Showing all ${totalCount} bots`;
-    }
-
     // Render bots table with expand/collapse functionality
     function renderBotsTable(expanded) {
         const tbody = document.getElementById('botsTableBody');
-        const totalBots = (window.allBotsData || []).length;
-        const bots = getFilteredBots();
+        const bots = window.allBotsData || [];
         const limit = window.botsDisplayLimit || 10;
-        const filteredCount = bots.length;
-        const hasMore = filteredCount > limit;
-
-        updateFilterSummary(filteredCount, totalBots);
-
-        if (filteredCount === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
-                        No bots match your filters
-                    </td>
-                </tr>
-            `;
-            window.botsExpanded = false;
-            return;
-        }
+        const totalBots = bots.length;
+        const hasMore = totalBots > limit;
 
         // Determine which bots to show
         const botsToShow = expanded ? bots : bots.slice(0, limit);
@@ -696,7 +595,7 @@
 
         // Add expand/collapse row if there are more bots
         if (hasMore) {
-            const remaining = filteredCount - limit;
+            const remaining = totalBots - limit;
             if (expanded) {
                 // Show "Show Less" button
                 html += `
@@ -716,7 +615,7 @@
                         <td colspan="5" class="text-center" style="padding: 28px 0;">
                             <button class="btn btn-sm btn-outline-primary" onclick="toggleBotsDisplay(true)">
                                 <i class="bi bi-chevron-down me-1"></i>
-                                View All ${filteredCount} Bots (${remaining} more)
+                                View All ${totalBots} Bots (${remaining} more)
                             </button>
                         </td>
                     </tr>
@@ -731,26 +630,6 @@
     // Toggle bots display between collapsed and expanded
     function toggleBotsDisplay(expand) {
         renderBotsTable(expand);
-    }
-
-    function setupBotFilters() {
-        const searchInput = document.getElementById('botSearchInput');
-        const statusFilter = document.getElementById('botStatusFilter');
-        if (!searchInput || !statusFilter) return;
-
-        if (!window.botFilters) {
-            window.botFilters = { search: '', status: 'all' };
-        }
-
-        searchInput.addEventListener('input', () => {
-            window.botFilters.search = searchInput.value;
-            renderBotsTable(false);
-        });
-
-        statusFilter.addEventListener('change', () => {
-            window.botFilters.status = statusFilter.value;
-            renderBotsTable(false);
-        });
     }
 
     function formatActivityDetails(details) {
@@ -882,7 +761,6 @@
         await loadDashboard();
     }
 
-    setupBotFilters();
     initialize();
     setInterval(loadDashboard, 30000); // Refresh every 30s
 

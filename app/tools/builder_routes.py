@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict
 
-from app.database import get_db, SessionLocal, ChatHubAgentSkill, CustomToolListing, AiWorkspaceSession
+from app.database import get_db, SessionLocal, BuiltTool, CustomToolListing, AiWorkspaceSession
 from app.auth.utils import get_current_user_optional, get_websocket_user, decrypt_string
 from .builder_manager import tool_builder_manager
 from .sandbox_manager import sandbox_manager
@@ -34,7 +34,7 @@ class ToolSaveRequest(BaseModel):
     icon: str = "bi-gear"
     gradient_start: str = "#6366f1"
     gradient_end: str = "#8b5cf6"
-    skill_md_content: str
+    tool_md_content: str
 
 
 class ToolUpdateRequest(BaseModel):
@@ -43,7 +43,7 @@ class ToolUpdateRequest(BaseModel):
     icon: Optional[str] = None
     gradient_start: Optional[str] = None
     gradient_end: Optional[str] = None
-    skill_md_content: Optional[str] = None
+    tool_md_content: Optional[str] = None
 
 
 class ToolPublishRequest(BaseModel):
@@ -58,10 +58,6 @@ class SendMessageRequest(BaseModel):
 
 class CreateSessionRequest(BaseModel):
     provider: Optional[str] = None  # claude, codex, gemini, chathub — defaults to user's default_provider
-
-
-class RunTestRequest(BaseModel):
-    command: Optional[str] = None  # Custom test command, defaults to pytest
 
 
 class PublishReadinessRequest(BaseModel):
@@ -418,7 +414,7 @@ async def publish_session(
     session_id: str,
     db: Session = Depends(get_db)
 ):
-    """Merge worktree branch, create skill record, return skill ID."""
+    """Merge worktree branch, create tool record, return tool ID."""
     user = await get_current_user_optional(request, None, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -465,15 +461,15 @@ async def get_publish_readiness(
 
     changed_files = sandbox_manager.get_changed_files(session_id)
 
-    skill_md_content = None
+    tool_md_content = None
     for file_path in changed_files:
-        if file_path.upper().endswith("SKILL.MD"):
+        if file_path.upper().endswith("TOOL.MD"):
             from pathlib import Path
             _wt_path = session.sandbox_info.worktree_path if session.sandbox_info else None
             _base = _wt_path or Path(__file__).resolve().parent.parent.parent
             full_path = _base / file_path
             if full_path.exists():
-                skill_md_content = full_path.read_text(encoding="utf-8")
+                tool_md_content = full_path.read_text(encoding="utf-8")
             break
 
     metadata = {
@@ -486,7 +482,66 @@ async def get_publish_readiness(
     readiness = build_publish_readiness(
         changed_files=changed_files,
         metadata=metadata,
-        skill_md_content=skill_md_content,
+        skill_md_content=tool_md_content,
+    )
+    readiness["changed_files"] = changed_files
+    return readiness
+
+
+@router.post("/sessions/{session_id}/generate-tool")
+async def generate_tool_file(
+    request: Request,
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Auto-generate TOOL.md from form metadata, write+commit in sandbox, return updated readiness."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = tool_builder_manager.get_session(user.id)
+    if not session or session.session_id != session_id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    name = (body.get("name") or "").strip()
+    display_name = (body.get("display_name") or name or "").strip()
+    description = (body.get("description") or "").strip()
+    icon = (body.get("icon") or "bi-gear").strip()
+    trigger = (body.get("trigger") or name or "").strip()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Tool name is required")
+
+    tool_md = (
+        f"---\n"
+        f"name: {name}\n"
+        f"display_name: {display_name}\n"
+        f"description: {description}\n"
+        f"icon: {icon}\n"
+        f"trigger: {trigger}\n"
+        f"---\n\n"
+        f"# {display_name}\n\n"
+        f"{description}\n"
+    )
+
+    written = sandbox_manager.write_file(session.session_id, "TOOL.md", tool_md)
+    if not written:
+        raise HTTPException(status_code=500, detail="Failed to write TOOL.md in sandbox")
+
+    sandbox_manager.commit_file(session.session_id, "TOOL.md", f"Add TOOL.md for {name}")
+
+    # Return updated readiness
+    changed_files = sandbox_manager.get_changed_files(session.session_id)
+    from .readiness import build_publish_readiness
+    readiness = build_publish_readiness(
+        changed_files=changed_files,
+        metadata={"name": name, "display_name": display_name, "description": description, "icon": icon},
+        skill_md_content=tool_md,
     )
     readiness["changed_files"] = changed_files
     return readiness
@@ -515,39 +570,6 @@ async def discard_session(
     return result
 
 
-@router.post("/sessions/{session_id}/test")
-async def run_test(
-    request: Request,
-    session_id: str,
-    data: RunTestRequest = None,
-    db: Session = Depends(get_db)
-):
-    """Run a test command in the worktree."""
-    user = await get_current_user_optional(request, None, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    session = tool_builder_manager.get_session(user.id)
-    if not session or session.session_id != session_id:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    from .sandbox_manager import sandbox_manager
-
-    command_str = (data.command if data and data.command else "pytest").strip()
-    # Split into list for subprocess
-    command = command_str.split()
-
-    result = sandbox_manager.run_command(session.session_id, command, timeout=120)
-
-    return {
-        "command": command_str,
-        "stdout": result.get("stdout", ""),
-        "stderr": result.get("stderr", ""),
-        "returncode": result.get("returncode", -1),
-        "success": result.get("returncode") == 0,
-    }
-
-
 @router.post("/sessions/{session_id}/stop")
 async def stop_session(
     request: Request,
@@ -568,7 +590,7 @@ async def stop_session(
 
 
 # ============================================================================
-# Tool CRUD Endpoints (unchanged from original)
+# Tool CRUD Endpoints
 # ============================================================================
 
 @router.post("/save")
@@ -582,12 +604,12 @@ async def save_tool(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    if not data.skill_md_content or len(data.skill_md_content.strip()) < 10:
-        raise HTTPException(status_code=400, detail="Skill content is too short")
+    if not data.tool_md_content or len(data.tool_md_content.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Tool content is too short")
 
-    existing = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.user_id == user.id,
-        ChatHubAgentSkill.name == data.name
+    existing = db.query(BuiltTool).filter(
+        BuiltTool.user_id == user.id,
+        BuiltTool.name == data.name
     ).first()
 
     if existing:
@@ -596,13 +618,13 @@ async def save_tool(
         existing.icon = data.icon
         existing.gradient_start = data.gradient_start
         existing.gradient_end = data.gradient_end
-        existing.skill_md_content = data.skill_md_content
+        existing.tool_md_content = data.tool_md_content
         existing.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(existing)
-        skill = existing
+        tool = existing
     else:
-        skill = ChatHubAgentSkill(
+        tool = BuiltTool(
             user_id=user.id,
             name=data.name,
             display_name=data.display_name,
@@ -610,18 +632,17 @@ async def save_tool(
             icon=data.icon,
             gradient_start=data.gradient_start,
             gradient_end=data.gradient_end,
-            skill_md_content=data.skill_md_content,
+            tool_md_content=data.tool_md_content,
             is_active=True,
-            tier="managed"
         )
-        db.add(skill)
+        db.add(tool)
         db.commit()
-        db.refresh(skill)
+        db.refresh(tool)
 
     return {
-        "id": skill.id,
-        "name": skill.name,
-        "display_name": skill.display_name,
+        "id": tool.id,
+        "name": tool.name,
+        "display_name": tool.display_name,
         "message": "Tool saved successfully"
     }
 
@@ -633,28 +654,27 @@ async def list_my_tools(request: Request, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    skills = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.user_id == user.id
-    ).order_by(ChatHubAgentSkill.created_at.desc()).all()
+    tools = db.query(BuiltTool).filter(
+        BuiltTool.user_id == user.id
+    ).order_by(BuiltTool.created_at.desc()).all()
 
     return {
         "tools": [
             {
-                "id": s.id,
-                "name": s.name,
-                "display_name": getattr(s, 'display_name', None) or s.name,
-                "description": s.description,
-                "icon": getattr(s, 'icon', None) or "bi-gear",
-                "gradient_start": getattr(s, 'gradient_start', None) or "#6366f1",
-                "gradient_end": getattr(s, 'gradient_end', None) or "#8b5cf6",
-                "is_active": s.is_active,
-                "tier": s.tier,
-                "has_listing": s.listing is not None if hasattr(s, 'listing') else False,
-                "listing_status": s.listing.status if (hasattr(s, 'listing') and s.listing) else None,
-                "created_at": s.created_at.isoformat() if s.created_at else None,
-                "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+                "id": t.id,
+                "name": t.name,
+                "display_name": t.display_name or t.name,
+                "description": t.description,
+                "icon": t.icon or "bi-gear",
+                "gradient_start": t.gradient_start or "#6366f1",
+                "gradient_end": t.gradient_end or "#8b5cf6",
+                "is_active": t.is_active,
+                "has_listing": t.listing is not None,
+                "listing_status": t.listing.status if t.listing else None,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+                "updated_at": t.updated_at.isoformat() if t.updated_at else None,
             }
-            for s in skills
+            for t in tools
         ]
     }
 
@@ -670,27 +690,26 @@ async def get_tool_detail(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    skill = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.id == tool_id,
-        ChatHubAgentSkill.user_id == user.id
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.id == tool_id,
+        BuiltTool.user_id == user.id
     ).first()
 
-    if not skill:
+    if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
     return {
-        "id": skill.id,
-        "name": skill.name,
-        "display_name": getattr(skill, 'display_name', None) or skill.name,
-        "description": skill.description,
-        "icon": getattr(skill, 'icon', None) or "bi-gear",
-        "gradient_start": getattr(skill, 'gradient_start', None) or "#6366f1",
-        "gradient_end": getattr(skill, 'gradient_end', None) or "#8b5cf6",
-        "skill_md_content": getattr(skill, 'skill_md_content', None),
-        "is_active": skill.is_active,
-        "tier": skill.tier,
-        "created_at": skill.created_at.isoformat() if skill.created_at else None,
-        "updated_at": skill.updated_at.isoformat() if skill.updated_at else None,
+        "id": tool.id,
+        "name": tool.name,
+        "display_name": tool.display_name or tool.name,
+        "description": tool.description,
+        "icon": tool.icon or "bi-gear",
+        "gradient_start": tool.gradient_start or "#6366f1",
+        "gradient_end": tool.gradient_end or "#8b5cf6",
+        "tool_md_content": tool.tool_md_content,
+        "is_active": tool.is_active,
+        "created_at": tool.created_at.isoformat() if tool.created_at else None,
+        "updated_at": tool.updated_at.isoformat() if tool.updated_at else None,
     }
 
 
@@ -706,28 +725,28 @@ async def update_tool(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    skill = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.id == tool_id,
-        ChatHubAgentSkill.user_id == user.id
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.id == tool_id,
+        BuiltTool.user_id == user.id
     ).first()
 
-    if not skill:
+    if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
     if data.display_name is not None:
-        skill.display_name = data.display_name
+        tool.display_name = data.display_name
     if data.description is not None:
-        skill.description = data.description
+        tool.description = data.description
     if data.icon is not None:
-        skill.icon = data.icon
+        tool.icon = data.icon
     if data.gradient_start is not None:
-        skill.gradient_start = data.gradient_start
+        tool.gradient_start = data.gradient_start
     if data.gradient_end is not None:
-        skill.gradient_end = data.gradient_end
-    if data.skill_md_content is not None:
-        skill.skill_md_content = data.skill_md_content
+        tool.gradient_end = data.gradient_end
+    if data.tool_md_content is not None:
+        tool.tool_md_content = data.tool_md_content
 
-    skill.updated_at = datetime.utcnow()
+    tool.updated_at = datetime.utcnow()
     db.commit()
 
     return {"message": "Tool updated successfully"}
@@ -744,18 +763,18 @@ async def delete_tool(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    skill = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.id == tool_id,
-        ChatHubAgentSkill.user_id == user.id
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.id == tool_id,
+        BuiltTool.user_id == user.id
     ).first()
 
-    if not skill:
+    if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    if skill.listing:
-        db.delete(skill.listing)
+    if tool.listing:
+        db.delete(tool.listing)
 
-    db.delete(skill)
+    db.delete(tool)
     db.commit()
 
     return {"message": "Tool deleted successfully"}
@@ -772,21 +791,21 @@ async def toggle_tool(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    skill = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.id == tool_id,
-        ChatHubAgentSkill.user_id == user.id
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.id == tool_id,
+        BuiltTool.user_id == user.id
     ).first()
 
-    if not skill:
+    if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    skill.is_active = not skill.is_active
-    skill.updated_at = datetime.utcnow()
+    tool.is_active = not tool.is_active
+    tool.updated_at = datetime.utcnow()
     db.commit()
 
     return {
-        "is_active": skill.is_active,
-        "message": f"Tool {'activated' if skill.is_active else 'deactivated'}"
+        "is_active": tool.is_active,
+        "message": f"Tool {'activated' if tool.is_active else 'deactivated'}"
     }
 
 
@@ -802,55 +821,55 @@ async def publish_tool(
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    skill = db.query(ChatHubAgentSkill).filter(
-        ChatHubAgentSkill.id == tool_id,
-        ChatHubAgentSkill.user_id == user.id
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.id == tool_id,
+        BuiltTool.user_id == user.id
     ).first()
 
-    if not skill:
+    if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    if not skill.skill_md_content:
-        raise HTTPException(status_code=400, detail="Tool has no skill content")
+    if not tool.tool_md_content:
+        raise HTTPException(status_code=400, detail="Tool has no TOOL.md content")
 
     existing_listing = db.query(CustomToolListing).filter(
-        CustomToolListing.skill_id == skill.id
+        CustomToolListing.tool_id == tool.id
     ).first()
 
     if existing_listing:
-        existing_listing.display_name = skill.display_name
-        existing_listing.description = skill.description
-        existing_listing.long_description = data.long_description or skill.description
+        existing_listing.display_name = tool.display_name
+        existing_listing.description = tool.description
+        existing_listing.long_description = data.long_description or tool.description
         existing_listing.category = data.category
         existing_listing.version = data.version
-        existing_listing.icon = skill.icon
-        existing_listing.gradient_start = skill.gradient_start
-        existing_listing.gradient_end = skill.gradient_end
-        existing_listing.skill_md_content = skill.skill_md_content
+        existing_listing.icon = tool.icon
+        existing_listing.gradient_start = tool.gradient_start
+        existing_listing.gradient_end = tool.gradient_end
+        existing_listing.tool_md_content = tool.tool_md_content
         existing_listing.status = "published"
         existing_listing.updated_at = datetime.utcnow()
         db.commit()
         listing = existing_listing
     else:
         name_taken = db.query(CustomToolListing).filter(
-            CustomToolListing.name == skill.name
+            CustomToolListing.name == tool.name
         ).first()
         if name_taken:
             raise HTTPException(status_code=400, detail="A tool with this name already exists in the marketplace")
 
         listing = CustomToolListing(
             author_id=user.id,
-            skill_id=skill.id,
-            name=skill.name,
-            display_name=skill.display_name,
-            description=skill.description,
-            long_description=data.long_description or skill.description,
+            tool_id=tool.id,
+            name=tool.name,
+            display_name=tool.display_name,
+            description=tool.description,
+            long_description=data.long_description or tool.description,
             category=data.category,
             version=data.version,
-            icon=skill.icon,
-            gradient_start=skill.gradient_start,
-            gradient_end=skill.gradient_end,
-            skill_md_content=skill.skill_md_content,
+            icon=tool.icon,
+            gradient_start=tool.gradient_start,
+            gradient_end=tool.gradient_end,
+            tool_md_content=tool.tool_md_content,
             status="published"
         )
         db.add(listing)

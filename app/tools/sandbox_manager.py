@@ -246,20 +246,11 @@ class SandboxManager:
         info = self._find_by_session(session_id)
         if not info:
             return []
-        if not info.container_name:
-            # No container yet — diff in the isolated worktree
-            from app.tools.worktree_manager import worktree_manager
-            return worktree_manager.get_changed_files(session_id)
-        bin_ = _docker_bin()
-        if not bin_:
-            return []
-        result = subprocess.run(
-            [bin_, "exec", info.container_name, "git", "diff", "--name-only", "HEAD"],
-            capture_output=True, text=True, env=self._docker_env()
-        )
-        if result.returncode != 0:
-            return []
-        return [f for f in result.stdout.strip().split("\n") if f]
+        # Always use the host worktree for file detection — it has full git
+        # access. Docker only mounts the worktree dir, so refs like 'main'
+        # aren't accessible inside the container.
+        from app.tools.worktree_manager import worktree_manager
+        return worktree_manager.get_changed_files(session_id)
 
     def run_command(self, session_id: str, command: list[str], timeout: int = 60) -> dict:
         info = self._find_by_session(session_id)
@@ -373,12 +364,26 @@ class SandboxManager:
             "-p", f"{preview_port}:8000",
             "-e", "DATABASE_URL=sqlite:///./data/app.db",
             "-e", f"SECRET_KEY={secret_key}",
+            "-e", "COOKIE_NAME=sandbox_access_token",
             "-e", "PORT=8000",
             "--memory=512m", "--cpus=1",
             "--label", f"tb-session={info.session_id}",
             "--label", f"tb-user={info.user_id}",
-            SANDBOX_IMAGE,
         ]
+
+        # Overlay COOKIE_NAME-aware auth files so container uses sandbox_access_token
+        # (individual file mounts take precedence over the directory mount)
+        auth_overlays = [
+            "app/config.py",
+            "app/auth/routes.py",
+            "app/auth/utils.py",
+        ]
+        for rel in auth_overlays:
+            src = PROJECT_ROOT / rel
+            if src.exists():
+                cmd.extend(["-v", f"{src}:/app/{rel}:ro"])
+
+        cmd.append(SANDBOX_IMAGE)
 
         result = subprocess.run(cmd, capture_output=True, text=True, env=self._docker_env())
         if result.returncode != 0:
@@ -464,15 +469,15 @@ class SandboxManager:
             capture_output=True, text=True, env=env
         )
         container_status = result.stdout.strip() if result.returncode == 0 else "unknown"
-        diff_result = subprocess.run(
-            [bin_, "exec", info.container_name, "git", "diff", "--stat", "HEAD"],
-            capture_output=True, text=True, env=env
-        )
+        # Use worktree for diff stats (Docker git may not have access to main ref)
+        from app.tools.worktree_manager import worktree_manager
+        wt_status = worktree_manager.get_status(info.session_id) if info.worktree_path else {}
+        diff_stat = wt_status.get("diff_stat", "")
         return {
             "session_id": info.session_id, "branch": info.branch,
             "container_name": info.container_name, "container_status": container_status,
             "preview_url": info.preview_url, "preview_port": info.preview_port,
-            "diff_stat": diff_result.stdout.strip() if diff_result.returncode == 0 else "",
+            "diff_stat": diff_stat,
             "changed_files": self.get_changed_files(info.session_id),
         }
 
@@ -564,6 +569,32 @@ class SandboxManager:
             if name:
                 subprocess.run([bin_, "stop", name], capture_output=True, text=True, env=env)
                 subprocess.run([bin_, "rm", "-f", name], capture_output=True, text=True, env=env)
+
+    # ------------------------------------------------------------------
+    # File write/commit helpers (for fallback TOOL.md generation)
+    # ------------------------------------------------------------------
+
+    def write_file(self, session_id: str, rel_path: str, content: str) -> bool:
+        """Write a file into the sandbox worktree."""
+        info = self._find_by_session(session_id)
+        if not info or not info.worktree_path:
+            return False
+        target = info.worktree_path / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        return True
+
+    def commit_file(self, session_id: str, rel_path: str, message: str) -> bool:
+        """Stage and commit a single file in the sandbox worktree."""
+        info = self._find_by_session(session_id)
+        if not info or not info.worktree_path:
+            return False
+        from app.tools.worktree_manager import worktree_manager
+        worktree_manager.run_command(session_id, ["git", "add", rel_path])
+        result = worktree_manager.run_command(
+            session_id, ["git", "commit", "-m", message]
+        )
+        return result.get("returncode", -1) == 0
 
     # ------------------------------------------------------------------
     # Internal helpers

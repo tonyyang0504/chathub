@@ -823,13 +823,13 @@ class ChatHubAgentMessage(Base):
 
 
 class ChatHubAgentSkill(Base):
-    """ChatHub Agent skill - managed or workspace skill definitions."""
+    """ChatHub Agent skill - workspace skill definitions that extend CLI agent capabilities."""
     __tablename__ = "chathub_agent_skills"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(200), nullable=False)
-    tier = Column(String(20), nullable=False)  # managed, workspace
+    tier = Column(String(20), nullable=False)  # workspace
     path = Column(String(500))
     description = Column(Text)
     is_active = Column(Boolean, default=True)
@@ -837,16 +837,30 @@ class ChatHubAgentSkill(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # New columns for Tool Builder
+    # Relationships
+    user = relationship("User", backref="chathub_agent_skills")
+
+
+class BuiltTool(Base):
+    """Custom tool created by the Tool Builder, publishable to the marketplace."""
+    __tablename__ = "built_tools"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
     display_name = Column(String(200), nullable=True)
+    description = Column(Text)
     icon = Column(String(50), default="bi-gear")
     gradient_start = Column(String(7), default="#6366f1")
     gradient_end = Column(String(7), default="#8b5cf6")
-    skill_md_content = Column(Text, nullable=True)
+    tool_md_content = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    user = relationship("User", backref="chathub_agent_skills")
-    listing = relationship("CustomToolListing", back_populates="skill", uselist=False)
+    user = relationship("User", backref="built_tools")
+    listing = relationship("CustomToolListing", back_populates="tool", uselist=False)
 
 
 class CustomToolListing(Base):
@@ -855,7 +869,7 @@ class CustomToolListing(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    skill_id = Column(Integer, ForeignKey("chathub_agent_skills.id", ondelete="CASCADE"), unique=True, nullable=False)
+    tool_id = Column(Integer, ForeignKey("built_tools.id", ondelete="CASCADE"), unique=True, nullable=False)
     name = Column(String(200), unique=True, nullable=False)
     display_name = Column(String(200))
     description = Column(Text)
@@ -867,13 +881,13 @@ class CustomToolListing(Base):
     gradient_end = Column(String(7), default="#8b5cf6")
     install_count = Column(Integer, default=0)
     status = Column(String(20), default="draft")  # draft, published, removed
-    skill_md_content = Column(Text)
+    tool_md_content = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     author = relationship("User", backref="custom_tool_listings")
-    skill = relationship("ChatHubAgentSkill", back_populates="listing")
+    tool = relationship("BuiltTool", back_populates="listing")
     installs = relationship("CustomToolInstall", back_populates="listing")
 
 
@@ -1530,23 +1544,29 @@ def run_migrations():
                 except Exception as e:
                     print(f"Could not add approval_mode column: {e}")
 
-        # ============== Tool Builder columns on chathub_agent_skills ==============
-        if 'chathub_agent_skills' in existing_tables:
-            skill_cols = [col['name'] for col in inspector.get_columns('chathub_agent_skills')]
-            for col_name, col_def in [
-                ('display_name', 'VARCHAR(200)'),
-                ('icon', "VARCHAR(50) DEFAULT 'bi-gear'"),
-                ('gradient_start', "VARCHAR(7) DEFAULT '#6366f1'"),
-                ('gradient_end', "VARCHAR(7) DEFAULT '#8b5cf6'"),
-                ('skill_md_content', 'TEXT'),
-            ]:
-                if col_name not in skill_cols:
-                    try:
-                        conn.execute(text(f'ALTER TABLE chathub_agent_skills ADD COLUMN {col_name} {col_def}'))
-                        conn.commit()
-                        print(f"Added {col_name} column to chathub_agent_skills")
-                    except Exception as e:
-                        print(f"Could not add {col_name} column: {e}")
+        # ============== Built Tools table (Tool Builder output) ==============
+        if 'built_tools' not in existing_tables:
+            try:
+                conn.execute(text('''
+                    CREATE TABLE IF NOT EXISTS built_tools (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        name VARCHAR(200) NOT NULL,
+                        display_name VARCHAR(200),
+                        description TEXT,
+                        icon VARCHAR(50) DEFAULT 'bi-gear',
+                        gradient_start VARCHAR(7) DEFAULT '#6366f1',
+                        gradient_end VARCHAR(7) DEFAULT '#8b5cf6',
+                        tool_md_content TEXT,
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+                conn.commit()
+                print("Created built_tools table")
+            except Exception as e:
+                print(f"Could not create built_tools table: {e}")
 
         # ============== Custom Tool Listings table ==============
         if 'custom_tool_listings' not in existing_tables:
@@ -1555,7 +1575,7 @@ def run_migrations():
                     CREATE TABLE IF NOT EXISTS custom_tool_listings (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                        skill_id INTEGER NOT NULL UNIQUE REFERENCES chathub_agent_skills(id) ON DELETE CASCADE,
+                        tool_id INTEGER NOT NULL UNIQUE REFERENCES built_tools(id) ON DELETE CASCADE,
                         name VARCHAR(200) NOT NULL UNIQUE,
                         display_name VARCHAR(200),
                         description TEXT,
@@ -1567,7 +1587,7 @@ def run_migrations():
                         gradient_end VARCHAR(7) DEFAULT '#8b5cf6',
                         install_count INTEGER DEFAULT 0,
                         status VARCHAR(20) DEFAULT 'draft',
-                        skill_md_content TEXT,
+                        tool_md_content TEXT,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )

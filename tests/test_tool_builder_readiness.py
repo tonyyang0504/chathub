@@ -1,8 +1,8 @@
-from app.tools.readiness import build_publish_readiness, parse_skill_frontmatter
+from app.tools.readiness import build_publish_readiness, parse_tool_frontmatter
 
 
-def test_parse_skill_frontmatter_extracts_required_fields():
-    skill_md = """---
+def test_parse_tool_frontmatter_extracts_required_fields():
+    tool_md = """---
 name: demo-tool
 display_name: Demo Tool
 description: A demo tool for testing
@@ -14,7 +14,7 @@ trigger: demo
 You are a demo assistant.
 """
 
-    fields = parse_skill_frontmatter(skill_md)
+    fields = parse_tool_frontmatter(tool_md)
 
     assert fields["name"] == "demo-tool"
     assert fields["display_name"] == "Demo Tool"
@@ -43,7 +43,7 @@ def test_readiness_is_not_ready_when_hard_requirements_fail():
 
 
 def test_readiness_is_almost_ready_when_only_soft_requirements_fail():
-    skill_md = """---
+    tool_md = """---
 name: demo-tool
 display_name: Demo Tool
 description: short
@@ -53,9 +53,9 @@ trigger: demo
 """
 
     readiness = build_publish_readiness(
-        changed_files=["SKILL.md"],
+        changed_files=["TOOL.md"],
         metadata={},
-        skill_md_content=skill_md,
+        skill_md_content=tool_md,
     )
 
     assert readiness["status"] == "almost_ready"
@@ -65,7 +65,7 @@ trigger: demo
 
 def test_readiness_is_ready_when_all_checks_pass():
     readiness = build_publish_readiness(
-        changed_files=["tools/my_tool/SKILL.md", "app/tools/routes.py"],
+        changed_files=["tools/my_tool/TOOL.md", "app/tools/routes.py"],
         metadata={
             "name": "demo-tool",
             "display_name": "Demo Tool",

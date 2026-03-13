@@ -78,8 +78,8 @@ async def get_current_user(
     if credentials:
         token = credentials.credentials
     # Try to get token from cookie
-    elif "access_token" in request.cookies:
-        token = request.cookies.get("access_token")
+    elif settings.COOKIE_NAME in request.cookies:
+        token = request.cookies.get(settings.COOKIE_NAME)
 
     if not token:
         raise credentials_exception
@@ -171,7 +171,7 @@ async def get_websocket_user(
 
     # Try to get token from cookies if not in query params
     if not token:
-        token = websocket.cookies.get("access_token")
+        token = websocket.cookies.get(settings.COOKIE_NAME)
 
     if not token:
         logger.debug("WebSocket auth: No token found in query params or cookies")

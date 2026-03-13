@@ -23,15 +23,28 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 TOOL_BUILDER_SYSTEM_CONTEXT = """You are a Tool Builder agent for the ChatHub platform. You are working inside an isolated git worktree sandbox.
 
-Your job is to BUILD custom tools (skills) by writing actual code files. You can:
-- Create SKILL.md files that define tool behavior
+Your job is to BUILD custom tools by writing actual code files. You can:
+- Create TOOL.md files that define tool behavior
 - Write Python route handlers, templates, and utility modules
 - Run tests to verify your code works
 - Iterate on failures until everything passes
 
-## SKILL.md Format
+## CRITICAL: TOOL.md Lifecycle
 
-Every tool MUST have a SKILL.md file with this format:
+TOOL.md is REQUIRED for publishing — without it, the tool CANNOT be published. Follow this lifecycle:
+
+1. **FIRST**: Create an initial TOOL.md with your best-guess frontmatter and basic content. Commit it immediately.
+2. **BUILD**: Write all code files, templates, routes, tests. Iterate until everything works.
+3. **FINAL STEP — ALWAYS**: Before telling the user the tool is ready, re-read your implementation and UPDATE TOOL.md with:
+   - A polished `display_name` that clearly describes the tool's purpose
+   - A detailed `description` (1-2 sentences) explaining what the tool does and its key features
+   - A refined `name` slug if the initial one was too generic
+   - Complete body content: system prompt, instructions, and examples based on actual implementation
+   - Commit the updated TOOL.md with message "Update TOOL.md with final tool metadata"
+
+## TOOL.md Format
+
+Every tool MUST have a TOOL.md file with this format:
 
 ```
 ---
@@ -57,15 +70,17 @@ Assistant: example output
 ```
 
 ## Guidelines
-1. The YAML frontmatter must include: name, display_name, description, icon, trigger
-2. Use Bootstrap Icons (bi-*) for the icon field
-3. Keep tool names as kebab-case slugs
-4. Write clean, tested code
-5. Commit your changes when ready with a descriptive message
-6. When done, tell the user the tool is ready to publish
+1. **FIRST STEP**: Create and commit initial TOOL.md with frontmatter (name, display_name, description, icon, trigger) before doing anything else
+2. The YAML frontmatter must include: name, display_name, description, icon, trigger
+3. Use Bootstrap Icons (bi-*) for the icon field
+4. Keep tool names as kebab-case slugs
+5. Write clean, tested code
+6. Commit your changes when ready with a descriptive message
+7. **LAST STEP**: Update TOOL.md with polished metadata reflecting the actual implementation, then commit
+8. When done, tell the user the tool is ready to publish
 
 ## Project Structure
-- Skills go in the project root as SKILL.md or in a subdirectory
+- Tools go in the project root as TOOL.md or in a subdirectory
 - Python code goes in app/ directory structure
 - Templates go in app/templates/
 - Static files go in static/
@@ -637,23 +652,97 @@ class ToolBuilderManager:
             "diff_stat": status.get("diff_stat", ""),
         }
 
+    def _update_tool_md_frontmatter(self, session: "ToolBuilderSession", metadata: Dict) -> None:
+        """Update TOOL.md frontmatter with user-provided modal form values before publishing."""
+        import re
+
+        # Find TOOL.md in the worktree
+        worktree = session.sandbox_info.worktree_path
+        if not worktree:
+            return
+
+        tool_md_path = None
+        for candidate in ["TOOL.md", "tool.md"]:
+            p = worktree / candidate
+            if p.exists():
+                tool_md_path = p
+                break
+
+        if not tool_md_path:
+            return
+
+        content = tool_md_path.read_text(encoding="utf-8")
+        fm_match = re.match(r'^---\s*\n([\s\S]*?)\n---', content)
+        if not fm_match:
+            return
+
+        yaml_text = fm_match.group(1)
+        body = content[fm_match.end():]
+
+        # Parse existing frontmatter fields
+        fields = {}
+        field_order = []
+        for line in yaml_text.split('\n'):
+            m = re.match(r'^(\w+)\s*:\s*(.+)$', line)
+            if m:
+                fields[m.group(1)] = m.group(2).strip().strip('"\'')
+                field_order.append(m.group(1))
+            elif line.strip():
+                field_order.append(line)  # preserve comments etc.
+
+        # Override with non-empty metadata values
+        overrides = {
+            "name": metadata.get("name", ""),
+            "display_name": metadata.get("display_name", ""),
+            "description": metadata.get("description", ""),
+            "icon": metadata.get("icon", ""),
+        }
+        changed = False
+        for key, val in overrides.items():
+            if val and val != fields.get(key, ""):
+                fields[key] = val
+                if key not in field_order:
+                    field_order.append(key)
+                changed = True
+
+        if not changed:
+            return
+
+        # Rebuild frontmatter
+        lines = []
+        for item in field_order:
+            if item in fields:
+                lines.append(f"{item}: {fields[item]}")
+            else:
+                lines.append(item)  # preserve raw lines
+
+        new_content = "---\n" + "\n".join(lines) + "\n---" + body
+        rel_path = tool_md_path.relative_to(worktree)
+
+        sandbox_manager.write_file(session.session_id, str(rel_path), new_content)
+        sandbox_manager.commit_file(session.session_id, str(rel_path), "Update TOOL.md metadata from publish form")
+
     async def publish(self, user_id: int, metadata: Optional[Dict] = None) -> dict:
-        """Publish sandbox changes to host repo, extract skill, create ChatHubAgentSkill record."""
+        """Publish sandbox changes to host repo, extract tool definition, create BuiltTool record."""
         session = self._sessions.get(user_id)
         if not session or not session.sandbox_info:
             return {"error": "No active session"}
 
-        # Try to find SKILL.md in changed files
+        # Update TOOL.md frontmatter with modal form values before publishing
+        if metadata and metadata.get("name"):
+            self._update_tool_md_frontmatter(session, metadata)
+
+        # Try to find TOOL.md in changed files
         changed_files = sandbox_manager.get_changed_files(session.session_id)
-        skill_md_content = None
-        skill_file = None
+        tool_md_content = None
+        tool_file = None
 
         for f in changed_files:
-            if f.upper().endswith("SKILL.MD"):
-                skill_file = f
-                skill_path = (session.sandbox_info.worktree_path or PROJECT_ROOT) / f
-                if skill_path.exists():
-                    skill_md_content = skill_path.read_text()
+            if f.upper().endswith("TOOL.MD"):
+                tool_file = f
+                tool_path = (session.sandbox_info.worktree_path or PROJECT_ROOT) / f
+                if tool_path.exists():
+                    tool_md_content = tool_path.read_text()
                 break
 
         # Publish sandbox changes to host repo
@@ -661,12 +750,12 @@ class ToolBuilderManager:
         if not result.get("success"):
             return {"error": result.get("message", "Publish failed")}
 
-        # Create skill record: try SKILL.md first, fall back to user-provided metadata
-        skill_id = None
-        if skill_md_content:
-            skill_id = self._create_skill_from_md(user_id, skill_md_content)
-        if not skill_id and metadata:
-            skill_id = self._create_skill_from_metadata(user_id, metadata)
+        # Create tool record: try TOOL.md first, fall back to user-provided metadata
+        tool_id = None
+        if tool_md_content:
+            tool_id = self._create_tool_from_md(user_id, tool_md_content)
+        if not tool_id and metadata:
+            tool_id = self._create_tool_from_metadata(user_id, metadata)
 
         # Update DB session status to published
         try:
@@ -691,17 +780,17 @@ class ToolBuilderManager:
             "message": result.get("message", "Published"),
             "commit_hash": result.get("commit_hash", ""),
             "merged_branch": result.get("merged_branch", ""),
-            "skill_id": skill_id,
-            "skill_file": skill_file,
+            "skill_id": tool_id,
+            "skill_file": tool_file,
         }
 
-    def _create_skill_from_md(self, user_id: int, skill_md_content: str) -> Optional[int]:
-        """Parse SKILL.md and create a ChatHubAgentSkill record."""
+    def _create_tool_from_md(self, user_id: int, tool_md_content: str) -> Optional[int]:
+        """Parse TOOL.md and create a BuiltTool record."""
         import re
-        from app.database import SessionLocal, ChatHubAgentSkill
+        from app.database import SessionLocal, BuiltTool
 
         # Parse YAML frontmatter
-        fm_match = re.match(r'^---\s*\n([\s\S]*?)\n---', skill_md_content)
+        fm_match = re.match(r'^---\s*\n([\s\S]*?)\n---', tool_md_content)
         if not fm_match:
             return None
 
@@ -717,21 +806,21 @@ class ToolBuilderManager:
         db = SessionLocal()
         try:
             # Check for existing
-            existing = db.query(ChatHubAgentSkill).filter(
-                ChatHubAgentSkill.user_id == user_id,
-                ChatHubAgentSkill.name == name
+            existing = db.query(BuiltTool).filter(
+                BuiltTool.user_id == user_id,
+                BuiltTool.name == name
             ).first()
 
             if existing:
                 existing.display_name = fields.get("display_name", name)
                 existing.description = fields.get("description", "")
                 existing.icon = fields.get("icon", "bi-gear")
-                existing.skill_md_content = skill_md_content
+                existing.tool_md_content = tool_md_content
                 existing.updated_at = datetime.utcnow()
                 db.commit()
                 return existing.id
             else:
-                skill = ChatHubAgentSkill(
+                tool = BuiltTool(
                     user_id=user_id,
                     name=name,
                     display_name=fields.get("display_name", name),
@@ -739,24 +828,23 @@ class ToolBuilderManager:
                     icon=fields.get("icon", "bi-gear"),
                     gradient_start=fields.get("gradient_start", "#6366f1"),
                     gradient_end=fields.get("gradient_end", "#8b5cf6"),
-                    skill_md_content=skill_md_content,
+                    tool_md_content=tool_md_content,
                     is_active=True,
-                    tier="managed"
                 )
-                db.add(skill)
+                db.add(tool)
                 db.commit()
-                db.refresh(skill)
-                return skill.id
+                db.refresh(tool)
+                return tool.id
         except Exception as e:
-            logger.error(f"Failed to create skill from SKILL.md: {e}")
+            logger.error(f"Failed to create tool from TOOL.md: {e}")
             db.rollback()
             return None
         finally:
             db.close()
 
-    def _create_skill_from_metadata(self, user_id: int, metadata: Dict) -> Optional[int]:
-        """Create a ChatHubAgentSkill record from user-provided form metadata."""
-        from app.database import SessionLocal, ChatHubAgentSkill
+    def _create_tool_from_metadata(self, user_id: int, metadata: Dict) -> Optional[int]:
+        """Create a BuiltTool record from user-provided form metadata."""
+        from app.database import SessionLocal, BuiltTool
 
         name = metadata.get("name", "").strip()
         if not name:
@@ -770,9 +858,9 @@ class ToolBuilderManager:
 
         db = SessionLocal()
         try:
-            existing = db.query(ChatHubAgentSkill).filter(
-                ChatHubAgentSkill.user_id == user_id,
-                ChatHubAgentSkill.name == name
+            existing = db.query(BuiltTool).filter(
+                BuiltTool.user_id == user_id,
+                BuiltTool.name == name
             ).first()
 
             if existing:
@@ -783,10 +871,10 @@ class ToolBuilderManager:
                 db.commit()
                 return existing.id
             else:
-                # Generate a basic SKILL.md so the tool can be published to marketplace
-                skill_md = f"---\nname: {name}\ndisplay_name: {display_name}\ndescription: {description}\nicon: {icon}\ntrigger: {name}\n---\n\n# {display_name}\n\n{description}\n"
+                # Generate a basic TOOL.md so the tool can be published to marketplace
+                tool_md = f"---\nname: {name}\ndisplay_name: {display_name}\ndescription: {description}\nicon: {icon}\ntrigger: {name}\n---\n\n# {display_name}\n\n{description}\n"
 
-                skill = ChatHubAgentSkill(
+                tool = BuiltTool(
                     user_id=user_id,
                     name=name,
                     display_name=display_name,
@@ -794,16 +882,15 @@ class ToolBuilderManager:
                     icon=icon,
                     gradient_start=gradient_start,
                     gradient_end=gradient_end,
-                    skill_md_content=skill_md,
+                    tool_md_content=tool_md,
                     is_active=True,
-                    tier="managed"
                 )
-                db.add(skill)
+                db.add(tool)
                 db.commit()
-                db.refresh(skill)
-                return skill.id
+                db.refresh(tool)
+                return tool.id
         except Exception as e:
-            logger.error(f"Failed to create skill from metadata: {e}")
+            logger.error(f"Failed to create tool from metadata: {e}")
             db.rollback()
             return None
         finally:
