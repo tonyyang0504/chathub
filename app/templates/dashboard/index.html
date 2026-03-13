@@ -315,6 +315,24 @@
                 </div>
             </div>
             <div class="card-body p-0">
+                <div class="p-3 border-bottom bg-light-subtle">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-8">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="botSearchInput" class="form-control" placeholder="Search bots by name...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="botStatusFilter" class="form-select form-select-sm">
+                                <option value="all">All statuses</option>
+                                <option value="running">Running</option>
+                                <option value="stopped">Stopped</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted" id="botFilterSummary"></div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 bots-table">
                         <thead>
@@ -524,7 +542,17 @@
             const botsData = await botsRes.json();
             const tbody = document.getElementById('botsTableBody');
 
+            if (!window.botFilters) {
+                window.botFilters = { search: '', status: 'all' };
+            }
+
+            if (typeof window.botsExpanded !== 'boolean') {
+                window.botsExpanded = false;
+            }
+
             if (botsData.bots.length === 0) {
+                window.allBotsData = [];
+                updateFilterSummary(0, 0);
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center py-4">
@@ -536,7 +564,6 @@
             } else {
                 const totalBots = botsData.bots.length;
                 const displayLimit = 10;
-                const hasMore = totalBots > displayLimit;
 
                 // Update bot count badge
                 const countBadge = document.getElementById('botCountBadge');
@@ -545,10 +572,9 @@
                 // Store all bots data for expand/collapse functionality
                 window.allBotsData = botsData.bots;
                 window.botsDisplayLimit = displayLimit;
-                window.botsExpanded = false;
 
                 // Render bots table with expand/collapse support
-                renderBotsTable(false);
+                renderBotsTable(window.botsExpanded);
             }
         } catch (e) {
             console.error('Error loading bots:', e);
@@ -581,13 +607,59 @@
         }
     }
 
+    function getFilteredBots() {
+        const bots = window.allBotsData || [];
+        const filters = window.botFilters || { search: '', status: 'all' };
+        const searchText = filters.search.trim().toLowerCase();
+
+        return bots.filter(bot => {
+            const matchesSearch = !searchText || (bot.name || '').toLowerCase().includes(searchText);
+            const matchesStatus =
+                filters.status === 'all' ||
+                (filters.status === 'running' && bot.is_running) ||
+                (filters.status === 'stopped' && !bot.is_running);
+
+            return matchesSearch && matchesStatus;
+        });
+    }
+
+    function updateFilterSummary(filteredCount, totalCount) {
+        const summary = document.getElementById('botFilterSummary');
+        if (!summary) return;
+
+        if (totalCount === 0) {
+            summary.textContent = '';
+            return;
+        }
+
+        const hasFilters = (window.botFilters?.search || '').trim() || window.botFilters?.status !== 'all';
+        summary.textContent = hasFilters
+            ? `Showing ${filteredCount} of ${totalCount} bots`
+            : `Showing all ${totalCount} bots`;
+    }
+
     // Render bots table with expand/collapse functionality
     function renderBotsTable(expanded) {
         const tbody = document.getElementById('botsTableBody');
-        const bots = window.allBotsData || [];
+        const totalBots = (window.allBotsData || []).length;
+        const bots = getFilteredBots();
         const limit = window.botsDisplayLimit || 10;
-        const totalBots = bots.length;
-        const hasMore = totalBots > limit;
+        const filteredCount = bots.length;
+        const hasMore = filteredCount > limit;
+
+        updateFilterSummary(filteredCount, totalBots);
+
+        if (filteredCount === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        No bots match your filters
+                    </td>
+                </tr>
+            `;
+            window.botsExpanded = false;
+            return;
+        }
 
         // Determine which bots to show
         const botsToShow = expanded ? bots : bots.slice(0, limit);
@@ -614,7 +686,7 @@
 
         // Add expand/collapse row if there are more bots
         if (hasMore) {
-            const remaining = totalBots - limit;
+            const remaining = filteredCount - limit;
             if (expanded) {
                 // Show "Show Less" button
                 html += `
@@ -634,7 +706,7 @@
                         <td colspan="5" class="text-center" style="padding: 28px 0;">
                             <button class="btn btn-sm btn-outline-primary" onclick="toggleBotsDisplay(true)">
                                 <i class="bi bi-chevron-down me-1"></i>
-                                View All ${totalBots} Bots (${remaining} more)
+                                View All ${filteredCount} Bots (${remaining} more)
                             </button>
                         </td>
                     </tr>
@@ -649,6 +721,26 @@
     // Toggle bots display between collapsed and expanded
     function toggleBotsDisplay(expand) {
         renderBotsTable(expand);
+    }
+
+    function setupBotFilters() {
+        const searchInput = document.getElementById('botSearchInput');
+        const statusFilter = document.getElementById('botStatusFilter');
+        if (!searchInput || !statusFilter) return;
+
+        if (!window.botFilters) {
+            window.botFilters = { search: '', status: 'all' };
+        }
+
+        searchInput.addEventListener('input', () => {
+            window.botFilters.search = searchInput.value;
+            renderBotsTable(false);
+        });
+
+        statusFilter.addEventListener('change', () => {
+            window.botFilters.status = statusFilter.value;
+            renderBotsTable(false);
+        });
     }
 
     function formatActivityDetails(details) {
@@ -780,6 +872,7 @@
         await loadDashboard();
     }
 
+    setupBotFilters();
     initialize();
     setInterval(loadDashboard, 30000); // Refresh every 30s
 
