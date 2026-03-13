@@ -1329,29 +1329,6 @@ async def contact_followup_page(
     )
 
 
-@router.get("/reply-assistant", response_class=HTMLResponse)
-async def reply_assistant_page(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    """Reply Assistant tool page - Fast, on-brand customer reply drafts."""
-    user = await get_current_user_optional(request, None, db)
-    if not user:
-        return templates.TemplateResponse(
-            "auth/login.html",
-            {"request": request, "error": "Please log in to access this page"}
-        )
-
-    return templates.TemplateResponse(
-        "dashboard/tools/reply_assistant.html",
-        {
-            "request": request,
-            "user": user,
-            "page_title": "Reply Assistant"
-        }
-    )
-
-
 # ============================================================================
 # Contact Follow Up API Endpoints
 # ============================================================================
