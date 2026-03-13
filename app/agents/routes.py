@@ -394,6 +394,80 @@ async def delete_agent(
     return {"success": True}
 
 
+@router.post("/api/{agent_id}/duplicate")
+async def duplicate_agent(
+    request: Request,
+    agent_id: int,
+    db: Session = Depends(get_db)
+):
+    """Duplicate an existing agent with reset runtime stats."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    source_agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
+    if not source_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    if not source_agent.is_global and source_agent.hub_id not in user_hub_ids:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    base_name = f"Copy of {source_agent.name}"
+    duplicate_name = base_name
+    duplicate_count = 2
+
+    while db.query(AIAgent).filter(
+        AIAgent.hub_id == source_agent.hub_id,
+        AIAgent.is_global == source_agent.is_global,
+        AIAgent.name == duplicate_name
+    ).first():
+        duplicate_name = f"{base_name} ({duplicate_count})"
+        duplicate_count += 1
+
+    duplicated_agent = AIAgent(
+        hub_id=source_agent.hub_id,
+        name=duplicate_name,
+        agent_type=source_agent.agent_type,
+        description=source_agent.description,
+        ai_provider=source_agent.ai_provider,
+        api_key_encrypted=source_agent.api_key_encrypted,
+        model=source_agent.model,
+        system_prompt=source_agent.system_prompt,
+        additional_instructions=source_agent.additional_instructions,
+        config=source_agent.config,
+        is_active=source_agent.is_active,
+        is_global=source_agent.is_global,
+        template_id=source_agent.template_id,
+        status="idle",
+        last_error=None,
+        last_run_at=None,
+        total_executions=0,
+        successful_executions=0,
+        total_tokens_used=0
+    )
+
+    db.add(duplicated_agent)
+    db.commit()
+    db.refresh(duplicated_agent)
+
+    ToolMonitor.log_execution(
+        db=db,
+        tool_type="agent_execution",
+        operation="duplicate_agent",
+        hub_id=duplicated_agent.hub_id,
+        input_data={"source_agent_id": source_agent.id, "source_agent_name": source_agent.name},
+        output_data={"duplicated_agent_id": duplicated_agent.id, "duplicated_agent_name": duplicated_agent.name},
+        triggered_by="user",
+        related_entity_type="agent",
+        related_entity_id=duplicated_agent.id,
+        user_id=user.id
+    )
+
+    return {"success": True, "agent_id": duplicated_agent.id, "name": duplicated_agent.name}
+
+
 @router.post("/api/{agent_id}/toggle")
 async def toggle_agent(
     request: Request,

@@ -1,0 +1,10 @@
+.worktrees/
+data/
+logs/
+.git/
+__pycache__/
+*.pyc
+.env
+.env.*
+node_modules/
+.pytest_cache/

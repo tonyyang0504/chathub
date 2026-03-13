@@ -36,51 +36,30 @@
     background: #f0f2f5;
 }
 
-/* Left sidebar — My Tools (kept as-is) */
-.builder-sidebar {
-    width: 260px;
-    min-width: 260px;
-    height: 100%;
-    background: var(--card-bg);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.builder-sidebar .sidebar-header {
-    padding: 0.65rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-}
-.builder-sidebar .sidebar-header h5 { margin: 0; font-size: 0.85rem; font-weight: 600; }
-.tools-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
-.tool-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-    border: 1px solid transparent;
-    margin-bottom: 0.25rem;
-}
-.tool-item:hover { background: rgba(var(--provider-color-rgb),0.08); }
-.tool-item.active { background: rgba(var(--provider-color-rgb),0.12); border-color: rgba(var(--provider-color-rgb),0.25); }
-.tool-item-icon {
-    width: 36px; height: 36px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; color: white; flex-shrink: 0;
-}
-.tool-item-info h6 { font-size: 0.85rem; font-weight: 600; margin: 0; }
-.tool-item-info small { font-size: 0.75rem; color: var(--text-secondary); }
-.tool-item-actions { margin-left: auto; display: flex; gap: 0.25rem; }
-.tool-item-actions .btn { padding: 0.15rem 0.35rem; font-size: 0.75rem; border-radius: 4px; }
-.empty-tools { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); }
-.empty-tools i { font-size: 2.5rem; opacity: 0.3; display: block; margin-bottom: 0.75rem; }
+/* Left sidebar — Sessions list (claude-sidebar style) */
+.claude-sidebar { width: 260px; min-width: 260px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.claude-sidebar-header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.claude-sidebar-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; }
+.btn-new-session { background: none; border: none; color: var(--text-secondary); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+.btn-new-session:hover { background: rgba(var(--provider-color-rgb),0.1); color: var(--provider-color); }
+.session-list-wrapper { flex: 1; overflow-y: auto; padding: 0.5rem; }
+.session-item { padding: 0.6rem 0.75rem; border-radius: 12px; cursor: pointer; border: 1px solid transparent; margin-bottom: 0.25rem; transition: background 0.15s; position: relative; }
+.session-item:hover { background: rgba(var(--provider-color-rgb),0.08); }
+.session-item.active { background: rgba(var(--provider-color-rgb),0.12); border-color: rgba(var(--provider-color-rgb),0.25); }
+.prompt-preview { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 0.2rem; }
+.session-meta { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.mini-badge { font-size: 0.62rem; padding: 1px 6px; border-radius: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.mini-badge.status-running { background: rgba(var(--provider-color-rgb),0.15); color: var(--provider-color); }
+.mini-badge.status-completed { background: rgba(34,197,94,0.15); color: #16a34a; }
+.mini-badge.status-failed { background: rgba(239,68,68,0.15); color: #dc2626; }
+.mini-badge.status-stopped { background: rgba(245,158,11,0.15); color: #d97706; }
+.mini-badge.status-published { background: rgba(16,185,129,0.2); color: #059669; }
+.published-badge { font-size: 0.62rem; padding: 1px 7px; border-radius: 8px; background: rgba(16,185,129,0.2); color: #059669; font-weight: 600; border: 1px solid rgba(16,185,129,0.3); }
+.session-date { font-size: 0.68rem; color: var(--text-secondary); }
+.btn-delete-session { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); opacity: 0; padding: 2px 4px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+.session-item:hover .btn-delete-session { opacity: 1; }
+.btn-delete-session:hover { color: #ef4444; }
+#noSessions { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); font-size: 0.82rem; }
 
 /* Main chat area — matches AI Workspace .claude-main */
 .claude-main {
@@ -549,29 +528,19 @@
 #sendBtn:disabled { opacity: 0.35; }
 #sendBtn:not(:disabled):hover { opacity: 0.85; }
 
-/* Right panel: Build Status (kept as-is) */
-.builder-panel {
-    width: 340px;
-    min-width: 340px;
-    height: 100%;
-    background: var(--card-bg);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.panel-header {
-    padding: 0.65rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-}
-.panel-header h5 { margin: 0; font-size: 0.85rem; font-weight: 600; }
-.panel-content {
-    flex: 1; overflow-y: auto; padding: 1rem;
-}
+/* Right panel: Build Status (claude-artifacts style) */
+.claude-artifacts { width: 340px; min-width: 340px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; transition: margin-right 0.25s, opacity 0.25s; }
+.claude-artifacts.collapsed { margin-right: -346px; opacity: 0; pointer-events: none; }
+.artifacts-header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.artifacts-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; }
+.btn-artifact-close { background: none; border: none; color: var(--text-secondary); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+.btn-artifact-close:hover { background: rgba(var(--provider-color-rgb),0.1); color: var(--provider-color); }
+.artifacts-body { flex: 1; overflow-y: auto; padding: 1rem; }
+.artifacts-footer { padding: 0.75rem 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; flex-wrap: wrap; flex-shrink: 0; }
+.artifacts-footer .btn { font-size: 0.82rem; border-radius: 8px; flex: 1; min-width: 0; }
+#artifactsToggleBtn { font-size: 0.8rem; padding: 4px 10px; border-radius: 8px; }
+
+/* Inner panel sections (unchanged selectors used by status panel JS) */
 .panel-section { margin-bottom: 1rem; }
 .panel-section-title {
     font-size: 0.7rem;
@@ -624,15 +593,6 @@
 }
 .test-result.pass { border-left: 3px solid #22c55e; }
 .test-result.fail { border-left: 3px solid #ef4444; }
-
-.panel-actions {
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-.panel-actions .btn { font-size: 0.85rem; border-radius: 8px; flex: 1; }
 
 /* SKILL.md preview */
 .skill-preview {
@@ -708,33 +668,30 @@
 }
 
 @media (max-width: 1200px) {
-    .builder-panel { width: 280px; min-width: 280px; }
-    .builder-sidebar { width: 220px; min-width: 220px; }
+    .claude-artifacts { width: 280px; min-width: 280px; }
+    .claude-sidebar { width: 220px; min-width: 220px; }
 }
 @media (max-width: 992px) {
     .claude-app { flex-direction: column; height: auto; }
-    .builder-sidebar { width: 100%; min-width: 0; max-height: 300px; }
+    .claude-sidebar { width: 100%; min-width: 0; max-height: 300px; }
     .claude-main { min-height: 500px; }
-    .builder-panel { width: 100%; min-width: 0; min-height: 400px; }
+    .claude-artifacts { width: 100%; min-width: 0; min-height: 400px; margin-right: 0 !important; opacity: 1 !important; pointer-events: auto !important; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="claude-app" id="claudeApp" data-provider="claude">
-    <!-- Left: My Tools -->
-    <div class="builder-sidebar">
-        <div class="sidebar-header">
-            <h5><i class="bi bi-collection me-2"></i>My Tools</h5>
-            <button class="btn btn-sm btn-outline-primary" onclick="startNewTool()" title="New Tool">
+    <!-- Left: Sessions List -->
+    <div class="claude-sidebar">
+        <div class="claude-sidebar-header">
+            <h6><i class="bi bi-hammer me-2"></i>Tool Builder</h6>
+            <button class="btn-new-session" onclick="newSession()" title="New session">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
-        <div class="tools-list" id="toolsList">
-            <div class="empty-tools" id="emptyTools">
-                <i class="bi bi-hammer"></i>
-                <p>No custom tools yet.<br>Describe a tool in the chat to get started!</p>
-            </div>
+        <div class="session-list-wrapper" id="sessionList">
+            <div id="noSessions"><i class="bi bi-chat-left-dots" style="font-size:1.8rem;opacity:0.25;display:block;margin-bottom:0.6rem;"></i>No sessions yet.<br>Start by describing a tool.</div>
         </div>
     </div>
 
@@ -763,6 +720,9 @@
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn" onclick="toggleArtifacts()" title="Toggle build panel">
+                    <i class="bi bi-layout-sidebar-reverse me-1"></i>Build
+                </button>
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
                     <i class="bi bi-gear me-1"></i>Settings
                 </button>
@@ -843,15 +803,20 @@
         <div class="drag-overlay" id="dragOverlay"><span><i class="bi bi-cloud-upload me-2"></i>Drop files to attach</span></div>
     </div>
 
-    <!-- Right: Build Status Panel -->
-    <div class="builder-panel">
-        <div class="panel-header">
-            <h5><i class="bi bi-git me-2"></i>Build Status</h5>
-            <button class="btn btn-sm btn-outline-secondary" onclick="refreshStatus()" title="Refresh">
-                <i class="bi bi-arrow-clockwise"></i>
-            </button>
+    <!-- Right: Build Status Panel (claude-artifacts style) -->
+    <div class="claude-artifacts collapsed" id="buildPanel">
+        <div class="artifacts-header">
+            <h6><i class="bi bi-git me-2"></i>Build Status</h6>
+            <div class="d-flex align-items-center gap-1">
+                <button class="btn-artifact-close" onclick="refreshStatus()" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close panel">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
         </div>
-        <div class="panel-content" id="panelContent">
+        <div class="artifacts-body" id="panelContent">
             <div class="no-changes" id="emptyPanel">
                 <i class="bi bi-code-slash"></i>
                 <p>Start a build session to see changes here.</p>
@@ -882,8 +847,17 @@
                 <div class="panel-section-title">Test Results</div>
                 <div class="test-result" id="testResult"></div>
             </div>
+
+            <!-- Sandbox status indicator -->
+            <div id="sandboxStatus" style="display:none; margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(var(--provider-color-rgb),0.06); border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary);">
+                <i class="bi bi-box me-1"></i>
+                <span id="sandboxStatusText">Sandbox running</span>
+            </div>
         </div>
-        <div class="panel-actions" id="panelActions" style="display:none;">
+        <div class="artifacts-footer" id="panelActions" style="display:none;">
+            <button class="btn btn-info text-white" id="previewBtn" onclick="openPreview()" title="Open sandbox preview in new tab" style="display:none;">
+                <i class="bi bi-eye me-1"></i> Preview
+            </button>
             <button class="btn btn-success" id="publishBtn" onclick="publishBuild()">
                 <i class="bi bi-check-circle me-1"></i> Publish
             </button>
@@ -927,6 +901,14 @@
                     <label class="form-label fw-semibold">Icon</label>
                     <input type="text" class="form-control" id="publishBuildIcon" value="bi-gear" placeholder="bi-gear">
                     <small class="text-muted">Bootstrap Icon class (e.g. bi-lightning, bi-robot)</small>
+                </div>
+                <div class="border rounded p-3" id="publishReadinessPanel" style="background: rgba(var(--provider-color-rgb),0.06); border-color: rgba(var(--provider-color-rgb),0.25) !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-semibold">Publish Readiness</span>
+                        <span class="badge" id="publishReadinessBadge">Checking...</span>
+                    </div>
+                    <div class="small text-muted mb-2" id="publishReadinessHint">Validating tool metadata and required files.</div>
+                    <div id="publishReadinessChecks"></div>
                 </div>
             </div>
             <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
@@ -1165,7 +1147,10 @@ let currentAssistantEl = null;
 let turnHasStreamedText = false;
 let statusPollInterval = null;
 let publishedSkillId = null;
+let previewUrl = null;
 let autoScroll = true;
+let publishReadiness = null;
+let publishReadinessTimer = null;
 
 // File upload state
 let pendingFiles = [];
@@ -1639,15 +1624,28 @@ async function createSession() {
         });
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            showToast(err.detail || 'Failed to create session', 'error');
+            if (resp.status === 503) {
+                showToast(err.detail || 'Docker is not available. Check server logs.', 'error');
+            } else {
+                showToast(err.detail || 'Failed to create session', 'error');
+            }
             return false;
         }
         const data = await resp.json();
         if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
         sessionId = data.session_id;
+        previewUrl = data.preview_url || null;
         setStatus('connected');
         connectWebSocket();
         startStatusPolling();
+        // Always show Preview button once a session exists
+        document.getElementById('previewBtn').style.display = '';
+        if (previewUrl) {
+            document.getElementById('sandboxStatus').style.display = '';
+            document.getElementById('sandboxStatusText').textContent = `Sandbox running on port ${data.preview_port || ''}`;
+        }
+        // Refresh sessions sidebar (new session now exists in DB)
+        setTimeout(loadSessions, 500);
         return true;
     } catch(e) {
         showToast('Connection error: ' + e.message, 'error');
@@ -1659,6 +1657,18 @@ async function handleSend() {
     const input = document.getElementById('promptInput');
     const text = input.value.trim();
     if (!text) return;
+
+    if (!sessionId && currentDbSessionId) {
+        // User is viewing a historical session — resume it first
+        input.value = '';
+        input.style.height = 'auto';
+        const resumeOk = await resumeHistoricalSession(currentDbSessionId);
+        if (!resumeOk) return;
+        appendUserMessage(text);
+        document.getElementById('emptyState').style.display = 'none';
+        sendMessage(text);
+        return;
+    }
 
     if (!sessionId) {
         appendUserMessage(text);
@@ -1678,6 +1688,33 @@ async function handleSend() {
     input.value = '';
     input.style.height = 'auto';
     sendMessage(text);
+}
+
+async function resumeHistoricalSession(dbId) {
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}/resume`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to resume session', 'error');
+            return false;
+        }
+        const data = await resp.json();
+        if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
+        sessionId = data.session_id;
+        previewUrl = null;
+        setStatus('connected');
+        connectWebSocket();
+        startStatusPolling();
+        document.getElementById('previewBtn').style.display = '';
+        loadSessions();
+        return true;
+    } catch(e) {
+        showToast('Error resuming session: ' + e.message, 'error');
+        return false;
+    }
 }
 
 async function sendMessage(text) {
@@ -2293,12 +2330,26 @@ async function refreshStatus() {
     if (!sessionId) return;
     try {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/status`);
+        if (resp.status === 401) {
+            if (statusPollInterval) clearInterval(statusPollInterval);
+            showToast('Session expired. Please refresh the page and log in again.', 'error');
+            return;
+        }
         if (!resp.ok) return;
         const status = await resp.json();
         if (status.error) return;
 
         document.getElementById('emptyPanel').style.display = 'none';
         document.getElementById('panelActions').style.display = '';
+
+        // Update preview URL if container has started; always keep button visible
+        if (status.preview_url) {
+            previewUrl = status.preview_url;
+            document.getElementById('sandboxStatus').style.display = '';
+            document.getElementById('sandboxStatusText').textContent =
+                `Sandbox ${status.container_status || 'running'} on port ${status.preview_port || ''}`;
+        }
+        document.getElementById('previewBtn').style.display = '';
 
         // Branch
         document.getElementById('branchSection').style.display = '';
@@ -2328,6 +2379,120 @@ async function refreshStatus() {
     }
 }
 
+function getPublishMetadataDraft() {
+    return {
+        name: document.getElementById('publishBuildName').value.trim(),
+        display_name: document.getElementById('publishBuildDisplayName').value.trim(),
+        description: document.getElementById('publishBuildDescription').value.trim(),
+        icon: document.getElementById('publishBuildIcon').value.trim() || 'bi-gear',
+    };
+}
+
+function applyPublishButtonState() {
+    const confirmBtn = document.getElementById('confirmPublishBtn');
+    if (!confirmBtn) return;
+    const hardBlocked = publishReadiness && !publishReadiness.hard_requirements_met;
+    confirmBtn.disabled = !!hardBlocked;
+}
+
+function renderPublishReadiness(readiness) {
+    publishReadiness = readiness;
+    const badge = document.getElementById('publishReadinessBadge');
+    const hint = document.getElementById('publishReadinessHint');
+    const checksEl = document.getElementById('publishReadinessChecks');
+
+    const badgeClass =
+        readiness.status === 'ready' ? 'text-bg-success' :
+        readiness.status === 'almost_ready' ? 'text-bg-warning' :
+        'text-bg-danger';
+
+    badge.className = `badge ${badgeClass}`;
+    badge.textContent = readiness.status_label || 'Not Ready';
+
+    if (readiness.status === 'ready') {
+        hint.textContent = 'All required publish checks passed.';
+    } else if (readiness.status === 'almost_ready') {
+        hint.textContent = 'Required checks passed. Optional metadata can still be improved.';
+    } else {
+        hint.textContent = 'Fix required items below to enable publish.';
+    }
+
+    checksEl.innerHTML = (readiness.checks || []).map(item => {
+        const icon = item.ok ? 'bi-check-circle-fill text-success' : (item.hard ? 'bi-x-circle-fill text-danger' : 'bi-exclamation-circle-fill text-warning');
+        const action = item.ok
+            ? ''
+            : `<button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline" onclick="focusReadinessFix('${item.key}')">Fix</button>`;
+        return `
+            <div class="d-flex align-items-start justify-content-between mb-1">
+                <div class="small">
+                    <i class="bi ${icon} me-1"></i>
+                    <span>${escapeHtml(item.label || item.key)}</span>
+                    ${item.hard ? '<span class="badge text-bg-secondary ms-1">Required</span>' : '<span class="badge text-bg-light ms-1">Optional</span>'}
+                </div>
+                ${action}
+            </div>
+        `;
+    }).join('');
+
+    applyPublishButtonState();
+}
+
+function focusReadinessFix(key) {
+    const inputMap = {
+        name: 'publishBuildName',
+        display_name: 'publishBuildDisplayName',
+        description: 'publishBuildDescription',
+        icon: 'publishBuildIcon',
+    };
+    const fieldId = inputMap[key];
+    if (fieldId) {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.focus();
+            return;
+        }
+    }
+
+    if (key === 'trigger') {
+        showToast('Add a trigger field in your SKILL.md frontmatter.', 'warning');
+    } else if (key === 'skill_file') {
+        showToast('Add a SKILL.md file in your tool changes, then retry.', 'warning');
+    }
+}
+
+async function refreshPublishReadiness() {
+    if (!sessionId) return;
+
+    const badge = document.getElementById('publishReadinessBadge');
+    if (badge) {
+        badge.className = 'badge text-bg-secondary';
+        badge.textContent = 'Checking...';
+    }
+
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/readiness`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(getPublishMetadataDraft()),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            showToast(data.detail || 'Failed to validate publish readiness', 'error');
+            return;
+        }
+        renderPublishReadiness(data);
+    } catch (e) {
+        showToast('Readiness check failed', 'error');
+    }
+}
+
+function schedulePublishReadinessRefresh() {
+    if (publishReadinessTimer) clearTimeout(publishReadinessTimer);
+    publishReadinessTimer = setTimeout(() => {
+        refreshPublishReadiness();
+    }, 250);
+}
+
 // ============================================================
 // Build Actions
 // ============================================================
@@ -2341,10 +2506,19 @@ async function publishBuild() {
     document.getElementById('publishBuildDisplayName').value = '';
     document.getElementById('publishBuildDescription').value = '';
     document.getElementById('publishBuildIcon').value = 'bi-gear';
+    publishReadiness = null;
+    applyPublishButtonState();
     new bootstrap.Modal(document.getElementById('publishBuildModal')).show();
+    refreshPublishReadiness();
 }
 
 async function confirmPublish() {
+    await refreshPublishReadiness();
+    if (publishReadiness && !publishReadiness.hard_requirements_met) {
+        showToast('Fix required readiness items before publishing', 'warning');
+        return;
+    }
+
     const name = document.getElementById('publishBuildName').value.trim();
     if (!name) { showToast('Tool name is required', 'warning'); return; }
 
@@ -2366,15 +2540,18 @@ async function confirmPublish() {
             body: JSON.stringify(metadata),
         });
         const data = await resp.json();
-        if (resp.ok && data.success) {
+        if (resp.status === 401) {
+            showToast('Session expired. Please refresh the page and log in again.', 'error');
+        } else if (resp.ok && data.success) {
             // Close modal, reset panel, refresh sidebar
             bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
-            showToast('Build published successfully!', 'success');
+            showToast('Changes deployed! Restart your app to see them live.', 'success');
             publishedSkillId = data.skill_id;
             sessionId = null;
+            previewUrl = null;
             if (statusPollInterval) clearInterval(statusPollInterval);
             resetPanel();
-            loadMyTools();
+            loadSessions();
             if (data.skill_id) { currentToolId = data.skill_id; showPublishModal(); }
         } else {
             // On failure: show error but keep build panel visible (don't resetPanel)
@@ -2385,6 +2562,7 @@ async function confirmPublish() {
     }
     confirmBtn.disabled = false;
     confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Publish';
+    applyPublishButtonState();
 }
 
 async function runTests() {
@@ -2421,6 +2599,7 @@ async function discardBuild() {
         if (resp.ok) {
             showToast('Build discarded', 'info');
             sessionId = null;
+            previewUrl = null;
             if (statusPollInterval) clearInterval(statusPollInterval);
             if (ws) { ws.onclose = null; ws.close(); ws = null; }
             resetPanel();
@@ -2441,7 +2620,51 @@ async function stopAgent() {
     }
 }
 
+async function openPreview() {
+    if (previewUrl) {
+        window.open(previewUrl, '_blank');
+        return;
+    }
+    if (!sessionId) {
+        showToast('Start a session first.', 'warning');
+        return;
+    }
+    // First click: trigger Docker install + container creation
+    const btn = document.getElementById('previewBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (resp.status === 503) {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Docker is not available. Check server logs.', 'error');
+            return;
+        }
+        if (!resp.ok) {
+            showToast('Failed to start preview.', 'error');
+            return;
+        }
+        const data = await resp.json();
+        previewUrl = data.preview_url;
+        document.getElementById('sandboxStatus').style.display = '';
+        document.getElementById('sandboxStatusText').textContent =
+            `Sandbox running on port ${data.preview_port}`;
+        window.open(previewUrl, '_blank');
+    } catch (e) {
+        showToast('Preview error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-eye me-1"></i> Preview';
+    }
+}
+
 function resetPanel() {
+    previewUrl = null;
+    document.getElementById('previewBtn').style.display = 'none';
+    document.getElementById('sandboxStatus').style.display = 'none';
     document.getElementById('emptyPanel').style.display = '';
     document.getElementById('branchSection').style.display = 'none';
     document.getElementById('filesSection').style.display = 'none';
@@ -2465,6 +2688,11 @@ function setRunningState(running) {
     }
 }
 
+function toggleArtifacts() {
+    const panel = document.getElementById('buildPanel');
+    panel.classList.toggle('collapsed');
+}
+
 function setStatus(status) {
     const badge = document.getElementById('statusBadge');
     const text = document.getElementById('statusText');
@@ -2478,85 +2706,180 @@ function setStatus(status) {
 }
 
 // ============================================================
-// My Tools Sidebar
+// Sessions Sidebar
 // ============================================================
 
-async function loadMyTools() {
+let currentDbSessionId = null;  // tracks which DB session is displayed in sidebar
+
+async function loadSessions() {
     try {
-        const resp = await fetch('/tools/api/tool-builder/my-tools');
-        const data = await resp.json();
-        const list = document.getElementById('toolsList');
-        const empty = document.getElementById('emptyTools');
-        if (!data.tools || data.tools.length === 0) { empty.style.display = ''; return; }
-        empty.style.display = 'none';
-        list.querySelectorAll('.tool-item').forEach(el => el.remove());
-        data.tools.forEach(tool => {
+        const resp = await fetch('/tools/api/tool-builder/sessions', { credentials: 'include' });
+        if (!resp.ok) return;
+        const sessions = await resp.json();
+        const list = document.getElementById('sessionList');
+        const noSessions = document.getElementById('noSessions');
+
+        // Remove old session items (keep #noSessions)
+        list.querySelectorAll('.session-item').forEach(el => el.remove());
+
+        if (!sessions || sessions.length === 0) {
+            noSessions.style.display = '';
+            return;
+        }
+        noSessions.style.display = 'none';
+
+        sessions.forEach(s => {
+            const isActive = s.active_session_id !== null;
+            const isCurrentView = s.db_id === currentDbSessionId;
             const div = document.createElement('div');
-            div.className = `tool-item ${tool.id === currentToolId ? 'active' : ''}`;
+            div.className = `session-item ${isCurrentView ? 'active' : ''}`;
+            div.dataset.dbId = s.db_id;
+
+            const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString([], {month:'short', day:'numeric'}) : '';
+            const statusClass = `status-${s.status || 'idle'}`;
+            const publishedBadge = s.published ? `<span class="published-badge">Published</span>` : '';
+            const activeBadge = isActive ? `<span class="mini-badge status-running">Live</span>` : '';
+
             div.innerHTML = `
-                <div class="tool-item-icon" style="background: linear-gradient(135deg, ${tool.gradient_start}, ${tool.gradient_end});">
-                    <i class="bi ${tool.icon}"></i>
+                <div class="prompt-preview">${escapeHtml(s.title || '[Tool Builder Session]')}</div>
+                <div class="session-meta">
+                    <span class="mini-badge ${statusClass}">${escapeHtml(s.status || 'idle')}</span>
+                    ${activeBadge}
+                    ${publishedBadge}
+                    <span class="session-date">${dateStr}</span>
                 </div>
-                <div class="tool-item-info">
-                    <h6>${escapeHtml(tool.display_name)}</h6>
-                    <small>${tool.is_active ? '<span style="color:#22c55e">&#9679;</span> Active' : '<span style="color:#6b7280">&#9675;</span> Inactive'}${tool.has_listing ? ' &middot; Published' : ''}</small>
-                </div>
-                <div class="tool-item-actions">
-                    <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); toggleTool(${tool.id})" title="${tool.is_active ? 'Deactivate' : 'Activate'}">
-                        <i class="bi ${tool.is_active ? 'bi-toggle-on' : 'bi-toggle-off'}"></i>
-                    </button>
-                    <button class="btn btn-outline-danger" onclick="event.stopPropagation(); deleteTool(${tool.id})" title="Delete">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
+                <button class="btn-delete-session" onclick="event.stopPropagation(); deleteBuilderSession(${s.db_id})" title="Delete session">
+                    <i class="bi bi-trash"></i>
+                </button>
             `;
-            div.onclick = () => loadToolDetail(tool.id);
+            div.onclick = () => viewSession(s.db_id);
             list.appendChild(div);
         });
     } catch(e) {
-        console.error('Failed to load tools:', e);
+        console.error('Failed to load sessions:', e);
     }
 }
 
-async function loadToolDetail(toolId) {
+async function viewSession(dbId) {
+    currentDbSessionId = dbId;
+    // Update active highlight
+    document.querySelectorAll('.session-item').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.dbId) === dbId);
+    });
+
     try {
-        const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}`);
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}`, { credentials: 'include' });
+        if (!resp.ok) { showToast('Failed to load session', 'error'); return; }
         const data = await resp.json();
+
+        // If this session is already the live active session, just reconnect WS
+        if (data.active_session_id && data.active_session_id === sessionId) {
+            showToast('Session already active', 'info');
+            return;
+        }
+
+        // If it's a different active session, resume it
+        if (data.active_session_id && data.active_session_id !== sessionId) {
+            // Resume: connect to the existing active session
+            if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
+            sessionId = data.active_session_id;
+            clearChat();
+            replayMessages(data.messages);
+            connectWebSocket();
+            startStatusPolling();
+            setStatus('connected');
+            return;
+        }
+
+        // Otherwise just display the historical messages (view-only)
+        clearChat();
+        replayMessages(data.messages);
+        document.getElementById('emptyState').style.display = 'none';
+
+        // Show resume prompt if session can be resumed
+        if (data.status !== 'published' && data.status !== 'stopped') {
+            // Offer to resume
+        }
+    } catch(e) {
+        showToast('Error loading session: ' + e.message, 'error');
+    }
+}
+
+async function deleteBuilderSession(dbId) {
+    if (!confirm('Delete this session? This cannot be undone.')) return;
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
         if (resp.ok) {
-            currentToolId = data.id;
-            if (data.skill_md_content) {
-                document.getElementById('skillSection').style.display = '';
-                document.getElementById('skillPreviewCode').textContent = data.skill_md_content;
+            if (currentDbSessionId === dbId) {
+                currentDbSessionId = null;
+                clearChat();
+                if (sessionId) {
+                    sessionId = null;
+                    previewUrl = null;
+                    if (statusPollInterval) clearInterval(statusPollInterval);
+                    if (ws) { ws.onclose = null; ws.close(); ws = null; }
+                    resetPanel();
+                    setStatus('idle');
+                }
             }
-            document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
+            showToast('Session deleted', 'success');
+            loadSessions();
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to delete session', 'error');
         }
-    } catch(e) { console.error('Failed to load tool detail:', e); }
+    } catch(e) {
+        showToast('Error deleting session', 'error');
+    }
 }
 
-async function toggleTool(toolId) {
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}/toggle`, { method: 'PUT' });
-        const data = await resp.json();
-        if (resp.ok) { showToast(data.message, 'success'); loadMyTools(); }
-    } catch(e) { showToast('Error toggling tool', 'error'); }
-}
-
-async function deleteTool(toolId) {
-    if (!confirm('Delete this tool? This cannot be undone.')) return;
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}`, { method: 'DELETE' });
-        if (resp.ok) {
-            if (currentToolId === toolId) currentToolId = null;
-            showToast('Tool deleted', 'success');
-            loadMyTools();
-        }
-    } catch(e) { showToast('Error deleting tool', 'error'); }
-}
-
-function startNewTool() {
-    currentToolId = null;
-    document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
+function newSession() {
+    // Reset state so next send creates a fresh session
+    if (sessionId) {
+        if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
+        sessionId = null;
+        previewUrl = null;
+        if (statusPollInterval) clearInterval(statusPollInterval);
+        resetPanel();
+        setStatus('idle');
+    }
+    currentDbSessionId = null;
+    document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+    clearChat();
+    document.getElementById('emptyState').style.display = '';
     document.getElementById('promptInput').focus();
+}
+
+function clearChat() {
+    document.getElementById('chatBody').innerHTML = '';
+    assistantBuffer = '';
+    currentAssistantEl = null;
+    turnHasStreamedText = false;
+}
+
+function replayMessages(messages) {
+    if (!messages || !messages.length) return;
+    document.getElementById('emptyState').style.display = 'none';
+    for (const m of messages) {
+        if (m.message_type === 'user_message' || (m.role === 'user' && m.message_type === 'text')) {
+            appendUserMessage(m.content || '');
+        } else if (m.role === 'assistant' && (m.message_type === 'result' || m.message_type === 'assistant_message')) {
+            appendAssistantMessage(m.content || '');
+        } else if (m.role === 'tool_use') {
+            try {
+                const d = JSON.parse(m.content || '{}');
+                appendToolUse(d.tool || 'tool', d.input || {});
+            } catch(e) { appendToolUse('tool', {}); }
+        } else if (m.role === 'tool_result') {
+            try {
+                const c = JSON.parse(m.content || '""');
+                appendToolResult(typeof c === 'string' ? c : JSON.stringify(c));
+            } catch(e) { appendToolResult(m.content || ''); }
+        }
+    }
 }
 
 // ============================================================
@@ -2581,10 +2904,12 @@ async function publishToolToMarketplace() {
             })
         });
         const data = await resp.json();
-        if (resp.ok) {
+        if (resp.status === 401) {
+            showToast('Session expired. Please refresh the page and log in again.', 'error');
+        } else if (resp.ok) {
             showToast('Tool published to marketplace!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('publishModal')).hide();
-            loadMyTools();
+            loadSessions();
         } else {
             showToast(data.detail || 'Failed to publish', 'error');
         }
@@ -2626,7 +2951,7 @@ function showToast(message, type = 'info') {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadMyTools();
+    loadSessions();
     loadSettings();
     initVoiceRecognition();
     initDragDrop();
@@ -2648,6 +2973,17 @@ document.addEventListener('DOMContentLoaded', () => {
     textarea.addEventListener('input', () => {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    });
+
+    ['publishBuildName', 'publishBuildDisplayName', 'publishBuildDescription', 'publishBuildIcon'].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.addEventListener('input', schedulePublishReadinessRefresh);
+    });
+
+    const publishModalEl = document.getElementById('publishBuildModal');
+    publishModalEl.addEventListener('hidden.bs.modal', () => {
+        publishReadiness = null;
+        applyPublishButtonState();
     });
 });
 </script>

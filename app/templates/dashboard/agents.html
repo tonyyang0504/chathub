@@ -893,6 +893,20 @@
                         <a class="dropdown-item status-filter-item" href="#" data-value="error">Error</a>
                     </div>
                 </div>
+                <input type="hidden" id="sortAgentsValue" value="created_desc">
+                <div class="dropdown instance-dropdown">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="sortAgentsDropdown" data-bs-toggle="dropdown">
+                        Newest
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu">
+                        <a class="dropdown-item sort-agents-item selected" href="#" data-value="created_desc">Newest</a>
+                        <a class="dropdown-item sort-agents-item" href="#" data-value="name_asc">Name (A-Z)</a>
+                        <a class="dropdown-item sort-agents-item" href="#" data-value="executions_desc">Most Executions</a>
+                        <a class="dropdown-item sort-agents-item" href="#" data-value="success_desc">Highest Success Rate</a>
+                        <a class="dropdown-item sort-agents-item" href="#" data-value="tokens_desc">Most Tokens Used</a>
+                        <a class="dropdown-item sort-agents-item" href="#" data-value="recent_run_desc">Recently Run</a>
+                    </div>
+                </div>
                 <button class="btn btn-outline-secondary" style="padding: 10px 18px; font-size: 0.875rem;" onclick="refreshAgents()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
@@ -1073,6 +1087,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger me-auto" id="deleteAgentBtn" onclick="deleteAgent()">Delete</button>
+                <button type="button" class="btn btn-outline-primary" id="duplicateAgentBtn" onclick="duplicateAgent()">Duplicate</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-theme" id="editAgentBtn" onclick="editAgentFromDetail()">Edit</button>
             </div>
@@ -1252,6 +1267,18 @@ function setupDropdownHandlers() {
             document.getElementById('agentModelDropdown').textContent = this.textContent;
         });
     });
+
+    // Agent sort dropdown
+    document.querySelectorAll('.sort-agents-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.sort-agents-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('sortAgentsValue').value = this.dataset.value;
+            document.getElementById('sortAgentsDropdown').textContent = this.textContent;
+            renderAgents();
+        });
+    });
 }
 
 function setupHubFilterHandlers() {
@@ -1428,6 +1455,41 @@ function renderAgents() {
         (agent.agent_type && agent.agent_type.toLowerCase().includes(searchTerm)) ||
         (agent.hub_name && agent.hub_name.toLowerCase().includes(searchTerm))
     );
+    const sortBy = document.getElementById('sortAgentsValue')?.value || 'created_desc';
+    const sortedAgents = [...filteredAgents].sort((firstAgent, secondAgent) => {
+        const firstSuccessRate = firstAgent.total_executions > 0
+            ? (firstAgent.successful_executions / firstAgent.total_executions)
+            : 0;
+        const secondSuccessRate = secondAgent.total_executions > 0
+            ? (secondAgent.successful_executions / secondAgent.total_executions)
+            : 0;
+        const firstCreatedAt = firstAgent.created_at ? new Date(firstAgent.created_at).getTime() : 0;
+        const secondCreatedAt = secondAgent.created_at ? new Date(secondAgent.created_at).getTime() : 0;
+        const firstLastRunAt = firstAgent.last_run_at ? new Date(firstAgent.last_run_at).getTime() : 0;
+        const secondLastRunAt = secondAgent.last_run_at ? new Date(secondAgent.last_run_at).getTime() : 0;
+
+        if (sortBy === 'name_asc') {
+            return (firstAgent.name || '').localeCompare(secondAgent.name || '');
+        }
+        if (sortBy === 'executions_desc') {
+            return (secondAgent.total_executions || 0) - (firstAgent.total_executions || 0);
+        }
+        if (sortBy === 'success_desc') {
+            return secondSuccessRate - firstSuccessRate;
+        }
+        if (sortBy === 'tokens_desc') {
+            return (secondAgent.total_tokens_used || 0) - (firstAgent.total_tokens_used || 0);
+        }
+        if (sortBy === 'recent_run_desc') {
+            return secondLastRunAt - firstLastRunAt;
+        }
+
+        // Default: newest first
+        if (secondCreatedAt !== firstCreatedAt) {
+            return secondCreatedAt - firstCreatedAt;
+        }
+        return (secondAgent.id || 0) - (firstAgent.id || 0);
+    });
 
     document.getElementById('agentCount').textContent = `${filteredAgents.length} agents`;
 
@@ -1446,7 +1508,7 @@ function renderAgents() {
     }
 
     let html = '';
-    filteredAgents.forEach(agent => {
+    sortedAgents.forEach(agent => {
         const statusClass = `status-${agent.status || 'idle'}`;
         const cardClass = agent.status === 'running' ? 'running' : agent.status === 'error' ? 'error' : '';
         const colorClass = getAgentColor(agent.id);
@@ -1909,6 +1971,31 @@ async function deleteAgent() {
     } catch (error) {
         console.error('Error deleting agent:', error);
         alert('Error deleting agent');
+    }
+}
+
+async function duplicateAgent() {
+    if (!selectedAgentId) return;
+    if (!confirm('Create a copy of this agent?')) return;
+
+    try {
+        const response = await fetch(`/agents/api/${selectedAgentId}/duplicate`, {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error.detail || 'Error duplicating agent');
+            return;
+        }
+
+        const result = await response.json();
+        agentDetailModal.hide();
+        await loadAgents();
+        alert(`Agent duplicated: ${result.name}`);
+    } catch (error) {
+        console.error('Error duplicating agent:', error);
+        alert('Error duplicating agent');
     }
 }
 </script>

@@ -15,7 +15,7 @@ from typing import Dict, Optional, Set
 
 from fastapi import WebSocket
 
-from .worktree_manager import worktree_manager, WorktreeInfo
+from .sandbox_manager import sandbox_manager, SandboxInfo
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,8 @@ class ToolBuilderSession:
         from app.ai_workspace.providers import get_provider
         self.cli_provider = get_provider(provider)
 
-        self.worktree: Optional[WorktreeInfo] = None
+        self.worktree: Optional[SandboxInfo] = None  # sandbox_info, kept as 'worktree' attr for compat
+        self.sandbox_info: Optional[SandboxInfo] = None
         self.process: Optional[asyncio.subprocess.Process] = None
         self.websockets: Set[WebSocket] = set()
         self.output_buffer: list = []
@@ -130,7 +131,7 @@ class ToolBuilderManager:
     def get_session(self, user_id: int) -> Optional[ToolBuilderSession]:
         """Get the active session for a user."""
         session = self._sessions.get(user_id)
-        if session and (session.is_running or session.is_waiting or session.worktree):
+        if session and (session.is_running or session.is_waiting or session.sandbox_info):
             return session
         return None
 
@@ -172,8 +173,8 @@ class ToolBuilderManager:
         finally:
             db.close()
 
-        # Create worktree
-        worktree_info = worktree_manager.create(session_id, user_id)
+        # Create Docker sandbox
+        sandbox_info = sandbox_manager.create(session_id, user_id)
 
         # Create session object
         session = ToolBuilderSession(
@@ -189,15 +190,16 @@ class ToolBuilderManager:
             user_name=user_name,
             ai_provider=ai_provider,
         )
-        session.worktree = worktree_info
+        session.sandbox_info = sandbox_info
+        session.worktree = sandbox_info  # backward compat
 
-        # Update DB with worktree info and session UUID
+        # Update DB with sandbox info and session UUID
         db = SessionLocal()
         try:
             db_sess = db.query(AiWorkspaceSession).filter(AiWorkspaceSession.id == db_session_id).first()
             if db_sess:
-                db_sess.worktree_path = str(worktree_info.path)
-                db_sess.worktree_branch = worktree_info.branch
+                db_sess.worktree_path = sandbox_info.container_name or "pending"
+                db_sess.worktree_branch = sandbox_info.branch
                 db_sess.claude_session_uuid = session.claude_session_id
                 db_sess.status = "running"
                 db_sess.started_at = datetime.utcnow()
@@ -206,13 +208,34 @@ class ToolBuilderManager:
             db.close()
 
         self._sessions[user_id] = session
-        logger.info(f"Created tool builder session {session_id} for user {user_id}, worktree at {worktree_info.path}")
+        logger.info(f"Created tool builder session {session_id} for user {user_id} (preview deferred)")
         return session
+
+    async def start_preview(self, user_id: int) -> dict:
+        """Trigger Docker install + container on demand. Runs in threadpool (blocks up to 3 min)."""
+        session = self._sessions.get(user_id)
+        if not session or not session.sandbox_info:
+            raise RuntimeError("No active session")
+        info = sandbox_manager.start_preview(session.sandbox_info.session_id)
+        # Update DB with container name now that it exists
+        try:
+            from app.database import SessionLocal, AiWorkspaceSession
+            db = SessionLocal()
+            db_sess = db.query(AiWorkspaceSession).filter(
+                AiWorkspaceSession.id == session.db_session_id
+            ).first()
+            if db_sess:
+                db_sess.worktree_path = info.container_name
+                db.commit()
+            db.close()
+        except Exception as e:
+            logger.warning(f"Failed to update container name in DB: {e}")
+        return {"preview_url": info.preview_url, "preview_port": info.preview_port}
 
     async def send_message(self, user_id: int, message: str) -> bool:
         """Send a message to the agent by spawning a CLI turn in the worktree."""
         session = self._sessions.get(user_id)
-        if not session or not session.worktree:
+        if not session or not session.sandbox_info:
             logger.warning(f"No active tool builder session for user {user_id}")
             return False
 
@@ -221,11 +244,27 @@ class ToolBuilderManager:
             return False
 
         try:
+            # Save title on first turn
+            is_first = session.turn_number == 0
+            if is_first:
+                title = message[:120].strip()
+                try:
+                    from app.database import SessionLocal, AiWorkspaceSession
+                    db = SessionLocal()
+                    db_sess = db.query(AiWorkspaceSession).filter(
+                        AiWorkspaceSession.id == session.db_session_id
+                    ).first()
+                    if db_sess:
+                        db_sess.title = title
+                        db.commit()
+                    db.close()
+                except Exception as e:
+                    logger.warning(f"Failed to save session title: {e}")
+
             # Broadcast user message
             await session.broadcast({"type": "user_message", "content": message})
 
             # Spawn CLI turn
-            is_first = session.turn_number == 0
             await self._run_turn(session, message, is_first=is_first)
             return True
         except Exception as e:
@@ -251,7 +290,12 @@ class ToolBuilderManager:
         if session._user_email:
             system_context += f" ({session._user_email})"
 
-        worktree_path = str(session.worktree.path)
+        # Use isolated worktree so the AI never edits the live project directly
+        worktree_path = str(
+            session.sandbox_info.worktree_path
+            if session.sandbox_info and session.sandbox_info.worktree_path
+            else PROJECT_ROOT
+        )
 
         # Build CLI command via provider
         cmd = session.cli_provider.build_command(
@@ -483,9 +527,13 @@ class ToolBuilderManager:
             if exit_code == 0:
                 session.is_running = False
                 session.is_waiting = True
-                # Clean up instruction files in worktree
-                if session.worktree:
-                    session.cli_provider.cleanup_session(str(session.worktree.path))
+                # Clean up instruction files from whichever directory the session used
+                _cleanup_path = (
+                    str(session.sandbox_info.worktree_path)
+                    if session.sandbox_info and session.sandbox_info.worktree_path
+                    else str(PROJECT_ROOT)
+                )
+                session.cli_provider.cleanup_session(_cleanup_path)
 
                 await session.broadcast({"type": "turn_end", "exit_code": 0})
                 session.output_buffer.clear()
@@ -567,13 +615,12 @@ class ToolBuilderManager:
             return ""
 
     def get_build_status(self, user_id: int) -> dict:
-        """Get worktree status for a user's active session."""
+        """Get sandbox status for a user's active session."""
         session = self._sessions.get(user_id)
-        if not session or not session.worktree:
+        if not session or not session.sandbox_info:
             return {"error": "No active session"}
 
-        status = worktree_manager.get_status(session.session_id)
-        changed_files = worktree_manager.get_changed_files(session.session_id)
+        status = sandbox_manager.get_status(session.session_id)
 
         return {
             "session_id": session.session_id,
@@ -581,37 +628,38 @@ class ToolBuilderManager:
             "is_running": session.is_running,
             "is_waiting": session.is_waiting,
             "turn_number": session.turn_number,
-            "branch": session.worktree.branch,
-            "worktree_path": str(session.worktree.path),
-            "changed_files": changed_files,
+            "branch": session.sandbox_info.branch,
+            "container_name": session.sandbox_info.container_name,
+            "container_status": status.get("container_status", ""),
+            "preview_url": session.sandbox_info.preview_url,
+            "preview_port": session.sandbox_info.preview_port,
+            "changed_files": status.get("changed_files", []),
             "diff_stat": status.get("diff_stat", ""),
-            "log": status.get("log", ""),
         }
 
     async def publish(self, user_id: int, metadata: Optional[Dict] = None) -> dict:
-        """Merge worktree branch into main, extract skill, create ChatHubAgentSkill record."""
+        """Publish sandbox changes to host repo, extract skill, create ChatHubAgentSkill record."""
         session = self._sessions.get(user_id)
-        if not session or not session.worktree:
+        if not session or not session.sandbox_info:
             return {"error": "No active session"}
 
         # Try to find SKILL.md in changed files
-        changed_files = worktree_manager.get_changed_files(session.session_id)
+        changed_files = sandbox_manager.get_changed_files(session.session_id)
         skill_md_content = None
         skill_file = None
 
         for f in changed_files:
             if f.upper().endswith("SKILL.MD"):
                 skill_file = f
-                # Read the file from worktree
-                skill_path = session.worktree.path / f
+                skill_path = (session.sandbox_info.worktree_path or PROJECT_ROOT) / f
                 if skill_path.exists():
                     skill_md_content = skill_path.read_text()
                 break
 
-        # Merge worktree
-        result = worktree_manager.merge(session.session_id)
-        if not result.success:
-            return {"error": result.message}
+        # Publish sandbox changes to host repo
+        result = sandbox_manager.publish(session.session_id)
+        if not result.get("success"):
+            return {"error": result.get("message", "Publish failed")}
 
         # Create skill record: try SKILL.md first, fall back to user-provided metadata
         skill_id = None
@@ -620,15 +668,29 @@ class ToolBuilderManager:
         if not skill_id and metadata:
             skill_id = self._create_skill_from_metadata(user_id, metadata)
 
-        # Clean up session
+        # Update DB session status to published
+        try:
+            from app.database import SessionLocal, AiWorkspaceSession
+            db = SessionLocal()
+            db_sess = db.query(AiWorkspaceSession).filter(
+                AiWorkspaceSession.id == session.db_session_id
+            ).first()
+            if db_sess:
+                db_sess.status = "published"
+                db.commit()
+            db.close()
+        except Exception as e:
+            logger.error(f"Failed to update session status to published: {e}")
+
+        # Remove from active sessions (but keep DB record for history)
         if user_id in self._sessions:
             del self._sessions[user_id]
 
         return {
             "success": True,
-            "message": result.message,
-            "commit_hash": result.commit_hash,
-            "merged_branch": result.merged_branch,
+            "message": result.get("message", "Published"),
+            "commit_hash": result.get("commit_hash", ""),
+            "merged_branch": result.get("merged_branch", ""),
             "skill_id": skill_id,
             "skill_file": skill_file,
         }
@@ -721,6 +783,9 @@ class ToolBuilderManager:
                 db.commit()
                 return existing.id
             else:
+                # Generate a basic SKILL.md so the tool can be published to marketplace
+                skill_md = f"---\nname: {name}\ndisplay_name: {display_name}\ndescription: {description}\nicon: {icon}\ntrigger: {name}\n---\n\n# {display_name}\n\n{description}\n"
+
                 skill = ChatHubAgentSkill(
                     user_id=user_id,
                     name=name,
@@ -729,7 +794,7 @@ class ToolBuilderManager:
                     icon=icon,
                     gradient_start=gradient_start,
                     gradient_end=gradient_end,
-                    skill_md_content="",
+                    skill_md_content=skill_md,
                     is_active=True,
                     tier="managed"
                 )
@@ -744,6 +809,86 @@ class ToolBuilderManager:
         finally:
             db.close()
 
+    async def resume_session(
+        self,
+        db_id: int,
+        user_id: int,
+        provider: str,
+        api_key: str,
+        model: Optional[str] = None,
+        auth_method: str = "api_key",
+        oauth_token: Optional[str] = None,
+        user_email: Optional[str] = None,
+        user_name: Optional[str] = None,
+        ai_provider: Optional[str] = None,
+        claude_session_uuid: Optional[str] = None,
+    ) -> "ToolBuilderSession":
+        """Resume a historical session from DB, reattaching it as the active session."""
+        # Discard any existing active session for this user
+        if user_id in self._sessions:
+            await self.discard(user_id)
+
+        # Fetch DB messages to determine turn count
+        from app.database import SessionLocal, AiWorkspaceSession, AiWorkspaceMessage
+        db = SessionLocal()
+        try:
+            db_sess = db.query(AiWorkspaceSession).filter(
+                AiWorkspaceSession.id == db_id
+            ).first()
+            if not db_sess:
+                raise RuntimeError("Session not found in database")
+
+            msgs = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == db_id
+            ).all()
+            turn_count = sum(
+                1 for m in msgs
+                if m.message_type == "user_message" or (m.role == "user" and m.message_type == "text")
+            )
+        finally:
+            db.close()
+
+        # Create a new in-memory session object backed by the existing DB record
+        session_id = str(uuid.uuid4())
+        sandbox_info = sandbox_manager.create(session_id, user_id)
+
+        session = ToolBuilderSession(
+            session_id=session_id,
+            db_session_id=db_id,
+            user_id=user_id,
+            api_key=api_key,
+            model=model,
+            provider=provider,
+            auth_method=auth_method,
+            oauth_token=oauth_token,
+            user_email=user_email,
+            user_name=user_name,
+            ai_provider=ai_provider,
+        )
+        session.sandbox_info = sandbox_info
+        session.worktree = sandbox_info
+        session.turn_number = turn_count
+        # Restore claude session UUID so CLI --resume works
+        if claude_session_uuid:
+            session.claude_session_id = claude_session_uuid
+
+        # Update DB with new sandbox branch/container and mark running
+        db = SessionLocal()
+        try:
+            db_sess = db.query(AiWorkspaceSession).filter(AiWorkspaceSession.id == db_id).first()
+            if db_sess:
+                db_sess.worktree_path = sandbox_info.container_name or "pending"
+                db_sess.worktree_branch = sandbox_info.branch
+                db_sess.status = "running"
+                db_sess.started_at = datetime.utcnow()
+                db.commit()
+        finally:
+            db.close()
+
+        self._sessions[user_id] = session
+        logger.info(f"Resumed tool builder session db_id={db_id} as {session_id} for user {user_id}")
+        return session
+
     async def discard(self, user_id: int) -> dict:
         """Discard worktree without merging, clean up session."""
         session = self._sessions.get(user_id)
@@ -757,9 +902,9 @@ class ToolBuilderManager:
             except Exception:
                 pass
 
-        # Discard worktree
-        if session.worktree:
-            worktree_manager.discard(session.session_id)
+        # Discard sandbox
+        if session.sandbox_info:
+            sandbox_manager.discard(session.session_id)
 
         # Update DB
         try:

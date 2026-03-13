@@ -12,9 +12,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict
 
-from app.database import get_db, SessionLocal, ChatHubAgentSkill, CustomToolListing
+from app.database import get_db, SessionLocal, ChatHubAgentSkill, CustomToolListing, AiWorkspaceSession
 from app.auth.utils import get_current_user_optional, get_websocket_user, decrypt_string
 from .builder_manager import tool_builder_manager
+from .sandbox_manager import sandbox_manager
+from .readiness import build_publish_readiness
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,13 @@ class CreateSessionRequest(BaseModel):
 
 class RunTestRequest(BaseModel):
     command: Optional[str] = None  # Custom test command, defaults to pytest
+
+
+class PublishReadinessRequest(BaseModel):
+    name: Optional[str] = None
+    display_name: Optional[str] = None
+    description: Optional[str] = None
+    icon: Optional[str] = None
 
 
 # ============================================================================
@@ -147,24 +156,127 @@ async def create_session(request: Request, data: CreateSessionRequest = None, db
             detail="No API key configured for the selected provider. Please set up your API keys in AI Workspace settings."
         )
 
-    session = await tool_builder_manager.create_session(
-        user_id=user.id,
-        provider=provider,
-        api_key=api_key,
-        model=model,
-        auth_method=auth_method,
-        oauth_token=oauth_token,
-        user_email=getattr(user, 'email', None),
-        user_name=getattr(user, 'username', None) or getattr(user, 'name', None),
-        ai_provider=ai_provider,
-    )
+    try:
+        session = await tool_builder_manager.create_session(
+            user_id=user.id,
+            provider=provider,
+            api_key=api_key,
+            model=model,
+            auth_method=auth_method,
+            oauth_token=oauth_token,
+            user_email=getattr(user, 'email', None),
+            user_name=getattr(user, 'username', None) or getattr(user, 'name', None),
+            ai_provider=ai_provider,
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
     return {
         "session_id": session.session_id,
         "provider": provider,
         "model": model,
-        "worktree_branch": session.worktree.branch if session.worktree else None,
+        "worktree_branch": session.sandbox_info.branch if session.sandbox_info else None,
+        "preview_url": session.sandbox_info.preview_url if session.sandbox_info else None,
+        "preview_port": session.sandbox_info.preview_port if session.sandbox_info else None,
     }
+
+
+@router.get("/sessions")
+async def list_sessions(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+    sessions = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.user_id == user.id,
+        AiWorkspaceSession.session_type == "tool_builder"
+    ).order_by(AiWorkspaceSession.created_at.desc()).all()
+    active = tool_builder_manager.get_session(user.id)
+    return [{"db_id": s.id, "title": s.title or "[Tool Builder Session]",
+             "status": s.status, "provider": s.provider,
+             "created_at": s.created_at.isoformat() if s.created_at else None,
+             "published": s.status == "published",
+             "active_session_id": active.session_id if active and active.db_session_id == s.id else None}
+            for s in sessions]
+
+
+@router.get("/sessions/{db_id}")
+async def get_session_detail(db_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == db_id,
+        AiWorkspaceSession.user_id == user.id,
+        AiWorkspaceSession.session_type == "tool_builder"
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404)
+    from app.database import AiWorkspaceMessage
+    messages = db.query(AiWorkspaceMessage).filter(
+        AiWorkspaceMessage.session_id == db_id
+    ).order_by(AiWorkspaceMessage.created_at.asc()).all()
+    active = tool_builder_manager.get_session(user.id)
+    return {
+        "db_id": session.id, "title": session.title or "[Tool Builder Session]",
+        "status": session.status, "provider": session.provider,
+        "published": session.status == "published",
+        "active_session_id": active.session_id if active and active.db_session_id == db_id else None,
+        "messages": [{"id": m.id, "role": m.role, "content": m.content,
+                      "message_type": m.message_type, "event_data": m.event_data,
+                      "created_at": m.created_at.isoformat()} for m in messages]
+    }
+
+
+@router.delete("/sessions/{db_id}")
+async def delete_session(db_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+    session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == db_id,
+        AiWorkspaceSession.user_id == user.id,
+        AiWorkspaceSession.session_type == "tool_builder"
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404)
+    active = tool_builder_manager.get_session(user.id)
+    if active and active.db_session_id == db_id:
+        await tool_builder_manager.discard(user.id)
+    from app.database import AiWorkspaceMessage
+    db.query(AiWorkspaceMessage).filter(AiWorkspaceMessage.session_id == db_id).delete()
+    db.delete(session)
+    db.commit()
+    return {"success": True}
+
+
+@router.post("/sessions/{db_id}/resume")
+async def resume_session(db_id: int, request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+    db_session = db.query(AiWorkspaceSession).filter(
+        AiWorkspaceSession.id == db_id,
+        AiWorkspaceSession.user_id == user.id,
+        AiWorkspaceSession.session_type == "tool_builder"
+    ).first()
+    if not db_session:
+        raise HTTPException(status_code=404)
+    provider, api_key, model, auth_method, oauth_token, ai_provider = \
+        _get_ai_workspace_settings(user, db, db_session.provider)
+    if not api_key:
+        raise HTTPException(status_code=400, detail="No API key configured")
+    try:
+        session = await tool_builder_manager.resume_session(
+            db_id=db_id, user_id=user.id, provider=provider, api_key=api_key,
+            model=model, auth_method=auth_method, oauth_token=oauth_token,
+            user_email=getattr(user, 'email', None),
+            user_name=getattr(user, 'username', None),
+            ai_provider=ai_provider,
+            claude_session_uuid=db_session.claude_session_uuid
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    return {"session_id": session.session_id, "db_id": db_id}
 
 
 @router.post("/sessions/{session_id}/message")
@@ -257,7 +369,7 @@ async def get_build_status(
     session_id: str,
     db: Session = Depends(get_db)
 ):
-    """Get worktree diff, changed files, branch name."""
+    """Get sandbox status, changed files, preview URL."""
     user = await get_current_user_optional(request, None, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -266,7 +378,38 @@ async def get_build_status(
     if not session or session.session_id != session_id:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    return tool_builder_manager.get_build_status(user.id)
+    status = tool_builder_manager.get_build_status(user.id)
+    # Ensure preview_url is always in the response
+    if session.sandbox_info:
+        status.setdefault("preview_url", session.sandbox_info.preview_url)
+        status.setdefault("preview_port", session.sandbox_info.preview_port)
+        status.setdefault("container_status", "")
+    return status
+
+
+@router.post("/sessions/{session_id}/preview")
+async def start_preview(
+    request: Request,
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Trigger Docker install + image build + container creation on demand. Returns preview_url."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = tool_builder_manager.get_session(user.id)
+    if not session or session.session_id != session_id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    try:
+        # start_preview blocks for up to 3 min (Docker install) — run off event loop
+        result = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: sandbox_manager.start_preview(session_id)
+        )
+        return {"preview_url": result.preview_url, "preview_port": result.preview_port}
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.post("/sessions/{session_id}/publish")
@@ -302,6 +445,51 @@ async def publish_session(
         raise HTTPException(status_code=400, detail=result["error"])
 
     return result
+
+
+@router.post("/sessions/{session_id}/readiness")
+async def get_publish_readiness(
+    request: Request,
+    session_id: str,
+    data: PublishReadinessRequest,
+    db: Session = Depends(get_db)
+):
+    """Compute publish-readiness status for the current session draft."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = tool_builder_manager.get_session(user.id)
+    if not session or session.session_id != session_id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    changed_files = sandbox_manager.get_changed_files(session_id)
+
+    skill_md_content = None
+    for file_path in changed_files:
+        if file_path.upper().endswith("SKILL.MD"):
+            from pathlib import Path
+            _wt_path = session.sandbox_info.worktree_path if session.sandbox_info else None
+            _base = _wt_path or Path(__file__).resolve().parent.parent.parent
+            full_path = _base / file_path
+            if full_path.exists():
+                skill_md_content = full_path.read_text(encoding="utf-8")
+            break
+
+    metadata = {
+        "name": data.name or "",
+        "display_name": data.display_name or "",
+        "description": data.description or "",
+        "icon": data.icon or "",
+    }
+
+    readiness = build_publish_readiness(
+        changed_files=changed_files,
+        metadata=metadata,
+        skill_md_content=skill_md_content,
+    )
+    readiness["changed_files"] = changed_files
+    return readiness
 
 
 @router.post("/sessions/{session_id}/discard")
@@ -343,13 +531,13 @@ async def run_test(
     if not session or session.session_id != session_id:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    from .worktree_manager import worktree_manager
+    from .sandbox_manager import sandbox_manager
 
     command_str = (data.command if data and data.command else "pytest").strip()
     # Split into list for subprocess
     command = command_str.split()
 
-    result = worktree_manager.run_command(session.session_id, command, timeout=120)
+    result = sandbox_manager.run_command(session.session_id, command, timeout=120)
 
     return {
         "command": command_str,

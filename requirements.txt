@@ -66,6 +66,9 @@ google-generativeai>=0.4.0
 # Rate limiting
 slowapi>=0.1.9
 
+# PTY / interactive process support (used by ai_workspace/manager.py)
+pexpect>=4.8.0
+
 # Retry logic
 tenacity>=8.2.0
 
