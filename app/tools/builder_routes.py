@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict
 
-from app.database import get_db, SessionLocal, BuiltTool, CustomToolListing, AiWorkspaceSession
+from app.database import get_db, SessionLocal, BuiltTool, CustomToolListing, AiWorkspaceSession, AiWorkspaceMessage
 from app.auth.utils import get_current_user_optional, get_websocket_user, decrypt_string
 from .builder_manager import tool_builder_manager
 from .sandbox_manager import sandbox_manager
@@ -212,11 +212,20 @@ async def get_session_detail(db_id: int, request: Request, db: Session = Depends
         AiWorkspaceMessage.session_id == db_id
     ).order_by(AiWorkspaceMessage.created_at.asc()).all()
     active = tool_builder_manager.get_session(user.id)
+    # Parse suggested_metadata from JSON if present
+    suggested_metadata = None
+    if session.suggested_metadata:
+        try:
+            suggested_metadata = json.loads(session.suggested_metadata)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
     return {
         "db_id": session.id, "title": session.title or "[Tool Builder Session]",
         "status": session.status, "provider": session.provider,
         "published": session.status == "published",
         "active_session_id": active.session_id if active and active.db_session_id == db_id else None,
+        "suggested_metadata": suggested_metadata,
         "messages": [{"id": m.id, "role": m.role, "content": m.content,
                       "message_type": m.message_type, "event_data": m.event_data,
                       "created_at": m.created_at.isoformat()} for m in messages]
@@ -408,6 +417,30 @@ async def start_preview(
         raise HTTPException(status_code=503, detail=str(e))
 
 
+@router.post("/sessions/{session_id}/preview/restart")
+async def restart_preview(
+    request: Request,
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Restart the preview container to pick up code changes."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = tool_builder_manager.get_session(user.id)
+    if not session or session.session_id != session_id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    try:
+        result = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: sandbox_manager.restart_preview(session_id)
+        )
+        return {"preview_url": result.preview_url, "preview_port": result.preview_port}
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @router.post("/sessions/{session_id}/publish")
 async def publish_session(
     request: Request,
@@ -486,6 +519,264 @@ async def get_publish_readiness(
     )
     readiness["changed_files"] = changed_files
     return readiness
+
+
+async def generate_suggested_metadata(session, user_id: int, db: Session) -> dict:
+    """Core logic: gather sandbox context, call AI, return metadata dict.
+
+    Used by both the suggest-metadata endpoint and the auto-suggest on turn completion.
+    """
+    import re as _re
+    from pathlib import Path
+
+    # Gather context from sandbox
+    changed_files = sandbox_manager.get_changed_files(session.session_id)
+    session_title = ""
+    if session.db_session_id:
+        db_session = db.query(AiWorkspaceSession).filter(
+            AiWorkspaceSession.id == session.db_session_id
+        ).first()
+        if db_session:
+            session_title = db_session.title or ""
+
+    # Try TOOL.md first — if it has quality metadata, use it directly
+    for fpath in changed_files:
+        if fpath.upper().endswith("TOOL.MD"):
+            wt_path = session.sandbox_info.worktree_path if session.sandbox_info else None
+            base = wt_path or Path(__file__).resolve().parent.parent.parent
+            full_path = base / fpath
+            if full_path.exists():
+                from app.tools.readiness import parse_tool_frontmatter
+                fm = parse_tool_frontmatter(full_path.read_text(encoding="utf-8", errors="ignore"))
+                if fm.get("name") and fm.get("display_name") and fm.get("description"):
+                    return {
+                        "name": fm["name"],
+                        "display_name": fm["display_name"],
+                        "description": fm["description"],
+                        "icon": fm.get("icon", "bi-gear"),
+                    }
+            break
+
+    # Try to read routes.py from sandbox for extra context
+    routes_snippet = ""
+    for fpath in changed_files:
+        if fpath.endswith("routes.py"):
+            wt_path = session.sandbox_info.worktree_path if session.sandbox_info else None
+            base = wt_path or Path(__file__).resolve().parent.parent.parent
+            full_path = base / fpath
+            if full_path.exists():
+                content = full_path.read_text(encoding="utf-8", errors="ignore")
+                routes_snippet = content[:3000]
+            break
+
+    # Determine AI provider and use a fast model
+    provider_name = session.provider or "claude"
+    provider_map = {"claude": "anthropic", "codex": "openai", "gemini": "google", "chathub": None}
+    ai_backend = provider_map.get(provider_name)
+
+    if provider_name == "chathub":
+        _, _, _, _, _, ai_provider = _get_ai_workspace_settings_from_db(user_id, db, "chathub")
+        ai_backend = ai_provider or "openai"
+
+    fast_models = {"anthropic": "claude-haiku-4-5-20251001", "openai": "gpt-4o-mini", "google": "gemini-2.0-flash"}
+    model = fast_models.get(ai_backend, "claude-haiku-4-5-20251001")
+
+    # Get API key
+    _, api_key, _, _, _, _ = _get_ai_workspace_settings_from_db(user_id, db, provider_name)
+    if not api_key or api_key == "membership":
+        return _fallback_metadata(changed_files, session_title, session.db_session_id, db)
+
+    try:
+        from app.ai.factory import get_ai_provider
+        provider = get_ai_provider(ai_backend, api_key, model)
+
+        context_parts = []
+        if session_title:
+            context_parts.append(f"Session title: {session_title}")
+        if changed_files:
+            context_parts.append(f"Changed files: {', '.join(changed_files[:20])}")
+        if routes_snippet:
+            context_parts.append(f"Routes code snippet:\n```python\n{routes_snippet}\n```")
+
+        # Add conversation history for richer context
+        if session.db_session_id:
+            recent_msgs = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == session.db_session_id,
+                AiWorkspaceMessage.role == "assistant",
+                AiWorkspaceMessage.message_type == "result",
+            ).order_by(AiWorkspaceMessage.id.desc()).limit(5).all()
+
+            if recent_msgs:
+                summaries = "\n\n".join(m.content[:800] for m in reversed(recent_msgs) if m.content)
+                if summaries:
+                    context_parts.append(f"Agent conversation summaries:\n{summaries[:3000]}")
+
+        context_text = "\n\n".join(context_parts) or "No context available"
+
+        messages = [
+            {"role": "system", "content": (
+                "Generate JSON tool metadata from the provided code context. "
+                "Return ONLY valid JSON with these fields:\n"
+                '- "name": kebab-case slug (e.g. "contact-analyzer")\n'
+                '- "display_name": human-readable title\n'
+                '- "description": one-sentence description (10-80 chars) derived from the code, NOT echoing the user\'s prompt\n'
+                '- "icon": Bootstrap icon class (e.g. "bi-robot", "bi-graph-up", "bi-chat-dots")\n'
+                "Do not include any text outside the JSON object. "
+                "Do NOT use the user's raw prompt or session title as the description — derive it from the actual code changes."
+            )},
+            {"role": "user", "content": context_text},
+        ]
+
+        response = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: provider.chat_completion(messages, max_tokens=200)
+        )
+
+        # Parse JSON from response
+        response_text = response.content if hasattr(response, 'content') else str(response)
+        json_match = _re.search(r'\{[^{}]*\}', response_text, _re.DOTALL)
+        if json_match:
+            suggested = json.loads(json_match.group())
+            result = {}
+            if suggested.get("name") and _re.match(r'^[a-z0-9]+(?:-[a-z0-9]+)*$', suggested["name"]):
+                result["name"] = suggested["name"]
+            if suggested.get("display_name"):
+                result["display_name"] = str(suggested["display_name"])[:100]
+            if suggested.get("description"):
+                result["description"] = str(suggested["description"])[:200]
+            if suggested.get("icon") and str(suggested["icon"]).startswith("bi-"):
+                result["icon"] = suggested["icon"]
+            if result:
+                return result
+
+    except Exception as e:
+        logger.warning(f"AI suggest-metadata failed: {e}")
+
+    return _fallback_metadata(changed_files, session_title, session.db_session_id, db)
+
+
+def _get_ai_workspace_settings_from_db(user_id: int, db: Session, provider: str = None):
+    """Like _get_ai_workspace_settings but takes user_id instead of user object."""
+    from app.database import AiWorkspaceSettings, User
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return None, None, None, None, None, None
+    return _get_ai_workspace_settings(user, db, provider)
+
+
+@router.post("/sessions/{session_id}/suggest-metadata")
+async def suggest_metadata(
+    request: Request,
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Use AI to suggest tool metadata (name, display_name, description, icon) from sandbox context."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = tool_builder_manager.get_session(user.id)
+    if not session or session.session_id != session_id:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return await generate_suggested_metadata(session, user.id, db)
+
+
+def _extract_metadata_from_conversation(db_session_id: int, db) -> Dict:
+    """Parse conversation history for metadata patterns like 'Feature slug:', 'Display name:', etc."""
+    import re
+
+    recent_msgs = db.query(AiWorkspaceMessage).filter(
+        AiWorkspaceMessage.session_id == db_session_id,
+        AiWorkspaceMessage.role == "assistant",
+        AiWorkspaceMessage.message_type == "result",
+    ).order_by(AiWorkspaceMessage.id.desc()).limit(5).all()
+
+    if not recent_msgs:
+        return {}
+
+    # Combine messages (oldest first) for scanning
+    combined = "\n\n".join(m.content[:1500] for m in reversed(recent_msgs) if m.content)
+    if not combined:
+        return {}
+
+    result = {}
+
+    # Try to extract structured metadata patterns from agent output
+    slug_match = re.search(r'(?:feature\s+slug|tool\s+slug|slug)\s*[:=]\s*["`\']?([a-z0-9-]+)["`\']?', combined, re.IGNORECASE)
+    if slug_match:
+        result["name"] = slug_match.group(1)
+
+    display_match = re.search(r'(?:display\s+name|tool\s+name|feature\s+name)\s*[:=]\s*["`\']?([^"`\'\n]+)["`\']?', combined, re.IGNORECASE)
+    if display_match:
+        result["display_name"] = display_match.group(1).strip()[:100]
+
+    desc_match = re.search(r'(?:description|what\s+it\s+does)\s*[:=]\s*["`\']?([^"`\'\n]+)["`\']?', combined, re.IGNORECASE)
+    if desc_match:
+        result["description"] = desc_match.group(1).strip()[:200]
+
+    # If we got a name but no display_name, derive it
+    if result.get("name") and not result.get("display_name"):
+        result["display_name"] = result["name"].replace('-', ' ').title()
+
+    # If no structured patterns found, try to extract from summary-style text
+    if not result.get("name"):
+        # Look for "I've built/created/implemented the X tool/feature"
+        built_match = re.search(
+            r'(?:built|created|implemented|added)\s+(?:a\s+|the\s+)?["`\']?([A-Z][A-Za-z\s]+?)["`\']?\s+(?:tool|feature|page|dashboard)',
+            combined
+        )
+        if built_match:
+            feature_name = built_match.group(1).strip()
+            result["name"] = re.sub(r'[^a-z0-9]+', '-', feature_name.lower()).strip('-')[:40]
+            result["display_name"] = feature_name[:100]
+
+    # Try to get description from the last message's first sentence if we still need one
+    if result.get("name") and not result.get("description"):
+        last_content = recent_msgs[0].content or ""
+        # First meaningful sentence
+        sent_match = re.search(r'([A-Z][^.!?\n]{15,120}[.!?])', last_content)
+        if sent_match:
+            result["description"] = sent_match.group(1).strip()
+
+    if result.get("name"):
+        result.setdefault("icon", "bi-gear")
+
+    return result
+
+
+def _fallback_metadata(changed_files: List[str], session_title: str, db_session_id: int = None, db=None) -> Dict:
+    """Derive metadata from conversation history, directory structure, or session title."""
+    import re
+
+    # First try: extract from conversation history
+    if db_session_id and db:
+        metadata = _extract_metadata_from_conversation(db_session_id, db)
+        if metadata.get("name"):
+            return metadata
+
+    # Second try: extract from directory structure
+    name = ""
+    for fpath in changed_files:
+        # Look for app/tools/custom/{name}/ pattern
+        match = re.match(r'app/tools/custom/([a-z0-9-]+)/', fpath)
+        if match:
+            name = match.group(1)
+            break
+
+    # Last resort: slugify session title
+    if not name and session_title:
+        slug = re.sub(r'[^a-z0-9]+', '-', session_title.lower()).strip('-')
+        if slug:
+            name = slug[:40]
+
+    display_name = name.replace('-', ' ').title() if name else ""
+
+    return {
+        "name": name,
+        "display_name": display_name,
+        "description": f"{display_name} tool for ChatHub" if display_name else "",
+        "icon": "bi-gear",
+    }
 
 
 @router.post("/sessions/{session_id}/generate-tool")
@@ -892,8 +1183,9 @@ async def uninstall_tool(
     tool_id: int,
     db: Session = Depends(get_db)
 ):
-    """Uninstall a custom tool: delete its plugin directory and DB records."""
+    """Uninstall a custom tool: git revert + DB restore, or legacy shutil.rmtree fallback."""
     import shutil
+    import os
     from pathlib import Path
 
     user = await get_current_user_optional(request, None, db)
@@ -908,12 +1200,32 @@ async def uninstall_tool(
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    # Delete plugin directory
-    custom_tools_dir = Path(__file__).resolve().parent / "custom" / tool.name
     dir_deleted = False
-    if custom_tools_dir.exists():
-        shutil.rmtree(str(custom_tools_dir))
+
+    if tool.publish_commit_hash:
+        # Git revert approach
+        from app.tools.worktree_manager import worktree_manager
+        result = worktree_manager.revert_commit(tool.publish_commit_hash)
+        if not result.success:
+            raise HTTPException(status_code=409, detail=result.message)
         dir_deleted = True
+
+        # Restore DB from pre-publish backup
+        if tool.pre_publish_db_backup and os.path.exists(tool.pre_publish_db_backup):
+            try:
+                from app.config import settings
+                db_path = settings.DATABASE_URL.replace("sqlite:///", "").replace("sqlite:", "")
+                if os.path.exists(db_path):
+                    shutil.copy2(tool.pre_publish_db_backup, db_path)
+                    logger.info(f"Restored DB from backup: {tool.pre_publish_db_backup}")
+            except Exception as e:
+                logger.error(f"Failed to restore DB backup: {e}")
+    else:
+        # Legacy fallback: just delete directory
+        custom_tools_dir = Path(__file__).resolve().parent / "custom" / tool.name
+        if custom_tools_dir.exists():
+            shutil.rmtree(str(custom_tools_dir))
+            dir_deleted = True
 
     # Delete marketplace listing if exists
     if tool.listing:
@@ -927,7 +1239,7 @@ async def uninstall_tool(
         "success": True,
         "message": "Tool uninstalled successfully",
         "directory_deleted": dir_deleted,
-        "restart_required": dir_deleted  # Routes need server restart to unregister
+        "restart_required": dir_deleted
     }
 
 
@@ -936,8 +1248,9 @@ async def reset_custom_tools(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """Reset all custom tools: delete all plugin directories and DB records for this user."""
+    """Reset all custom tools: git revert in reverse order + DB restore, with legacy fallback."""
     import shutil
+    import os
     from pathlib import Path
     from app.database import CustomToolInstall
 
@@ -947,17 +1260,54 @@ async def reset_custom_tools(
 
     custom_tools_dir = Path(__file__).resolve().parent / "custom"
     dirs_deleted = 0
+    reverted = 0
+    errors = []
 
-    # Get all user's tools to know which directories to delete
-    user_tools = db.query(BuiltTool).filter(BuiltTool.user_id == user.id).all()
+    # Get all user's tools ordered by created_at DESC (newest first for safe revert order)
+    user_tools = db.query(BuiltTool).filter(
+        BuiltTool.user_id == user.id
+    ).order_by(BuiltTool.created_at.desc()).all()
+
+    # Find the oldest DB backup for full restore
+    oldest_backup = None
+    for tool in reversed(user_tools):  # oldest first
+        if tool.pre_publish_db_backup and os.path.exists(tool.pre_publish_db_backup):
+            oldest_backup = tool.pre_publish_db_backup
+            break
+
+    # Revert commits newest-first
+    from app.tools.worktree_manager import worktree_manager
     for tool in user_tools:
-        tool_dir = custom_tools_dir / tool.name
-        if tool_dir.exists():
-            shutil.rmtree(str(tool_dir))
-            dirs_deleted += 1
+        if tool.publish_commit_hash:
+            result = worktree_manager.revert_commit(tool.publish_commit_hash)
+            if result.success:
+                reverted += 1
+            else:
+                errors.append(f"{tool.display_name or tool.name}: {result.message}")
+                # Also try legacy cleanup for this tool
+                tool_dir = custom_tools_dir / tool.name
+                if tool_dir.exists():
+                    shutil.rmtree(str(tool_dir))
+                    dirs_deleted += 1
+        else:
+            # Legacy fallback
+            tool_dir = custom_tools_dir / tool.name
+            if tool_dir.exists():
+                shutil.rmtree(str(tool_dir))
+                dirs_deleted += 1
+
+    # Restore DB from oldest backup (covers all schema changes)
+    if oldest_backup and os.path.exists(oldest_backup):
+        try:
+            from app.config import settings
+            db_path = settings.DATABASE_URL.replace("sqlite:///", "").replace("sqlite:", "")
+            if os.path.exists(db_path):
+                shutil.copy2(oldest_backup, db_path)
+                logger.info(f"Restored DB from oldest backup: {oldest_backup}")
+        except Exception as e:
+            logger.error(f"Failed to restore DB backup during reset: {e}")
 
     # Delete all DB records for this user
-    # First delete listings (FK constraint)
     tool_ids = [t.id for t in user_tools]
     if tool_ids:
         db.query(CustomToolListing).filter(
@@ -968,10 +1318,15 @@ async def reset_custom_tools(
     db.query(BuiltTool).filter(BuiltTool.user_id == user.id).delete()
     db.commit()
 
+    message = f"All custom tools removed ({len(user_tools)} tools, {reverted} reverted, {dirs_deleted} directories deleted)"
+    if errors:
+        message += f". Warnings: {'; '.join(errors)}"
+
     return {
         "success": True,
-        "message": f"All custom tools removed ({len(user_tools)} tools, {dirs_deleted} directories deleted)",
+        "message": message,
         "tools_deleted": len(user_tools),
         "directories_deleted": dirs_deleted,
-        "restart_required": dirs_deleted > 0
+        "reverted": reverted,
+        "restart_required": (dirs_deleted + reverted) > 0
     }

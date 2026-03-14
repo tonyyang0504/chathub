@@ -1,0 +1,1577 @@
+2026-03-14 00:46:41,285 - app.tools.builder_manager - INFO - Tool builder turn started, session=114d753e-3232-4b12-a8c2-c1c7587710eb, PID=48892, cwd=/Users/tony/chathub/.worktrees/tb-114d753e
+2026-03-14 00:51:40,753 - app.tools.builder_manager - INFO - Tool builder turn completed, session=114d753e-3232-4b12-a8c2-c1c7587710eb
+2026-03-14 00:51:56,309 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 00:51:56,421 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-114d753e on port 9001
+2026-03-14 00:51:56,421 - app.tools.sandbox_manager - INFO - Container tb-sandbox-114d753e started, waiting for HTTP /health on port 9001...
+2026-03-14 00:51:57,454 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 00:55:41,007 - app.tools.worktree_manager - INFO - Discarded worktree for session 114d753e-3232-4b12-a8c2-c1c7587710eb
+2026-03-14 00:55:41,007 - app.tools.sandbox_manager - INFO - Discarded sandbox for session 114d753e-3232-4b12-a8c2-c1c7587710eb
+2026-03-14 00:56:04,066 - app.ai_workspace.manager - INFO - Safety commit created: e3d81ba5f02930567f03fa42383badacacc52b4b
+2026-03-14 00:56:04,067 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260313_205604.db
+2026-03-14 00:56:04,075 - app.ai_workspace.manager - INFO - Turn started for session 47, PID=50679, first=True
+2026-03-14 00:56:27,113 - app.ai_workspace.manager - INFO - Turn completed for session 47, waiting for follow-up
+2026-03-14 00:56:28,114 - app.ai_workspace.manager - ERROR - Failed to generate session title: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+2026-03-14 00:56:54,373 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 00:56:54,392 - app.tools.routes - INFO - Message routing - Model: gpt-4o-mini, Response length: 429
+2026-03-14 00:56:54,392 - app.tools.routes - INFO - Message routing - Raw response: {
+    "category": "support",
+    "urgency": "medium",
+    "sentiment": "neutral",
+    "suggested_expertise": ["support", "orders", "help"],
+    "assigned_bot": "Support Bot",
+    "confidence": 0.9,
+    "reason": "The message indicates a need for assistance with an order, which falls under the Support Bot's expertise.",
+    "bot_scores": {
+        "Sales Bot": 0.1,
+        "Support Bot": 0.9,
+        "General Bot": 0.0
+    }
+}
+2026-03-14 01:10:02,564 - app.chathub_agent.manager - INFO - Safety commit created: 6b09d6c9448f44ff63b53f764b2c188d3922123a
+2026-03-14 01:10:02,566 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260313_211002.db
+2026-03-14 01:10:02,593 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 2 for user 1
+2026-03-14 01:10:02,596 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-03-14 01:10:04,289 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:10:04,296 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 01:10:04,386 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 4 messages
+2026-03-14 01:10:06,778 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:10:06,782 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=15
+2026-03-14 01:10:08,276 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:10:45,740 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260313_211045.db
+2026-03-14 01:10:45,780 - app.ai_workspace.manager - INFO - Turn started for session 47, PID=54582, first=False
+2026-03-14 01:10:59,908 - app.ai_workspace.manager - INFO - Turn completed for session 47, waiting for follow-up
+2026-03-14 01:11:02,861 - app.ai_workspace.manager - ERROR - Failed to generate session title: 400 API key not valid. Please pass a valid API key. [reason: "API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+2026-03-14 01:12:06,213 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 6 messages
+2026-03-14 01:12:07,951 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:12:07,954 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 01:12:08,034 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 8 messages
+2026-03-14 01:12:09,948 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:12:09,949 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=16
+2026-03-14 01:12:39,365 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 10 messages
+2026-03-14 01:12:42,254 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:12:42,257 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 01:12:42,348 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 12 messages
+2026-03-14 01:12:44,006 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:12:44,009 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=15
+2026-03-14 01:13:06,321 - app.chathub_agent.manager - WARNING - Session mismatch: active=2, requested=1
+2026-03-14 01:13:06,326 - app.chathub_agent.manager - INFO - Stopped session 2 for user 1
+2026-03-14 01:13:06,352 - app.chathub_agent.manager - INFO - Resumed ChatHub Agent session 1 for user 1 with 2 messages
+2026-03-14 01:13:06,355 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 3 messages
+2026-03-14 01:13:07,757 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:13:07,759 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 01:13:07,840 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 5 messages
+2026-03-14 01:13:08,994 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:13:08,995 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=15
+2026-03-14 01:13:26,945 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 7 messages
+2026-03-14 01:13:28,781 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:13:28,784 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 01:13:33,788 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 9 messages
+2026-03-14 01:13:35,851 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:13:35,853 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=28
+2026-03-14 01:13:49,060 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 11 messages
+2026-03-14 01:13:50,689 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:13:50,693 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 01:13:50,780 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 13 messages
+2026-03-14 01:13:51,622 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 01:13:51,625 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=15
+2026-03-14 09:42:52,454 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-3eb104b1 on branch tool-builder/1/1773466972
+2026-03-14 09:42:52,454 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 3eb104b1 for user 1
+2026-03-14 09:42:52,456 - app.tools.builder_manager - INFO - Created tool builder session 3eb104b1-3d05-4a3d-b955-d6f993d2b156 for user 1 (preview deferred)
+2026-03-14 09:42:52,573 - app.tools.builder_manager - INFO - Tool builder turn started, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156, PID=57085, cwd=/Users/tony/chathub/.worktrees/tb-3eb104b1
+2026-03-14 09:43:02,363 - app.tools.builder_manager - INFO - Tool builder turn completed, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:43:13,663 - app.tools.builder_manager - INFO - Tool builder turn started, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156, PID=57454, cwd=/Users/tony/chathub/.worktrees/tb-3eb104b1
+2026-03-14 09:43:17,892 - app.tools.builder_manager - INFO - Tool builder turn completed, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:43:36,427 - app.tools.builder_manager - INFO - Tool builder turn started, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156, PID=57654, cwd=/Users/tony/chathub/.worktrees/tb-3eb104b1
+2026-03-14 09:43:43,198 - app.tools.builder_manager - INFO - Tool builder turn completed, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:44:00,637 - app.tools.builder_manager - INFO - Tool builder turn started, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156, PID=57926, cwd=/Users/tony/chathub/.worktrees/tb-3eb104b1
+2026-03-14 09:44:08,742 - app.tools.builder_manager - INFO - Tool builder turn completed, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:44:16,914 - app.tools.builder_manager - INFO - Tool builder turn started, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156, PID=58125, cwd=/Users/tony/chathub/.worktrees/tb-3eb104b1
+2026-03-14 09:44:23,098 - app.tools.builder_manager - INFO - Tool builder turn completed, session=3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:44:44,104 - app.tools.worktree_manager - INFO - Discarded worktree for session 3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:44:44,105 - app.tools.sandbox_manager - INFO - Discarded sandbox for session 3eb104b1-3d05-4a3d-b955-d6f993d2b156
+2026-03-14 09:44:44,250 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-04adf068 on branch tool-builder/1/1773467084
+2026-03-14 09:44:44,250 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 04adf068 for user 1
+2026-03-14 09:44:44,252 - app.tools.builder_manager - INFO - Created tool builder session 04adf068-aba5-46bc-bb79-48975910959f for user 1 (preview deferred)
+2026-03-14 09:44:44,338 - app.tools.builder_manager - INFO - Tool builder turn started, session=04adf068-aba5-46bc-bb79-48975910959f, PID=58349, cwd=/Users/tony/chathub/.worktrees/tb-04adf068
+2026-03-14 09:46:14,798 - app.tools.builder_manager - INFO - Tool builder turn started, session=04adf068-aba5-46bc-bb79-48975910959f, PID=58532, cwd=/Users/tony/chathub/.worktrees/tb-04adf068
+2026-03-14 09:46:29,854 - app.tools.worktree_manager - INFO - Discarded worktree for session 04adf068-aba5-46bc-bb79-48975910959f
+2026-03-14 09:46:29,855 - app.tools.sandbox_manager - INFO - Discarded sandbox for session 04adf068-aba5-46bc-bb79-48975910959f
+2026-03-14 09:46:29,942 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-c6e40c5b on branch tool-builder/1/1773467189
+2026-03-14 09:46:29,942 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session c6e40c5b for user 1
+2026-03-14 09:46:29,944 - app.tools.builder_manager - INFO - Created tool builder session c6e40c5b-7016-4fe8-90d9-5d7af305dee0 for user 1 (preview deferred)
+2026-03-14 09:46:30,031 - app.tools.builder_manager - INFO - Tool builder turn started, session=c6e40c5b-7016-4fe8-90d9-5d7af305dee0, PID=58576, cwd=/Users/tony/chathub/.worktrees/tb-c6e40c5b
+2026-03-14 09:46:36,751 - app.tools.builder_manager - INFO - Tool builder turn completed, session=c6e40c5b-7016-4fe8-90d9-5d7af305dee0
+2026-03-14 09:47:14,526 - app.tools.worktree_manager - INFO - Discarded worktree for session c6e40c5b-7016-4fe8-90d9-5d7af305dee0
+2026-03-14 09:47:14,527 - app.tools.sandbox_manager - INFO - Discarded sandbox for session c6e40c5b-7016-4fe8-90d9-5d7af305dee0
+2026-03-14 09:47:14,614 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-3ebcdadf on branch tool-builder/1/1773467234
+2026-03-14 09:47:14,614 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 3ebcdadf for user 1
+2026-03-14 09:47:14,616 - app.tools.builder_manager - INFO - Created tool builder session 3ebcdadf-bf5c-4cbe-bd44-0ba2409d6c10 for user 1 (preview deferred)
+2026-03-14 09:47:14,703 - app.tools.builder_manager - INFO - Tool builder turn started, session=3ebcdadf-bf5c-4cbe-bd44-0ba2409d6c10, PID=58799, cwd=/Users/tony/chathub/.worktrees/tb-3ebcdadf
+2026-03-14 09:47:20,322 - app.tools.builder_manager - INFO - Tool builder turn completed, session=3ebcdadf-bf5c-4cbe-bd44-0ba2409d6c10
+2026-03-14 09:48:19,599 - app.chathub_agent.manager - INFO - Stopped session 1 for user 1
+2026-03-14 09:48:19,655 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260314_054819.db
+2026-03-14 09:48:19,673 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 3 for user 1
+2026-03-14 09:48:19,675 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-03-14 09:48:21,825 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 09:48:21,830 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 09:48:21,903 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 4 messages
+2026-03-14 09:48:23,017 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 09:48:23,019 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-14 09:48:23,126 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 6 messages
+2026-03-14 09:48:24,468 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 09:48:24,471 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=36
+2026-03-14 09:48:25,006 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 10:15:27,124 - app.ai_workspace.manager - INFO - Turn started for session 47, PID=62483, first=False
+2026-03-14 10:15:27,125 - app.ai_workspace.manager - INFO - Sent follow-up to session 47
+2026-03-14 10:15:46,620 - app.ai_workspace.manager - INFO - Turn completed for session 47, waiting for follow-up
+2026-03-14 10:16:03,521 - app.ai_workspace.manager - INFO - Turn started for session 47, PID=62566, first=False
+2026-03-14 10:16:03,521 - app.ai_workspace.manager - INFO - Sent follow-up to session 47
+2026-03-14 10:16:30,482 - app.ai_workspace.manager - INFO - Session 47 ended with exit code 1
+2026-03-14 10:17:00,719 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260314_061700.db
+2026-03-14 10:17:00,759 - app.ai_workspace.manager - INFO - Turn started for session 52, PID=62677, first=True
+2026-03-14 10:17:08,179 - app.ai_workspace.manager - INFO - Turn completed for session 52, waiting for follow-up
+2026-03-14 10:17:08,577 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 400 Bad Request"
+2026-03-14 10:17:08,579 - app.ai_workspace.manager - ERROR - Failed to generate session title: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CZ2V47eW364T7Z4GGqYQj'}
+2026-03-14 10:17:13,327 - app.ai_workspace.manager - INFO - Turn started for session 52, PID=62862, first=False
+2026-03-14 10:17:13,327 - app.ai_workspace.manager - INFO - Sent follow-up to session 52
+2026-03-14 10:17:18,445 - app.ai_workspace.manager - INFO - Turn completed for session 52, waiting for follow-up
+2026-03-14 10:17:32,680 - app.ai_workspace.manager - INFO - Turn started for session 52, PID=62979, first=False
+2026-03-14 10:17:32,680 - app.ai_workspace.manager - INFO - Sent follow-up to session 52
+2026-03-14 10:17:39,493 - app.ai_workspace.manager - INFO - Turn completed for session 52, waiting for follow-up
+2026-03-14 11:16:19,811 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:19,897 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:19,897 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:19,897 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:19,897 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:19,898 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:20,094 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:20,096 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,265 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:20,265 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,272 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,273 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:20,273 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:20,273 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:20,273 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:20,273 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:20,273 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:20,285 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:20,287 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:20,288 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:20,288 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:20,288 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:20,288 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:20,288 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:20,466 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:20,467 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,636 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:20,636 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,641 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?bot_id=1 "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,641 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:20,641 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:20,641 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:20,641 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:20,641 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:20,641 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:20,649 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:20,651 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:20,652 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:20,653 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:20,653 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:20,653 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:20,653 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:20,824 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:20,824 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,993 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:20,994 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,997 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?action=message_sent "HTTP/1.1 200 OK"
+2026-03-14 11:16:20,998 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:20,998 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:20,998 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:20,998 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:20,998 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:20,998 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:21,006 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:21,008 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:21,009 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:21,009 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:21,009 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:21,009 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:21,009 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:21,183 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:21,183 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:21,353 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:21,353 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:21,357 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?search=successfully "HTTP/1.1 200 OK"
+2026-03-14 11:16:21,357 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:21,357 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:21,358 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:21,358 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:21,358 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:21,358 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:21,366 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:21,368 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:21,369 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:21,369 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:21,369 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:21,369 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:21,369 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:21,543 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:21,544 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:21,712 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:21,712 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:21,716 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?start_date=2026-03-14T06:46:21.713974 "HTTP/1.1 200 OK"
+2026-03-14 11:16:21,716 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:21,716 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:21,716 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:21,716 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:21,716 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:21,716 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:21,724 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:21,726 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:21,728 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:21,728 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:21,728 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:21,728 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:21,728 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:21,899 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:21,899 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,068 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:22,069 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,071 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?limit=2&page=1 "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,072 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?limit=2&page=2 "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,073 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:22,073 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:22,073 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:22,073 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:22,073 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:22,073 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:22,081 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:22,083 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:22,084 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:22,084 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:22,084 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:22,084 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:22,084 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:22,255 - app.auth.routes - INFO - New user registered: newuser@example.com (id=1)
+2026-03-14 11:16:22,255 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,256 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:22,256 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:22,256 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:22,256 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:22,256 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:22,256 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:22,264 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:22,266 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:22,267 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:22,267 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:22,267 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:22,267 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:22,267 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:22,270 - app.auth.routes - WARNING - Registration attempt with weak password: test@example.com
+2026-03-14 11:16:22,270 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 400 Bad Request"
+2026-03-14 11:16:22,270 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:22,270 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:22,270 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:22,270 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:22,270 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:22,270 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:22,278 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:22,280 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:22,281 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:22,281 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:22,281 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:22,281 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:22,281 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:22,452 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:22,452 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,453 - app.auth.routes - WARNING - Registration attempt with existing email: test@example.com
+2026-03-14 11:16:22,453 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 400 Bad Request"
+2026-03-14 11:16:22,453 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:22,454 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:22,454 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:22,454 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:22,454 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:22,454 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:22,462 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:22,464 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:22,465 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:22,465 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:22,465 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:22,465 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:22,465 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:22,468 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 422 Unprocessable Entity"
+2026-03-14 11:16:22,468 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:22,469 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:22,469 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:22,469 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:22,469 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:22,469 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:22,476 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:22,478 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:22,479 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:22,479 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:22,479 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:22,479 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:22,479 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:22,650 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:22,650 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,819 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:22,819 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:22,820 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:22,820 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:22,820 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:22,820 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:22,820 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:22,820 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:22,828 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:22,830 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:22,831 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:22,831 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:22,831 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:22,831 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:22,831 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:23,003 - app.auth.routes - INFO - New user registered: wrongpwd@example.com (id=1)
+2026-03-14 11:16:23,003 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,171 - app.auth.routes - WARNING - Login attempt with invalid password for: wrongpwd@example.com
+2026-03-14 11:16:23,171 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 401 Unauthorized"
+2026-03-14 11:16:23,172 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:23,172 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:23,172 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:23,172 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:23,172 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:23,172 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:23,180 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:23,182 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:23,184 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:23,184 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:23,184 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:23,184 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:23,184 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:23,187 - app.auth.routes - WARNING - Login attempt with unknown email: nonexistent@example.com
+2026-03-14 11:16:23,187 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 401 Unauthorized"
+2026-03-14 11:16:23,187 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:23,187 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:23,187 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:23,187 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:23,187 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:23,187 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:23,195 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:23,197 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:23,198 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:23,198 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:23,198 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:23,198 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:23,198 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:23,369 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:23,369 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,537 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:23,538 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,539 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,539 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:23,539 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:23,539 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:23,539 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:23,540 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:23,540 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:23,548 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:23,550 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:23,551 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:23,551 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:23,551 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:23,551 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:23,551 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:23,554 - httpx - INFO - HTTP Request: GET http://testserver/auth/me "HTTP/1.1 307 Temporary Redirect"
+2026-03-14 11:16:23,554 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:23,554 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:23,554 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:23,554 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:23,554 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:23,554 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:23,562 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:23,564 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:23,565 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:23,565 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:23,565 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:23,565 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:23,565 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:23,737 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 11:16:23,738 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,906 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 11:16:23,906 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,907 - app.auth.routes - INFO - User logged out
+2026-03-14 11:16:23,907 - httpx - INFO - HTTP Request: POST http://testserver/auth/logout "HTTP/1.1 200 OK"
+2026-03-14 11:16:23,908 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:23,908 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:23,908 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:23,908 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:23,908 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:23,908 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:23,915 - app.platforms.discord.adapter - INFO - Bot 42: Discord task cancelled, closing client
+2026-03-14 11:16:23,917 - app.platforms.discord.adapter - WARNING - Bot 42: Failed to init AI provider: bad key
+2026-03-14 11:16:24,953 - app.platforms.discord.adapter - INFO - Bot 42: Human takeover active for TestUser, skipping AI
+2026-03-14 11:16:24,960 - app.platforms.discord.adapter - ERROR - Bot 42: AI error: API down
+Traceback (most recent call last):
+  File "/Users/tony/chathub/app/platforms/discord/adapter.py", line 375, in _handle_message
+    response = await loop.run_in_executor(None, _generate_ai_response)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/platforms/discord/adapter.py", line 368, in _generate_ai_response
+    return ai_provider.chat_completion(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: API down
+2026-03-14 11:16:25,985 - app.platforms.discord.adapter - WARNING - Bot 42: No permission to send in TestUser
+2026-03-14 11:16:25,990 - app.platforms.discord.adapter - ERROR - Bot 1: Failed to download attachment: CDN error
+2026-03-14 11:16:25,994 - app.platforms.discord.adapter - WARNING - Bot 999: Discord client not connected
+2026-03-14 11:16:25,996 - app.platforms.discord.adapter - WARNING - Bot 1: Discord client not connected
+2026-03-14 11:16:25,997 - app.platforms.discord.adapter - WARNING - Bot 1: No permission to send to channel_1
+2026-03-14 11:16:26,006 - app.platforms.discord.adapter - ERROR - Failed to resolve channel dm_99999: 404 <MagicMock name='mock.reason' id='5588644016'> (error code: 0): Unknown user
+2026-03-14 11:16:26,538 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:26,544 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:26,546 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:26,546 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:26,546 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:26,546 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:26,546 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:26,555 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2026-03-14 11:16:26,555 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:26,555 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:26,556 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:26,556 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:26,556 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:26,556 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:26,567 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:26,570 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:26,572 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:26,572 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:26,572 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:26,572 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:26,572 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:26,575 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2026-03-14 11:16:26,576 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:26,576 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:26,576 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:26,576 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:26,576 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:26,576 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:26,585 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:26,587 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:26,589 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:26,589 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:26,589 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:26,589 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:26,589 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:26,592 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2026-03-14 11:16:26,592 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:26,593 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:26,593 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:26,593 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:26,593 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:26,593 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:26,601 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:26,603 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:26,604 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:26,604 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:26,604 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:26,604 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:26,604 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:26,607 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2026-03-14 11:16:26,607 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:26,607 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:26,608 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:26,608 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:26,608 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:26,608 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:26,612 - app.platforms.instagram.adapter - WARNING - Instagram webhook rejected: no active bots configured
+2026-03-14 11:16:26,613 - app.platforms.instagram.adapter - ERROR - Instagram webhook REJECTED: no app_secret configured on any active bot. Set 'instagram_app_secret' in bot config to enable webhook verification.
+2026-03-14 11:16:26,616 - app.platforms.instagram.adapter - INFO - Bot 1: Instagram connected — Page 'MyPage' (ID: pg_123, IG Account: ig_456)
+2026-03-14 11:16:28,621 - app.platforms.instagram.adapter - INFO - Bot 1: Instagram connected — Page 'TestPage' (ID: pg_99, IG Account: ig_88)
+2026-03-14 11:16:30,626 - app.platforms.instagram.adapter - INFO - Bot 1: Instagram connected — Page 'TestPage' (ID: pg_1, IG Account: 456)
+2026-03-14 11:16:32,632 - app.platforms.instagram.adapter - ERROR - Bot 999: Not active, cannot send Instagram message
+2026-03-14 11:16:32,636 - app.platforms.instagram.adapter - ERROR - Bot 1: Failed to send IG message to user_1: Rate limit
+2026-03-14 11:16:32,638 - app.platforms.instagram.adapter - ERROR - Bot 1: HTTP error sending IG message: timeout
+2026-03-14 11:16:32,642 - app.platforms.instagram.adapter - ERROR - Bot 1: Failed to send IG message to user_1: HTTP 503
+2026-03-14 11:16:32,643 - app.platforms.instagram.adapter - ERROR - Bot 999: Not active, cannot send Instagram file
+2026-03-14 11:16:32,645 - app.platforms.instagram.adapter - WARNING - Bot 1: Instagram file send not fully supported for local files. File: /tmp/test.jpg
+2026-03-14 11:16:32,647 - app.platforms.instagram.adapter - WARNING - Bot 1: Instagram file send not fully supported for local files. File: /tmp/test.jpg
+2026-03-14 11:16:32,658 - app.platforms.instagram.adapter - INFO - Bot 1: IG message from Jane (user_1): Hello bot!
+2026-03-14 11:16:32,664 - app.platforms.instagram.adapter - INFO - Bot 1: IG message from Jane (user_1): Hi
+2026-03-14 11:16:32,667 - app.platforms.instagram.adapter - INFO - Bot 1: IG message from Jane (user_1): dup
+2026-03-14 11:16:32,669 - app.platforms.instagram.adapter - INFO - Bot 1: IG message from Jane (user_1): help
+2026-03-14 11:16:32,677 - app.platforms.instagram.adapter - ERROR - Bot 1: Failed to download IG media: HTTP 404
+2026-03-14 11:16:32,677 - app.platforms.instagram.adapter - ERROR - Bot 1: Error downloading IG media: slow
+2026-03-14 11:16:32,678 - app.platforms.instagram.adapter - INFO - Bot 1: Postback from user_1: Get Started (GET_STARTED)
+2026-03-14 11:16:32,679 - app.platforms.instagram.adapter - INFO - Bot 1: Postback from user_1:  (MENU_OPTION_1)
+2026-03-14 11:16:32,726 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-03-14 11:16:32,732 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,735 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,736 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,736 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,736 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,736 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,736 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,739 - app.platforms.instagram.adapter - INFO - Instagram webhook verified successfully
+2026-03-14 11:16:32,739 - httpx - INFO - HTTP Request: GET http://testserver/webhooks/instagram?hub.mode=subscribe&hub.verify_token=my_verify_token&hub.challenge=challenge_string_123 "HTTP/1.1 200 OK"
+2026-03-14 11:16:32,739 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,739 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,739 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,739 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,739 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,739 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,742 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-03-14 11:16:32,747 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,749 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,750 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,750 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,750 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,750 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,750 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,753 - app.platforms.instagram.adapter - WARNING - Instagram webhook verification failed: mode=subscribe
+2026-03-14 11:16:32,753 - httpx - INFO - HTTP Request: GET http://testserver/webhooks/instagram?hub.mode=subscribe&hub.verify_token=wrong_token&hub.challenge=challenge "HTTP/1.1 403 Forbidden"
+2026-03-14 11:16:32,753 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,753 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,753 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,753 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,753 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,753 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,756 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-03-14 11:16:32,761 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,763 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,764 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,764 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,764 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,764 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,764 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,767 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/instagram "HTTP/1.1 200 OK"
+2026-03-14 11:16:32,777 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,777 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,777 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,777 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,777 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,777 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,787 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-03-14 11:16:32,792 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,795 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,796 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,796 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,796 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,796 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,796 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,798 - app.platforms.instagram.adapter - WARNING - Instagram webhook: signature verification failed — rejecting request
+2026-03-14 11:16:32,799 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/instagram "HTTP/1.1 403 Forbidden"
+2026-03-14 11:16:32,799 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,799 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,799 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,799 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,799 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,799 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,802 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-03-14 11:16:32,807 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,809 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,810 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,810 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,810 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,810 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,810 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,812 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/instagram "HTTP/1.1 400 Bad Request"
+2026-03-14 11:16:32,813 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,813 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,813 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,813 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,813 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,813 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,815 - app.platforms.messenger.adapter - INFO - Messenger webhook routes registered at /webhooks/messenger
+2026-03-14 11:16:32,817 - app.platforms.messenger.adapter - WARNING - Messenger webhook: no valid app_secret configured — rejecting request
+2026-03-14 11:16:32,817 - app.platforms.messenger.adapter - WARNING - Messenger webhook: no valid app_secret configured — rejecting request
+2026-03-14 11:16:32,825 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,827 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,828 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,828 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,828 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,828 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,828 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,832 - app.platforms.messenger.adapter - INFO - Messenger webhook verified
+2026-03-14 11:16:32,832 - httpx - INFO - HTTP Request: GET http://testserver/webhooks/messenger?hub.mode=subscribe&hub.verify_token=my_verify_token&hub.challenge=challenge_string_123 "HTTP/1.1 200 OK"
+2026-03-14 11:16:32,832 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,832 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,832 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,832 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,832 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,832 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,839 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,841 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,842 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,842 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,842 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,842 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,842 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,845 - app.platforms.messenger.adapter - WARNING - Messenger webhook verify token mismatch: wrong_token
+2026-03-14 11:16:32,845 - httpx - INFO - HTTP Request: GET http://testserver/webhooks/messenger?hub.mode=subscribe&hub.verify_token=wrong_token&hub.challenge=challenge "HTTP/1.1 403 Forbidden"
+2026-03-14 11:16:32,845 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,845 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,845 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,845 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,845 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,845 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,853 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,855 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,856 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,856 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,856 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,856 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,856 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,858 - httpx - INFO - HTTP Request: GET http://testserver/webhooks/messenger "HTTP/1.1 400 Bad Request"
+2026-03-14 11:16:32,859 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,859 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,859 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,859 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,859 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,859 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,866 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,868 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,869 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,869 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,869 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,869 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,869 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,872 - app.platforms.messenger.adapter - WARNING - Messenger webhook verify token mismatch: any
+2026-03-14 11:16:32,872 - httpx - INFO - HTTP Request: GET http://testserver/webhooks/messenger?hub.mode=subscribe&hub.verify_token=any&hub.challenge=challenge "HTTP/1.1 403 Forbidden"
+2026-03-14 11:16:32,872 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,872 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,872 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,872 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,872 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,872 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,880 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,882 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,883 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,883 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,883 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,883 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,883 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,885 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/messenger "HTTP/1.1 200 OK"
+2026-03-14 11:16:32,886 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,886 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,886 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,886 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,886 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,886 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,893 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,895 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,897 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,897 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,897 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,897 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,897 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,899 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/messenger "HTTP/1.1 200 OK"
+2026-03-14 11:16:32,900 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,900 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,900 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,900 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,900 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,900 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,907 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,909 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,910 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,910 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,910 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,910 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,910 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,912 - app.platforms.messenger.adapter - WARNING - Messenger webhook: no valid app_secret configured — rejecting request
+2026-03-14 11:16:32,913 - app.platforms.messenger.adapter - WARNING - Messenger webhook: invalid signature
+2026-03-14 11:16:32,913 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/messenger "HTTP/1.1 403 Forbidden"
+2026-03-14 11:16:32,913 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,913 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,913 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,913 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,913 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,913 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,921 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,923 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,924 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,924 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,924 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,924 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,924 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,926 - app.platforms.messenger.adapter - WARNING - Messenger webhook: invalid signature
+2026-03-14 11:16:32,926 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/messenger "HTTP/1.1 403 Forbidden"
+2026-03-14 11:16:32,926 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,927 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,927 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,927 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,927 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,927 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,934 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:16:32,936 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:16:32,937 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:16:32,937 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:16:32,937 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:16:32,937 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:16:32,937 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:16:32,940 - httpx - INFO - HTTP Request: POST http://testserver/webhooks/messenger "HTTP/1.1 200 OK"
+2026-03-14 11:16:32,940 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:16:32,940 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:16:32,940 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:16:32,940 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:16:32,940 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:16:32,940 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:16:32,945 - app.platforms.messenger.adapter - INFO - Bot 3: Messenger connected as 'Test Page'
+2026-03-14 11:16:32,945 - app.platforms.messenger.adapter - INFO - Bot 3: Messenger adapter stopped
+2026-03-14 11:16:32,946 - app.platforms.messenger.adapter - INFO - Bot 4: Messenger connected as 'Test Page'
+2026-03-14 11:16:32,946 - app.platforms.messenger.adapter - INFO - Bot 4: Sent message to user123
+2026-03-14 11:16:32,946 - app.platforms.messenger.adapter - INFO - Bot 4: Messenger adapter stopped
+2026-03-14 11:16:32,947 - app.platforms.messenger.adapter - INFO - Bot 10: Sent message to user_123
+2026-03-14 11:16:32,947 - app.platforms.messenger.adapter - ERROR - Bot 999: No page access token for sending
+2026-03-14 11:16:32,948 - app.platforms.messenger.adapter - ERROR - Bot 11: Send API error: Rate limited
+2026-03-14 11:16:32,949 - app.platforms.messenger.adapter - INFO - Bot 12: Sent message to user_123
+2026-03-14 11:16:32,952 - app.platforms.messenger.adapter - INFO - Bot 20: Sent message to user_123
+2026-03-14 11:16:32,952 - app.platforms.messenger.adapter - INFO - Bot 20: Sent image to user_123
+2026-03-14 11:16:32,953 - app.platforms.messenger.adapter - ERROR - Bot 21: File not found: /nonexistent/file.jpg
+2026-03-14 11:16:32,954 - app.platforms.messenger.adapter - INFO - Bot 22: Sent file to user_123
+2026-03-14 11:16:32,961 - app.platforms.message_handler - INFO - Bot 30: Created conversation 'John Doe' (chat_id=sender_456, group=False)
+2026-03-14 11:16:32,973 - app.platforms.message_handler - INFO - Bot 31: Created conversation 'Jane Doe' (chat_id=sender_dup, group=False)
+2026-03-14 11:16:32,984 - app.platforms.telegram.adapter - WARNING - Bot 999: No active Telegram app for sending
+2026-03-14 11:16:32,985 - app.platforms.telegram.adapter - ERROR - Bot 1: Failed to send message: Telegram error
+2026-03-14 11:16:32,988 - app.platforms.telegram.adapter - ERROR - Bot 1: File not found: /nonexistent/file.jpg
+2026-03-14 11:16:32,988 - app.platforms.telegram.adapter - WARNING - Bot 999: No active Telegram app for sending
+2026-03-14 11:16:32,990 - app.platforms.telegram.adapter - ERROR - Bot 1: No Telegram bot token found. Store credentials as 'ai_api_key|||telegram_bot_token' in the API key field.
+2026-03-14 11:16:32,991 - app.platforms.telegram.adapter - ERROR - Bot 1: Invalid Telegram bot token: Unauthorized
+2026-03-14 11:16:32,992 - app.platforms.telegram.adapter - INFO - Bot 1: Telegram connected as @testbot (id=123456)
+2026-03-14 11:16:32,993 - app.platforms.telegram.adapter - INFO - Bot 1: Telegram polling started
+2026-03-14 11:16:32,993 - app.platforms.telegram.adapter - INFO - Bot 1: Telegram adapter stopped
+2026-03-14 11:16:32,994 - app.platforms.telegram.adapter - WARNING - Bot 42: error during async cleanup: object MagicMock can't be used in 'await' expression
+2026-03-14 11:24:45,483 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 11:24:45,484 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 11:24:45,485 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 11:24:45,485 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 11:24:45,485 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 11:24:45,492 - app.ai_workspace.manager - INFO - Stopped session 52 for user 1
+2026-03-14 11:24:45,495 - app.chathub_agent.manager - INFO - Stopped session 3 for user 1
+2026-03-14 11:24:45,495 - app.bots.manager - INFO - All bots stopped
+2026-03-14 11:24:49,916 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:24:49,916 - root - INFO - === Server Starting ===
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 11:24:50,763 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 11:24:50,867 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 11:24:50,871 - root - INFO - Enhanced logging system initialized
+2026-03-14 11:24:50,903 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 11:24:50,903 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 11:24:50,903 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 11:24:50,903 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 11:24:50,904 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 11:25:36,396 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-c2f54221 on branch tool-builder/1/1773473136
+2026-03-14 11:25:36,396 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session c2f54221 for user 1
+2026-03-14 11:25:36,400 - app.tools.builder_manager - INFO - Created tool builder session c2f54221-042f-4140-8e1e-5ee59ed10318 for user 1 (preview deferred)
+2026-03-14 11:25:36,486 - app.tools.builder_manager - INFO - Tool builder turn started, session=c2f54221-042f-4140-8e1e-5ee59ed10318, PID=71217, cwd=/Users/tony/chathub/.worktrees/tb-c2f54221
+2026-03-14 11:25:44,329 - app.tools.builder_manager - INFO - Tool builder turn completed, session=c2f54221-042f-4140-8e1e-5ee59ed10318
+2026-03-14 11:26:24,853 - app.tools.builder_manager - INFO - Tool builder turn started, session=c2f54221-042f-4140-8e1e-5ee59ed10318, PID=71385, cwd=/Users/tony/chathub/.worktrees/tb-c2f54221
+2026-03-14 11:26:30,186 - app.tools.builder_manager - INFO - Tool builder turn completed, session=c2f54221-042f-4140-8e1e-5ee59ed10318
+2026-03-14 11:27:08,041 - app.tools.builder_manager - INFO - Tool builder turn started, session=c2f54221-042f-4140-8e1e-5ee59ed10318, PID=71566, cwd=/Users/tony/chathub/.worktrees/tb-c2f54221
+2026-03-14 11:27:21,382 - app.tools.builder_manager - INFO - Tool builder turn completed, session=c2f54221-042f-4140-8e1e-5ee59ed10318
+2026-03-14 12:14:52,740 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 12:14:52,740 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 12:14:52,740 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 12:14:52,741 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 12:14:52,741 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 12:14:52,741 - app.bots.manager - INFO - All bots stopped
+2026-03-14 12:14:55,245 - root - INFO - Enhanced logging system initialized
+2026-03-14 12:14:55,245 - root - INFO - === Server Starting ===
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 12:14:56,184 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 12:14:56,288 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 12:14:56,290 - root - INFO - Enhanced logging system initialized
+2026-03-14 12:14:56,322 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 12:14:56,322 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 12:14:56,322 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 12:14:56,322 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 12:14:56,322 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 12:15:26,319 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-a2c3faba on branch tool-builder/1/1773476126
+2026-03-14 12:15:26,319 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session a2c3faba for user 1
+2026-03-14 12:15:26,324 - app.tools.builder_manager - INFO - Created tool builder session a2c3faba-e143-4ed9-9d63-b2554fdf1816 for user 1 (preview deferred)
+2026-03-14 12:15:26,436 - app.tools.builder_manager - INFO - Tool builder turn started, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816, PID=79511, cwd=/Users/tony/chathub/.worktrees/tb-a2c3faba
+2026-03-14 12:15:31,920 - app.tools.builder_manager - INFO - Tool builder turn completed, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816
+2026-03-14 12:16:36,994 - app.tools.builder_manager - INFO - Tool builder turn started, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816, PID=79738, cwd=/Users/tony/chathub/.worktrees/tb-a2c3faba
+2026-03-14 12:16:50,966 - app.tools.builder_manager - INFO - Tool builder turn completed, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816
+2026-03-14 12:18:06,742 - app.tools.builder_manager - INFO - Tool builder turn started, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816, PID=80013, cwd=/Users/tony/chathub/.worktrees/tb-a2c3faba
+2026-03-14 12:18:13,114 - app.tools.builder_manager - INFO - Tool builder turn completed, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816
+2026-03-14 12:19:36,353 - app.tools.builder_manager - INFO - Tool builder turn started, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816, PID=80245, cwd=/Users/tony/chathub/.worktrees/tb-a2c3faba
+2026-03-14 12:19:45,433 - app.tools.builder_manager - INFO - Tool builder turn completed, session=a2c3faba-e143-4ed9-9d63-b2554fdf1816
+2026-03-14 14:02:14,637 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 14:02:14,640 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 14:02:14,640 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 14:02:14,640 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 14:02:14,640 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 14:02:14,641 - app.bots.manager - INFO - All bots stopped
+2026-03-14 14:02:17,053 - root - INFO - Enhanced logging system initialized
+2026-03-14 14:02:17,054 - root - INFO - === Server Starting ===
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 14:02:17,974 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 14:02:18,073 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 14:02:18,078 - root - INFO - Enhanced logging system initialized
+2026-03-14 14:02:18,108 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 14:02:18,108 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 14:02:18,108 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 14:02:18,109 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 14:02:18,109 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 14:03:37,481 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-533326bc on branch tool-builder/1/1773482617
+2026-03-14 14:03:37,481 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 533326bc for user 1
+2026-03-14 14:03:37,484 - app.tools.builder_manager - INFO - Created tool builder session 533326bc-bcae-4f4b-945e-4b961c924462 for user 1 (preview deferred)
+2026-03-14 14:03:37,571 - app.tools.builder_manager - INFO - Tool builder turn started, session=533326bc-bcae-4f4b-945e-4b961c924462, PID=91351, cwd=/Users/tony/chathub/.worktrees/tb-533326bc
+2026-03-14 14:04:29,851 - app.tools.builder_manager - INFO - Tool builder turn completed, session=533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:11:34,171 - app.tools.builder_manager - INFO - Tool builder turn started, session=533326bc-bcae-4f4b-945e-4b961c924462, PID=92419, cwd=/Users/tony/chathub/.worktrees/tb-533326bc
+2026-03-14 14:12:52,745 - app.tools.builder_manager - INFO - Tool builder turn completed, session=533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:14:40,895 - app.tools.builder_manager - INFO - Tool builder turn started, session=533326bc-bcae-4f4b-945e-4b961c924462, PID=93085, cwd=/Users/tony/chathub/.worktrees/tb-533326bc
+2026-03-14 14:15:08,263 - app.tools.builder_manager - INFO - Tool builder turn completed, session=533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:15:43,440 - app.tools.builder_manager - INFO - Tool builder turn started, session=533326bc-bcae-4f4b-945e-4b961c924462, PID=93338, cwd=/Users/tony/chathub/.worktrees/tb-533326bc
+2026-03-14 14:16:11,749 - app.tools.builder_manager - INFO - Tool builder turn completed, session=533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:17:37,906 - app.tools.builder_manager - INFO - Tool builder turn started, session=533326bc-bcae-4f4b-945e-4b961c924462, PID=93725, cwd=/Users/tony/chathub/.worktrees/tb-533326bc
+2026-03-14 14:18:20,228 - app.tools.builder_manager - INFO - Tool builder turn completed, session=533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:19:12,284 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 14:19:12,425 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-533326bc on port 9001
+2026-03-14 14:19:12,427 - app.tools.sandbox_manager - INFO - Container tb-sandbox-533326bc started, waiting for HTTP /health on port 9001...
+2026-03-14 14:19:13,979 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 14:47:58,132 - app.tools.worktree_manager - INFO - Discarded worktree for session 533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:47:58,133 - app.tools.sandbox_manager - INFO - Discarded sandbox for session 533326bc-bcae-4f4b-945e-4b961c924462
+2026-03-14 14:53:45,383 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 14:53:45,386 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 14:53:45,386 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 14:53:45,386 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 14:53:45,386 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 14:53:45,387 - app.bots.manager - INFO - All bots stopped
+2026-03-14 14:53:47,492 - root - INFO - Enhanced logging system initialized
+2026-03-14 14:53:47,493 - root - INFO - === Server Starting ===
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 14:53:48,362 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 14:53:48,463 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 14:53:48,465 - root - INFO - Enhanced logging system initialized
+2026-03-14 14:53:48,499 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 14:53:48,499 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 14:53:48,499 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 14:53:48,499 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 14:53:48,500 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 14:54:11,733 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-61591aa5 on branch tool-builder/1/1773485651
+2026-03-14 14:54:11,733 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 61591aa5 for user 1
+2026-03-14 14:54:11,736 - app.tools.builder_manager - INFO - Created tool builder session 61591aa5-8824-4e25-a89e-88b8eef3f4b9 for user 1 (preview deferred)
+2026-03-14 14:54:11,822 - app.tools.builder_manager - INFO - Tool builder turn started, session=61591aa5-8824-4e25-a89e-88b8eef3f4b9, PID=141, cwd=/Users/tony/chathub/.worktrees/tb-61591aa5
+2026-03-14 14:55:16,125 - app.tools.builder_manager - INFO - Tool builder turn completed, session=61591aa5-8824-4e25-a89e-88b8eef3f4b9
+2026-03-14 14:58:03,551 - app.ai_workspace.manager - INFO - Safety commit created: 2c6a5230bce399fed7732787049ee0d79db0933f
+2026-03-14 14:58:03,554 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260314_105803.db
+2026-03-14 14:58:03,564 - app.ai_workspace.manager - INFO - Turn started for session 53, PID=1086, first=False
+2026-03-14 15:01:16,251 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:01:16,282 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:01:16,282 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:01:16,282 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:01:16,282 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:01:16,283 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:01:16,477 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 15:01:16,478 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 15:01:16,655 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 15:01:16,656 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 15:01:16,663 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity "HTTP/1.1 200 OK"
+2026-03-14 15:01:16,663 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:01:16,663 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:01:16,663 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:01:16,663 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:01:16,663 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:01:16,663 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:01:16,675 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 15:01:16,677 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:01:16,678 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:01:16,678 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:01:16,678 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:01:16,678 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:01:16,678 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:01:16,849 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 15:01:16,849 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,017 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 15:01:17,017 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,021 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?bot_id=1 "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,022 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:01:17,022 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:01:17,022 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:01:17,022 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:01:17,022 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:01:17,022 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:01:17,030 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 15:01:17,031 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:01:17,033 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:01:17,033 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:01:17,033 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:01:17,033 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:01:17,033 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:01:17,204 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 15:01:17,204 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,372 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 15:01:17,372 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,375 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?action=message_sent "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,376 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:01:17,376 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:01:17,376 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:01:17,376 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:01:17,376 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:01:17,376 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:01:17,384 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 15:01:17,386 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:01:17,387 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:01:17,387 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:01:17,387 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:01:17,387 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:01:17,387 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:01:17,557 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 15:01:17,558 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,725 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 15:01:17,726 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,729 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?search=successfully "HTTP/1.1 200 OK"
+2026-03-14 15:01:17,729 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:01:17,729 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:01:17,729 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:01:17,729 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:01:17,729 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:01:17,729 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:01:17,737 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 15:01:17,739 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:01:17,740 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:01:17,740 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:01:17,740 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:01:17,740 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:01:17,740 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:01:17,910 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 15:01:17,910 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,078 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 15:01:18,079 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,082 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?start_date=2026-03-14T10:31:18.080151 "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,082 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:01:18,082 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:01:18,082 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:01:18,082 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:01:18,082 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:01:18,082 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:01:18,090 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 15:01:18,092 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:01:18,093 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:01:18,094 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:01:18,094 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:01:18,094 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:01:18,094 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:01:18,264 - app.auth.routes - INFO - New user registered: test@example.com (id=1)
+2026-03-14 15:01:18,264 - httpx - INFO - HTTP Request: POST http://testserver/auth/register "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,432 - app.auth.routes - INFO - User logged in: test@example.com (id=1)
+2026-03-14 15:01:18,432 - httpx - INFO - HTTP Request: POST http://testserver/auth/login "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,435 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?limit=2&page=1 "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,436 - httpx - INFO - HTTP Request: GET http://testserver/api/analytics/activity?limit=2&page=2 "HTTP/1.1 200 OK"
+2026-03-14 15:01:18,436 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:01:18,436 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:01:18,436 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:01:18,436 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:01:18,436 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:01:18,436 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:01:45,796 - app.ai_workspace.manager - INFO - Turn completed for session 53, waiting for follow-up
+2026-03-14 15:02:00,489 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 15:02:00,613 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-61591aa5 on port 9001
+2026-03-14 15:02:00,613 - app.tools.sandbox_manager - INFO - Container tb-sandbox-61591aa5 started, waiting for HTTP /health on port 9001...
+2026-03-14 15:02:01,644 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 15:02:48,455 - app.bots.routes - INFO - HTTP POST /api/bots/2/start received
+2026-03-14 15:02:48,457 - app.bots.routes - INFO - Bot 2 found, is_running=False
+2026-03-14 15:02:48,458 - app.bots.routes - INFO - Bot 2: has_session=True, whatsapp_phone=96599328119, needs_qr_scan=False
+2026-03-14 15:02:48,458 - app.bots.routes - INFO - Starting bot 2...
+2026-03-14 15:02:48,458 - app.bots.manager - INFO - start_bot called for profile 2
+2026-03-14 15:02:48,458 - app.bots.manager - INFO - Creating task for bot 2 (platform: whatsapp)
+2026-03-14 15:02:48,458 - app.bots.manager - INFO - Started bot instance for profile 2
+2026-03-14 15:02:48,458 - app.bots.routes - INFO - Cleared cached QR code for bot 2
+2026-03-14 15:02:48,460 - app.bots.routes - INFO - Bot 2 started successfully, returning HTTP 200
+2026-03-14 15:02:48,460 - app.bots.whatsapp_bot - INFO - Bot 2: Thread started
+2026-03-14 15:02:48,467 - app.bots.routes - INFO - WebSocket connection attempt for bot 2
+2026-03-14 15:02:48,467 - app.bots.routes - INFO - WebSocket accepted for bot 2
+2026-03-14 15:02:48,468 - app.bots.routes - INFO - Waiting for bot instance 2...
+2026-03-14 15:02:48,468 - app.bots.routes - INFO - Found bot instance 2 after 1 attempts
+2026-03-14 15:02:48,468 - app.bots.routes - INFO - WebSocket callbacks registered for bot 2. QR callbacks: 1, Status callbacks: 1
+2026-03-14 15:02:48,468 - app.bots.routes - INFO - Initial status sent for bot 2
+2026-03-14 15:02:48,468 - app.bots.routes - INFO - WebSocket entering message loop for bot 2
+2026-03-14 15:02:49,490 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'starting', 'message': 'Initializing bot...'}
+2026-03-14 15:02:49,491 - app.bots.manager - INFO - Bot 2: Notifying 1 status callbacks: Initializing bot...
+2026-03-14 15:02:49,491 - app.bots.routes - INFO - on_status callback triggered for bot 2: Initializing bot...
+2026-03-14 15:02:49,491 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:02:49,492 - app.bots.whatsapp_bot - INFO - Bot 2: Starting...
+2026-03-14 15:02:49,520 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'launching', 'message': 'Launching browser...'}
+2026-03-14 15:02:49,520 - app.bots.manager - INFO - Bot 2: Notifying 1 status callbacks: Launching browser...
+2026-03-14 15:02:49,521 - app.bots.routes - INFO - on_status callback triggered for bot 2: Launching browser...
+2026-03-14 15:02:49,521 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:02:49,833 - app.bots.whatsapp_bot - INFO - Bot 2: Launching browser with headless=False
+2026-03-14 15:02:49,833 - app.bots.whatsapp_bot - INFO - Bot 2: Using ABSOLUTE session path: /Users/tony/chathub/data/sessions/bot_2
+2026-03-14 15:02:49,833 - app.bots.whatsapp_bot - INFO - Bot 2: Found EXISTING browser session at: /Users/tony/chathub/data/sessions/bot_2 - will attempt auto-login
+2026-03-14 15:02:49,833 - app.bots.whatsapp_bot - INFO - Bot 2: No proxy configured, detecting system timezone...
+2026-03-14 15:02:49,840 - app.bots.whatsapp_bot - INFO - Detected system timezone offset: UTC+4
+2026-03-14 15:02:49,841 - app.bots.whatsapp_bot - INFO - Bot 2: Using offset-based timezone: Etc/GMT-4 (UTC+4)
+2026-03-14 15:02:51,684 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'loading', 'message': 'Loading WhatsApp Web...'}
+2026-03-14 15:02:51,685 - app.bots.manager - INFO - Bot 2: Notifying 1 status callbacks: Loading WhatsApp Web...
+2026-03-14 15:02:51,685 - app.bots.routes - INFO - on_status callback triggered for bot 2: Loading WhatsApp Web...
+2026-03-14 15:02:51,686 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:02:53,185 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'waiting_qr', 'message': 'Waiting for QR code...'}
+2026-03-14 15:02:53,186 - app.bots.manager - INFO - Bot 2: Notifying 1 status callbacks: Waiting for QR code...
+2026-03-14 15:02:53,186 - app.bots.routes - INFO - on_status callback triggered for bot 2: Waiting for QR code...
+2026-03-14 15:02:53,187 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:02:53,187 - app.bots.whatsapp_bot - INFO - Bot 2: Entering QR detection loop...
+2026-03-14 15:02:53,187 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp Web loaded, waiting for QR code...
+2026-03-14 15:02:53,224 - app.bots.whatsapp_bot - INFO - Bot 2: Waiting for QR... canvas=False, qr_len=0
+2026-03-14 15:02:56,062 - app.bots.routes - INFO - WebSocket disconnected for bot 2
+2026-03-14 15:02:56,063 - app.bots.routes - INFO - WebSocket cleanup for bot 2
+2026-03-14 15:02:56,063 - app.bots.routes - INFO - Removed QR callback for bot 2
+2026-03-14 15:02:56,063 - app.bots.routes - INFO - Removed status callback for bot 2
+2026-03-14 15:02:56,293 - app.bots.whatsapp_bot - INFO - Bot 2: Authentication detected via selector: [aria-label="Chat list"]
+2026-03-14 15:02:56,293 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'connected': True, 'whatsapp_connected': True, 'message': 'WhatsApp connected successfully!'}
+2026-03-14 15:02:56,293 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: WhatsApp connected successfully!
+2026-03-14 15:02:56,293 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:02:56,293 - app.bots.whatsapp_bot - INFO - Bot 2: Authenticated! Session persisted automatically.
+2026-03-14 15:02:56,293 - app.bots.whatsapp_bot - INFO - Bot 2: Stored page reference for manual messaging
+2026-03-14 15:02:56,302 - app.bots.whatsapp_bot - INFO - Bot 2: Account type: Business
+2026-03-14 15:02:56,828 - app.bots.whatsapp_bot - INFO - Bot 2: Profile click result: navbar_profile
+2026-03-14 15:02:58,340 - app.bots.whatsapp_bot - INFO - Bot 2: Profile extraction debug: panelOpen=True, isBusiness=True, hasProfileText=True, hasNameText=False
+2026-03-14 15:02:58,340 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data extracted: name=Tony, phone_display=None, has_pic=True, is_business=True
+2026-03-14 15:02:58,959 - app.bots.whatsapp_bot - INFO - Bot 2: Extracted account info: {'account_type': 'business', 'phone': '96599328119', 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-sin11-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4AGcSU1_rL03nECBDegVKntwzSs3ZOdQl3ixJUicQ5d5sQ&oe=69C26214&_nc_sid=5e03e0&_nc_cat=106'}
+2026-03-14 15:02:58,963 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected offset from proxy: UTC+4
+2026-03-14 15:02:58,963 - app.bots.whatsapp_bot - INFO - Bot 2: Saved profile pic to database
+2026-03-14 15:02:58,964 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data committed to database
+2026-03-14 15:02:58,964 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp connected, starting message listener
+2026-03-14 15:02:58,964 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Bot is running and listening for messages...', 'account_info': {'phone': '96599328119', 'phone_display': None, 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-sin11-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4AGcSU1_rL03nECBDegVKntwzSs3ZOdQl3ixJUicQ5d5sQ&oe=69C26214&_nc_sid=5e03e0&_nc_cat=106', 'about': None, 'account_type': 'business'}, 'ai_response_enabled': False, 'history_sync_active': False, 'history_sync_progress': {'total': 0, 'completed': 0, 'current_chat': '', 'status': 'idle'}}
+2026-03-14 15:02:58,965 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Bot is running and listening for messages...
+2026-03-14 15:02:58,965 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:02:58,965 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync - extracting conversations from WhatsApp sidebar...
+2026-03-14 15:02:58,965 - app.bots.whatsapp_bot - INFO - Bot 2: Starting quick conversation sync (unread only)...
+2026-03-14 15:02:58,965 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'syncing', 'message': 'Loading conversations with unread messages...'}
+2026-03-14 15:02:58,965 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading conversations with unread messages...
+2026-03-14 15:02:58,965 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:03:02,487 - app.bots.whatsapp_bot - INFO - Bot 2: Found 3 conversations with unread messages
+2026-03-14 15:03:02,487 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 0: name='Test', fullDataId='None', isGroup=True
+2026-03-14 15:03:02,487 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 1: name='Max Fashion', fullDataId='None', isGroup=False
+2026-03-14 15:03:02,487 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 2: name='+60 16-260 9676', fullDataId='None', isGroup=False
+2026-03-14 15:03:02,492 - app.bots.whatsapp_bot - WARNING - Bot 2: Skipping conversation '+60 16-260 9676' - no valid WhatsApp ID (got: None)
+2026-03-14 15:03:02,493 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync complete - 2 unread conversations
+2026-03-14 15:03:02,493 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Loaded 2 conversations with unread messages. Ready!'}
+2026-03-14 15:03:02,493 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loaded 2 conversations with unread messages. Ready!
+2026-03-14 15:03:02,493 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-03-14 15:03:02,493 - app.bots.whatsapp_bot - INFO - Bot 2: Entering main message loop
+2026-03-14 15:03:02,493 - app.bots.whatsapp_bot - INFO - Bot 2: Closing any open chat windows before starting...
+2026-03-14 15:03:03,430 - app.bots.whatsapp_bot - INFO - Bot 2: Chat windows closed, ready to detect unread messages
+2026-03-14 15:03:09,492 - app.bots.manager - INFO - Stopped bot instance for profile 2
+2026-03-14 15:03:11,468 - app.bots.whatsapp_bot - INFO - Bot 2: Removed page reference
+2026-03-14 15:03:11,551 - app.bots.whatsapp_bot - INFO - Bot 2: Browser context closed, session persisted
+2026-03-14 15:23:47,137 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 15:23:47,139 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 15:23:47,140 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 15:23:47,140 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 15:23:47,140 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 15:23:47,146 - app.ai_workspace.manager - INFO - Stopped session 53 for user 1
+2026-03-14 15:23:47,147 - app.bots.manager - INFO - Stopped bot instance for profile 2
+2026-03-14 15:23:47,147 - app.bots.manager - INFO - All bots stopped
+2026-03-14 15:23:49,491 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:23:49,491 - root - INFO - === Server Starting ===
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 15:23:50,889 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 15:23:50,992 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 15:23:50,996 - root - INFO - Enhanced logging system initialized
+2026-03-14 15:23:51,027 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 15:23:51,028 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 15:23:51,028 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 15:23:51,028 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 15:23:51,028 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 15:23:54,708 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-14 15:23:54,724 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-14 15:23:55,440 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-14 15:23:55,441 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-14 15:24:22,812 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 15:24:22,816 - app.tools.routes - INFO - Message routing - Model: gpt-4o-mini, Response length: 429
+2026-03-14 15:24:22,816 - app.tools.routes - INFO - Message routing - Raw response: {
+    "category": "support",
+    "urgency": "medium",
+    "sentiment": "neutral",
+    "suggested_expertise": ["support", "orders", "help"],
+    "assigned_bot": "Support Bot",
+    "confidence": 0.9,
+    "reason": "The message indicates a need for assistance with an order, which falls under the Support Bot's expertise.",
+    "bot_scores": {
+        "Sales Bot": 0.1,
+        "Support Bot": 0.9,
+        "General Bot": 0.0
+    }
+}
+2026-03-14 15:25:06,069 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-9a1ee17d on branch tool-builder/1/1773487505
+2026-03-14 15:25:06,070 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 9a1ee17d for user 1
+2026-03-14 15:25:06,073 - app.tools.builder_manager - INFO - Created tool builder session 9a1ee17d-eaef-49db-9f33-93b01b9fd4ed for user 1 (preview deferred)
+2026-03-14 15:25:06,150 - app.tools.builder_manager - INFO - Tool builder turn started, session=9a1ee17d-eaef-49db-9f33-93b01b9fd4ed, PID=8057, cwd=/Users/tony/chathub/.worktrees/tb-9a1ee17d
+2026-03-14 15:25:10,146 - app.tools.builder_manager - INFO - Tool builder turn completed, session=9a1ee17d-eaef-49db-9f33-93b01b9fd4ed
+2026-03-14 15:26:35,762 - app.tools.builder_manager - INFO - Tool builder turn started, session=9a1ee17d-eaef-49db-9f33-93b01b9fd4ed, PID=8334, cwd=/Users/tony/chathub/.worktrees/tb-9a1ee17d
+2026-03-14 15:27:47,401 - app.tools.builder_manager - INFO - Tool builder turn completed, session=9a1ee17d-eaef-49db-9f33-93b01b9fd4ed
+2026-03-14 15:29:42,863 - app.tools.builder_manager - INFO - Tool builder turn started, session=9a1ee17d-eaef-49db-9f33-93b01b9fd4ed, PID=9038, cwd=/Users/tony/chathub/.worktrees/tb-9a1ee17d
+2026-03-14 15:32:30,093 - app.tools.builder_manager - INFO - Tool builder turn completed, session=9a1ee17d-eaef-49db-9f33-93b01b9fd4ed
+2026-03-14 15:36:04,588 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 15:36:04,723 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-9a1ee17d on port 9001
+2026-03-14 15:36:04,723 - app.tools.sandbox_manager - INFO - Container tb-sandbox-9a1ee17d started, waiting for HTTP /health on port 9001...
+2026-03-14 15:36:06,271 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 16:26:52,115 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 16:26:52,117 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 16:26:52,118 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 16:26:52,118 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 16:26:52,118 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 16:26:52,118 - app.bots.manager - INFO - All bots stopped
+2026-03-14 16:26:54,710 - root - INFO - Enhanced logging system initialized
+2026-03-14 16:26:54,710 - root - INFO - === Server Starting ===
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 16:26:55,563 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 16:26:55,667 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 16:26:55,672 - root - INFO - Enhanced logging system initialized
+2026-03-14 16:26:55,703 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 16:26:55,703 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 16:26:55,703 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 16:26:55,703 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 16:26:55,704 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 16:27:25,142 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-03-14 16:33:58,278 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 16:33:58,280 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 16:33:58,280 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 16:33:58,280 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 16:33:58,281 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 16:33:58,281 - app.bots.manager - INFO - All bots stopped
+2026-03-14 16:34:00,230 - root - INFO - Enhanced logging system initialized
+2026-03-14 16:34:00,230 - root - INFO - === Server Starting ===
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 16:34:01,111 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 16:34:01,215 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 16:34:01,218 - root - INFO - Enhanced logging system initialized
+2026-03-14 16:34:01,248 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 16:34:01,249 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 16:34:01,249 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 16:34:01,249 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 16:34:01,249 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 16:34:30,507 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-02f7478e on branch tool-builder/1/1773491670
+2026-03-14 16:34:30,507 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 02f7478e for user 1
+2026-03-14 16:34:30,511 - app.tools.builder_manager - INFO - Created tool builder session 02f7478e-95a3-4656-a2e2-33a1bb1d3a29 for user 1 (preview deferred)
+2026-03-14 16:34:30,596 - app.tools.builder_manager - INFO - Tool builder turn started, session=02f7478e-95a3-4656-a2e2-33a1bb1d3a29, PID=22679, cwd=/Users/tony/chathub/.worktrees/tb-02f7478e
+2026-03-14 16:35:36,966 - app.tools.builder_manager - INFO - Tool builder turn completed, session=02f7478e-95a3-4656-a2e2-33a1bb1d3a29
+2026-03-14 16:35:38,906 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 16:35:38,914 - app.tools.builder_routes - WARNING - AI suggest-metadata failed: expected string or bytes-like object, got 'AIResponse'
+2026-03-14 16:35:38,920 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=02f7478e-95a3-4656-a2e2-33a1bb1d3a29: add-a-new-feature-for-the-dashboard-page
+2026-03-14 16:39:03,573 - app.tools.builder_manager - INFO - Tool builder turn started, session=02f7478e-95a3-4656-a2e2-33a1bb1d3a29, PID=23553, cwd=/Users/tony/chathub/.worktrees/tb-02f7478e
+2026-03-14 16:43:05,212 - app.tools.builder_manager - INFO - Tool builder turn completed, session=02f7478e-95a3-4656-a2e2-33a1bb1d3a29
+2026-03-14 16:43:06,682 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 16:43:06,685 - app.tools.builder_routes - WARNING - AI suggest-metadata failed: expected string or bytes-like object, got 'AIResponse'
+2026-03-14 16:43:06,689 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=02f7478e-95a3-4656-a2e2-33a1bb1d3a29: add-a-new-feature-for-the-dashboard-page
+2026-03-14 16:45:01,778 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 16:45:01,928 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-02f7478e on port 9001
+2026-03-14 16:45:01,928 - app.tools.sandbox_manager - INFO - Container tb-sandbox-02f7478e started, waiting for HTTP /health on port 9001...
+2026-03-14 16:45:03,473 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 17:00:37,870 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 17:00:37,872 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 17:00:37,872 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 17:00:37,872 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 17:00:37,873 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 17:00:37,873 - app.bots.manager - INFO - All bots stopped
+2026-03-14 17:00:40,752 - root - INFO - Enhanced logging system initialized
+2026-03-14 17:00:40,752 - root - INFO - === Server Starting ===
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 17:00:42,279 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 17:00:42,388 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 17:00:42,390 - root - INFO - Enhanced logging system initialized
+2026-03-14 17:00:42,422 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 17:00:42,422 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 17:00:42,422 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 17:00:42,422 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 17:00:42,423 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 17:01:49,978 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-5cb67d44 on branch tool-builder/1/1773493309
+2026-03-14 17:01:49,978 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 5cb67d44 for user 1
+2026-03-14 17:01:49,981 - app.tools.builder_manager - INFO - Created tool builder session 5cb67d44-a2b3-4a38-accd-cafeb1d6df79 for user 1 (preview deferred)
+2026-03-14 17:01:50,065 - app.tools.builder_manager - INFO - Tool builder turn started, session=5cb67d44-a2b3-4a38-accd-cafeb1d6df79, PID=28775, cwd=/Users/tony/chathub/.worktrees/tb-5cb67d44
+2026-03-14 17:02:55,904 - app.tools.builder_manager - INFO - Tool builder turn completed, session=5cb67d44-a2b3-4a38-accd-cafeb1d6df79
+2026-03-14 17:02:57,753 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:02:57,762 - app.tools.builder_routes - WARNING - AI suggest-metadata failed: expected string or bytes-like object, got 'AIResponse'
+2026-03-14 17:02:57,769 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=5cb67d44-a2b3-4a38-accd-cafeb1d6df79: add-a-new-section-for-the-dashboard-page
+2026-03-14 17:05:10,669 - app.tools.builder_manager - INFO - Tool builder turn started, session=5cb67d44-a2b3-4a38-accd-cafeb1d6df79, PID=29590, cwd=/Users/tony/chathub/.worktrees/tb-5cb67d44
+2026-03-14 17:08:06,248 - app.tools.builder_manager - INFO - Tool builder turn completed, session=5cb67d44-a2b3-4a38-accd-cafeb1d6df79
+2026-03-14 17:08:07,736 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:08:07,740 - app.tools.builder_routes - WARNING - AI suggest-metadata failed: expected string or bytes-like object, got 'AIResponse'
+2026-03-14 17:08:07,745 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=5cb67d44-a2b3-4a38-accd-cafeb1d6df79: add-a-new-section-for-the-dashboard-page
+2026-03-14 17:11:21,134 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 17:11:21,278 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-5cb67d44 on port 9001
+2026-03-14 17:11:21,278 - app.tools.sandbox_manager - INFO - Container tb-sandbox-5cb67d44 started, waiting for HTTP /health on port 9001...
+2026-03-14 17:11:22,822 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 17:17:26,632 - app.tools.worktree_manager - INFO - Discarded worktree for session 5cb67d44-a2b3-4a38-accd-cafeb1d6df79
+2026-03-14 17:17:26,633 - app.tools.sandbox_manager - INFO - Discarded sandbox for session 5cb67d44-a2b3-4a38-accd-cafeb1d6df79
+2026-03-14 17:17:34,925 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 17:17:34,925 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 17:17:34,926 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 17:17:34,926 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 17:17:34,926 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 17:17:34,926 - app.bots.manager - INFO - All bots stopped
+2026-03-14 17:17:37,008 - root - INFO - Enhanced logging system initialized
+2026-03-14 17:17:37,008 - root - INFO - === Server Starting ===
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 17:17:37,799 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 17:17:37,902 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 17:17:37,905 - root - INFO - Enhanced logging system initialized
+2026-03-14 17:17:37,935 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 17:17:37,935 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 17:17:37,935 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 17:17:37,935 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 17:17:37,936 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 17:17:55,204 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-6b8d7b96 on branch tool-builder/1/1773494274
+2026-03-14 17:17:55,204 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 6b8d7b96 for user 1
+2026-03-14 17:17:55,208 - app.tools.builder_manager - INFO - Created tool builder session 6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6 for user 1 (preview deferred)
+2026-03-14 17:17:55,304 - app.tools.builder_manager - INFO - Tool builder turn started, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6, PID=32334, cwd=/Users/tony/chathub/.worktrees/tb-6b8d7b96
+2026-03-14 17:17:58,715 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6
+2026-03-14 17:18:00,582 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:18:00,595 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6: dashboard-feature-adder
+2026-03-14 17:18:36,612 - app.tools.builder_manager - INFO - Tool builder turn started, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6, PID=32522, cwd=/Users/tony/chathub/.worktrees/tb-6b8d7b96
+2026-03-14 17:19:21,546 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6
+2026-03-14 17:19:23,247 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:19:23,292 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6: dashboard-feature-adder
+2026-03-14 17:20:44,442 - app.tools.builder_manager - INFO - Tool builder turn started, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6, PID=33021, cwd=/Users/tony/chathub/.worktrees/tb-6b8d7b96
+2026-03-14 17:22:06,824 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6
+2026-03-14 17:22:08,237 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:22:08,243 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6: dashboard-message-trend
+2026-03-14 17:22:55,457 - app.tools.builder_manager - INFO - Tool builder turn started, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6, PID=33734, cwd=/Users/tony/chathub/.worktrees/tb-6b8d7b96
+2026-03-14 17:25:26,719 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6
+2026-03-14 17:25:28,577 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:25:28,579 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6: dashboard-feature-enhancement
+2026-03-14 17:38:55,037 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 17:38:55,205 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-6b8d7b96 on port 9001
+2026-03-14 17:38:55,205 - app.tools.sandbox_manager - INFO - Container tb-sandbox-6b8d7b96 started, waiting for HTTP /health on port 9001...
+2026-03-14 17:38:56,746 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 17:42:14,085 - app.tools.builder_manager - INFO - Tool builder turn started, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6, PID=36639, cwd=/Users/tony/chathub/.worktrees/tb-6b8d7b96
+2026-03-14 17:43:21,565 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6
+2026-03-14 17:43:23,120 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 17:43:23,128 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6b8d7b96-3ead-4bcb-8bf7-35d0a2d86ed6: dashboard-trend-feature
+2026-03-14 17:47:07,212 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 17:47:07,213 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 17:47:07,213 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 17:47:07,213 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 17:47:07,214 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 17:47:07,214 - app.bots.manager - INFO - All bots stopped
+2026-03-14 17:47:10,049 - root - INFO - Enhanced logging system initialized
+2026-03-14 17:47:10,049 - root - INFO - === Server Starting ===
+2026-03-14 17:47:10,931 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 17:47:10,932 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 17:47:11,030 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 17:47:11,033 - root - INFO - Enhanced logging system initialized
+2026-03-14 17:47:11,063 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 17:47:11,063 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 17:47:11,063 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 17:47:11,063 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 17:47:11,064 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 17:51:21,945 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-14 17:51:21,959 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-14 17:51:25,087 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-14 17:51:25,088 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-14 18:03:51,819 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 18:03:51,820 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 18:03:51,820 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 18:03:51,821 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 18:03:51,821 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 18:03:51,821 - app.bots.manager - INFO - All bots stopped
+2026-03-14 18:03:54,486 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:03:54,487 - root - INFO - === Server Starting ===
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 18:03:55,332 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 18:03:55,438 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 18:03:55,440 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:03:55,472 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 18:03:55,472 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 18:03:55,472 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 18:03:55,472 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 18:03:55,473 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 18:05:47,842 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-4b2f3ef5 on branch tool-builder/1/1773497147
+2026-03-14 18:05:47,842 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 4b2f3ef5 for user 1
+2026-03-14 18:05:47,846 - app.tools.builder_manager - INFO - Created tool builder session 4b2f3ef5-40d9-4f52-b9f1-4dd623465893 for user 1 (preview deferred)
+2026-03-14 18:05:47,930 - app.tools.builder_manager - INFO - Tool builder turn started, session=4b2f3ef5-40d9-4f52-b9f1-4dd623465893, PID=41032, cwd=/Users/tony/chathub/.worktrees/tb-4b2f3ef5
+2026-03-14 18:07:19,088 - app.tools.builder_manager - INFO - Tool builder turn completed, session=4b2f3ef5-40d9-4f52-b9f1-4dd623465893
+2026-03-14 18:07:20,868 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 18:07:20,889 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=4b2f3ef5-40d9-4f52-b9f1-4dd623465893: dashboard-message-trend
+2026-03-14 18:07:45,777 - app.tools.builder_manager - INFO - Tool builder turn started, session=4b2f3ef5-40d9-4f52-b9f1-4dd623465893, PID=41693, cwd=/Users/tony/chathub/.worktrees/tb-4b2f3ef5
+2026-03-14 18:12:31,874 - app.tools.builder_manager - INFO - Tool builder turn completed, session=4b2f3ef5-40d9-4f52-b9f1-4dd623465893
+2026-03-14 18:12:34,080 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 18:12:34,099 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=4b2f3ef5-40d9-4f52-b9f1-4dd623465893: dashboard-analytics
+2026-03-14 18:13:29,355 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 18:13:29,506 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-4b2f3ef5 on port 9001
+2026-03-14 18:13:29,507 - app.tools.sandbox_manager - INFO - Container tb-sandbox-4b2f3ef5 started, waiting for HTTP /health on port 9001...
+2026-03-14 18:13:31,052 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 18:14:57,183 - app.tools.worktree_manager - INFO - Auto-generated routes.py for custom tool 'dashboard-analytics' serving dashboard/index.html
+2026-03-14 18:14:57,895 - app.tools - INFO - Hot-registered custom tool: dashboard-analytics
+2026-03-14 18:16:27,223 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:16:27,223 - root - INFO - === Server Starting ===
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 18:16:28,069 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 18:16:28,151 - app.tools - INFO - Registered custom tool: dashboard-analytics
+2026-03-14 18:16:28,170 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 18:16:28,172 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:16:28,202 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 18:16:28,202 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 18:16:28,202 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 18:16:28,202 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 18:16:28,203 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 18:25:50,456 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 18:25:50,458 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 18:25:50,458 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 18:25:50,459 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 18:25:50,459 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 18:25:50,459 - app.bots.manager - INFO - All bots stopped
+2026-03-14 18:25:52,623 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:25:52,623 - root - INFO - === Server Starting ===
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 18:25:53,501 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 18:25:53,586 - app.tools - INFO - Registered custom tool: dashboard-analytics
+2026-03-14 18:25:53,586 - app.tools - INFO - Registered custom tool: dashboard-trend-feature
+2026-03-14 18:25:53,606 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 18:25:53,609 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:25:53,640 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 18:25:53,640 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 18:25:53,641 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 18:25:53,641 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 18:25:53,641 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 18:26:03,991 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-14 18:26:04,003 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-14 18:26:04,713 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-14 18:26:04,714 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-14 18:27:11,946 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-16d60ee8 on branch tool-builder/1/1773498431
+2026-03-14 18:27:11,946 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 16d60ee8 for user 1
+2026-03-14 18:27:11,950 - app.tools.builder_manager - INFO - Created tool builder session 16d60ee8-e1be-4b43-8913-0466d0a907e1 for user 1 (preview deferred)
+2026-03-14 18:27:12,044 - app.tools.builder_manager - INFO - Tool builder turn started, session=16d60ee8-e1be-4b43-8913-0466d0a907e1, PID=45525, cwd=/Users/tony/chathub/.worktrees/tb-16d60ee8
+2026-03-14 18:29:00,467 - app.tools.builder_manager - INFO - Tool builder turn completed, session=16d60ee8-e1be-4b43-8913-0466d0a907e1
+2026-03-14 18:29:02,549 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 18:29:02,562 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=16d60ee8-e1be-4b43-8913-0466d0a907e1: dashboard-trend-insights
+2026-03-14 18:32:22,320 - app.tools.builder_manager - INFO - Tool builder turn started, session=16d60ee8-e1be-4b43-8913-0466d0a907e1, PID=46562, cwd=/Users/tony/chathub/.worktrees/tb-16d60ee8
+2026-03-14 18:36:32,422 - app.tools.builder_manager - INFO - Tool builder turn completed, session=16d60ee8-e1be-4b43-8913-0466d0a907e1
+2026-03-14 18:36:34,183 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 18:36:34,191 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=16d60ee8-e1be-4b43-8913-0466d0a907e1: dashboard-trend-insights
+2026-03-14 18:37:23,219 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 18:37:23,357 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-16d60ee8 on port 9001
+2026-03-14 18:37:23,357 - app.tools.sandbox_manager - INFO - Container tb-sandbox-16d60ee8 started, waiting for HTTP /health on port 9001...
+2026-03-14 18:37:24,907 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 18:55:07,088 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 18:55:07,088 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 18:55:07,089 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 18:55:07,089 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 18:55:07,089 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 18:55:07,089 - app.bots.manager - INFO - All bots stopped
+2026-03-14 18:55:09,777 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:55:09,777 - root - INFO - === Server Starting ===
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 18:55:11,282 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 18:55:11,366 - app.tools - INFO - Registered custom tool: dashboard-analytics
+2026-03-14 18:55:11,366 - app.tools - INFO - Registered custom tool: dashboard-trend-feature
+2026-03-14 18:55:11,386 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 18:55:11,388 - root - INFO - Enhanced logging system initialized
+2026-03-14 18:55:11,421 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 18:55:11,421 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 18:55:11,421 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 18:55:11,422 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 18:55:11,422 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 18:57:42,922 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-ee2e36cb on branch tool-builder/1/1773500262
+2026-03-14 18:57:42,922 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session ee2e36cb for user 1
+2026-03-14 18:57:42,926 - app.tools.builder_manager - INFO - Created tool builder session ee2e36cb-51d6-4b18-bb3e-b628e2bae415 for user 1 (preview deferred)
+2026-03-14 18:57:43,013 - app.tools.builder_manager - INFO - Tool builder turn started, session=ee2e36cb-51d6-4b18-bb3e-b628e2bae415, PID=52294, cwd=/Users/tony/chathub/.worktrees/tb-ee2e36cb
+2026-03-14 18:58:08,567 - app.tools.builder_manager - INFO - Tool builder turn completed, session=ee2e36cb-51d6-4b18-bb3e-b628e2bae415
+2026-03-14 18:58:10,271 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 18:58:10,285 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=ee2e36cb-51d6-4b18-bb3e-b628e2bae415: welcome-banner-dashboard
+2026-03-14 18:58:41,246 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-14 18:58:41,347 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-ee2e36cb on port 9001
+2026-03-14 18:58:41,350 - app.tools.sandbox_manager - INFO - Container tb-sandbox-ee2e36cb started, waiting for HTTP /health on port 9001...
+2026-03-14 18:58:42,895 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-14 18:59:27,751 - app.tools.builder_manager - INFO - Tool builder turn started, session=ee2e36cb-51d6-4b18-bb3e-b628e2bae415, PID=52778, cwd=/Users/tony/chathub/.worktrees/tb-ee2e36cb
+2026-03-14 18:59:49,034 - app.tools.builder_manager - INFO - Tool builder turn completed, session=ee2e36cb-51d6-4b18-bb3e-b628e2bae415
+2026-03-14 18:59:50,725 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-14 18:59:50,733 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=ee2e36cb-51d6-4b18-bb3e-b628e2bae415: welcome-banner-dashboard
+2026-03-14 19:02:23,763 - app.tools.worktree_manager - INFO - Auto-generated routes.py for custom tool 'welcome-banner-dashboard' serving dashboard/index.html
+2026-03-14 19:02:24,232 - app.tools - INFO - Hot-registered custom tool: welcome-banner-dashboard
+2026-03-14 19:03:32,069 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 19:03:32,070 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 19:03:32,071 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 19:03:32,071 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 19:03:32,071 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 19:03:32,071 - app.bots.manager - INFO - All bots stopped
+2026-03-14 19:03:34,225 - root - INFO - Enhanced logging system initialized
+2026-03-14 19:03:34,225 - root - INFO - === Server Starting ===
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 19:03:34,988 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 19:03:35,068 - app.tools - INFO - Registered custom tool: dashboard-analytics
+2026-03-14 19:03:35,069 - app.tools - INFO - Registered custom tool: dashboard-trend-feature
+2026-03-14 19:03:35,069 - app.tools - INFO - Registered custom tool: welcome-banner-dashboard
+2026-03-14 19:03:35,089 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 19:03:35,092 - root - INFO - Enhanced logging system initialized
+2026-03-14 19:03:35,123 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 19:03:35,123 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 19:03:35,123 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 19:03:35,123 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 19:03:35,124 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 19:10:44,159 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-14 19:10:44,161 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-14 19:10:44,161 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-14 19:10:44,161 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-14 19:10:44,162 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-14 19:10:44,162 - app.bots.manager - INFO - All bots stopped
+2026-03-14 19:10:47,449 - root - INFO - Enhanced logging system initialized
+2026-03-14 19:10:47,450 - root - INFO - === Server Starting ===
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-14 19:10:48,322 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-14 19:10:48,410 - app.tools - INFO - Registered custom tool: dashboard-analytics
+2026-03-14 19:10:48,411 - app.tools - INFO - Registered custom tool: dashboard-trend-feature
+2026-03-14 19:10:48,412 - app.tools - INFO - Registered custom tool: welcome-banner-dashboard
+2026-03-14 19:10:48,432 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-14 19:10:48,434 - root - INFO - Enhanced logging system initialized
+2026-03-14 19:10:48,464 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-14 19:10:48,464 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-14 19:10:48,464 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-14 19:10:48,465 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-14 19:10:48,465 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-14 19:11:07,067 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-14 19:11:07,081 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-14 19:11:07,807 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-14 19:11:07,808 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-14 19:11:49,095 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-14 19:11:49,113 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-14 19:11:49,636 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-14 19:11:49,636 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-14 19:14:59,575 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-6f33adad on branch tool-builder/1/1773501299
+2026-03-14 19:14:59,575 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 6f33adad for user 1
+2026-03-14 19:14:59,579 - app.tools.builder_manager - INFO - Created tool builder session 6f33adad-3942-4ebe-bfc7-8e0bc62d1780 for user 1 (preview deferred)
+2026-03-14 19:14:59,674 - app.tools.builder_manager - INFO - Tool builder turn started, session=6f33adad-3942-4ebe-bfc7-8e0bc62d1780, PID=55515, cwd=/Users/tony/chathub/.worktrees/tb-6f33adad
+2026-03-14 19:15:14,244 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6f33adad-3942-4ebe-bfc7-8e0bc62d1780
+2026-03-14 19:15:14,347 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6f33adad-3942-4ebe-bfc7-8e0bc62d1780: add-an-new-section-on-the-dashboard-page
+2026-03-14 19:15:47,480 - app.tools.builder_manager - INFO - Tool builder turn started, session=6f33adad-3942-4ebe-bfc7-8e0bc62d1780, PID=55748, cwd=/Users/tony/chathub/.worktrees/tb-6f33adad
+2026-03-14 19:17:09,803 - app.tools.builder_manager - INFO - Tool builder turn completed, session=6f33adad-3942-4ebe-bfc7-8e0bc62d1780
+2026-03-14 19:17:09,900 - app.tools.builder_manager - INFO - Auto-suggested metadata for session=6f33adad-3942-4ebe-bfc7-8e0bc62d1780: add-an-new-section-on-the-dashboard-page

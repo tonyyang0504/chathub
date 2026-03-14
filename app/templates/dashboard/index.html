@@ -329,6 +329,93 @@
         font-weight: 500;
         white-space: nowrap;
     }
+
+    /* Hubs Overview */
+    .hub-card {
+        border-radius: 12px;
+        border: 1px solid var(--bs-border-color);
+        padding: 16px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        height: 100%;
+    }
+
+    .hub-card:hover {
+        border-color: #25D366;
+        box-shadow: 0 2px 8px rgba(37, 211, 102, 0.1);
+        color: inherit;
+    }
+
+    .hub-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .hub-card-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    .hub-card-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .hub-card-status.active {
+        background: #25D366;
+        box-shadow: 0 0 4px rgba(37, 211, 102, 0.5);
+    }
+
+    .hub-card-status.inactive {
+        background: var(--bs-secondary);
+    }
+
+    .hub-type-badge {
+        font-size: 0.68rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .hub-type-badge.group_management { background: rgba(37, 211, 102, 0.12); color: #25D366; }
+    .hub-type-badge.scheduled_content { background: rgba(102, 126, 234, 0.12); color: #667eea; }
+    .hub-type-badge.contact_analyzer { background: rgba(240, 147, 251, 0.12); color: #e855a0; }
+    .hub-type-badge.message_routing { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
+    .hub-type-badge.scripted_conversations { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+    .hub-type-badge.content_generator { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+
+    .hub-card-stats {
+        display: flex;
+        gap: 12px;
+        font-size: 0.78rem;
+        color: var(--bs-secondary);
+    }
+
+    .hub-card-stats i {
+        margin-right: 3px;
+    }
+
+    .hub-card-provider {
+        font-size: 0.72rem;
+        color: var(--bs-secondary);
+        margin-top: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 </style>
 {% endblock %}
 
@@ -397,8 +484,9 @@
 </div>
 
 <div class="row g-4">
-    <!-- Bots Overview -->
-    <div class="col-lg-8">
+    <!-- Left Column -->
+    <div class="col-lg-8 d-flex flex-column gap-4">
+        <!-- Bots Overview -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Your Bots <span id="botCountBadge" class="badge bg-secondary ms-2"></span></h5>
@@ -435,10 +523,29 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Recent Conversations -->
-    <div class="col-lg-8 mt-4">
+        <!-- Hubs Overview -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Hubs <span id="hubCountBadge" class="badge bg-secondary ms-2"></span></h5>
+                <div>
+                    <a href="/dashboard/hubs" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-list me-1"></i> View All
+                    </a>
+                    <a href="/dashboard/hubs" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New Hub
+                    </a>
+                </div>
+            </div>
+            <div class="card-body" id="hubsOverviewBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    Loading...
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Conversations -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Conversations</h5>
@@ -455,8 +562,9 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="col-lg-4">
+    <!-- Right Column -->
+    <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Quick Actions -->
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Quick Actions</h5>
@@ -480,7 +588,7 @@
         </div>
 
         <!-- Activity Feed -->
-        <div class="card mt-4">
+        <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Recent Activity</h5>
             </div>
@@ -492,7 +600,6 @@
                 </ul>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -671,6 +778,55 @@
             }
         } catch (e) {
             console.error('Error loading bots:', e);
+        }
+
+        // Load hubs overview
+        try {
+            const hubsRes = await fetch('/api/hubs');
+            const hubsData = await hubsRes.json();
+            const hubsBody = document.getElementById('hubsOverviewBody');
+            const hubBadge = document.getElementById('hubCountBadge');
+
+            if (hubsData.length === 0) {
+                if (hubBadge) hubBadge.textContent = '0';
+                hubsBody.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <p class="mb-2">No hubs yet</p>
+                        <a href="/dashboard/hubs" class="btn btn-sm btn-success">Create your first hub</a>
+                    </div>
+                `;
+            } else {
+                if (hubBadge) hubBadge.textContent = hubsData.length;
+                const typeLabels = {
+                    'group_management': 'Group Management',
+                    'scheduled_content': 'Scheduled Content',
+                    'contact_analyzer': 'Contact Analyzer',
+                    'message_routing': 'Message Routing',
+                    'scripted_conversations': 'Scripted Conversations',
+                    'content_generator': 'Content Generator'
+                };
+                hubsBody.innerHTML = `<div class="row g-3">${hubsData.map(hub => `
+                    <div class="col-md-6">
+                        <a href="/dashboard/hubs?hub_id=${hub.id}" class="hub-card">
+                            <div class="hub-card-header">
+                                <span class="hub-card-name" title="${escapeHtml(hub.name)}">${escapeHtml(hub.name)}</span>
+                                <span class="hub-card-status ${hub.is_active ? 'active' : 'inactive'}" title="${hub.is_active ? 'Active' : 'Inactive'}"></span>
+                            </div>
+                            <span class="hub-type-badge ${hub.task_type}">${typeLabels[hub.task_type] || hub.task_type}</span>
+                            <div class="hub-card-stats">
+                                <span><i class="bi bi-robot"></i>${hub.bot_count}</span>
+                                <span><i class="bi bi-cpu"></i>${hub.agent_count}</span>
+                                <span><i class="bi bi-people"></i>${hub.contact_count}</span>
+                            </div>
+                            <div class="hub-card-provider">
+                                <i class="bi bi-lightning-charge"></i> ${hub.ai_provider || 'openai'} / ${hub.model || 'gpt-4o-mini'}
+                            </div>
+                        </a>
+                    </div>
+                `).join('')}</div>`;
+            }
+        } catch (e) {
+            console.error('Error loading hubs:', e);
         }
 
         // Load recent conversations

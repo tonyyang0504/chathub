@@ -175,8 +175,7 @@ class WorktreeManager:
     def merge(self, session_id: str, tool_name: str = None) -> MergeResult:
         """Apply worktree changes into main working tree and commit.
 
-        If tool_name is provided, copies files into app/tools/custom/{tool_name}/
-        instead of mirroring the worktree structure into PROJECT_ROOT.
+        tool_name is only used for the commit message if provided.
         """
         info = self._find_by_session(session_id)
         if not info:
@@ -190,38 +189,21 @@ class WorktreeManager:
             self.discard(session_id)
             return MergeResult(success=False, message="No changes to merge")
 
-        if tool_name:
-            # Plugin mode: copy all changed files into app/tools/custom/{tool_name}/
-            custom_dir = PROJECT_ROOT / "app" / "tools" / "custom" / tool_name
-            custom_dir.mkdir(parents=True, exist_ok=True)
-            copied = []
-            for rel_path in changed:
-                src = info.path / rel_path
-                dst = custom_dir / rel_path
-                try:
-                    if src.exists():
-                        dst.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(str(src), str(dst))
-                        copied.append(str(Path("app/tools/custom") / tool_name / rel_path))
-                    # Don't delete files in plugin mode — only add
-                except Exception as e:
-                    logger.warning(f"Failed to copy {rel_path}: {e}")
-        else:
-            # Legacy mode: copy to PROJECT_ROOT preserving structure
-            copied = []
-            for rel_path in changed:
-                src = info.path / rel_path
-                dst = PROJECT_ROOT / rel_path
-                try:
-                    if src.exists():
-                        dst.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(str(src), str(dst))
-                        copied.append(rel_path)
-                    elif dst.exists():
-                        dst.unlink()  # file deleted in worktree
-                        copied.append(rel_path)
-                except Exception as e:
-                    logger.warning(f"Failed to copy {rel_path}: {e}")
+        # Copy all changed files to their real locations in PROJECT_ROOT
+        copied = []
+        for rel_path in changed:
+            src = info.path / rel_path
+            dst = PROJECT_ROOT / rel_path
+            try:
+                if src.exists():
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(str(src), str(dst))
+                    copied.append(rel_path)
+                elif dst.exists():
+                    dst.unlink()  # file deleted in worktree
+                    copied.append(rel_path)
+            except Exception as e:
+                logger.warning(f"Failed to copy {rel_path}: {e}")
 
         if not copied:
             self.discard(session_id)
@@ -285,6 +267,103 @@ class WorktreeManager:
             return {"error": "Command timed out", "returncode": -1}
         except Exception as e:
             return {"error": str(e), "returncode": -1}
+
+    def revert_commit(self, commit_hash: str) -> MergeResult:
+        """Revert a publish commit using git revert. Returns MergeResult with success/failure."""
+        # Check if git is available
+        git_check = subprocess.run(
+            ["git", "--version"],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
+        if git_check.returncode != 0:
+            return MergeResult(success=False, message="Git is not available on this system")
+
+        # Stash uncommitted changes if any
+        had_stash = False
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
+        if status.stdout.strip():
+            # Stage everything first (resolves any unmerged states)
+            subprocess.run(
+                ["git", "add", "-A"],
+                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+            )
+            stash = subprocess.run(
+                ["git", "stash", "push", "-m", "auto-stash before revert"],
+                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+            )
+            if stash.returncode != 0:
+                return MergeResult(
+                    success=False,
+                    message=f"Failed to stash uncommitted changes: {stash.stderr.strip()}"
+                )
+            had_stash = True
+
+        # Verify the commit exists
+        verify = subprocess.run(
+            ["git", "cat-file", "-t", commit_hash],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
+        if verify.returncode != 0 or verify.stdout.strip() != "commit":
+            return MergeResult(success=False, message=f"Commit {commit_hash[:8]} not found")
+
+        # Try git revert
+        result = subprocess.run(
+            ["git", "revert", "--no-edit", commit_hash],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
+        if result.returncode != 0:
+            # Abort the failed revert
+            subprocess.run(
+                ["git", "revert", "--abort"],
+                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+            )
+            # Restore stashed changes
+            if had_stash:
+                subprocess.run(
+                    ["git", "stash", "pop"],
+                    capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                )
+            return MergeResult(
+                success=False,
+                message=f"Revert conflicts — changes overlap with later modifications. Try 'Reset All' instead. Details: {result.stderr.strip()}"
+            )
+
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+        )
+        revert_hash = head.stdout.strip() if head.returncode == 0 else ""
+        logger.info(f"Reverted commit {commit_hash[:8]}, new HEAD: {revert_hash[:8]}")
+
+        # Restore stashed changes
+        if had_stash:
+            pop = subprocess.run(
+                ["git", "stash", "pop"],
+                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+            )
+            if pop.returncode != 0:
+                # Pop conflicted — accept current state, drop the stash
+                subprocess.run(
+                    ["git", "checkout", "--theirs", "."],
+                    capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                )
+                subprocess.run(
+                    ["git", "add", "-A"],
+                    capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                )
+                subprocess.run(
+                    ["git", "stash", "drop"],
+                    capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                )
+
+        return MergeResult(
+            success=True,
+            message="Changes reverted successfully",
+            commit_hash=revert_hash
+        )
 
     def _find_by_session(self, session_id: str) -> Optional[WorktreeInfo]:
         """Find worktree info by session ID."""

@@ -1132,6 +1132,7 @@ let previewWindow = null;
 let autoScroll = true;
 let publishReadiness = null;
 let publishReadinessTimer = null;
+let cachedMetadata = null;
 
 // File upload state
 let pendingFiles = [];
@@ -1615,6 +1616,7 @@ async function createSession() {
         const data = await resp.json();
         if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
         sessionId = data.session_id;
+        cachedMetadata = null;
         previewUrl = data.preview_url || null;
         setStatus('connected');
         connectWebSocket();
@@ -1885,6 +1887,11 @@ function renderStreamEvent(data) {
         flushAssistantBuffer();
         appendSystemMessage(data.error?.message || data.content || 'Unknown error');
         setRunningState(false);
+        return;
+    }
+
+    if (type === 'metadata_suggested') {
+        cachedMetadata = data.metadata;
         return;
     }
 
@@ -2524,28 +2531,26 @@ async function publishBuild() {
     applyPublishButtonState();
     new bootstrap.Modal(document.getElementById('publishBuildModal')).show();
 
-    // Fetch readiness with empty metadata to get TOOL.md frontmatter
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/readiness`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name: '', display_name: '', description: '', icon: '' }),
-        });
-        const data = await resp.json();
-        if (resp.ok && data.frontmatter) {
-            const fm = data.frontmatter;
-            if (fm.name) document.getElementById('publishBuildName').value = fm.name;
-            if (fm.display_name) document.getElementById('publishBuildDisplayName').value = fm.display_name;
-            if (fm.description) document.getElementById('publishBuildDescription').value = fm.description;
-            if (fm.icon) document.getElementById('publishBuildIcon').value = fm.icon;
-        }
-        // Re-run readiness with now-populated fields
-        await refreshPublishReadiness();
-    } catch (e) {
-        // Fallback: just run normal readiness check
-        refreshPublishReadiness();
+    // Use cached metadata from auto-suggest on turn_end, or fetch fresh
+    let suggested = cachedMetadata;
+    if (!suggested) {
+        try {
+            const suggestResp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/suggest-metadata`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+            if (suggestResp.ok) suggested = await suggestResp.json();
+        } catch(e) { /* fallback: user fills manually */ }
     }
+    if (suggested) {
+        if (suggested.name) document.getElementById('publishBuildName').value = suggested.name;
+        if (suggested.display_name) document.getElementById('publishBuildDisplayName').value = suggested.display_name;
+        if (suggested.description) document.getElementById('publishBuildDescription').value = suggested.description;
+        if (suggested.icon) document.getElementById('publishBuildIcon').value = suggested.icon;
+    }
+
+    // Check readiness with populated fields
+    await refreshPublishReadiness();
 }
 
 async function confirmPublish() {
@@ -2636,17 +2641,43 @@ async function stopAgent() {
 }
 
 async function openPreview() {
-    if (previewUrl) {
-        previewWindow = window.open(previewUrl, '_blank');
-        return;
-    }
     if (!sessionId) {
         showToast('Start a session first.', 'warning');
         return;
     }
-    // First click: trigger Docker install + container creation
     const btn = document.getElementById('previewBtn');
     btn.disabled = true;
+
+    if (previewUrl) {
+        // Container already running — restart it to pick up code changes
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Refreshing...';
+        try {
+            const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/preview/restart`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to restart preview.', 'error');
+                return;
+            }
+            // Reload the preview tab if still open, otherwise open a new one
+            if (previewWindow && !previewWindow.closed) {
+                previewWindow.location.reload();
+            } else {
+                previewWindow = window.open(previewUrl, '_blank');
+            }
+        } catch (e) {
+            showToast('Preview error: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-eye me-1"></i> Preview';
+        }
+        return;
+    }
+
+    // First click: trigger Docker install + container creation
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
     try {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/preview`, {
@@ -2790,6 +2821,9 @@ async function viewSession(dbId) {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}`, { credentials: 'include' });
         if (!resp.ok) { showToast('Failed to load session', 'error'); return; }
         const data = await resp.json();
+
+        // Load cached metadata from DB for Publish modal
+        if (data.suggested_metadata) cachedMetadata = data.suggested_metadata;
 
         // If this session is already the live active session, just reconnect WS
         if (data.active_session_id && data.active_session_id === sessionId) {

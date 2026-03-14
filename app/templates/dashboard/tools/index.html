@@ -308,18 +308,22 @@
 {% block extra_js %}
 <script>
 async function uninstallTool(toolId, toolName) {
-    if (!confirm(`Uninstall "${toolName}"? This will remove the tool and its files.`)) return;
+    if (!confirm(`Uninstall "${toolName}"? This will revert all changes made by this tool.`)) return;
     try {
         const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}/uninstall`, {
             method: 'DELETE',
             headers: {'Content-Type': 'application/json'}
         });
         const data = await resp.json();
+        if (resp.status === 409) {
+            // Conflict — revert failed, suggest Reset All
+            alert(`Cannot rollback "${toolName}": ${data.detail}\n\nTry "Reset All Custom Tools" instead.`);
+            return;
+        }
         if (data.success) {
             if (data.restart_required) {
                 document.getElementById('restartBanner').classList.remove('d-none');
             }
-            // Remove the card from the DOM
             location.reload();
         } else {
             alert(data.detail || 'Failed to uninstall tool');
