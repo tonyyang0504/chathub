@@ -326,14 +326,13 @@ async def recent_conversations(
             "message_count": conv.message_count or 0,
             "last_message_at": conv.last_message_at.isoformat() + "Z" if conv.last_message_at else None,
             "last_message": last_msg.content[:100] if last_msg and last_msg.content else None,
-            "last_message_direction": "outgoing" if last_msg and last_msg.role == "assistant" else ("incoming" if last_msg else None),
+            "last_message_direction": last_msg.direction if last_msg else None,
             "bot_id": conv.bot_profile_id,
             "bot_name": bot.name if bot else "Unknown Bot",
             "human_takeover": conv.human_takeover or False
         })
 
     return {"conversations": result, "total": len(result)}
-
 
 
 @router.get("/bot/{bot_id}", response_model=ConversationListResponse)

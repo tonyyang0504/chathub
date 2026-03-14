@@ -128,45 +128,6 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
     )
 
 
-def build_recovery_config(bot: BotProfile) -> dict:
-    """Build bot config for recovery flows."""
-    api_key = decrypt_string(bot.api_key_encrypted) if bot.api_key_encrypted else None
-    if not api_key:
-        raise ValueError("No API key")
-
-    config = {
-        "bot_profile_id": bot.id,
-        "platform_type": bot.platform_type or "whatsapp",
-        "ai_provider": bot.ai_provider or "openai",
-        "api_key": api_key,
-        "model": bot.model or "gpt-4o-mini",
-        "system_prompt": bot.system_prompt,
-        "temperature": bot.temperature if bot.temperature is not None else 0.7,
-        "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
-        "top_p": bot.top_p if bot.top_p is not None else 1.0,
-        "frequency_penalty": bot.frequency_penalty if bot.frequency_penalty is not None else 0.0,
-        "presence_penalty": bot.presence_penalty if bot.presence_penalty is not None else 0.0,
-        "max_history": bot.max_history or 20,
-        "response_delay_min": bot.response_delay_min or 3,
-        "response_delay_max": bot.response_delay_max or 8,
-        "group_chat_enabled": bot.group_chat_enabled if bot.group_chat_enabled is not None else True,
-        "respond_to_all_in_group": bot.respond_to_all_in_group if bot.respond_to_all_in_group is not None else True,
-        "ending_detection_enabled": bot.ending_detection_enabled if bot.ending_detection_enabled is not None else False,
-        "headless": bot.headless if bot.headless is not None else False,
-        "browser_timezone": bot.browser_timezone or 'UTC',
-    }
-
-    if bot.proxy_enabled and bot.proxy_url:
-        config["proxy_enabled"] = True
-        config["proxy_url"] = bot.proxy_url
-        if bot.proxy_username:
-            config["proxy_username"] = decrypt_string(bot.proxy_username)
-        if bot.proxy_password:
-            config["proxy_password"] = decrypt_string(bot.proxy_password)
-
-    return config
-
-
 # ============== Provider Info ==============
 
 @router.get("/providers/info")
@@ -239,14 +200,43 @@ async def check_and_recover_bots(
             if bot_manager.needs_recovery(bot.id, bot.is_running):
                 logger.info(f"Bot {bot.id} ({bot.name}) needs recovery")
 
-                try:
-                    config = build_recovery_config(bot)
-                except ValueError:
+                # Build config for recovery
+                api_key = decrypt_string(bot.api_key_encrypted) if bot.api_key_encrypted else None
+
+                if not api_key:
                     logger.warning(f"Bot {bot.id}: No API key, marking as stopped")
                     bot.is_running = False
                     db.commit()
                     failed.append({"id": bot.id, "name": bot.name, "reason": "No API key"})
                     continue
+
+                config = {
+                    "bot_profile_id": bot.id,
+                    "ai_provider": bot.ai_provider or "openai",
+                    "api_key": api_key,
+                    "model": bot.model or "gpt-4o-mini",
+                    "system_prompt": bot.system_prompt,
+                    "temperature": bot.temperature if bot.temperature is not None else 0.7,
+                    "max_tokens": bot.max_tokens if bot.max_tokens is not None else 1000,
+                    "top_p": bot.top_p if bot.top_p is not None else 1.0,
+                    "frequency_penalty": bot.frequency_penalty if bot.frequency_penalty is not None else 0.0,
+                    "presence_penalty": bot.presence_penalty if bot.presence_penalty is not None else 0.0,
+                    "max_history": bot.max_history or 20,
+                    "response_delay_min": bot.response_delay_min or 3,
+                    "response_delay_max": bot.response_delay_max or 8,
+                    "group_chat_enabled": bot.group_chat_enabled if bot.group_chat_enabled is not None else True,
+                    "headless": bot.headless if bot.headless is not None else False,
+                    "browser_timezone": bot.browser_timezone or 'UTC',
+                }
+
+                # Add proxy settings if enabled
+                if bot.proxy_enabled and bot.proxy_url:
+                    config["proxy_enabled"] = True
+                    config["proxy_url"] = bot.proxy_url
+                    if bot.proxy_username:
+                        config["proxy_username"] = decrypt_string(bot.proxy_username)
+                    if bot.proxy_password:
+                        config["proxy_password"] = decrypt_string(bot.proxy_password)
 
                 # Recover the bot
                 await bot_manager.recover_bot(bot.id, config)

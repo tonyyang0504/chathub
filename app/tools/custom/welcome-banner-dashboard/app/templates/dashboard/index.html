@@ -232,103 +232,6 @@
     .bots-table .action-icon:hover {
         color: #25D366;
     }
-
-    /* Recent Conversations */
-    .recent-conv-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--bs-border-color);
-        transition: background-color 0.15s;
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-    }
-
-    .recent-conv-item:last-child {
-        border-bottom: none;
-    }
-
-    .recent-conv-item:hover {
-        background-color: rgba(37, 211, 102, 0.05);
-        color: inherit;
-    }
-
-    .recent-conv-avatar {
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: #fff;
-    }
-
-    .recent-conv-avatar img {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-
-    .recent-conv-avatar.avatar-color-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
-    .recent-conv-avatar.avatar-color-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
-    .recent-conv-avatar.avatar-color-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-    .recent-conv-avatar.avatar-color-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-    .recent-conv-avatar.avatar-color-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
-    .recent-conv-avatar.avatar-color-6 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
-    .recent-conv-avatar.avatar-color-7 { background: linear-gradient(135deg, #fccb90, #d57eeb); }
-    .recent-conv-avatar.avatar-color-8 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
-
-    .recent-conv-body {
-        flex: 1;
-        min-width: 0;
-        margin-left: 12px;
-    }
-
-    .recent-conv-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2px;
-    }
-
-    .recent-conv-name {
-        font-weight: 600;
-        font-size: 0.9rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
-    }
-
-    .recent-conv-time {
-        font-size: 0.75rem;
-        color: var(--bs-secondary);
-        white-space: nowrap;
-        margin-left: 8px;
-    }
-
-    .recent-conv-preview {
-        font-size: 0.82rem;
-        color: var(--bs-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .recent-conv-bot-badge {
-        font-size: 0.7rem;
-        padding: 1px 6px;
-        border-radius: 10px;
-        background: rgba(37, 211, 102, 0.12);
-        color: #25D366;
-        font-weight: 500;
-        white-space: nowrap;
-    }
 </style>
 {% endblock %}
 
@@ -337,6 +240,23 @@
     <div class="col">
         <h2>Dashboard</h2>
         <p class="text-muted">Welcome back, {{ user.name or user.email }}!</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="alert alert-danger d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-0" role="alert">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-stars fs-5 me-2"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">Welcome to ChatHub</h6>
+                    <p class="mb-0">Track bot activity, monitor conversations, and launch key actions from one place.</p>
+                </div>
+            </div>
+            <a href="/dashboard/bots" class="btn btn-sm btn-outline-danger mt-3 mt-md-0">
+                <i class="bi bi-robot me-1"></i>Manage Bots
+            </a>
+        </div>
     </div>
 </div>
 
@@ -432,24 +352,6 @@
                             </tr>
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Conversations -->
-    <div class="col-lg-8 mt-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recent Conversations</h5>
-                <a href="/dashboard/conversations" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-chat-dots me-1"></i> View All
-                </a>
-            </div>
-            <div class="card-body p-0" id="recentConversations">
-                <div class="text-center py-4">
-                    <div class="spinner-border spinner-border-sm" role="status"></div>
-                    Loading...
                 </div>
             </div>
         </div>
@@ -600,29 +502,6 @@
 
 {% block extra_js %}
 <script>
-    function getAvatarColorClass(name) {
-        if (!name) return 'avatar-color-1';
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
-    }
-
-    function getInitials(name) {
-        if (!name) return '?';
-        const parts = name.trim().split(/\s+/);
-        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-        return name.substring(0, 2).toUpperCase();
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
     // Load dashboard data
     async function loadDashboard() {
         // Load stats
@@ -671,50 +550,6 @@
             }
         } catch (e) {
             console.error('Error loading bots:', e);
-        }
-
-        // Load recent conversations
-        try {
-            const convRes = await fetch('/api/conversations/recent?limit=8');
-            const convData = await convRes.json();
-            const container = document.getElementById('recentConversations');
-
-            if (convData.conversations.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted py-4">No conversations yet</div>';
-            } else {
-                container.innerHTML = convData.conversations.map(conv => {
-                    const avatarClass = getAvatarColorClass(conv.chat_name);
-                    const initials = getInitials(conv.chat_name);
-                    const avatarHtml = conv.profile_pic
-                        ? `<div class="recent-conv-avatar"><img src="${conv.profile_pic}" alt="" onerror="this.parentElement.className='recent-conv-avatar ${avatarClass}'; this.parentElement.innerHTML='${initials}';"></div>`
-                        : `<div class="recent-conv-avatar ${avatarClass}">${initials}</div>`;
-                    const icon = conv.is_group ? '<i class="bi bi-people-fill me-1" style="font-size: 0.75rem;"></i>' : '';
-                    const directionIcon = conv.last_message_direction === 'outgoing'
-                        ? '<i class="bi bi-check2 me-1" style="font-size: 0.7rem;"></i>'
-                        : '';
-                    const preview = conv.last_message
-                        ? `${directionIcon}${escapeHtml(conv.last_message)}`
-                        : '<em>No messages</em>';
-
-                    return `
-                        <a href="/dashboard/conversations?bot_id=${conv.bot_id}&conv_id=${conv.id}" class="recent-conv-item">
-                            ${avatarHtml}
-                            <div class="recent-conv-body">
-                                <div class="recent-conv-header">
-                                    <span class="recent-conv-name" title="${escapeHtml(conv.chat_name)}">${icon}${escapeHtml(conv.chat_name)}</span>
-                                    <span class="recent-conv-time">${timeAgo(conv.last_message_at)}</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="recent-conv-bot-badge">${escapeHtml(conv.bot_name)}</span>
-                                    <span class="recent-conv-preview">${preview}</span>
-                                </div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
-            }
-        } catch (e) {
-            console.error('Error loading recent conversations:', e);
         }
 
         // Load activity

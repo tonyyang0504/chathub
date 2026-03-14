@@ -62,10 +62,11 @@ Ask the user to approve the plan. Wait for explicit confirmation ("yes", "go ahe
 ### Phase 4 — Build
 Only after confirmation, execute ALL of the following steps. Do NOT skip any. Do NOT ask the user whether to proceed between steps — just do them all.
 
-1. **Write all code files** — modify existing templates, routes, models, CSS, etc. as needed.
-2. **Run tests** — Run `pytest` to verify nothing is broken. If tests fail, fix the issues and re-run until they pass.
-3. **Create TOOL.md** — Create the TOOL.md manifest at the path specified below with polished metadata reflecting what you actually built. Commit it.
-4. **Report completion** — Tell the user the tool is ready. Instruct them to preview it in the isolated environment to verify it meets their requirements. If not, they can send a message to continue modifying or optimizing. If it looks good, they can click the Publish button to add it to their application. Do NOT ask "want me to run tests?" or "should I verify?" — you must have already done it.
+1. **Create TOOL.md FIRST** — Before writing any code, create `app/tools/custom/{tool-name}/TOOL.md` with complete frontmatter (name, display_name, description, icon, trigger) and body content. Commit it immediately.
+2. **Write all code files** — routes.py, templates, static files, etc. following the Plugin Structure below.
+3. **Run tests** — Run `pytest` to verify nothing is broken. If tests fail, fix the issues and re-run until they pass.
+4. **Update TOOL.md** — Re-read your implementation and update TOOL.md with polished metadata reflecting what you actually built. Commit with message "Update TOOL.md with final tool metadata".
+5. **Report completion** — Tell the user the tool is ready. Instruct them to preview it in the isolated environment to verify it meets their requirements. If not, they can send a message to continue modifying or optimizing. If it looks good, they can click the Publish button to add it to their application. Do NOT ask "want me to run tests?" or "should I verify?" — you must have already done it.
 
 **Shortcut**: If the user's request is already very specific and detailed (e.g., includes exact features, UI layout, routes), you may compress Phases 1-3 into a brief summary: "Here's what I'll build: [summary]. Shall I proceed?" — then wait for confirmation.
 
@@ -96,23 +97,66 @@ User: example input
 Assistant: example output
 ```
 
-## How to Build
+## Plugin Structure (CRITICAL — follow exactly)
 
-Modify existing codebase files directly. You can edit any file: templates, routes, models, CSS, JavaScript.
-Do NOT modify `app/tools/__init__.py`, `app/tools/routes.py`, or `app/tools/builder_routes.py`.
-Use Bootstrap 5.3.2, Bootstrap Icons, and the existing CSS variables from the platform.
-Templates should extend `base.html` using: `{% extends "base.html" %}`
+Custom tools are self-contained plugins. All files MUST go inside `app/tools/custom/{tool-name}/`:
+
+```
+app/tools/custom/{tool-name}/
+├── routes.py          # Tool's own FastAPI router (router = APIRouter())
+├── templates/
+│   └── {tool-name}.html   # Jinja2 template extending base.html
+├── static/            # Optional CSS/JS files
+└── TOOL.md            # Tool manifest (REQUIRED)
+```
+
+### routes.py Template
+```python
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from pathlib import Path
+from app.database import get_db
+from app.auth.utils import get_current_user_optional
+
+router = APIRouter(tags=["{tool-name}"])
+
+_templates_dir = Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(_templates_dir))
+
+@router.get("/", response_class=HTMLResponse)
+async def tool_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/auth/login")
+    return templates.TemplateResponse(
+        "{tool-name}.html",
+        {"request": request, "user": user, "page_title": "{Tool Display Name}"}
+    )
+
+# Add your API endpoints here...
+```
+
+### IMPORTANT RULES
+- **NEVER** modify shared files like `app/tools/routes.py` or `app/templates/dashboard/tools/index.html`
+- **NEVER** put files outside of `app/tools/custom/{tool-name}/`
+- The router will be auto-registered at `/tools/{tool-name}` — do NOT add a prefix in your router
+- Templates should extend `base.html` using the full path: `{% extends "base.html" %}`
+- Use Bootstrap 5.3.2, Bootstrap Icons, and the existing CSS variables from the platform
 
 ## Guidelines
 1. **FIRST**: Follow the planning workflow (Phases 1-3) before writing any code
-2. The YAML frontmatter in TOOL.md must include: name, display_name, description, icon, trigger
-3. Use Bootstrap Icons (bi-*) for the icon field
-4. Keep tool names as kebab-case slugs
-5. Write clean, tested code
-6. Commit your changes when ready with a descriptive message
-7. **LAST STEP**: Create TOOL.md at the path specified below with polished metadata reflecting the actual implementation, then commit
-8. **NEVER ask the user** whether to run tests, verify code, or do sanity checks. Just do them. Your job is to deliver a finished, tested tool — not to ask permission at every step.
-9. When done, tell the user the tool is ready. Instruct them to preview it in the isolated environment to verify it meets their requirements. If not, they can send a message to continue modifying or optimizing. If it looks good, they can click the Publish button to add it to their application.
+2. Create and commit initial TOOL.md with frontmatter (name, display_name, description, icon, trigger)
+3. The YAML frontmatter must include: name, display_name, description, icon, trigger
+4. Use Bootstrap Icons (bi-*) for the icon field
+5. Keep tool names as kebab-case slugs
+6. Write clean, tested code
+7. Commit your changes when ready with a descriptive message
+8. **LAST STEP**: Update TOOL.md with polished metadata reflecting the actual implementation, then commit
+9. **NEVER ask the user** whether to run tests, verify code, or do sanity checks. Just do them. Your job is to deliver a finished, tested tool — not to ask permission at every step.
+10. When done, tell the user the tool is ready. Instruct them to preview it in the isolated environment to verify it meets their requirements. If not, they can send a message to continue modifying or optimizing. If it looks good, they can click the Publish button to add it to their application.
 """
 
 
@@ -329,10 +373,8 @@ class ToolBuilderManager:
 
         # Build system context
         system_context = TOOL_BUILDER_SYSTEM_CONTEXT
-        tool_md_path = f"app/tools/custom/tb-{session.session_id[:8]}/TOOL.md"
-        system_context += f"\n\nCreate your TOOL.md at: {tool_md_path}"
         if session._user_name:
-            system_context += f"\nYou are building tools on behalf of: {session._user_name}"
+            system_context += f"\n\nYou are building tools on behalf of: {session._user_name}"
         if session._user_email:
             system_context += f" ({session._user_email})"
 
@@ -584,9 +626,6 @@ class ToolBuilderManager:
                 await session.broadcast({"type": "turn_end", "exit_code": 0})
                 session.output_buffer.clear()
                 logger.info(f"Tool builder turn completed, session={session.session_id}")
-
-                # Auto-suggest metadata in background
-                asyncio.create_task(self._auto_suggest_metadata(session))
             else:
                 session.is_running = False
                 session.is_waiting = True  # Allow retry
@@ -614,35 +653,6 @@ class ToolBuilderManager:
             logger.error(f"Error in _read_output: {e}")
             session.is_running = False
             await session.broadcast({"type": "error", "error": {"message": str(e)}})
-
-    async def _auto_suggest_metadata(self, session: ToolBuilderSession):
-        """Auto-generate metadata after turn completion and cache in DB + broadcast to WS."""
-        try:
-            from app.database import SessionLocal, AiWorkspaceSession
-            from .builder_routes import generate_suggested_metadata
-
-            db = SessionLocal()
-            try:
-                metadata = await generate_suggested_metadata(session, session.user_id, db)
-                if metadata:
-                    # Persist to DB
-                    db_sess = db.query(AiWorkspaceSession).filter(
-                        AiWorkspaceSession.id == session.db_session_id
-                    ).first()
-                    if db_sess:
-                        db_sess.suggested_metadata = json.dumps(metadata)
-                        db.commit()
-
-                    # Broadcast to WebSockets
-                    await session.broadcast({
-                        "type": "metadata_suggested",
-                        "metadata": metadata
-                    })
-                    logger.info(f"Auto-suggested metadata for session={session.session_id}: {metadata.get('name')}")
-            finally:
-                db.close()
-        except Exception as e:
-            logger.warning(f"Auto-suggest metadata failed: {e}")
 
     def _build_conversation_history(self, session: ToolBuilderSession) -> str:
         """Build conversation history for stateless providers."""
@@ -822,22 +832,10 @@ class ToolBuilderManager:
         if not tool_name and metadata:
             tool_name = (metadata.get("name") or "").strip()
 
-        # Create DB backup before publishing (for rollback safety)
-        db_backup_path = None
-        try:
-            from app.ai_workspace.manager import ai_workspace_manager
-            db_backup_path = ai_workspace_manager.create_db_backup()
-            if db_backup_path:
-                logger.info(f"Pre-publish DB backup created: {db_backup_path}")
-        except Exception as e:
-            logger.warning(f"Failed to create pre-publish DB backup: {e}")
-
         # Publish sandbox changes to host repo (into app/tools/custom/{tool_name}/)
         result = sandbox_manager.publish(session.session_id, tool_name=tool_name or None)
         if not result.get("success"):
             return {"error": result.get("message", "Publish failed")}
-
-        commit_hash = result.get("commit_hash", "")
 
         # Get the list of changed files for tracking
         changed_files_list = result.get("changed_files", [])
@@ -845,15 +843,9 @@ class ToolBuilderManager:
         # Create tool record: try TOOL.md first, fall back to user-provided metadata
         tool_id = None
         if tool_md_content:
-            tool_id = self._create_tool_from_md(
-                user_id, tool_md_content, files=changed_files_list,
-                commit_hash=commit_hash, db_backup_path=db_backup_path
-            )
+            tool_id = self._create_tool_from_md(user_id, tool_md_content, files=changed_files_list)
         if not tool_id and metadata:
-            tool_id = self._create_tool_from_metadata(
-                user_id, metadata, files=changed_files_list,
-                commit_hash=commit_hash, db_backup_path=db_backup_path
-            )
+            tool_id = self._create_tool_from_metadata(user_id, metadata, files=changed_files_list)
 
         # Update DB session status to published
         try:
@@ -882,8 +874,7 @@ class ToolBuilderManager:
             "skill_file": tool_file,
         }
 
-    def _create_tool_from_md(self, user_id: int, tool_md_content: str, files: list = None,
-                               commit_hash: str = None, db_backup_path: str = None) -> Optional[int]:
+    def _create_tool_from_md(self, user_id: int, tool_md_content: str, files: list = None) -> Optional[int]:
         """Parse TOOL.md and create a BuiltTool record."""
         import re
         from app.database import SessionLocal, BuiltTool
@@ -917,8 +908,6 @@ class ToolBuilderManager:
                 existing.icon = fields.get("icon", "bi-gear")
                 existing.tool_md_content = tool_md_content
                 existing.files = files_json
-                existing.publish_commit_hash = commit_hash or existing.publish_commit_hash
-                existing.pre_publish_db_backup = db_backup_path or existing.pre_publish_db_backup
                 existing.updated_at = datetime.utcnow()
                 db.commit()
                 return existing.id
@@ -933,8 +922,6 @@ class ToolBuilderManager:
                     gradient_end=fields.get("gradient_end", "#8b5cf6"),
                     tool_md_content=tool_md_content,
                     files=files_json,
-                    publish_commit_hash=commit_hash,
-                    pre_publish_db_backup=db_backup_path,
                     is_active=True,
                 )
                 db.add(tool)
@@ -948,8 +935,7 @@ class ToolBuilderManager:
         finally:
             db.close()
 
-    def _create_tool_from_metadata(self, user_id: int, metadata: Dict, files: list = None,
-                                      commit_hash: str = None, db_backup_path: str = None) -> Optional[int]:
+    def _create_tool_from_metadata(self, user_id: int, metadata: Dict, files: list = None) -> Optional[int]:
         """Create a BuiltTool record from user-provided form metadata."""
         from app.database import SessionLocal, BuiltTool
 
@@ -976,8 +962,6 @@ class ToolBuilderManager:
                 existing.description = description
                 existing.icon = icon
                 existing.files = files_json
-                existing.publish_commit_hash = commit_hash or existing.publish_commit_hash
-                existing.pre_publish_db_backup = db_backup_path or existing.pre_publish_db_backup
                 existing.updated_at = datetime.utcnow()
                 db.commit()
                 return existing.id
@@ -995,8 +979,6 @@ class ToolBuilderManager:
                     gradient_end=gradient_end,
                     tool_md_content=tool_md,
                     files=files_json,
-                    publish_commit_hash=commit_hash,
-                    pre_publish_db_backup=db_backup_path,
                     is_active=True,
                 )
                 db.add(tool)

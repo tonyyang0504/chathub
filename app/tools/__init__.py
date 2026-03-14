@@ -32,36 +32,4 @@ def register_custom_tools(parent_router):
                 logger.error(f"Failed to register custom tool '{tool_dir.name}': {e}")
 
 
-def register_single_custom_tool(parent_router, tool_name: str):
-    """Hot-register a single custom tool after publish (no restart needed)."""
-    tool_dir = CUSTOM_TOOLS_DIR / tool_name
-    routes_file = tool_dir / "routes.py"
-    if not routes_file.exists():
-        logger.warning(f"Cannot register custom tool '{tool_name}': no routes.py")
-        return False
-
-    # Check if already registered (avoid duplicate prefix)
-    prefix = f"/{tool_name}"
-    for route in parent_router.routes:
-        if hasattr(route, 'path') and route.path.startswith(prefix):
-            logger.info(f"Custom tool '{tool_name}' already registered, skipping")
-            return True
-
-    try:
-        module_name = f"app.tools.custom.{tool_name}.routes"
-        # Reload if previously imported (e.g. failed attempt)
-        if module_name in importlib.sys.modules:
-            module = importlib.reload(importlib.sys.modules[module_name])
-        else:
-            module = importlib.import_module(module_name)
-        if hasattr(module, "router"):
-            parent_router.include_router(module.router, prefix=prefix)
-            logger.info(f"Hot-registered custom tool: {tool_name}")
-            return True
-    except Exception as e:
-        logger.error(f"Failed to hot-register custom tool '{tool_name}': {e}")
-    return False
-
-
-__all__ = ['tools_router', 'ToolMonitor', 'builder_router', 'marketplace_router',
-           'register_custom_tools', 'register_single_custom_tool']
+__all__ = ['tools_router', 'ToolMonitor', 'builder_router', 'marketplace_router', 'register_custom_tools']

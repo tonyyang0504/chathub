@@ -233,25 +233,6 @@ class SandboxManager:
         self._launch_container(info)
         return info
 
-    def restart_preview(self, session_id: str) -> SandboxInfo:
-        """Restart the preview container so it picks up code changes."""
-        info = self._find_by_session(session_id)
-        if not info or not info.container_name:
-            raise RuntimeError("No preview container running")
-        bin_ = _docker_bin()
-        if not bin_:
-            raise RuntimeError("Docker not available")
-        logger.info(f"Restarting preview container {info.container_name}...")
-        result = subprocess.run(
-            [bin_, "restart", info.container_name],
-            capture_output=True, text=True, env=self._docker_env(), timeout=30
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Failed to restart container: {result.stderr.strip()}")
-        self._wait_for_http("127.0.0.1", info.preview_port, timeout=60)
-        logger.info(f"Preview container {info.container_name} restarted and ready")
-        return info
-
     def get_info(self, user_id: int) -> Optional[SandboxInfo]:
         return self._active.get(user_id)
 
@@ -387,7 +368,6 @@ class SandboxManager:
             "-e", f"SECRET_KEY={secret_key}",
             "-e", "COOKIE_NAME=sandbox_access_token",
             "-e", "PORT=8000",
-            "-e", "DEBUG=true",
             "--memory=512m", "--cpus=1",
             "--label", f"tb-session={info.session_id}",
             "--label", f"tb-user={info.user_id}",

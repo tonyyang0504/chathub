@@ -669,7 +669,6 @@ class AiWorkspaceSession(Base):
     session_type = Column(String(20), default="claude_code")  # "claude_code" | "tool_builder"
     worktree_path = Column(String(500), nullable=True)
     worktree_branch = Column(String(200), nullable=True)
-    suggested_metadata = Column(Text, nullable=True)  # JSON: {"name", "display_name", "description", "icon"}
     rolled_back = Column(Boolean, default=False)
     rolled_back_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -856,8 +855,6 @@ class BuiltTool(Base):
     gradient_end = Column(String(7), default="#8b5cf6")
     tool_md_content = Column(Text, nullable=True)
     files = Column(Text, nullable=True)  # JSON list of relative file paths in app/tools/custom/{name}/
-    publish_commit_hash = Column(String(40), nullable=True)  # Git commit hash from publish
-    pre_publish_db_backup = Column(String(500), nullable=True)  # Path to DB backup taken before publish
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

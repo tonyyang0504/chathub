@@ -38,14 +38,14 @@ def build_publish_readiness(
     display_name = (metadata.get("display_name") or frontmatter.get("display_name") or "").strip()
     description = (metadata.get("description") or frontmatter.get("description") or "").strip()
     icon = (metadata.get("icon") or frontmatter.get("icon") or "").strip()
-    trigger = (frontmatter.get("trigger") or metadata.get("name") or "").strip()
+    trigger = (frontmatter.get("trigger") or "").strip()
 
     checks = [
         {
             "key": "skill_file",
             "label": "TOOL.md file present",
             "ok": has_tool_file,
-            "hard": False,
+            "hard": True,
             "hint": "Create a TOOL.md file in your changes.",
         },
         {
@@ -66,7 +66,7 @@ def build_publish_readiness(
             "key": "trigger",
             "label": "Frontmatter trigger",
             "ok": bool(trigger),
-            "hard": False,
+            "hard": True,
             "hint": "Add a trigger in TOOL.md frontmatter.",
         },
         {
