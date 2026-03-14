@@ -277,14 +277,16 @@ class SandboxManager:
         except Exception as e:
             return {"error": str(e), "returncode": -1}
 
-    def publish(self, session_id: str) -> dict:
-        """Publish sandbox changes to the host repo."""
+    def publish(self, session_id: str, tool_name: str = None) -> dict:
+        """Publish sandbox changes to the host repo.
+        If tool_name is provided, files are copied into app/tools/custom/{tool_name}/.
+        """
         info = self._find_by_session(session_id)
         if not info:
             return {"success": False, "message": "Sandbox not found"}
         if not info.container_name:
-            return self._host_publish(info)
-        return self._docker_publish(info)
+            return self._host_publish(info, tool_name=tool_name)
+        return self._docker_publish(info, tool_name=tool_name)
 
     def discard(self, session_id: str) -> None:
         info = self._find_by_session(session_id)
@@ -481,7 +483,7 @@ class SandboxManager:
             "changed_files": self.get_changed_files(info.session_id),
         }
 
-    def _host_publish(self, info: SandboxInfo) -> dict:
+    def _host_publish(self, info: SandboxInfo, tool_name: str = None) -> dict:
         """Publish worktree branch into main repo when no Docker container was launched."""
         from app.tools.worktree_manager import worktree_manager
         # Auto-commit any uncommitted changes the agent left in the worktree
@@ -490,7 +492,7 @@ class SandboxManager:
             info.session_id,
             ["git", "commit", "-m", f"Tool Builder: publish from session {info.session_id[:8]}"]
         )  # OK if this fails (nothing new to commit)
-        result = worktree_manager.merge(info.session_id)
+        result = worktree_manager.merge(info.session_id, tool_name=tool_name)
         self._active.pop(info.user_id, None)
         return {
             "success": result.success,
@@ -500,7 +502,7 @@ class SandboxManager:
             "changed_files": [],
         }
 
-    def _docker_publish(self, info: SandboxInfo) -> dict:
+    def _docker_publish(self, info: SandboxInfo, tool_name: str = None) -> dict:
         bin_ = _docker_bin()
         env = self._docker_env()
         changed_files = self.get_changed_files(info.session_id)
@@ -531,7 +533,7 @@ class SandboxManager:
             info.session_id,
             ["git", "commit", "-m", f"Tool Builder: sandbox {info.session_id[:8]}"]
         )
-        merge_result = worktree_manager.merge(info.session_id)
+        merge_result = worktree_manager.merge(info.session_id, tool_name=tool_name)
         self._docker_cleanup(info)
         return {
             "success": merge_result.success,

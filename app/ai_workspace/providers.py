@@ -112,10 +112,16 @@ class CodexProvider(CLIProvider):
 
     def prepare_session(self, cwd, system_context):
         path = os.path.join(cwd, "AGENTS.md")
+        existing = ""
         if os.path.exists(path):
+            with open(path, "r") as f:
+                existing = f.read()
             os.rename(path, path + ".chathub_bak")
         with open(path, "w") as f:
             f.write(system_context)
+            if existing:
+                f.write("\n\n---\n\n")
+                f.write(existing)
 
     def cleanup_session(self, cwd):
         path = os.path.join(cwd, "AGENTS.md")
@@ -217,10 +223,16 @@ class GeminiProvider(CLIProvider):
 
     def prepare_session(self, cwd, system_context):
         path = os.path.join(cwd, "GEMINI.md")
+        existing = ""
         if os.path.exists(path):
+            with open(path, "r") as f:
+                existing = f.read()
             os.rename(path, path + ".chathub_bak")
         with open(path, "w") as f:
             f.write(system_context)
+            if existing:
+                f.write("\n\n---\n\n")
+                f.write(existing)
 
     def cleanup_session(self, cwd):
         path = os.path.join(cwd, "GEMINI.md")
@@ -355,6 +367,7 @@ class ChatHubProvider(CLIProvider):
     name = "chathub"
     display_name = "ChatHub CLI"
     brand_color = "#7c3aed"
+    supports_resume = True
 
     def build_command(self, prompt, session_uuid, is_first, model=None, system_context=None):
         cli_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "bin", "chathub-cli")
@@ -374,10 +387,16 @@ class ChatHubProvider(CLIProvider):
 
     def prepare_session(self, cwd, system_context):
         path = os.path.join(cwd, "CHATHUB.md")
+        existing = ""
         if os.path.exists(path):
+            with open(path, "r") as f:
+                existing = f.read()
             os.rename(path, path + ".chathub_bak")
         with open(path, "w") as f:
             f.write(system_context)
+            if existing:
+                f.write("\n\n---\n\n")
+                f.write(existing)
 
     def cleanup_session(self, cwd):
         path = os.path.join(cwd, "CHATHUB.md")

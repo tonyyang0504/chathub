@@ -36,7 +36,7 @@ from .hubs.scheduler import content_scheduler
 from .hubs.analysis_scheduler import contact_analysis_scheduler
 from .hubs.followup_scheduler import followup_send_scheduler
 from .scripts.scheduler import script_scheduler
-from .tools import tools_router, builder_router, marketplace_router
+from .tools import tools_router, builder_router, marketplace_router, register_custom_tools
 from .agents import agents_router
 from .ai_workspace.routes import router as ai_workspace_router
 from .ai_workspace.manager import ai_workspace_manager
@@ -377,6 +377,7 @@ app.include_router(conversations_router, prefix="/api/conversations", tags=["Con
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
 app.include_router(scripts_router, tags=["Scripts"])
+register_custom_tools(tools_router)  # Auto-discover app/tools/custom/*/routes.py
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(builder_router, tags=["Tool Builder"])
 app.include_router(marketplace_router, tags=["Marketplace"])

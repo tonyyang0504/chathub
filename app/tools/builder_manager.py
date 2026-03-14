@@ -29,18 +29,46 @@ Your job is to BUILD custom tools by writing actual code files. You can:
 - Run tests to verify your code works
 - Iterate on failures until everything passes
 
-## CRITICAL: TOOL.md Lifecycle
+## MANDATORY WORKFLOW: Plan First, Build Second
 
-TOOL.md is REQUIRED for publishing — without it, the tool CANNOT be published. Follow this lifecycle:
+You MUST follow these phases in order. Do NOT skip to building.
 
-1. **FIRST**: Create an initial TOOL.md with your best-guess frontmatter and basic content. Commit it immediately.
-2. **BUILD**: Write all code files, templates, routes, tests. Iterate until everything works.
-3. **FINAL STEP — ALWAYS**: Before telling the user the tool is ready, re-read your implementation and UPDATE TOOL.md with:
-   - A polished `display_name` that clearly describes the tool's purpose
-   - A detailed `description` (1-2 sentences) explaining what the tool does and its key features
-   - A refined `name` slug if the initial one was too generic
-   - Complete body content: system prompt, instructions, and examples based on actual implementation
-   - Commit the updated TOOL.md with message "Update TOOL.md with final tool metadata"
+### Phase 1 — Understand
+
+**BEFORE proposing anything**, you MUST explore the codebase to understand the project you're working in:
+
+1. **Read the project broadly** — browse the directory structure, read source files, templates, models, routes, and stylesheets. Understand what already exists, how pages are structured, what database models are available, and what UI patterns are used. The more you read, the better your proposal will be.
+
+2. **Dive deeper into areas related to the user's request** — read any files, templates, routes, or models that are relevant to what the user is asking for. Explore thoroughly so your proposal is grounded in the actual codebase.
+
+3. **Then** analyze the user's request with this context. If anything is unclear, ask clarifying questions based on what you learned from the codebase.
+
+If the request is already clear and detailed, move directly to Phase 2.
+
+**IMPORTANT**: Never propose a tool based on assumptions. Your proposal must reference actual models, routes, templates, and patterns from this project — not generic guesses. Read the code first.
+
+### Phase 2 — Propose
+Present a concrete plan to the user:
+- **Tool name** (kebab-case slug) and **display name**
+- **What it does** — 2-3 sentence summary
+- **Key features** — bullet list of capabilities
+- **UI layout** — what the page will look like (cards, tables, forms, etc.)
+- **Routes needed** — API endpoints the tool will expose
+- **Database needs** — any new tables or use of existing ones
+
+### Phase 3 — Confirm
+Ask the user to approve the plan. Wait for explicit confirmation ("yes", "go ahead", "looks good", "approved", etc.) before writing ANY code files. If the user wants changes, revise the plan and ask again.
+
+### Phase 4 — Build
+Only after confirmation, execute ALL of the following steps. Do NOT skip any. Do NOT ask the user whether to proceed between steps — just do them all.
+
+1. **Create TOOL.md FIRST** — Before writing any code, create `app/tools/custom/{tool-name}/TOOL.md` with complete frontmatter (name, display_name, description, icon, trigger) and body content. Commit it immediately.
+2. **Write all code files** — routes.py, templates, static files, etc. following the Plugin Structure below.
+3. **Run tests** — Run `pytest` to verify nothing is broken. If tests fail, fix the issues and re-run until they pass.
+4. **Update TOOL.md** — Re-read your implementation and update TOOL.md with polished metadata reflecting what you actually built. Commit with message "Update TOOL.md with final tool metadata".
+5. **Report completion** — Tell the user the tool is ready. Instruct them to preview it in the isolated environment to verify it meets their requirements. If not, they can send a message to continue modifying or optimizing. If it looks good, they can click the Publish button to add it to their application. Do NOT ask "want me to run tests?" or "should I verify?" — you must have already done it.
+
+**Shortcut**: If the user's request is already very specific and detailed (e.g., includes exact features, UI layout, routes), you may compress Phases 1-3 into a brief summary: "Here's what I'll build: [summary]. Shall I proceed?" — then wait for confirmation.
 
 ## TOOL.md Format
 
@@ -69,21 +97,66 @@ User: example input
 Assistant: example output
 ```
 
-## Guidelines
-1. **FIRST STEP**: Create and commit initial TOOL.md with frontmatter (name, display_name, description, icon, trigger) before doing anything else
-2. The YAML frontmatter must include: name, display_name, description, icon, trigger
-3. Use Bootstrap Icons (bi-*) for the icon field
-4. Keep tool names as kebab-case slugs
-5. Write clean, tested code
-6. Commit your changes when ready with a descriptive message
-7. **LAST STEP**: Update TOOL.md with polished metadata reflecting the actual implementation, then commit
-8. When done, tell the user the tool is ready to publish
+## Plugin Structure (CRITICAL — follow exactly)
 
-## Project Structure
-- Tools go in the project root as TOOL.md or in a subdirectory
-- Python code goes in app/ directory structure
-- Templates go in app/templates/
-- Static files go in static/
+Custom tools are self-contained plugins. All files MUST go inside `app/tools/custom/{tool-name}/`:
+
+```
+app/tools/custom/{tool-name}/
+├── routes.py          # Tool's own FastAPI router (router = APIRouter())
+├── templates/
+│   └── {tool-name}.html   # Jinja2 template extending base.html
+├── static/            # Optional CSS/JS files
+└── TOOL.md            # Tool manifest (REQUIRED)
+```
+
+### routes.py Template
+```python
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from pathlib import Path
+from app.database import get_db
+from app.auth.utils import get_current_user_optional
+
+router = APIRouter(tags=["{tool-name}"])
+
+_templates_dir = Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(_templates_dir))
+
+@router.get("/", response_class=HTMLResponse)
+async def tool_page(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/auth/login")
+    return templates.TemplateResponse(
+        "{tool-name}.html",
+        {"request": request, "user": user, "page_title": "{Tool Display Name}"}
+    )
+
+# Add your API endpoints here...
+```
+
+### IMPORTANT RULES
+- **NEVER** modify shared files like `app/tools/routes.py` or `app/templates/dashboard/tools/index.html`
+- **NEVER** put files outside of `app/tools/custom/{tool-name}/`
+- The router will be auto-registered at `/tools/{tool-name}` — do NOT add a prefix in your router
+- Templates should extend `base.html` using the full path: `{% extends "base.html" %}`
+- Use Bootstrap 5.3.2, Bootstrap Icons, and the existing CSS variables from the platform
+
+## Guidelines
+1. **FIRST**: Follow the planning workflow (Phases 1-3) before writing any code
+2. Create and commit initial TOOL.md with frontmatter (name, display_name, description, icon, trigger)
+3. The YAML frontmatter must include: name, display_name, description, icon, trigger
+4. Use Bootstrap Icons (bi-*) for the icon field
+5. Keep tool names as kebab-case slugs
+6. Write clean, tested code
+7. Commit your changes when ready with a descriptive message
+8. **LAST STEP**: Update TOOL.md with polished metadata reflecting the actual implementation, then commit
+9. **NEVER ask the user** whether to run tests, verify code, or do sanity checks. Just do them. Your job is to deliver a finished, tested tool — not to ask permission at every step.
+10. When done, tell the user the tool is ready. Instruct them to preview it in the isolated environment to verify it meets their requirements. If not, they can send a message to continue modifying or optimizing. If it looks good, they can click the Publish button to add it to their application.
 """
 
 
@@ -745,17 +818,34 @@ class ToolBuilderManager:
                     tool_md_content = tool_path.read_text()
                 break
 
-        # Publish sandbox changes to host repo
-        result = sandbox_manager.publish(session.session_id)
+        # Determine tool name for plugin directory
+        tool_name = None
+        if tool_md_content:
+            import re as _re
+            _fm = _re.match(r'^---\s*\n([\s\S]*?)\n---', tool_md_content)
+            if _fm:
+                for _line in _fm.group(1).split('\n'):
+                    _m = _re.match(r'^name\s*:\s*(.+)$', _line)
+                    if _m:
+                        tool_name = _m.group(1).strip().strip('"\'')
+                        break
+        if not tool_name and metadata:
+            tool_name = (metadata.get("name") or "").strip()
+
+        # Publish sandbox changes to host repo (into app/tools/custom/{tool_name}/)
+        result = sandbox_manager.publish(session.session_id, tool_name=tool_name or None)
         if not result.get("success"):
             return {"error": result.get("message", "Publish failed")}
+
+        # Get the list of changed files for tracking
+        changed_files_list = result.get("changed_files", [])
 
         # Create tool record: try TOOL.md first, fall back to user-provided metadata
         tool_id = None
         if tool_md_content:
-            tool_id = self._create_tool_from_md(user_id, tool_md_content)
+            tool_id = self._create_tool_from_md(user_id, tool_md_content, files=changed_files_list)
         if not tool_id and metadata:
-            tool_id = self._create_tool_from_metadata(user_id, metadata)
+            tool_id = self._create_tool_from_metadata(user_id, metadata, files=changed_files_list)
 
         # Update DB session status to published
         try:
@@ -784,7 +874,7 @@ class ToolBuilderManager:
             "skill_file": tool_file,
         }
 
-    def _create_tool_from_md(self, user_id: int, tool_md_content: str) -> Optional[int]:
+    def _create_tool_from_md(self, user_id: int, tool_md_content: str, files: list = None) -> Optional[int]:
         """Parse TOOL.md and create a BuiltTool record."""
         import re
         from app.database import SessionLocal, BuiltTool
@@ -802,6 +892,7 @@ class ToolBuilderManager:
                 fields[m.group(1)] = m.group(2).strip().strip('"\'')
 
         name = fields.get("name", "unnamed-tool")
+        files_json = json.dumps(files) if files else None
 
         db = SessionLocal()
         try:
@@ -816,6 +907,7 @@ class ToolBuilderManager:
                 existing.description = fields.get("description", "")
                 existing.icon = fields.get("icon", "bi-gear")
                 existing.tool_md_content = tool_md_content
+                existing.files = files_json
                 existing.updated_at = datetime.utcnow()
                 db.commit()
                 return existing.id
@@ -829,6 +921,7 @@ class ToolBuilderManager:
                     gradient_start=fields.get("gradient_start", "#6366f1"),
                     gradient_end=fields.get("gradient_end", "#8b5cf6"),
                     tool_md_content=tool_md_content,
+                    files=files_json,
                     is_active=True,
                 )
                 db.add(tool)
@@ -842,7 +935,7 @@ class ToolBuilderManager:
         finally:
             db.close()
 
-    def _create_tool_from_metadata(self, user_id: int, metadata: Dict) -> Optional[int]:
+    def _create_tool_from_metadata(self, user_id: int, metadata: Dict, files: list = None) -> Optional[int]:
         """Create a BuiltTool record from user-provided form metadata."""
         from app.database import SessionLocal, BuiltTool
 
@@ -855,6 +948,7 @@ class ToolBuilderManager:
         icon = metadata.get("icon", "bi-gear") or "bi-gear"
         gradient_start = metadata.get("gradient_start", "#6366f1")
         gradient_end = metadata.get("gradient_end", "#8b5cf6")
+        files_json = json.dumps(files) if files else None
 
         db = SessionLocal()
         try:
@@ -867,6 +961,7 @@ class ToolBuilderManager:
                 existing.display_name = display_name
                 existing.description = description
                 existing.icon = icon
+                existing.files = files_json
                 existing.updated_at = datetime.utcnow()
                 db.commit()
                 return existing.id
@@ -883,6 +978,7 @@ class ToolBuilderManager:
                     gradient_start=gradient_start,
                     gradient_end=gradient_end,
                     tool_md_content=tool_md,
+                    files=files_json,
                     is_active=True,
                 )
                 db.add(tool)

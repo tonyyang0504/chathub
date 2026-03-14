@@ -880,3 +880,98 @@ async def publish_tool(
         "listing_id": listing.id,
         "message": "Tool published to marketplace"
     }
+
+
+# ============================================================================
+# Uninstall & Reset Endpoints
+# ============================================================================
+
+@router.delete("/tools/{tool_id}/uninstall")
+async def uninstall_tool(
+    request: Request,
+    tool_id: int,
+    db: Session = Depends(get_db)
+):
+    """Uninstall a custom tool: delete its plugin directory and DB records."""
+    import shutil
+    from pathlib import Path
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.id == tool_id,
+        BuiltTool.user_id == user.id
+    ).first()
+
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+
+    # Delete plugin directory
+    custom_tools_dir = Path(__file__).resolve().parent / "custom" / tool.name
+    dir_deleted = False
+    if custom_tools_dir.exists():
+        shutil.rmtree(str(custom_tools_dir))
+        dir_deleted = True
+
+    # Delete marketplace listing if exists
+    if tool.listing:
+        db.delete(tool.listing)
+
+    # Delete the tool record
+    db.delete(tool)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Tool uninstalled successfully",
+        "directory_deleted": dir_deleted,
+        "restart_required": dir_deleted  # Routes need server restart to unregister
+    }
+
+
+@router.post("/reset")
+async def reset_custom_tools(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Reset all custom tools: delete all plugin directories and DB records for this user."""
+    import shutil
+    from pathlib import Path
+    from app.database import CustomToolInstall
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    custom_tools_dir = Path(__file__).resolve().parent / "custom"
+    dirs_deleted = 0
+
+    # Get all user's tools to know which directories to delete
+    user_tools = db.query(BuiltTool).filter(BuiltTool.user_id == user.id).all()
+    for tool in user_tools:
+        tool_dir = custom_tools_dir / tool.name
+        if tool_dir.exists():
+            shutil.rmtree(str(tool_dir))
+            dirs_deleted += 1
+
+    # Delete all DB records for this user
+    # First delete listings (FK constraint)
+    tool_ids = [t.id for t in user_tools]
+    if tool_ids:
+        db.query(CustomToolListing).filter(
+            CustomToolListing.tool_id.in_(tool_ids)
+        ).delete(synchronize_session=False)
+
+    db.query(CustomToolInstall).filter(CustomToolInstall.user_id == user.id).delete()
+    db.query(BuiltTool).filter(BuiltTool.user_id == user.id).delete()
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"All custom tools removed ({len(user_tools)} tools, {dirs_deleted} directories deleted)",
+        "tools_deleted": len(user_tools),
+        "directories_deleted": dirs_deleted,
+        "restart_required": dirs_deleted > 0
+    }

@@ -172,11 +172,11 @@ class WorktreeManager:
         )
         return result.stdout.strip() if result.returncode == 0 else ""
 
-    def merge(self, session_id: str) -> MergeResult:
+    def merge(self, session_id: str, tool_name: str = None) -> MergeResult:
         """Apply worktree changes into main working tree and commit.
 
-        Copies files directly from the worktree directory instead of using
-        git checkout/merge, which avoids all pathspec and branch resolution issues.
+        If tool_name is provided, copies files into app/tools/custom/{tool_name}/
+        instead of mirroring the worktree structure into PROJECT_ROOT.
         """
         info = self._find_by_session(session_id)
         if not info:
@@ -190,21 +190,38 @@ class WorktreeManager:
             self.discard(session_id)
             return MergeResult(success=False, message="No changes to merge")
 
-        # Copy each changed file from worktree to PROJECT_ROOT
-        copied = []
-        for rel_path in changed:
-            src = info.path / rel_path
-            dst = PROJECT_ROOT / rel_path
-            try:
-                if src.exists():
-                    dst.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(str(src), str(dst))
-                    copied.append(rel_path)
-                elif dst.exists():
-                    dst.unlink()  # file deleted in worktree
-                    copied.append(rel_path)
-            except Exception as e:
-                logger.warning(f"Failed to copy {rel_path}: {e}")
+        if tool_name:
+            # Plugin mode: copy all changed files into app/tools/custom/{tool_name}/
+            custom_dir = PROJECT_ROOT / "app" / "tools" / "custom" / tool_name
+            custom_dir.mkdir(parents=True, exist_ok=True)
+            copied = []
+            for rel_path in changed:
+                src = info.path / rel_path
+                dst = custom_dir / rel_path
+                try:
+                    if src.exists():
+                        dst.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(str(src), str(dst))
+                        copied.append(str(Path("app/tools/custom") / tool_name / rel_path))
+                    # Don't delete files in plugin mode — only add
+                except Exception as e:
+                    logger.warning(f"Failed to copy {rel_path}: {e}")
+        else:
+            # Legacy mode: copy to PROJECT_ROOT preserving structure
+            copied = []
+            for rel_path in changed:
+                src = info.path / rel_path
+                dst = PROJECT_ROOT / rel_path
+                try:
+                    if src.exists():
+                        dst.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(str(src), str(dst))
+                        copied.append(rel_path)
+                    elif dst.exists():
+                        dst.unlink()  # file deleted in worktree
+                        copied.append(rel_path)
+                except Exception as e:
+                    logger.warning(f"Failed to copy {rel_path}: {e}")
 
         if not copied:
             self.discard(session_id)
@@ -235,7 +252,7 @@ class WorktreeManager:
             success=True,
             message="Changes published successfully",
             merged_branch=branch,
-            commit_hash=commit_hash
+            commit_hash=commit_hash,
         )
 
     def discard(self, session_id: str) -> None:

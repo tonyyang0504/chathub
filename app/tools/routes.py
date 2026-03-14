@@ -1141,15 +1141,21 @@ Only return valid JSON, no other text."""
 @router.get("", response_class=HTMLResponse)
 async def tools_index_page(request: Request, db: Session = Depends(get_db)):
     """Tools index page - overview of all available tools."""
+    from app.database import BuiltTool
     user = await get_current_user_optional(request, None, db)
     if not user:
         return templates.TemplateResponse(
             "auth/login.html",
             {"request": request, "error": "Please log in to access this page"}
         )
+    # Query user's active custom tools for the Custom Tools section
+    custom_tools = db.query(BuiltTool).filter(
+        BuiltTool.user_id == user.id,
+        BuiltTool.is_active == True
+    ).order_by(BuiltTool.created_at.desc()).all()
     return templates.TemplateResponse(
         "dashboard/tools/index.html",
-        {"request": request, "user": user, "page_title": "Tools"}
+        {"request": request, "user": user, "page_title": "Tools", "custom_tools": custom_tools}
     )
 
 

@@ -854,6 +854,7 @@ class BuiltTool(Base):
     gradient_start = Column(String(7), default="#6366f1")
     gradient_end = Column(String(7), default="#8b5cf6")
     tool_md_content = Column(Text, nullable=True)
+    files = Column(Text, nullable=True)  # JSON list of relative file paths in app/tools/custom/{name}/
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
