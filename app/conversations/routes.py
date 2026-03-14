@@ -286,6 +286,55 @@ def get_conversation(
 
 # ============== Routes ==============
 
+@router.get("/recent")
+async def recent_conversations(
+    limit: int = Query(8, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get recent conversations across all user's bots."""
+    # Get all bot IDs for this user
+    bot_ids = [b.id for b in db.query(BotProfile.id).filter(
+        BotProfile.user_id == current_user.id
+    ).all()]
+
+    if not bot_ids:
+        return {"conversations": [], "total": 0}
+
+    # Get recent conversations with last message
+    conversations = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_ids),
+        Conversation.last_message_at.isnot(None)
+    ).order_by(
+        desc(Conversation.last_message_at)
+    ).limit(limit).all()
+
+    result = []
+    for conv in conversations:
+        last_msg = db.query(Message).filter(
+            Message.conversation_id == conv.id
+        ).order_by(desc(Message.timestamp)).first()
+
+        bot = db.query(BotProfile).filter(BotProfile.id == conv.bot_profile_id).first()
+
+        result.append({
+            "id": conv.id,
+            "chat_name": conv.display_name or conv.chat_name or "Unknown",
+            "phone": conv.phone,
+            "is_group": conv.is_group,
+            "profile_pic": conv.profile_pic,
+            "message_count": conv.message_count or 0,
+            "last_message_at": conv.last_message_at.isoformat() + "Z" if conv.last_message_at else None,
+            "last_message": last_msg.content[:100] if last_msg and last_msg.content else None,
+            "last_message_direction": last_msg.direction if last_msg else None,
+            "bot_id": conv.bot_profile_id,
+            "bot_name": bot.name if bot else "Unknown Bot",
+            "human_takeover": conv.human_takeover or False
+        })
+
+    return {"conversations": result, "total": len(result)}
+
+
 @router.get("/bot/{bot_id}", response_model=ConversationListResponse)
 async def list_conversations(
     bot_id: int,
