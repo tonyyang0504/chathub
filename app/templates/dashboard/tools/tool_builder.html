@@ -1106,6 +1106,28 @@
         </div>
     </div>
 </div>
+
+<!-- Restart Server Modal -->
+<div class="modal fade" id="restartServerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-arrow-clockwise me-2"></i>Restart Required</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="mb-1">Your tool has been published successfully.</p>
+                <p class="text-muted small mb-0">The server needs to restart for the new tool to become active.</p>
+            </div>
+            <div class="modal-footer d-flex justify-content-center gap-2 border-top" style="border-color: var(--border-color) !important;">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Later</button>
+                <button class="btn btn-sm rounded-pill px-3" onclick="restartServer()" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Restart Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -2580,11 +2602,10 @@ async function confirmPublish() {
         if (resp.status === 401) {
             showToast('Session expired. Please refresh the page and log in again.', 'error');
         } else if (resp.ok && data.success) {
-            // Close modal, reset panel, refresh sidebar
+            // Close publish modal, reset panel, refresh sidebar
             bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
             if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
             previewWindow = null;
-            showToast('Changes deployed! Restart your app to see them live.', 'success');
             publishedSkillId = data.skill_id;
             sessionId = null;
             previewUrl = null;
@@ -2592,6 +2613,13 @@ async function confirmPublish() {
             resetPanel();
             loadSessions();
             if (data.skill_id) { currentToolId = data.skill_id; showPublishModal(); }
+            // Show restart modal
+            if (data.restart_required) {
+                const restartModal = new bootstrap.Modal(document.getElementById('restartServerModal'));
+                restartModal.show();
+            } else {
+                showToast('Tool published successfully!', 'success');
+            }
         } else {
             // On failure: show error but keep build panel visible (don't resetPanel)
             showToast(data.detail || data.error || 'Publish failed', 'error');
@@ -3014,5 +3042,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyPublishButtonState();
     });
 });
+
+async function restartServer() {
+    try {
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('restartServerModal'));
+        if (modal) modal.hide();
+        showToast('Restarting server...', 'info');
+        await fetch('/tools/api/tool-builder/restart', { method: 'POST', credentials: 'include' });
+    } catch(e) { /* expected — server is restarting */ }
+    pollUntilServerReady();
+}
+
+function pollUntilServerReady() {
+    const poll = setInterval(async () => {
+        try {
+            const resp = await fetch('/health', { cache: 'no-store' });
+            if (resp.ok) {
+                clearInterval(poll);
+                location.reload();
+            }
+        } catch(e) { /* server still down, keep polling */ }
+    }, 1000);
+}
 </script>
 {% endblock %}

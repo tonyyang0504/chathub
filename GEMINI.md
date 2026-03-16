@@ -1,4 +1,4 @@
-# CLAUDE.md
+# GEMINI.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -336,6 +336,67 @@ When logging tool executions via `ToolMonitor.log_execution()`, include rich dat
 - Frontend should display contact name (fallback to phone), bot name, message preview (italic), intent/reason, exact datetime (not relative), and tone badge
 - Reference `scheduled_content.html` activity log for the canonical styling pattern
 - Avoid rendering empty wrapper divs — only render rows when content exists to prevent blank lines
+
+### CSS Variables — Always Use These
+Never hardcode colors/backgrounds. Use the CSS variables defined in `static/css/style.css :root`:
+- **Backgrounds**: `var(--card-bg)` (white), `var(--hover-bg)` (light gray), `var(--wa-panel-bg)` (panel gray)
+- **Text**: `var(--text-primary)`, `var(--text-secondary)`, `var(--text-muted)`
+- **Borders**: `var(--border-color)`
+- **Brand**: `var(--wa-green)`, `var(--wa-teal)` (both `#25D366`)
+- **Shadow**: `var(--shadow)`
+
+### Modal Styling
+Every modal must use `var()` backgrounds and borders — not Bootstrap defaults. This ensures theme consistency:
+```html
+<div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+    <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+        <h5 class="modal-title"><i class="bi bi-icon me-2"></i>Title</h5>
+        <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">...</div>
+    <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-sm rounded-pill px-3" style="background: linear-gradient(135deg, #start, #end); color: white;">
+            <i class="bi bi-check-lg me-1"></i>Confirm
+        </button>
+    </div>
+</div>
+```
+
+### Border Radius Hierarchy
+Consistent border-radius values across all components:
+- **20px**: pill buttons (`rounded-pill`), inputs, form controls
+- **12px**: cards, panels, list-group first/last items
+- **10px**: dropdowns, alerts, toasts
+- **6px**: dropdown items, inline code blocks
+
+### Focus State — No Blue Glow
+All focusable elements must use `box-shadow: none` on focus. Use `border-color` change only (theme color or `var(--wa-teal)`):
+```css
+.my-input:focus {
+    border-color: var(--wa-teal); /* or page theme color */
+    box-shadow: none;
+    outline: none;
+}
+```
+Never allow Bootstrap's default blue `box-shadow` glow to appear.
+
+### Button Conventions
+- Always use `rounded-pill` class on buttons
+- **Primary/action**: gradient via inline style — `style="background: linear-gradient(135deg, #start, #end); color: white;"`
+- **Secondary/cancel**: `btn-outline-secondary rounded-pill`
+- **Size**: `.btn-sm` for most action buttons, `.btn` for main CTAs
+- **Icons**: `<i class="bi bi-icon-name me-1"></i>` before button text
+
+### Scrollbar Styling
+Any scrollable container (`overflow-y: auto`, `max-height`, textarea, etc.) must have custom scrollbars:
+```css
+.my-scrollable::-webkit-scrollbar { width: 6px; }
+.my-scrollable::-webkit-scrollbar-track { background: transparent; }
+.my-scrollable::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.my-scrollable::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.my-scrollable { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; } /* Firefox */
+```
 
 ## Testing
 

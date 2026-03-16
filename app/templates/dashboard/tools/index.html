@@ -298,10 +298,17 @@
 </div>
 
 <!-- Restart Required Banner (hidden by default) -->
-<div id="restartBanner" class="alert alert-warning alert-dismissible d-none" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1050; max-width: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-    <i class="bi bi-exclamation-triangle me-2"></i>
-    <strong>Restart required.</strong> The server needs to be restarted for route changes to take effect.
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div id="restartBanner" class="alert alert-warning d-none d-flex align-items-center justify-content-between" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1050; max-width: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <div>
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Restart required.</strong> The server needs to be restarted for changes to take effect.
+    </div>
+    <div class="ms-3 d-flex gap-2 flex-shrink-0">
+        <button class="btn btn-sm btn-warning" onclick="restartServer()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Restart Now
+        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 </div>
 {% endblock %}
 
@@ -349,6 +356,29 @@ async function resetAllTools() {
     } catch (e) {
         alert('Error resetting tools: ' + e.message);
     }
+}
+
+async function restartServer() {
+    try {
+        await fetch('/tools/api/tool-builder/restart', { method: 'POST', credentials: 'include' });
+        const banner = document.getElementById('restartBanner');
+        banner.innerHTML = '<div class="d-flex align-items-center"><span class="spinner-border spinner-border-sm me-2"></span> Restarting server...</div>';
+        pollUntilServerReady();
+    } catch(e) {
+        pollUntilServerReady();
+    }
+}
+
+function pollUntilServerReady() {
+    const poll = setInterval(async () => {
+        try {
+            const resp = await fetch('/health', { cache: 'no-store' });
+            if (resp.ok) {
+                clearInterval(poll);
+                location.reload();
+            }
+        } catch(e) { /* server still down, keep polling */ }
+    }, 1000);
 }
 </script>
 {% endblock %}

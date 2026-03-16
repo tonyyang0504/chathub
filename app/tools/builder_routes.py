@@ -6,6 +6,9 @@ Endpoints for creating, managing, and publishing custom tools via coding agents 
 import asyncio
 import json
 import logging
+import os
+import sys
+import threading
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -883,6 +886,30 @@ async def publish_tool(
 
 
 # ============================================================================
+# Server Restart Endpoint
+# ============================================================================
+
+@router.post("/restart")
+async def restart_server(request: Request, db: Session = Depends(get_db)):
+    """Restart the server process so newly published/removed tools take effect."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    def _do_restart():
+        """Replace the current process after a short delay so the HTTP response completes."""
+        import time
+        time.sleep(1.5)
+        if getattr(sys, 'frozen', False):
+            os.execv(sys.executable, [sys.executable])
+        else:
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return {"success": True, "message": "Server restarting..."}
+
+
+# ============================================================================
 # Uninstall & Reset Endpoints
 # ============================================================================
 
@@ -908,8 +935,20 @@ async def uninstall_tool(
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    # Delete plugin directory
+    # Scan for SQLAlchemy model definitions before deletion (orphaned table warning)
+    warnings = []
     custom_tools_dir = Path(__file__).resolve().parent / "custom" / tool.name
+    if custom_tools_dir.exists():
+        for py_file in custom_tools_dir.rglob("*.py"):
+            try:
+                content = py_file.read_text(encoding="utf-8", errors="ignore")
+                if "__tablename__" in content and ("Column(" in content or "Base)" in content):
+                    warnings.append("This tool may have created database tables that will remain after uninstall.")
+                    break
+            except Exception:
+                pass
+
+    # Delete plugin directory
     dir_deleted = False
     if custom_tools_dir.exists():
         shutil.rmtree(str(custom_tools_dir))
@@ -927,7 +966,8 @@ async def uninstall_tool(
         "success": True,
         "message": "Tool uninstalled successfully",
         "directory_deleted": dir_deleted,
-        "restart_required": dir_deleted  # Routes need server restart to unregister
+        "restart_required": dir_deleted,  # Routes need server restart to unregister
+        "warnings": warnings,
     }
 
 

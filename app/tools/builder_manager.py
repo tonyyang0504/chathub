@@ -872,6 +872,7 @@ class ToolBuilderManager:
             "merged_branch": result.get("merged_branch", ""),
             "skill_id": tool_id,
             "skill_file": tool_file,
+            "restart_required": True,
         }
 
     def _create_tool_from_md(self, user_id: int, tool_md_content: str, files: list = None) -> Optional[int]:
