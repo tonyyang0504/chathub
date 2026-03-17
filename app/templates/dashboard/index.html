@@ -185,6 +185,87 @@
         border: none;
     }
 
+    /* Hub Overview Cards */
+    .hub-overview-card {
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--card-bg);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .hub-overview-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .hub-overview-card .hub-accent {
+        height: 4px;
+        width: 100%;
+    }
+
+    .hub-overview-card .hub-card-body {
+        padding: 16px;
+    }
+
+    .hub-overview-card .hub-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .hub-overview-card .hub-type-badge {
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    .hub-overview-card .hub-stat {
+        text-align: center;
+        min-width: 48px;
+    }
+
+    .hub-overview-card .hub-stat .stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .hub-overview-card .hub-stat .stat-label {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .hub-overview-card .hub-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .hub-overview-card .hub-status-dot.active {
+        background: #25D366;
+        box-shadow: 0 0 4px rgba(37, 211, 102, 0.4);
+    }
+
+    .hub-overview-card .hub-status-dot.inactive {
+        background: var(--text-muted);
+    }
+
+    #hubOverviewSection .hub-empty {
+        padding: 24px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
     /* Bots table column alignment */
     .bots-table th,
     .bots-table td {
@@ -297,6 +378,27 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Hub Overview Cards -->
+<div id="hubOverviewSection" style="display: none;" class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Your Hubs <span id="hubCountBadge" class="badge bg-secondary ms-1"></span></h5>
+        <a href="/dashboard/hubs" class="btn btn-sm btn-outline-secondary rounded-pill">
+            <i class="bi bi-gear me-1"></i>Manage Hubs
+        </a>
+    </div>
+    <div class="row g-3" id="hubCardsContainer">
+        <div class="col-12 text-center py-3">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+        </div>
+    </div>
+    <div id="hubToggleRow" style="display: none;" class="text-center mt-2">
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleHubsDisplay()">
+            <i class="bi bi-chevron-down me-1" id="hubToggleIcon"></i>
+            <span id="hubToggleText">View All</span>
+        </button>
     </div>
 </div>
 
@@ -765,6 +867,104 @@
         return Math.floor(seconds / 86400) + 'd ago';
     }
 
+    // Hub Overview Cards
+    const HUB_TYPE_CONFIG = {
+        'group_management':       { label: 'Group Management',       icon: 'bi-people',          color: '#25D366', bg: 'rgba(37, 211, 102, 0.1)' },
+        'scheduled_content':      { label: 'Scheduled Content',      icon: 'bi-calendar-event',  color: '#667eea', bg: 'rgba(102, 126, 234, 0.1)' },
+        'contact_analyzer':       { label: 'Contact Analyzer',       icon: 'bi-person-lines-fill', color: '#f5576c', bg: 'rgba(245, 87, 108, 0.1)' },
+        'contact_followup':       { label: 'Contact Follow Up',      icon: 'bi-reply',           color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+        'message_routing':        { label: 'Message Routing',        icon: 'bi-signpost-split',  color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' },
+        'content_generator':      { label: 'Content Generator',      icon: 'bi-magic',           color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+        'scripted_conversations': { label: 'Scripted Conversations', icon: 'bi-journal-text',    color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' }
+    };
+
+    const HUB_DISPLAY_LIMIT = 4;
+    window.hubsExpanded = false;
+    window.allHubsData = [];
+
+    function getHubTypeConfig(taskType) {
+        return HUB_TYPE_CONFIG[taskType] || { label: taskType || 'Hub', icon: 'bi-diagram-3', color: '#6c757d', bg: 'rgba(108, 117, 125, 0.1)' };
+    }
+
+    function renderHubCards(hubs) {
+        const section = document.getElementById('hubOverviewSection');
+        const container = document.getElementById('hubCardsContainer');
+        const badge = document.getElementById('hubCountBadge');
+        const toggleRow = document.getElementById('hubToggleRow');
+
+        if (!hubs || hubs.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        badge.textContent = hubs.length;
+        window.allHubsData = hubs;
+
+        const hasMore = hubs.length > HUB_DISPLAY_LIMIT;
+        const hubsToShow = window.hubsExpanded ? hubs : hubs.slice(0, HUB_DISPLAY_LIMIT);
+
+        container.innerHTML = hubsToShow.map(hub => {
+            const cfg = getHubTypeConfig(hub.task_type);
+            return `
+                <div class="col-md-6 col-lg-3">
+                    <div class="hub-overview-card" onclick="window.location.href='/dashboard/hubs'" title="${escapeHtml(hub.name)}">
+                        <div class="hub-accent" style="background: linear-gradient(90deg, ${cfg.color}, ${cfg.color}88);"></div>
+                        <div class="hub-card-body">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="hub-status-dot ${hub.is_active ? 'active' : 'inactive'}"></span>
+                                <span class="hub-name flex-grow-1" title="${escapeHtml(hub.name)}">${escapeHtml(hub.name)}</span>
+                            </div>
+                            <div class="mb-3">
+                                <span class="hub-type-badge" style="background: ${cfg.bg}; color: ${cfg.color};">
+                                    <i class="${cfg.icon} me-1"></i>${cfg.label}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-around">
+                                <div class="hub-stat">
+                                    <div class="stat-value" style="color: ${cfg.color};">${hub.bot_count || 0}</div>
+                                    <div class="stat-label">Bots</div>
+                                </div>
+                                <div class="hub-stat">
+                                    <div class="stat-value" style="color: ${cfg.color};">${hub.agent_count || 0}</div>
+                                    <div class="stat-label">Agents</div>
+                                </div>
+                                <div class="hub-stat">
+                                    <div class="stat-value" style="color: ${cfg.color};">${hub.contact_count || 0}</div>
+                                    <div class="stat-label">Contacts</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (hasMore) {
+            const remaining = hubs.length - HUB_DISPLAY_LIMIT;
+            toggleRow.style.display = 'block';
+            document.getElementById('hubToggleIcon').className = window.hubsExpanded ? 'bi bi-chevron-up me-1' : 'bi bi-chevron-down me-1';
+            document.getElementById('hubToggleText').textContent = window.hubsExpanded ? 'Show Less' : `View All ${hubs.length} Hubs (${remaining} more)`;
+        } else {
+            toggleRow.style.display = 'none';
+        }
+    }
+
+    function toggleHubsDisplay() {
+        window.hubsExpanded = !window.hubsExpanded;
+        renderHubCards(window.allHubsData);
+    }
+
+    async function loadHubs() {
+        try {
+            const res = await fetch('/api/hubs');
+            const hubs = await res.json();
+            renderHubCards(hubs);
+        } catch (e) {
+            console.error('Error loading hubs:', e);
+        }
+    }
+
     // Check and recover bots that should be running
     async function checkAndRecoverBots() {
         try {
@@ -782,11 +982,11 @@
     // Initialize: first check recovery, then load dashboard
     async function initialize() {
         await checkAndRecoverBots();
-        await loadDashboard();
+        await Promise.all([loadDashboard(), loadHubs()]);
     }
 
     initialize();
-    setInterval(loadDashboard, 30000); // Refresh every 30s
+    setInterval(() => { loadDashboard(); loadHubs(); }, 30000); // Refresh every 30s
 
     // Bot Settings Modal Functions
     let currentBotId = null;
