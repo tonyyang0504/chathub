@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from pydantic import BaseModel
 
-from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog
+from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact
 from app.auth.utils import get_current_user
+from app.auth.ownership import get_user_hub_ids
 
 router = APIRouter(tags=["Analytics"])
 

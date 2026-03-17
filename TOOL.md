@@ -1,11 +1,11 @@
 ---
-name: custom-tool
-display_name: Custom Tool
-description: Custom Tool
-icon: bi-gear
-trigger: custom-tool
+name: contacts-attention
+display_name: Contacts Needing Attention
+description: Dashboard section showing contacts that need follow-up or have negative sentiment
+icon: bi-person-exclamation
+trigger: contacts attention
 ---
 
-# Custom Tool
+# Contacts Needing Attention
 
-Custom Tool
+A dashboard section that surfaces contacts requiring action — those flagged for follow-up, with negative sentiment, or high urgency. Displays inline on the main dashboard page.
