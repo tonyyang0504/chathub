@@ -220,22 +220,6 @@
         text-align: center;
     }
 
-    /* System Health section */
-    .health-icon {
-        font-size: 1.25rem;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        background: var(--hover-bg);
-    }
-
-    #healthStatusBadge {
-        padding: 4px 12px;
-    }
-
     /* Action icon styling - no border/background */
     .bots-table .action-icon {
         color: #667781;
@@ -310,97 +294,6 @@
                         <h2 class="mb-0 fw-semibold" id="statMessagesToday">-</h2>
                     </div>
                     <i class="bi bi-envelope fs-1 text-warning"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- System Health -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card" id="systemHealthCard">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-heart-pulse me-2"></i>System Health</h5>
-                <div class="d-flex align-items-center gap-2">
-                    <span id="healthStatusBadge" class="badge rounded-pill" style="font-size: 0.75rem;">
-                        <div class="spinner-border spinner-border-sm" style="width: 12px; height: 12px;" role="status"></div>
-                    </span>
-                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadSystemHealth()" title="Refresh">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body py-3">
-                <div class="row g-3" id="healthMetrics">
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="d-flex align-items-center">
-                            <div class="health-icon me-2" style="color: var(--text-secondary);">
-                                <i class="bi bi-database"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Database</div>
-                                <div class="fw-semibold" id="healthDb">
-                                    <div class="spinner-border spinner-border-sm" style="width: 14px; height: 14px;" role="status"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="d-flex align-items-center">
-                            <div class="health-icon me-2" style="color: var(--text-secondary);">
-                                <i class="bi bi-clock-history"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Uptime</div>
-                                <div class="fw-semibold" id="healthUptime">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="d-flex align-items-center">
-                            <div class="health-icon me-2" style="color: var(--text-secondary);">
-                                <i class="bi bi-memory"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Memory</div>
-                                <div class="fw-semibold" id="healthMemory">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="d-flex align-items-center">
-                            <div class="health-icon me-2" style="color: var(--text-secondary);">
-                                <i class="bi bi-robot"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Bot Fleet</div>
-                                <div class="fw-semibold" id="healthBots">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="d-flex align-items-center">
-                            <div class="health-icon me-2" style="color: var(--text-secondary);">
-                                <i class="bi bi-diagram-3"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Hubs</div>
-                                <div class="fw-semibold" id="healthHubs">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="d-flex align-items-center">
-                            <div class="health-icon me-2" style="color: var(--text-secondary);">
-                                <i class="bi bi-calendar-check"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Scheduled</div>
-                                <div class="fw-semibold" id="healthScheduled">-</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -614,78 +507,6 @@
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
-    }
-
-    // System Health
-    async function loadSystemHealth() {
-        try {
-            const res = await fetch('/api/analytics/system-health');
-            const h = await res.json();
-
-            // Status badge
-            const badge = document.getElementById('healthStatusBadge');
-            if (h.status === 'healthy') {
-                badge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Healthy';
-                badge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                badge.style.color = 'white';
-            } else {
-                badge.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Degraded';
-                badge.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-                badge.style.color = 'white';
-            }
-
-            // Database
-            const dbEl = document.getElementById('healthDb');
-            if (h.database === 'healthy') {
-                dbEl.innerHTML = '<span style="color: #10b981;">Connected</span>';
-            } else {
-                dbEl.innerHTML = '<span style="color: #ef4444;">Error</span>';
-            }
-
-            // Uptime
-            document.getElementById('healthUptime').textContent = formatUptime(h.uptime_seconds);
-
-            // Memory
-            document.getElementById('healthMemory').textContent = h.memory_mb + ' MB';
-
-            // Bot fleet
-            const botsEl = document.getElementById('healthBots');
-            let botsHtml = `${h.bots.running}/${h.bots.total} running`;
-            if (h.bots.needs_recovery > 0) {
-                botsHtml += ` <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">${h.bots.needs_recovery} recovery</span>`;
-            }
-            botsEl.innerHTML = botsHtml;
-
-            // Hubs
-            document.getElementById('healthHubs').textContent = `${h.hubs.active}/${h.hubs.total} active`;
-
-            // Scheduled content
-            const schedEl = document.getElementById('healthScheduled');
-            let schedHtml = `${h.scheduled_content.pending} pending`;
-            if (h.scheduled_content.failed > 0) {
-                schedHtml += ` <span class="badge bg-danger" style="font-size: 0.65rem;">${h.scheduled_content.failed} failed</span>`;
-            }
-            schedEl.innerHTML = schedHtml;
-
-        } catch (e) {
-            console.error('Error loading system health:', e);
-            document.getElementById('healthStatusBadge').innerHTML = '<i class="bi bi-question-circle me-1"></i>Unknown';
-            document.getElementById('healthStatusBadge').style.background = 'var(--hover-bg)';
-            document.getElementById('healthStatusBadge').style.color = 'var(--text-secondary)';
-        }
-    }
-
-    function formatUptime(seconds) {
-        if (seconds < 60) return seconds + 's';
-        if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
-        if (seconds < 86400) {
-            const hrs = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            return hrs + 'h ' + mins + 'm';
-        }
-        const days = Math.floor(seconds / 86400);
-        const hrs = Math.floor((seconds % 86400) / 3600);
-        return days + 'd ' + hrs + 'h';
     }
 
     // Load dashboard data
@@ -961,12 +782,11 @@
     // Initialize: first check recovery, then load dashboard
     async function initialize() {
         await checkAndRecoverBots();
-        await Promise.all([loadDashboard(), loadSystemHealth()]);
+        await loadDashboard();
     }
 
     initialize();
     setInterval(loadDashboard, 30000); // Refresh every 30s
-    setInterval(loadSystemHealth, 60000); // Refresh health every 60s
 
     // Bot Settings Modal Functions
     let currentBotId = null;

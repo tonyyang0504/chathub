@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from pydantic import BaseModel
 
-from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact, ScheduledContent, ToolExecution
+from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact
 from app.auth.utils import get_current_user
 from app.auth.ownership import get_user_hub_ids
 
@@ -405,114 +405,4 @@ async def get_activity_log(
         "total": total,
         "page": page,
         "limit": limit
-    }
-
-
-@router.get("/system-health")
-async def get_system_health(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get system health metrics for the dashboard."""
-    import os
-    import time
-    from sqlalchemy import text
-    from app.bots.manager import bot_manager
-
-    # Database check
-    db_status = "healthy"
-    try:
-        db.execute(text("SELECT 1"))
-    except Exception:
-        db_status = "unhealthy"
-
-    # Bot fleet
-    user_bots = db.query(BotProfile).filter(BotProfile.user_id == current_user.id).all()
-    total_bots = len(user_bots)
-    running_bots = sum(1 for b in user_bots if b.is_running)
-    needs_recovery = 0
-    for bot in user_bots:
-        if bot.is_running:
-            health = bot_manager.get_health_status(bot.id)
-            if health.get("needs_recovery"):
-                needs_recovery += 1
-
-    # Hub stats
-    hub_ids = get_user_hub_ids(db, current_user.id)
-    active_hubs = 0
-    total_hubs = 0
-    if hub_ids:
-        total_hubs = len(hub_ids)
-        active_hubs = db.query(func.count(Hub.id)).filter(
-            Hub.id.in_(hub_ids), Hub.is_active == True
-        ).scalar() or 0
-
-    # Scheduled content
-    pending_content = 0
-    failed_content = 0
-    if hub_ids:
-        pending_content = db.query(func.count(ScheduledContent.id)).filter(
-            ScheduledContent.hub_id.in_(hub_ids),
-            ScheduledContent.status == "pending"
-        ).scalar() or 0
-        failed_content = db.query(func.count(ScheduledContent.id)).filter(
-            ScheduledContent.hub_id.in_(hub_ids),
-            ScheduledContent.status == "failed"
-        ).scalar() or 0
-
-    # Recent errors (last 24h)
-    yesterday = datetime.utcnow() - timedelta(hours=24)
-    bot_ids = [b.id for b in user_bots]
-    recent_errors = 0
-    if bot_ids:
-        recent_errors = db.query(func.count(ActivityLog.id)).filter(
-            ActivityLog.bot_profile_id.in_(bot_ids),
-            ActivityLog.timestamp >= yesterday,
-            ActivityLog.action.in_(["bot_error", "bot_stopped"])
-        ).scalar() or 0
-
-    # System resources
-    try:
-        import psutil
-        process = psutil.Process()
-        memory_mb = round(process.memory_info().rss / 1024 / 1024, 1)
-        cpu_percent = psutil.cpu_percent(interval=0)
-        uptime_seconds = int(time.time() - process.create_time())
-    except ImportError:
-        # Fallback without psutil
-        import sys
-        if sys.platform != 'win32':
-            import resource
-            memory_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
-        else:
-            memory_mb = 0
-        cpu_percent = 0
-        # Approximate uptime from app start
-        if not hasattr(get_system_health, '_start_time'):
-            get_system_health._start_time = time.time()
-        uptime_seconds = int(time.time() - get_system_health._start_time)
-
-    # Contacts
-    total_contacts = 0
-    if hub_ids:
-        total_contacts = db.query(func.count(Contact.id)).filter(
-            Contact.hub_id.in_(hub_ids)
-        ).scalar() or 0
-
-    # Overall status
-    status = "healthy"
-    if db_status != "healthy" or needs_recovery > 0:
-        status = "degraded"
-
-    return {
-        "status": status,
-        "database": db_status,
-        "uptime_seconds": uptime_seconds,
-        "memory_mb": memory_mb,
-        "cpu_percent": cpu_percent,
-        "bots": {"running": running_bots, "total": total_bots, "needs_recovery": needs_recovery},
-        "hubs": {"active": active_hubs, "total": total_hubs},
-        "scheduled_content": {"pending": pending_content, "failed": failed_content},
-        "contacts": total_contacts,
-        "recent_errors": recent_errors
     }
