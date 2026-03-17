@@ -195,14 +195,21 @@ class WorktreeManager:
             custom_dir = PROJECT_ROOT / "app" / "tools" / "custom" / tool_name
             custom_dir.mkdir(parents=True, exist_ok=True)
             copied = []
+            prefix = f"app/tools/custom/{tool_name}/"
             for rel_path in changed:
                 src = info.path / rel_path
-                dst = custom_dir / rel_path
+                if rel_path.startswith(prefix):
+                    # Strip the prefix — rel_path already includes the custom tool dir
+                    inner_path = rel_path[len(prefix):]
+                    dst = custom_dir / inner_path
+                else:
+                    # File outside the custom tool dir — copy preserving original structure
+                    dst = PROJECT_ROOT / rel_path
                 try:
                     if src.exists():
                         dst.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(str(src), str(dst))
-                        copied.append(str(Path("app/tools/custom") / tool_name / rel_path))
+                        copied.append(str(dst.relative_to(PROJECT_ROOT)))
                     # Don't delete files in plugin mode — only add
                 except Exception as e:
                     logger.warning(f"Failed to copy {rel_path}: {e}")

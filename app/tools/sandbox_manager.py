@@ -368,6 +368,7 @@ class SandboxManager:
             "-e", f"SECRET_KEY={secret_key}",
             "-e", "COOKIE_NAME=sandbox_access_token",
             "-e", "PORT=8000",
+            "-e", "DEBUG=true",
             "--memory=512m", "--cpus=1",
             "--label", f"tb-session={info.session_id}",
             "--label", f"tb-user={info.user_id}",

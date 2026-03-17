@@ -378,10 +378,10 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
 app.include_router(scripts_router, tags=["Scripts"])
 register_custom_tools(tools_router)  # Auto-discover app/tools/custom/*/routes.py
+app.include_router(ai_workspace_router, tags=["AI Workspace"])  # Before tools_router (has catch-all /{tool_name})
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(builder_router, tags=["Tool Builder"])
 app.include_router(marketplace_router, tags=["Marketplace"])
-app.include_router(ai_workspace_router, tags=["AI Workspace"])
 app.include_router(chathub_agent_router, tags=["ChatHub Agent"])
 app.include_router(agents_router, tags=["Agents"])
 app.include_router(line_webhook_router, tags=["LINE"])

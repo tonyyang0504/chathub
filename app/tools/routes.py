@@ -2219,6 +2219,20 @@ async def tool_builder_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.post("/api/reload-custom-tools")
+async def reload_custom_tools(request: Request, db: Session = Depends(get_db)):
+    """Hot-reload newly created custom tools without restarting the server."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    from . import register_custom_tools, _registered_tools
+    before = len(_registered_tools)
+    register_custom_tools(router)
+    after = len(_registered_tools)
+    new_count = after - before
+    return {"status": "ok", "new_tools_registered": new_count}
+
+
 @router.get("/marketplace", response_class=HTMLResponse)
 async def marketplace_page(request: Request, db: Session = Depends(get_db)):
     """Marketplace page."""
@@ -2229,4 +2243,48 @@ async def marketplace_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         "dashboard/tools/marketplace.html",
         {"request": request, "user": user, "active_page": "tools_marketplace", "page_title": "Marketplace"},
+    )
+
+
+# ============================================================================
+# Custom Tool Detail Page (catch-all — MUST be last route)
+# ============================================================================
+
+@router.get("/{tool_name}", response_class=HTMLResponse)
+async def custom_tool_detail(request: Request, tool_name: str, db: Session = Depends(get_db)):
+    """Detail page for a custom-built tool."""
+    from fastapi.responses import RedirectResponse
+    from app.database import BuiltTool
+    import json as _json
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.name == tool_name,
+        BuiltTool.user_id == user.id
+    ).first()
+
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+
+    # Parse files list
+    files_list = []
+    if tool.files:
+        try:
+            files_list = _json.loads(tool.files)
+        except Exception:
+            pass
+
+    return templates.TemplateResponse(
+        "dashboard/tools/custom_tool_detail.html",
+        {
+            "request": request,
+            "user": user,
+            "tool": tool,
+            "files_list": files_list,
+            "active_page": f"tools_{tool_name.replace('-', '_')}",
+            "page_title": tool.display_name or tool.name,
+        },
     )

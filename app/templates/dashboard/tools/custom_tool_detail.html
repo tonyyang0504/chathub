@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tool.display_name or tool.name }} - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, {{ tool.gradient_start or '#6366f1' }} 0%, {{ tool.gradient_end or '#8b5cf6' }} 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.detail-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.detail-card h5 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.file-list li {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+.file-list li:last-child { border-bottom: none; }
+.file-list li i { color: {{ tool.gradient_start or '#6366f1' }}; margin-right: 0.5rem; }
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+.status-inactive {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.meta-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+.meta-value {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Hero -->
+    <div class="tool-hero">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <i class="bi {{ tool.icon or 'bi-gear' }}" style="font-size: 2.5rem;"></i>
+            <div>
+                <h1 class="mb-0">{{ tool.display_name or tool.name }}</h1>
+                <p class="mb-0 mt-1">{{ tool.description or '' }}</p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3 mt-3">
+            <span class="status-badge {{ 'status-active' if tool.is_active else 'status-inactive' }}">
+                <i class="bi {{ 'bi-check-circle-fill' if tool.is_active else 'bi-pause-circle-fill' }}"></i>
+                {{ 'Active' if tool.is_active else 'Inactive' }}
+            </span>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Info -->
+        <div class="col-lg-8">
+            <!-- Metadata -->
+            <div class="detail-card">
+                <h5><i class="bi bi-info-circle me-2"></i>Tool Information</h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="meta-label">Name (slug)</div>
+                        <div class="meta-value"><code>{{ tool.name }}</code></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="meta-label">Display Name</div>
+                        <div class="meta-value">{{ tool.display_name or tool.name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="meta-label">Created</div>
+                        <div class="meta-value">{{ tool.created_at.strftime('%Y-%m-%d %H:%M') if tool.created_at else 'N/A' }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="meta-label">Last Updated</div>
+                        <div class="meta-value">{{ tool.updated_at.strftime('%Y-%m-%d %H:%M') if tool.updated_at else 'N/A' }}</div>
+                    </div>
+                    {% if tool.commit_hash %}
+                    <div class="col-sm-6">
+                        <div class="meta-label">Publish Commit</div>
+                        <div class="meta-value"><code>{{ tool.commit_hash[:8] }}</code></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Files -->
+            {% if files_list %}
+            <div class="detail-card">
+                <h5><i class="bi bi-file-earmark-code me-2"></i>Modified Files ({{ files_list|length }})</h5>
+                <ul class="file-list">
+                    {% for f in files_list %}
+                    <li><i class="bi bi-file-earmark"></i>{{ f }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Actions -->
+        <div class="col-lg-4">
+            <div class="detail-card">
+                <h5><i class="bi bi-lightning me-2"></i>Actions</h5>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, {{ tool.gradient_start or '#6366f1' }}, {{ tool.gradient_end or '#8b5cf6' }}); color: white;" onclick="toggleTool()">
+                        <i class="bi {{ 'bi-pause-circle' if tool.is_active else 'bi-play-circle' }} me-1"></i>
+                        {{ 'Deactivate' if tool.is_active else 'Activate' }}
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="uninstallTool()">
+                        <i class="bi bi-trash me-1"></i>Uninstall
+                    </button>
+                </div>
+            </div>
+
+            <!-- Restart Notice -->
+            <div class="detail-card" id="restartNotice" style="display: none;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                    <strong style="color: var(--text-primary);">Restart Required</strong>
+                </div>
+                <p class="text-muted small mb-2">Changes require a server restart to take effect.</p>
+                <button class="btn btn-sm btn-warning rounded-pill w-100" onclick="restartServer()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Restart Server
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const toolId = {{ tool.id }};
+const toolName = "{{ tool.name }}";
+
+async function toggleTool() {
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}/toggle`, {method: 'PUT'});
+        if (resp.ok) {
+            location.reload();
+        }
+    } catch (e) {
+        console.error('Toggle failed:', e);
+    }
+}
+
+async function uninstallTool() {
+    if (!confirm(`Uninstall "${toolName}"? This will revert the publish commit and remove all tool files.`)) return;
+    try {
+        const resp = await fetch(`/tools/api/tool-builder/tools/${toolId}/uninstall`, {method: 'DELETE'});
+        const data = await resp.json();
+        if (data.success) {
+            if (data.restart_required) {
+                document.getElementById('restartNotice').style.display = 'block';
+            }
+            // Redirect to tools index after short delay
+            setTimeout(() => { window.location.href = '/tools'; }, 1500);
+        } else {
+            alert(data.detail || 'Uninstall failed');
+        }
+    } catch (e) {
+        console.error('Uninstall failed:', e);
+    }
+}
+
+async function restartServer() {
+    try {
+        await fetch('/tools/api/tool-builder/restart', {method: 'POST'});
+        setTimeout(() => { window.location.href = '/tools'; }, 3000);
+    } catch (e) {
+        setTimeout(() => { window.location.href = '/tools'; }, 3000);
+    }
+}
+</script>
+{% endblock %}

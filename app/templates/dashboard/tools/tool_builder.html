@@ -1142,6 +1142,7 @@ let sessionId = null;
 let ws = null;
 let pingInterval = null;
 let isRunning = false;
+let wsRetryCount = 0;
 let isWaiting = false;
 let currentProvider = 'claude';
 let assistantBuffer = '';
@@ -1769,6 +1770,7 @@ function connectWebSocket() {
     ws = newWs;
 
     ws.onopen = () => {
+        wsRetryCount = 0;
         pingInterval = setInterval(() => {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping');
         }, 25000);
@@ -1778,6 +1780,12 @@ function connectWebSocket() {
         try {
             const data = JSON.parse(event.data);
             if (data.type === 'pong' || data.type === 'ping') return;
+            if (data.error || data.type === 'session_expired') {
+                console.warn('WS error:', data.error);
+                sessionId = null;
+                setStatus('idle');
+                return;
+            }
             renderStreamEvent(data);
         } catch(e) {
             console.error('WS message parse error:', e);
@@ -1787,10 +1795,13 @@ function connectWebSocket() {
     ws.onclose = (event) => {
         clearInterval(pingInterval);
         if (assistantBuffer) flushAssistantBuffer();
-        if (event.code === 1006 || event.code === 1001 || event.code === 4001) {
+        if (event.code === 4001 || event.code === 4004) return;
+        if ((event.code === 1006 || event.code === 1001) && wsRetryCount < 5) {
+            wsRetryCount++;
+            const delay = Math.min(3000 * Math.pow(2, wsRetryCount - 1), 30000);
             setTimeout(() => {
                 if (sessionId && !isRunning) connectWebSocket();
-            }, 3000);
+            }, delay);
         }
     };
 
@@ -2665,6 +2676,12 @@ async function stopAgent() {
 
 async function openPreview() {
     if (previewUrl) {
+        // Hot-reload custom tools in case agent built new ones since container started
+        try {
+            await fetch(`${previewUrl}/tools/api/reload-custom-tools`, {
+                method: 'POST', credentials: 'include'
+            });
+        } catch (_) {}
         previewWindow = window.open(previewUrl, '_blank');
         return;
     }
@@ -2696,6 +2713,12 @@ async function openPreview() {
         document.getElementById('sandboxStatus').style.display = '';
         document.getElementById('sandboxStatusText').textContent =
             `Sandbox running on port ${data.preview_port}`;
+        // Hot-reload custom tools in the sandbox so newly built tools are registered
+        try {
+            await fetch(`${previewUrl}/tools/api/reload-custom-tools`, {
+                method: 'POST', credentials: 'include'
+            });
+        } catch (_) { /* sandbox may not need auth or endpoint may not exist yet */ }
         previewWindow = window.open(previewUrl, '_blank');
     } catch (e) {
         showToast('Preview error: ' + e.message, 'error');
