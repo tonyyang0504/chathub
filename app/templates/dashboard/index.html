@@ -482,10 +482,33 @@
         </div>
     </div>
 </div>
+
+<!-- Custom Tool Widgets (loaded dynamically from installed tools) -->
+<div id="custom-widgets-container" class="mt-4"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Load custom tool widgets
+    async function loadCustomWidgets() {
+        try {
+            const resp = await fetch('/tools/api/active-widgets?page=dashboard');
+            if (!resp.ok) return;
+            const widgets = await resp.json();
+            const container = document.getElementById('custom-widgets-container');
+            for (const w of widgets) {
+                try {
+                    const r = await fetch(w.endpoint);
+                    if (r.ok) {
+                        const html = await r.text();
+                        if (html) container.insertAdjacentHTML('beforeend', html);
+                    }
+                } catch(e) { /* widget failed, skip */ }
+            }
+        } catch(e) { /* no widgets */ }
+    }
+    loadCustomWidgets();
+
     function getAvatarColorClass(name) {
         if (!name) return 'avatar-color-1';
         let hash = 0;

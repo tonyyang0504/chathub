@@ -855,8 +855,10 @@ class BuiltTool(Base):
     gradient_end = Column(String(7), default="#8b5cf6")
     tool_md_content = Column(Text, nullable=True)
     files = Column(Text, nullable=True)  # JSON list of relative file paths changed during publish
-    commit_hash = Column(String(40), nullable=True)  # Git commit from publish, used for revert on uninstall
+    commit_hash = Column(String(40), nullable=True)  # Git commit from publish
+    widgets = Column(Text, nullable=True)  # JSON: [{"page": "dashboard", "endpoint": "/api/widget/dashboard"}]
     is_active = Column(Boolean, default=True)
+    is_deleted = Column(Boolean, default=False)  # Soft-delete: preserves tool_md_content for reinstall
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

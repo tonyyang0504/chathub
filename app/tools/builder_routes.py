@@ -667,7 +667,8 @@ async def list_my_tools(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     tools = db.query(BuiltTool).filter(
-        BuiltTool.user_id == user.id
+        BuiltTool.user_id == user.id,
+        BuiltTool.is_deleted == False
     ).order_by(BuiltTool.created_at.desc()).all()
 
     return {
@@ -811,13 +812,26 @@ async def toggle_tool(
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
 
+    was_active = tool.is_active
     tool.is_active = not tool.is_active
     tool.updated_at = datetime.utcnow()
     db.commit()
 
+    # Hot-reload routes: deregister or re-register without restart
+    from . import unregister_custom_tool, register_custom_tools
+    from .routes import router as tools_router
+
+    if was_active and not tool.is_active:
+        # Deactivating: remove routes at runtime
+        unregister_custom_tool(tools_router, tool.name)
+    elif not was_active and tool.is_active:
+        # Activating: register routes at runtime
+        register_custom_tools(tools_router)
+
     return {
         "is_active": tool.is_active,
-        "message": f"Tool {'activated' if tool.is_active else 'deactivated'}"
+        "message": f"Tool {'activated' if tool.is_active else 'deactivated'}.",
+        "restart_required": False
     }
 
 
@@ -928,10 +942,11 @@ async def uninstall_tool(
     tool_id: int,
     db: Session = Depends(get_db)
 ):
-    """Uninstall a custom tool: git revert the publish commit and remove DB records."""
+    """Uninstall a custom tool: remove routes, delete plugin directory, clean up DB."""
     import subprocess
     import shutil
     from pathlib import Path
+    from app.database import CustomToolInstall
 
     user = await get_current_user_optional(request, None, db)
     if not user:
@@ -946,74 +961,53 @@ async def uninstall_tool(
         raise HTTPException(status_code=404, detail="Tool not found")
 
     warnings = []
-    reverted = False
     dir_deleted = False
     project_root = Path(__file__).resolve().parent.parent.parent
 
-    # Try git revert if we have a commit hash
-    if tool.commit_hash:
-        result = subprocess.run(
-            ["git", "revert", "--no-edit", tool.commit_hash],
-            capture_output=True, text=True, cwd=str(project_root)
-        )
-        if result.returncode == 0:
-            reverted = True
-        else:
-            warnings.append(f"Git revert failed: {result.stderr.strip()}. Manual cleanup may be needed.")
-            # Fall back: try to delete individual files from the files list
-            if tool.files:
-                try:
-                    files_list = json.loads(tool.files)
-                    for f in files_list:
-                        fpath = project_root / f
-                        if fpath.exists() and fpath.is_file():
-                            # Only delete template files and static assets, not core files
-                            safe_to_delete = (
-                                "app/templates/dashboard/tools/" in f
-                                or "static/" in f
-                            )
-                            if safe_to_delete:
-                                fpath.unlink()
-                    # Stage and commit the deletions
-                    subprocess.run(["git", "add", "-A"], capture_output=True, text=True, cwd=str(project_root))
-                    subprocess.run(
-                        ["git", "commit", "-m", f"Uninstall tool: {tool.display_name or tool.name}"],
-                        capture_output=True, text=True, cwd=str(project_root)
-                    )
-                except Exception as e:
-                    warnings.append(f"Fallback file cleanup error: {e}")
-    else:
-        # Legacy plugin: try to delete plugin directory
-        custom_tools_dir = Path(__file__).resolve().parent / "custom" / tool.name
-        if custom_tools_dir.exists():
+    # 1. Deregister routes at runtime (immediate, no restart needed)
+    from . import unregister_custom_tool
+    from .routes import router as tools_router
+    unregister_custom_tool(tools_router, tool.name)
+
+    # 2. Delete the plugin directory
+    custom_tools_dir = Path(__file__).resolve().parent / "custom" / tool.name
+    if custom_tools_dir.exists():
+        try:
             shutil.rmtree(str(custom_tools_dir))
             dir_deleted = True
+        except Exception as e:
+            warnings.append(f"Could not delete directory (may be locked): {e}")
 
-    # Check for orphaned DB tables
-    if tool.files:
-        try:
-            files_list = json.loads(tool.files)
-            for f in files_list:
-                if f == "app/database.py":
-                    warnings.append("This tool modified database.py — any added tables will remain after uninstall.")
-                    break
-        except Exception:
-            pass
+    # 3. Optional git commit for history (not load-bearing)
+    try:
+        subprocess.run(["git", "add", "-A"], capture_output=True, text=True, cwd=str(project_root))
+        subprocess.run(
+            ["git", "commit", "-m", f"Uninstall tool: {tool.display_name or tool.name}"],
+            capture_output=True, text=True, cwd=str(project_root)
+        )
+    except Exception:
+        pass  # Git history is nice-to-have
 
-    # Delete marketplace listing if exists
+    # 4. Delete related marketplace records
     if tool.listing:
         db.delete(tool.listing)
+    db.query(CustomToolInstall).filter(
+        CustomToolInstall.listing_id.in_(
+            db.query(CustomToolListing.id).filter(CustomToolListing.tool_id == tool.id)
+        )
+    ).delete(synchronize_session=False)
 
-    # Delete the tool record
-    db.delete(tool)
+    # 5. Soft-delete the BuiltTool record (preserves tool_md_content for potential reinstall)
+    tool.is_active = False
+    tool.is_deleted = True
+    tool.updated_at = datetime.utcnow()
     db.commit()
 
     return {
         "success": True,
-        "message": "Tool uninstalled successfully" + (" (changes reverted)" if reverted else ""),
-        "reverted": reverted,
+        "message": "Tool uninstalled successfully",
         "directory_deleted": dir_deleted,
-        "restart_required": True,
+        "restart_required": False,
         "warnings": warnings,
     }
 
@@ -1023,7 +1017,7 @@ async def reset_custom_tools(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """Reset all custom tools: revert publish commits and delete DB records for this user."""
+    """Reset all custom tools: deregister routes, delete directories, clean up DB records."""
     import subprocess
     import shutil
     from pathlib import Path
@@ -1036,26 +1030,35 @@ async def reset_custom_tools(
     project_root = Path(__file__).resolve().parent.parent.parent
     custom_tools_dir = Path(__file__).resolve().parent / "custom"
     dirs_deleted = 0
-    reverted = 0
+
+    from . import unregister_custom_tool
+    from .routes import router as tools_router
 
     # Get all user's tools
-    user_tools = db.query(BuiltTool).filter(BuiltTool.user_id == user.id).all()
+    user_tools = db.query(BuiltTool).filter(
+        BuiltTool.user_id == user.id,
+        BuiltTool.is_deleted == False
+    ).all()
+
     for tool in user_tools:
-        # Try git revert for integrated tools
-        if tool.commit_hash:
-            result = subprocess.run(
-                ["git", "revert", "--no-edit", tool.commit_hash],
-                capture_output=True, text=True, cwd=str(project_root)
-            )
-            if result.returncode == 0:
-                reverted += 1
-        # Legacy: try plugin directory deletion
+        # Deregister routes at runtime
+        unregister_custom_tool(tools_router, tool.name)
+
+        # Delete plugin directory
         tool_dir = custom_tools_dir / tool.name
         if tool_dir.exists():
-            shutil.rmtree(str(tool_dir))
-            dirs_deleted += 1
+            try:
+                shutil.rmtree(str(tool_dir))
+                dirs_deleted += 1
+            except Exception:
+                pass
 
-    # Delete all DB records for this user
+        # Soft-delete the tool record
+        tool.is_active = False
+        tool.is_deleted = True
+        tool.updated_at = datetime.utcnow()
+
+    # Delete marketplace listings and installs
     tool_ids = [t.id for t in user_tools]
     if tool_ids:
         db.query(CustomToolListing).filter(
@@ -1063,14 +1066,22 @@ async def reset_custom_tools(
         ).delete(synchronize_session=False)
 
     db.query(CustomToolInstall).filter(CustomToolInstall.user_id == user.id).delete()
-    db.query(BuiltTool).filter(BuiltTool.user_id == user.id).delete()
     db.commit()
+
+    # Optional git commit for history
+    try:
+        subprocess.run(["git", "add", "-A"], capture_output=True, text=True, cwd=str(project_root))
+        subprocess.run(
+            ["git", "commit", "-m", f"Reset all custom tools for user {user.id}"],
+            capture_output=True, text=True, cwd=str(project_root)
+        )
+    except Exception:
+        pass
 
     return {
         "success": True,
-        "message": f"All custom tools removed ({len(user_tools)} tools, {reverted} reverted, {dirs_deleted} directories deleted)",
+        "message": f"All custom tools removed ({len(user_tools)} tools, {dirs_deleted} directories deleted)",
         "tools_deleted": len(user_tools),
-        "reverted": reverted,
         "directories_deleted": dirs_deleted,
-        "restart_required": len(user_tools) > 0
+        "restart_required": False
     }

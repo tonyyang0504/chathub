@@ -197,6 +197,9 @@ class WorktreeManager:
             copied = []
             prefix = f"app/tools/custom/{tool_name}/"
             for rel_path in changed:
+                # Skip TOOL.md — it's metadata-only, stored in DB
+                if rel_path.upper().endswith("TOOL.MD"):
+                    continue
                 src = info.path / rel_path
                 if rel_path.startswith(prefix):
                     # Strip the prefix — rel_path already includes the custom tool dir

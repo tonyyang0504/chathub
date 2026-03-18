@@ -37,6 +37,20 @@ templates = Jinja2Templates(directory=str(_BASE_DIR / "app" / "templates"))
 
 
 # ============================================================================
+# Custom Tool Widgets API
+# ============================================================================
+
+@router.get("/api/active-widgets")
+async def active_widgets(request: Request, page: str = "dashboard", db: Session = Depends(get_db)):
+    """Return list of widget endpoints from all active custom tools for a given page."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    from . import get_active_widgets
+    return get_active_widgets(page, db)
+
+
+# ============================================================================
 # Tool Monitoring API Endpoints
 # ============================================================================
 
@@ -2263,7 +2277,8 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
 
     tool = db.query(BuiltTool).filter(
         BuiltTool.name == tool_name,
-        BuiltTool.user_id == user.id
+        BuiltTool.user_id == user.id,
+        BuiltTool.is_deleted == False
     ).first()
 
     if not tool:
