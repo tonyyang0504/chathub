@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Message Trends - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.trends-hero {
+    background: linear-gradient(135deg, #0f766e 0%, #2563eb 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+.trends-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+.metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+.metric-label {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+.trend-up {
+    color: var(--bs-success);
+}
+.trend-down {
+    color: var(--bs-danger);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="trends-hero">
+        <h2 class="mb-2"><i class="bi bi-graph-up-arrow me-2"></i>Message Trends</h2>
+        <p class="mb-0 opacity-75">Track daily momentum and identify which hubs are driving activity.</p>
+    </div>
+
+    <div class="card trends-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-6 col-md-8">
+                    <label class="form-label">Hub Scope</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4 d-grid">
+                    <button id="refreshBtn" class="btn btn-primary rounded-pill">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="col-lg-4 col-md-12 text-lg-end">
+                    <span id="updatedAt" class="small text-muted">Last updated: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="card trends-card h-100">
+                <div class="card-body">
+                    <div id="messagesToday" class="metric-value">0</div>
+                    <div class="metric-label">Messages today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card trends-card h-100">
+                <div class="card-body">
+                    <div id="messagesYesterday" class="metric-value">0</div>
+                    <div class="metric-label">Messages yesterday</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card trends-card h-100">
+                <div class="card-body">
+                    <div id="messages7d" class="metric-value">0</div>
+                    <div class="metric-label">Messages (7 days)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card trends-card h-100">
+                <div class="card-body">
+                    <div id="activeConversations" class="metric-value">0</div>
+                    <div class="metric-label">Active conversations (7 days)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-5">
+            <div class="card trends-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h5 class="mb-0">Daily Trend (Last 7 Days)</h5>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="deltaBadge" class="mb-3"></div>
+                    <div id="trendBars" class="d-grid gap-2">
+                        <div class="small text-muted">Loading trend points...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card trends-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Top Hubs by Recent Messages</h5>
+                    <span id="hubCount" class="badge text-bg-secondary rounded-pill">0 hubs</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Hub</th>
+                                    <th class="text-end">Messages (7d)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topHubsBody">
+                                <tr>
+                                    <td colspan="2" class="small text-muted">Loading top hubs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+const updatedAt = document.getElementById('updatedAt');
+
+const messagesToday = document.getElementById('messagesToday');
+const messagesYesterday = document.getElementById('messagesYesterday');
+const messages7d = document.getElementById('messages7d');
+const activeConversations = document.getElementById('activeConversations');
+
+const deltaBadge = document.getElementById('deltaBadge');
+const trendBars = document.getElementById('trendBars');
+const topHubsBody = document.getElementById('topHubsBody');
+const hubCount = document.getElementById('hubCount');
+
+function renderSummary(summary) {
+    messagesToday.textContent = summary.messages_today || 0;
+    messagesYesterday.textContent = summary.messages_yesterday || 0;
+    messages7d.textContent = summary.messages_7d || 0;
+    activeConversations.textContent = summary.active_conversations_7d || 0;
+
+    const isUp = (summary.delta || 0) >= 0;
+    const icon = isUp ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
+    const cls = isUp ? 'trend-up' : 'trend-down';
+    const sign = isUp ? '+' : '';
+    deltaBadge.innerHTML = `
+        <span class="badge text-bg-light border rounded-pill ${cls}">
+            <i class="bi ${icon} me-1"></i>${sign}${summary.delta || 0} vs yesterday (${sign}${summary.delta_percent || 0}%)
+        </span>
+    `;
+}
+
+function renderDailyPoints(points) {
+    if (!points.length) {
+        trendBars.innerHTML = '<div class="small text-muted">No message activity in this period.</div>';
+        return;
+    }
+
+    const maxCount = Math.max(...points.map((point) => point.count), 1);
+    trendBars.innerHTML = points.map((point) => {
+        const width = Math.max(6, Math.round((point.count / maxCount) * 100));
+        return `
+            <div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>${point.label}</span>
+                    <span>${point.count}</span>
+                </div>
+                <div style="height: 8px; background: rgba(148, 163, 184, 0.3); border-radius: 999px; overflow: hidden;">
+                    <div style="width: ${width}%; height: 100%; background: linear-gradient(90deg, #0f766e, #2563eb);"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderTopHubs(items) {
+    if (!items.length) {
+        topHubsBody.innerHTML = '<tr><td colspan="2" class="small text-muted">No hubs with recent messages.</td></tr>';
+        hubCount.textContent = '0 hubs';
+        return;
+    }
+
+    topHubsBody.innerHTML = items.map((item) => `
+        <tr>
+            <td><span class="fw-semibold">${item.hub_name}</span></td>
+            <td class="text-end">${item.message_count}</td>
+        </tr>
+    `).join('');
+
+    hubCount.textContent = `${items.length} hubs`;
+}
+
+async function loadTrends() {
+    refreshBtn.disabled = true;
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+
+    try {
+        const response = await fetch(`/tools/dashboard-message-trends/api/trends?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to load message trends');
+
+        const payload = await response.json();
+        renderSummary(payload.summary || {});
+        renderDailyPoints(payload.daily_points || []);
+        renderTopHubs(payload.top_hubs || []);
+        updatedAt.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    } catch (error) {
+        trendBars.innerHTML = '<div class="small text-danger">Unable to load trends right now.</div>';
+        topHubsBody.innerHTML = '<tr><td colspan="2" class="small text-danger">Unable to load hubs.</td></tr>';
+    } finally {
+        refreshBtn.disabled = false;
+    }
+}
+
+refreshBtn.addEventListener('click', loadTrends);
+hubFilter.addEventListener('change', loadTrends);
+
+loadTrends();
+</script>
+{% endblock %}
