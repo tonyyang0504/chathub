@@ -1255,12 +1255,21 @@ class ToolBuilderManager:
         # Parse widgets from TOOL.md frontmatter (multi-line YAML list)
         widgets_json = None
         import re as _re2
-        widgets_match = _re2.search(r'^widgets:\s*\n((?:\s+-\s+.*\n?)*)', yaml_text, _re2.MULTILINE)
+        widgets_match = _re2.search(r'^widgets:\s*\n((?:[ \t]+.*\n?)*)', yaml_text, _re2.MULTILINE)
         if widgets_match:
             widgets = []
-            widget_items = _re2.findall(r'-\s+page:\s*(\S+)\s+endpoint:\s*(\S+)', widgets_match.group(1))
-            for page, endpoint in widget_items:
-                widgets.append({"page": page, "endpoint": endpoint})
+            widget_blocks = _re2.split(r'(?=\s*-\s+)', widgets_match.group(1))
+            for block in widget_blocks:
+                block = block.strip()
+                if not block:
+                    continue
+                page_m = _re2.search(r'page:\s*(\S+)', block)
+                endpoint_m = _re2.search(r'endpoint:\s*(\S+)', block)
+                if page_m:
+                    widgets.append({
+                        "page": page_m.group(1),
+                        "endpoint": endpoint_m.group(1) if endpoint_m else f"/api/widget/{page_m.group(1)}"
+                    })
             if widgets:
                 widgets_json = json.dumps(widgets)
 
