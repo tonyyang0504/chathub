@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Conversation Snapshot - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.snapshot-hero {
+    background: linear-gradient(135deg, #5b8def 0%, #5f4dee 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+.snapshot-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+.summary-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+.summary-label {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+.conversation-row {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="snapshot-hero">
+        <h2 class="mb-2"><i class="bi bi-chat-left-text me-2"></i>Conversation Snapshot</h2>
+        <p class="mb-0 opacity-75">See where conversations are active across your hubs at a glance.</p>
+    </div>
+
+    <div class="card snapshot-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-5 col-md-6">
+                    <label class="form-label">Hub</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <label class="form-label">Conversations</label>
+                    <select id="limitFilter" class="form-select rounded-pill">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-3 d-grid">
+                    <button id="refreshBtn" class="btn btn-primary rounded-pill">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="col-lg-2 col-md-12 text-md-end">
+                    <span id="providerStatus" class="badge text-bg-secondary rounded-pill">Provider: n/a</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card snapshot-card h-100">
+                <div class="card-body">
+                    <div id="totalConversations" class="summary-value">0</div>
+                    <div class="summary-label">Total conversations</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card snapshot-card h-100">
+                <div class="card-body">
+                    <div id="messagesToday" class="summary-value">0</div>
+                    <div class="summary-label">Messages today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card snapshot-card h-100">
+                <div class="card-body">
+                    <div id="activeLast24h" class="summary-value">0</div>
+                    <div class="summary-label">Active in last 24h</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card snapshot-card h-100">
+                <div class="card-body">
+                    <div id="totalContacts" class="summary-value">0</div>
+                    <div class="summary-label">Contacts in scope</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card snapshot-card">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">Recent Conversations</h5>
+            <span id="conversationCount" class="badge text-bg-secondary rounded-pill">0</span>
+        </div>
+        <div class="card-body pt-0">
+            <div id="loadingState" class="text-center py-4 d-none">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div id="conversationList" class="d-grid gap-2 pb-3">
+                <div class="text-muted small">Loading conversation snapshot...</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const limitFilter = document.getElementById('limitFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+const providerStatus = document.getElementById('providerStatus');
+const loadingState = document.getElementById('loadingState');
+const conversationList = document.getElementById('conversationList');
+const conversationCount = document.getElementById('conversationCount');
+
+const totalConversations = document.getElementById('totalConversations');
+const messagesToday = document.getElementById('messagesToday');
+const activeLast24h = document.getElementById('activeLast24h');
+const totalContacts = document.getElementById('totalContacts');
+
+function formatDate(value) {
+    if (!value) return 'No recent activity';
+    return new Date(value).toLocaleString();
+}
+
+function renderConversations(conversations) {
+    if (!conversations.length) {
+        conversationList.innerHTML = '<div class="text-muted small">No conversations found for the selected scope.</div>';
+        return;
+    }
+
+    conversationList.innerHTML = conversations.map((item) => `
+        <div class="conversation-row">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="fw-semibold">${item.chat_name}</div>
+                    <div class="small text-muted">Hub: ${item.hub_name} • Bot: ${item.bot_name}</div>
+                </div>
+                <span class="badge text-bg-dark rounded-pill">${item.message_count} msgs</span>
+            </div>
+            <div class="small text-muted mt-2">Last message: ${formatDate(item.last_message_at)}</div>
+        </div>
+    `).join('');
+}
+
+function renderSummary(summary) {
+    totalConversations.textContent = summary.conversations_total || 0;
+    messagesToday.textContent = summary.messages_today || 0;
+    activeLast24h.textContent = summary.active_last_24h || 0;
+    totalContacts.textContent = summary.contacts_total || 0;
+}
+
+function renderProviderStatus(providerCheck) {
+    if (!providerCheck || !providerCheck.provider) {
+        providerStatus.textContent = 'Provider: n/a';
+        providerStatus.className = 'badge text-bg-secondary rounded-pill';
+        return;
+    }
+
+    const suffix = providerCheck.available ? 'ready' : 'unavailable';
+    providerStatus.textContent = `Provider: ${providerCheck.provider} (${suffix})`;
+    providerStatus.className = providerCheck.available
+        ? 'badge text-bg-success rounded-pill'
+        : 'badge text-bg-warning rounded-pill';
+}
+
+async function loadSnapshot() {
+    loadingState.classList.remove('d-none');
+    refreshBtn.disabled = true;
+
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+    params.set('limit', limitFilter.value);
+
+    try {
+        const response = await fetch(`./api/snapshot?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to load snapshot');
+
+        const data = await response.json();
+        renderSummary(data.summary || {});
+        renderConversations(data.conversations || []);
+        renderProviderStatus(data.provider_check || null);
+        conversationCount.textContent = data.count || 0;
+    } catch (error) {
+        conversationList.innerHTML = '<div class="text-danger small">Unable to load snapshot right now.</div>';
+        providerStatus.textContent = 'Provider: error';
+        providerStatus.className = 'badge text-bg-danger rounded-pill';
+    } finally {
+        loadingState.classList.add('d-none');
+        refreshBtn.disabled = false;
+    }
+}
+
+[hubFilter, limitFilter].forEach((element) => {
+    element.addEventListener('change', loadSnapshot);
+});
+refreshBtn.addEventListener('click', loadSnapshot);
+
+loadSnapshot();
+</script>
+{% endblock %}
