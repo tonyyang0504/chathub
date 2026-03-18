@@ -1,0 +1,38 @@
+<div class="card" style="border-radius: 12px; border: 1px solid var(--border-color);">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0"><i class="bi bi-person-exclamation me-2"></i>Contacts Needing Attention</h6>
+            <span class="badge text-bg-secondary rounded-pill">{{ total }}</span>
+        </div>
+
+        {% if contacts %}
+            <div class="d-grid gap-2">
+                {% for contact in contacts %}
+                <div class="p-2" style="border: 1px solid var(--border-color); border-radius: 10px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold">{{ contact.display_name }}</div>
+                            <div class="small text-muted">{{ contact.hub_name }}</div>
+                        </div>
+                        <span class="badge text-bg-dark rounded-pill">{{ contact.attention_score }}</span>
+                    </div>
+                    <div class="mt-2 d-flex gap-1 flex-wrap">
+                        {% for reason in contact.reasons %}
+                            {% if reason == "follow_up_needed" %}
+                            <span class="badge text-bg-warning rounded-pill">Follow-up</span>
+                            {% elif reason == "sentiment_negative" %}
+                            <span class="badge text-bg-danger rounded-pill">Negative</span>
+                            {% elif reason == "urgency_high" %}
+                            <span class="badge text-bg-primary rounded-pill">Urgent</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <a href="/tools/contacts-attention/" class="btn btn-sm btn-outline-primary rounded-pill mt-3">Open Tool</a>
+        {% else %}
+            <p class="small text-muted mb-0">No contacts currently require attention.</p>
+        {% endif %}
+    </div>
+</div>
