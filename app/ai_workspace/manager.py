@@ -1072,13 +1072,26 @@ class AiWorkspaceManager:
                 settings = db.query(AiWorkspaceSettings).filter(
                     AiWorkspaceSettings.user_id == session.user_id
                 ).first()
-                if not settings or not settings.anthropic_api_key_encrypted:
-                    return
 
-                api_key = decrypt_string(settings.anthropic_api_key_encrypted)
                 provider_name = db_session.provider or "claude"
                 provider_map = {"claude": "anthropic", "codex": "openai", "gemini": "google"}
                 factory_provider = provider_map.get(provider_name, provider_name)
+
+                # Get the correct API key for this provider
+                if provider_name == "claude":
+                    if not settings or not settings.anthropic_api_key_encrypted:
+                        return
+                    api_key = decrypt_string(settings.anthropic_api_key_encrypted)
+                elif provider_name == "codex":
+                    if not settings or not settings.openai_api_key_encrypted:
+                        return
+                    api_key = decrypt_string(settings.openai_api_key_encrypted)
+                elif provider_name == "gemini":
+                    if not settings or not settings.gemini_api_key_encrypted:
+                        return
+                    api_key = decrypt_string(settings.gemini_api_key_encrypted)
+                else:
+                    return
 
                 provider = get_ai_provider(factory_provider, api_key)
                 result = provider.chat_completion(
