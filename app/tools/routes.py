@@ -1162,14 +1162,34 @@ async def tools_index_page(request: Request, db: Session = Depends(get_db)):
             "auth/login.html",
             {"request": request, "error": "Please log in to access this page"}
         )
-    # Query user's active custom tools for the Custom Tools section
+    # Query user's non-deleted custom tools (both active and inactive)
     custom_tools = db.query(BuiltTool).filter(
         BuiltTool.user_id == user.id,
-        BuiltTool.is_active == True
+        BuiltTool.is_deleted == False
     ).order_by(BuiltTool.created_at.desc()).all()
+
+    # Scan filesystem for preview tools (no DB record yet)
+    import types
+    from app.tools import CUSTOM_TOOLS_DIR
+    db_tool_names = {t.name for t in custom_tools}
+    preview_tools = []
+    if CUSTOM_TOOLS_DIR.exists():
+        for tool_dir in sorted(CUSTOM_TOOLS_DIR.iterdir()):
+            if not (tool_dir.is_dir() and (tool_dir / "routes.py").exists()):
+                continue
+            if tool_dir.name in db_tool_names:
+                continue
+            preview_tools.append(types.SimpleNamespace(
+                id=None, name=tool_dir.name,
+                display_name=tool_dir.name.replace("-", " ").title(),
+                description="Preview — not yet published",
+                icon="bi-eye", gradient_start="#94a3b8", gradient_end="#64748b",
+                is_active=False, is_preview=True,
+            ))
+
     return templates.TemplateResponse(
         "dashboard/tools/index.html",
-        {"request": request, "user": user, "page_title": "Tools", "custom_tools": custom_tools}
+        {"request": request, "user": user, "page_title": "Tools", "custom_tools": custom_tools, "preview_tools": preview_tools}
     )
 
 
