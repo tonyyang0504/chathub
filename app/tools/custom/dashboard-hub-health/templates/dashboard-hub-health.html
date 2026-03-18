@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Hub Health Snapshot - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.health-hero {
+    background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+.health-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+.summary-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+.summary-label {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+.risk-chip {
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="health-hero">
+        <h2 class="mb-2"><i class="bi bi-heart-pulse me-2"></i>Hub Health Snapshot</h2>
+        <p class="mb-0 opacity-75">Track hub activity, bot coverage, and follow-up risk in one place.</p>
+    </div>
+
+    <div class="card health-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-6 col-md-8">
+                    <label class="form-label">Hub Scope</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4 d-grid">
+                    <button id="refreshBtn" class="btn btn-primary rounded-pill">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="col-lg-4 col-md-12 text-lg-end">
+                    <span id="updatedAt" class="small text-muted">Last updated: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card health-card h-100">
+                <div class="card-body">
+                    <div id="hubsTotal" class="summary-value">0</div>
+                    <div class="summary-label">Hubs in scope</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card health-card h-100">
+                <div class="card-body">
+                    <div id="activeHubs" class="summary-value">0</div>
+                    <div class="summary-label">Active hubs</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card health-card h-100">
+                <div class="card-body">
+                    <div id="activeBots" class="summary-value">0</div>
+                    <div class="summary-label">Active bots</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card health-card h-100">
+                <div class="card-body">
+                    <div id="conversations24h" class="summary-value">0</div>
+                    <div class="summary-label">Conversations (24h)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card health-card h-100">
+                <div class="card-body">
+                    <div id="followUpNeeded" class="summary-value">0</div>
+                    <div class="summary-label">Follow-up needed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card health-card h-100">
+                <div class="card-body">
+                    <div id="providerIssues" class="summary-value">0</div>
+                    <div class="summary-label">Provider issues</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card health-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h5 class="mb-0">At-Risk Hubs</h5>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="riskList" class="d-grid gap-2">
+                        <div class="small text-muted">Loading risk analysis...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card health-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Hub Metrics</h5>
+                    <span id="hubCount" class="badge text-bg-secondary rounded-pill">0</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Hub</th>
+                                    <th class="text-end">Bots</th>
+                                    <th class="text-end">Conversations (24h)</th>
+                                    <th class="text-end">Messages (7d)</th>
+                                    <th class="text-end">Follow-up</th>
+                                    <th class="text-end">Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody id="metricsBody">
+                                <tr>
+                                    <td colspan="6" class="small text-muted">Loading hub metrics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+const updatedAt = document.getElementById('updatedAt');
+const hubCount = document.getElementById('hubCount');
+
+const hubsTotal = document.getElementById('hubsTotal');
+const activeHubs = document.getElementById('activeHubs');
+const activeBots = document.getElementById('activeBots');
+const conversations24h = document.getElementById('conversations24h');
+const followUpNeeded = document.getElementById('followUpNeeded');
+const providerIssues = document.getElementById('providerIssues');
+
+const riskList = document.getElementById('riskList');
+const metricsBody = document.getElementById('metricsBody');
+
+function riskBadge(level) {
+    if (level === 'high') return '<span class="risk-chip text-bg-danger">High</span>';
+    if (level === 'medium') return '<span class="risk-chip text-bg-warning">Medium</span>';
+    return '<span class="risk-chip text-bg-success">Low</span>';
+}
+
+function renderSummary(summary) {
+    hubsTotal.textContent = summary.hubs_total || 0;
+    activeHubs.textContent = summary.active_hubs || 0;
+    activeBots.textContent = summary.active_bots || 0;
+    conversations24h.textContent = summary.conversations_24h || 0;
+    followUpNeeded.textContent = summary.follow_up_needed || 0;
+    providerIssues.textContent = summary.provider_issues || 0;
+}
+
+function renderRiskList(items) {
+    if (!items.length) {
+        riskList.innerHTML = '<div class="small text-muted">No hubs currently flagged as at-risk.</div>';
+        return;
+    }
+
+    riskList.innerHTML = items.map((item) => `
+        <div class="p-2" style="border: 1px solid var(--border-color); border-radius: 10px;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="fw-semibold">${item.hub_name}</div>
+                ${riskBadge(item.risk_level)}
+            </div>
+            <div class="small text-muted">Follow-up: ${item.follow_up_needed} · Conversations 24h: ${item.conversations_24h}</div>
+        </div>
+    `).join('');
+}
+
+function renderTable(items) {
+    if (!items.length) {
+        metricsBody.innerHTML = '<tr><td colspan="6" class="small text-muted">No hubs available for this scope.</td></tr>';
+        hubCount.textContent = '0';
+        return;
+    }
+
+    metricsBody.innerHTML = items.map((item) => `
+        <tr>
+            <td>
+                <div class="fw-semibold">${item.hub_name}</div>
+                <div class="small text-muted">${item.ai_provider || 'n/a'} · ${item.provider_available ? 'ready' : 'provider issue'}</div>
+            </td>
+            <td class="text-end">${item.active_bots}</td>
+            <td class="text-end">${item.conversations_24h}</td>
+            <td class="text-end">${item.messages_7d}</td>
+            <td class="text-end">${item.follow_up_needed}</td>
+            <td class="text-end">${riskBadge(item.risk_level)}</td>
+        </tr>
+    `).join('');
+
+    hubCount.textContent = items.length;
+}
+
+async function loadHealth() {
+    refreshBtn.disabled = true;
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+
+    try {
+        const response = await fetch(`./api/health?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to load health data');
+
+        const data = await response.json();
+        renderSummary(data.summary || {});
+        renderRiskList(data.at_risk || []);
+        renderTable(data.hubs || []);
+        updatedAt.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    } catch (error) {
+        riskList.innerHTML = '<div class="small text-danger">Unable to load risk analysis.</div>';
+        metricsBody.innerHTML = '<tr><td colspan="6" class="small text-danger">Unable to load hub metrics.</td></tr>';
+    } finally {
+        refreshBtn.disabled = false;
+    }
+}
+
+hubFilter.addEventListener('change', loadHealth);
+refreshBtn.addEventListener('click', loadHealth);
+
+loadHealth();
+</script>
+{% endblock %}
