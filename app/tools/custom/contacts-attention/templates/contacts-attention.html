@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Contacts Needing Attention - ChatHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-person-exclamation me-2"></i>Contacts Needing Attention</h2>
+            <p class="text-muted mb-0">Track high-urgency or follow-up contacts across your hubs.</p>
+        </div>
+        <a href="/dashboard" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-grid me-1"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px;">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <label for="hubFilter" class="small text-muted mb-0">Hub</label>
+                <select id="hubFilter" class="form-select" style="min-width: 240px; border-radius: 999px;">
+                    <option value="">All Accessible Hubs</option>
+                    {% for hub in hubs %}
+                    <option value="{{ hub.id }}">{{ hub.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button id="refreshBtn" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-arrow-repeat me-1"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm" style="border-radius: 14px;">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Contacts Returned</p>
+                    <h3 id="countReturned" class="mb-0">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm" style="border-radius: 14px;">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Total Attention Contacts</p>
+                    <h3 id="countTotal" class="mb-0">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm" style="border-radius: 14px;">
+                <div class="card-body">
+                    <p class="text-muted mb-2">High Priority (Score ≥ 6)</p>
+                    <h3 id="countHigh" class="mb-0">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Contact</th>
+                            <th>Hub</th>
+                            <th>Sentiment</th>
+                            <th>Urgency</th>
+                            <th>Attention Reasons</th>
+                            <th>Last Interaction</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attentionRows">
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">Loading contacts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function badgeClass(value, type) {
+        const normalized = (value || '').toLowerCase();
+        if (type === 'urgency') {
+            if (normalized === 'critical' || normalized === 'high') return 'bg-danger-subtle text-danger';
+            if (normalized === 'medium') return 'bg-warning-subtle text-warning';
+            return 'bg-secondary-subtle text-secondary';
+        }
+        if (type === 'sentiment') {
+            if (normalized === 'negative') return 'bg-danger-subtle text-danger';
+            if (normalized === 'positive') return 'bg-success-subtle text-success';
+            return 'bg-secondary-subtle text-secondary';
+        }
+        return 'bg-primary-subtle text-primary';
+    }
+
+    function formatDate(value) {
+        if (!value) return '<span class="text-muted">No activity</span>';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '<span class="text-muted">Unknown</span>';
+        return date.toLocaleString();
+    }
+
+    function renderRows(contacts) {
+        const tbody = document.getElementById('attentionRows');
+        if (!contacts.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No contacts currently need attention.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = contacts.map(contact => {
+            const reasonBadges = (contact.attention_reasons || []).map(reason => (
+                `<span class="badge rounded-pill ${badgeClass(reason, 'reason')} me-1">${reason}</span>`
+            )).join('');
+
+            return `
+                <tr>
+                    <td>
+                        <div class="fw-semibold">${contact.display_name || contact.phone || 'Unknown'}</div>
+                        <div class="small text-muted">${contact.phone || ''}</div>
+                    </td>
+                    <td>${contact.hub_name || '-'}</td>
+                    <td><span class="badge rounded-pill ${badgeClass(contact.sentiment, 'sentiment')}">${contact.sentiment || 'neutral'}</span></td>
+                    <td><span class="badge rounded-pill ${badgeClass(contact.urgency, 'urgency')}">${contact.urgency || 'low'}</span></td>
+                    <td>${reasonBadges || '<span class="text-muted">-</span>'}</td>
+                    <td>${formatDate(contact.last_interaction_at)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function loadAttentionContacts() {
+        const hubValue = document.getElementById('hubFilter').value;
+        const params = new URLSearchParams({ limit: '50' });
+        if (hubValue) params.set('hub_id', hubValue);
+
+        try {
+            const response = await fetch(`/tools/contacts-attention/api/data?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to load contacts');
+
+            const payload = await response.json();
+            const contacts = payload.contacts || [];
+            renderRows(contacts);
+
+            document.getElementById('countReturned').textContent = payload.count || 0;
+            document.getElementById('countTotal').textContent = payload.total || 0;
+            document.getElementById('countHigh').textContent = contacts.filter(c => (c.priority_score || 0) >= 6).length;
+        } catch (error) {
+            document.getElementById('attentionRows').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Unable to load contacts right now.</td></tr>';
+            document.getElementById('countReturned').textContent = '0';
+            document.getElementById('countTotal').textContent = '0';
+            document.getElementById('countHigh').textContent = '0';
+        }
+    }
+
+    document.getElementById('hubFilter').addEventListener('change', loadAttentionContacts);
+    document.getElementById('refreshBtn').addEventListener('click', loadAttentionContacts);
+    loadAttentionContacts();
+</script>
+{% endblock %}
