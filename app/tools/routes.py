@@ -1168,9 +1168,12 @@ async def tools_index_page(request: Request, db: Session = Depends(get_db)):
         BuiltTool.is_deleted == False
     ).order_by(BuiltTool.created_at.desc()).all()
 
+    # Live-register any custom tools that exist on disk but aren't routed yet
+    from app.tools import register_custom_tools_on_app, CUSTOM_TOOLS_DIR, _registered_tools
+    register_custom_tools_on_app(request.app)
+
     # Scan filesystem for preview tools (no DB record yet)
     import types
-    from app.tools import CUSTOM_TOOLS_DIR
     db_tool_names = {t.name for t in custom_tools}
     preview_tools = []
     if CUSTOM_TOOLS_DIR.exists():
@@ -1187,9 +1190,29 @@ async def tools_index_page(request: Request, db: Session = Depends(get_db)):
                 is_active=False, is_preview=True,
             ))
 
+    # Resolve gradient colors from each tool's actual template (the AI builder
+    # hardcodes gradients in the HTML that may differ from the DB defaults).
+    import re as _re
+    _grad_re = _re.compile(r'linear-gradient\(135deg,\s*(#[0-9a-fA-F]{6})\s+0%,\s*(#[0-9a-fA-F]{6})\s+100%\)')
+    tool_gradients = {}
+    for tool in custom_tools:
+        g_start = tool.gradient_start or '#6366f1'
+        g_end = tool.gradient_end or '#8b5cf6'
+        tpl_path = CUSTOM_TOOLS_DIR / tool.name / "templates" / f"{tool.name}.html"
+        if tpl_path.exists():
+            try:
+                header = tpl_path.read_text()[:500]
+                m = _grad_re.search(header)
+                if m:
+                    g_start = m.group(1)
+                    g_end = m.group(2)
+            except Exception:
+                pass
+        tool_gradients[tool.id] = (g_start, g_end)
+
     return templates.TemplateResponse(
         "dashboard/tools/index.html",
-        {"request": request, "user": user, "page_title": "Tools", "custom_tools": custom_tools, "preview_tools": preview_tools}
+        {"request": request, "user": user, "page_title": "Tools", "custom_tools": custom_tools, "preview_tools": preview_tools, "tool_gradients": tool_gradients}
     )
 
 
@@ -2267,6 +2290,19 @@ async def reload_custom_tools(request: Request, db: Session = Depends(get_db)):
     return {"status": "ok", "new_tools_registered": new_count}
 
 
+@router.get("/ai-coder", response_class=HTMLResponse)
+async def ai_coder_page(request: Request, db: Session = Depends(get_db)):
+    """AI Coder page."""
+    from fastapi.responses import RedirectResponse
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+    return templates.TemplateResponse(
+        "dashboard/tools/ai_coder.html",
+        {"request": request, "user": user, "active_page": "tools_ai_coder", "page_title": "AI Coder"},
+    )
+
+
 @router.get("/marketplace", response_class=HTMLResponse)
 async def marketplace_page(request: Request, db: Session = Depends(get_db)):
     """Marketplace page."""
@@ -2302,6 +2338,11 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
     ).first()
 
     if not tool:
+        # Check if this is a preview tool (filesystem-only, no DB record yet)
+        from app.tools import CUSTOM_TOOLS_DIR, _registered_tools, register_custom_tools_on_app
+        if tool_name in _registered_tools or (CUSTOM_TOOLS_DIR / tool_name / "routes.py").exists():
+            register_custom_tools_on_app(request.app)
+            return RedirectResponse(url=f"/tools/{tool_name}/", status_code=307)
         raise HTTPException(status_code=404, detail="Tool not found")
 
     # Parse files list
@@ -2309,6 +2350,23 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
     if tool.files:
         try:
             files_list = _json.loads(tool.files)
+        except Exception:
+            pass
+
+    # Resolve gradient from tool's actual template (matches index page logic)
+    import re as _re
+    from app.tools import CUSTOM_TOOLS_DIR
+    _grad_re = _re.compile(r'linear-gradient\(135deg,\s*(#[0-9a-fA-F]{6})\s+0%,\s*(#[0-9a-fA-F]{6})\s+100%\)')
+    g_start = tool.gradient_start or '#6366f1'
+    g_end = tool.gradient_end or '#8b5cf6'
+    tpl_path = CUSTOM_TOOLS_DIR / tool.name / "templates" / f"{tool.name}.html"
+    if tpl_path.exists():
+        try:
+            header = tpl_path.read_text()[:500]
+            m = _grad_re.search(header)
+            if m:
+                g_start = m.group(1)
+                g_end = m.group(2)
         except Exception:
             pass
 
@@ -2321,5 +2379,7 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
             "files_list": files_list,
             "active_page": f"tools_{tool_name.replace('-', '_')}",
             "page_title": tool.display_name or tool.name,
+            "gradient_start": g_start,
+            "gradient_end": g_end,
         },
     )

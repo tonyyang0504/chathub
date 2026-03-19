@@ -8,8 +8,18 @@
     background: linear-gradient(135deg, #0f766e 0%, #2563eb 100%);
     color: white;
     border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.trends-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+.trends-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 600px;
 }
 .trends-card {
     border: 1px solid var(--border-color);
@@ -35,8 +45,15 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="trends-hero">
-        <h2 class="mb-2"><i class="bi bi-graph-up-arrow me-2"></i>Message Trends</h2>
-        <p class="mb-0 opacity-75">Track daily momentum and identify which hubs are driving activity.</p>
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-graph-up-arrow me-3"></i>Message Trends</h1>
+                <p>Track daily momentum and identify which hubs are driving activity.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-bar-chart-line" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
     </div>
 
     <div class="card trends-card mb-3">

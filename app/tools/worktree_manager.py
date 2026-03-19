@@ -172,11 +172,12 @@ class WorktreeManager:
         )
         return result.stdout.strip() if result.returncode == 0 else ""
 
-    def merge(self, session_id: str, tool_name: str = None) -> MergeResult:
+    def merge(self, session_id: str, tool_name: str = None, commit_prefix: str = None) -> MergeResult:
         """Apply worktree changes into main working tree and commit.
 
         If tool_name is provided, copies files into app/tools/custom/{tool_name}/
         instead of mirroring the worktree structure into PROJECT_ROOT.
+        If commit_prefix is provided, uses it instead of the default "Tool Builder: publish".
         """
         info = self._find_by_session(session_id)
         if not info:
@@ -242,7 +243,7 @@ class WorktreeManager:
             ["git", "add", "--"] + copied,
             capture_output=True, text=True, cwd=str(PROJECT_ROOT)
         )
-        commit_msg = f"Tool Builder: publish {session_id[:8]}"
+        commit_msg = commit_prefix or f"Tool Builder: publish {session_id[:8]}"
         subprocess.run(
             ["git", "commit", "-m", commit_msg],
             capture_output=True, text=True, cwd=str(PROJECT_ROOT)

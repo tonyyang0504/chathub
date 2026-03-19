@@ -85,6 +85,7 @@
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.4rem;
+    padding-right: 80px;
 }
 
 .tool-card-info p {
@@ -96,17 +97,36 @@
 
 /* Toggle switch in tool cards */
 .tool-toggle-switch .form-check-input {
-    width: 36px;
-    height: 18px;
+    width: 40px;
+    height: 22px;
     cursor: pointer;
 }
 .tool-toggle-switch .form-check-input:checked {
-    background-color: #6366f1;
-    border-color: #6366f1;
+    background-color: var(--tool-theme-color, #6366f1);
+    border-color: var(--tool-theme-color, #6366f1);
 }
 .tool-toggle-switch .form-check-input:focus {
     box-shadow: none;
-    border-color: #6366f1;
+    border-color: var(--tool-theme-color, #6366f1);
+}
+.tool-card .btn-trash {
+    border: none;
+    background: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    opacity: 0.5;
+    transition: color 0.15s, opacity 0.15s;
+    font-size: 1rem;
+    line-height: 1;
+}
+.tool-card .btn-trash:hover {
+    color: #dc3545;
+    opacity: 1;
 }
 </style>
 {% endblock %}
@@ -115,8 +135,15 @@
 <div class="container-fluid py-4">
     <!-- Hero -->
     <div class="tools-hero">
-        <h1><i class="bi bi-grid-3x3-gap-fill me-3"></i>Tools</h1>
-        <p>Manage messaging, automate workflows, and leverage AI across all your connected platforms.</p>
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-grid-3x3-gap-fill me-3"></i>Tools</h1>
+                <p>Manage messaging, automate workflows, and leverage AI across all your connected platforms.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-tools" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
     </div>
 
     <!-- Messaging Tools -->
@@ -232,15 +259,28 @@
             </div>
         </a>
 
-        <a class="tool-card" href="/tools/chathub-agent">
-            <div class="tool-card-accent" style="background: linear-gradient(90deg, #7c3aed, #a855f7);"></div>
+        <a class="tool-card" href="/tools/tool-builder">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #6366f1, #8b5cf6);"></div>
             <div class="tool-card-body">
-                <div class="tool-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-                    <i class="bi bi-robot"></i>
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                    <i class="bi bi-hammer"></i>
                 </div>
                 <div class="tool-card-info">
-                    <h3>ChatHub Agent</h3>
-                    <p>Deploy autonomous AI agents to handle tasks across your platforms.</p>
+                    <h3>Tool Builder</h3>
+                    <p>Create custom tools with AI assistance and publish them to the marketplace.</p>
+                </div>
+            </div>
+        </a>
+
+        <a class="tool-card" href="/tools/ai-coder">
+            <div class="tool-card-accent" style="background: linear-gradient(90deg, #0ea5e9, #06b6d4);"></div>
+            <div class="tool-card-body">
+                <div class="tool-card-icon" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4);">
+                    <i class="bi bi-cpu"></i>
+                </div>
+                <div class="tool-card-info">
+                    <h3>AI Coder</h3>
+                    <p>Modify the main project codebase with AI. Preview changes before applying, rollback anytime.</p>
                 </div>
             </div>
         </a>
@@ -248,14 +288,19 @@
 
     <!-- Custom Tools (dynamic from DB + filesystem preview) -->
     {% if custom_tools or preview_tools %}
-    <h2 class="tools-section-title"><i class="bi bi-puzzle me-2"></i>Custom Tools</h2>
+    <div class="d-flex align-items-center justify-content-between tools-section-title">
+        <h2 class="mb-0" style="font-size: 1.3rem; font-weight: 600;"><i class="bi bi-puzzle me-2"></i>Custom Tools</h2>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="resetAllTools()" style="font-size: 0.75rem;">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset All
+        </button>
+    </div>
     <div class="tools-grid">
         {% for tool in custom_tools %}
         <div class="tool-card" id="tool-card-{{ tool.id }}" style="position: relative;{% if not tool.is_active %} opacity: 0.5;{% endif %}">
             <a href="/tools/{{ tool.name }}" style="text-decoration: none; color: inherit; display: block;">
-                <div class="tool-card-accent" style="background: linear-gradient(90deg, {{ tool.gradient_start or '#6366f1' }}, {{ tool.gradient_end or '#8b5cf6' }});"></div>
+                <div class="tool-card-accent" style="background: linear-gradient(90deg, {{ tool_gradients[tool.id][0] }}, {{ tool_gradients[tool.id][1] }});"></div>
                 <div class="tool-card-body">
-                    <div class="tool-card-icon" style="background: linear-gradient(135deg, {{ tool.gradient_start or '#6366f1' }}, {{ tool.gradient_end or '#8b5cf6' }});">
+                    <div class="tool-card-icon" style="background: linear-gradient(135deg, {{ tool_gradients[tool.id][0] }}, {{ tool_gradients[tool.id][1] }});">
                         <i class="bi {{ tool.icon or 'bi-gear' }}"></i>
                     </div>
                     <div class="tool-card-info">
@@ -264,14 +309,12 @@
                     </div>
                 </div>
             </a>
-            <div style="position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 6px;">
-                <div class="form-check form-switch tool-toggle-switch" style="margin: 0; padding-left: 2.5em;" onclick="event.stopPropagation();">
-                    <input class="form-check-input" type="checkbox" role="switch" id="tool-toggle-{{ tool.id }}" {% if tool.is_active %}checked{% endif %} onchange="toggleTool({{ tool.id }}, this)" title="{% if tool.is_active %}Deactivate{% else %}Activate{% endif %}">
-                </div>
-                <button class="btn btn-sm btn-outline-danger" style="border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; opacity: 0.6;" title="Uninstall" onclick="event.preventDefault(); event.stopPropagation(); uninstallTool({{ tool.id }}, '{{ tool.display_name or tool.name }}')">
-                    <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
-                </button>
+            <div class="form-check form-switch tool-toggle-switch" style="position: absolute; top: 10px; right: 10px; margin: 0; padding-left: 2.5em; --tool-theme-color: {{ tool_gradients[tool.id][1] }};" onclick="event.stopPropagation();">
+                <input class="form-check-input" type="checkbox" role="switch" id="tool-toggle-{{ tool.id }}" {% if tool.is_active %}checked{% endif %} onchange="toggleTool({{ tool.id }}, this)" title="{% if tool.is_active %}Deactivate{% else %}Activate{% endif %}">
             </div>
+            <button class="btn-trash" style="position: absolute; bottom: 10px; right: 12px;" title="Uninstall" onclick="event.preventDefault(); event.stopPropagation(); uninstallTool({{ tool.id }}, '{{ tool.display_name or tool.name }}')">
+                <i class="bi bi-trash"></i>
+            </button>
         </div>
         {% endfor %}
         {% for tool in preview_tools %}
@@ -296,19 +339,6 @@
     <!-- Create & Share -->
     <h2 class="tools-section-title"><i class="bi bi-share me-2"></i>Create & Share</h2>
     <div class="tools-grid">
-        <a class="tool-card" href="/tools/tool-builder">
-            <div class="tool-card-accent" style="background: linear-gradient(90deg, #6366f1, #8b5cf6);"></div>
-            <div class="tool-card-body">
-                <div class="tool-card-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                    <i class="bi bi-hammer"></i>
-                </div>
-                <div class="tool-card-info">
-                    <h3>Tool Builder</h3>
-                    <p>Create custom tools with AI assistance and publish them to the marketplace.</p>
-                </div>
-            </div>
-        </a>
-
         <a class="tool-card" href="/tools/marketplace">
             <div class="tool-card-accent" style="background: linear-gradient(90deg, #8b5cf6, #06b6d4);"></div>
             <div class="tool-card-body">
@@ -322,15 +352,6 @@
             </div>
         </a>
     </div>
-
-    {% if custom_tools or preview_tools %}
-    <!-- Reset All Custom Tools -->
-    <div class="text-end mt-2 mb-4">
-        <button class="btn btn-sm btn-outline-secondary" onclick="resetAllTools()">
-            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset All Custom Tools
-        </button>
-    </div>
-    {% endif %}
 </div>
 
 <!-- Restart Required Banner (hidden by default) -->

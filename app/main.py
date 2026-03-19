@@ -36,7 +36,7 @@ from .hubs.scheduler import content_scheduler
 from .hubs.analysis_scheduler import contact_analysis_scheduler
 from .hubs.followup_scheduler import followup_send_scheduler
 from .scripts.scheduler import script_scheduler
-from .tools import tools_router, builder_router, marketplace_router, register_custom_tools
+from .tools import tools_router, builder_router, marketplace_router, coder_router, register_custom_tools
 from .agents import agents_router
 from .ai_workspace.routes import router as ai_workspace_router
 from .ai_workspace.manager import ai_workspace_manager
@@ -381,6 +381,7 @@ register_custom_tools(tools_router)  # Auto-discover app/tools/custom/*/routes.p
 app.include_router(ai_workspace_router, tags=["AI Workspace"])  # Before tools_router (has catch-all /{tool_name})
 app.include_router(tools_router, tags=["Tools"])
 app.include_router(builder_router, tags=["Tool Builder"])
+app.include_router(coder_router, tags=["AI Coder"])
 app.include_router(marketplace_router, tags=["Marketplace"])
 app.include_router(chathub_agent_router, tags=["ChatHub Agent"])
 app.include_router(agents_router, tags=["Agents"])

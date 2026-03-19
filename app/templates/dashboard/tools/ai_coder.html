@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Tool Builder - ChatHub{% endblock %}
+{% block title %}AI Coder - ChatHub{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
@@ -9,7 +9,7 @@
 .main-content { overflow-y: hidden !important; }
 
 /* Provider theming — CSS custom properties driven by data-provider on .claude-app */
-.claude-app, #settingsModal { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
+.claude-app, #settingsModal { --provider-color: #0ea5e9; --provider-color-rgb: 14,165,233; --provider-gradient: linear-gradient(135deg, #0ea5e9, #06b6d4); }
 .claude-app[data-provider="codex"], #settingsModal[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
 .claude-app[data-provider="gemini"], #settingsModal[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
 .claude-app[data-provider="chathub"], #settingsModal[data-provider="chathub"] { --provider-color: #8b5cf6; --provider-color-rgb: 139,92,246; --provider-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed); }
@@ -20,7 +20,7 @@
 .provider-pill:hover { color: var(--text-primary); }
 .provider-pill.active { background: var(--card-bg); color: var(--provider-color); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 .provider-pill .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
+.provider-pill[data-provider="claude"] .pill-dot { background: #0ea5e9; }
 .provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
 .provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
 .provider-pill[data-provider="chathub"] .pill-dot { background: #8b5cf6; }
@@ -60,6 +60,7 @@
 .session-item:hover .btn-delete-session { opacity: 1; }
 .btn-delete-session:hover { color: #ef4444; }
 #noSessions { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); font-size: 0.82rem; }
+.mod-item .d-flex.gap-1 { padding-top: 0.15rem; }
 
 /* Main chat area — matches AI Workspace .claude-main */
 .claude-main {
@@ -671,13 +672,25 @@
     <!-- Left: Sessions List -->
     <div class="claude-sidebar">
         <div class="claude-sidebar-header">
-            <h6><i class="bi bi-hammer me-2"></i>Tool Builder</h6>
+            <h6><i class="bi bi-code-slash me-2"></i>AI Coder</h6>
             <button class="btn-new-session" onclick="newSession()" title="New session">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
         <div class="session-list-wrapper" id="sessionList">
-            <div id="noSessions"><i class="bi bi-chat-left-dots" style="font-size:1.8rem;opacity:0.25;display:block;margin-bottom:0.6rem;"></i>No sessions yet.<br>Start by describing a tool.</div>
+            <div id="noSessions"><i class="bi bi-chat-left-dots" style="font-size:1.8rem;opacity:0.25;display:block;margin-bottom:0.6rem;"></i>No sessions yet.<br>Start by describing a change.</div>
+        </div>
+        <!-- Modifications Panel -->
+        <div class="claude-sidebar-header" style="border-top: 1px solid var(--border-color);">
+            <h6><i class="bi bi-journal-code me-2"></i>Modifications</h6>
+            <button class="btn-new-session" onclick="loadModifications()" title="Refresh modifications">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+        <div class="session-list-wrapper" id="modificationsList" style="max-height: 250px;">
+            <div id="noModifications" style="text-align: center; padding: 1rem; color: var(--text-secondary); font-size: 0.82rem;">
+                <i class="bi bi-journal-code" style="font-size:1.4rem;opacity:0.25;display:block;margin-bottom:0.4rem;"></i>No modifications yet.
+            </div>
         </div>
     </div>
 
@@ -729,7 +742,7 @@
                         <path d="M20 38h22v4H20z" fill="white"/>
                     </svg>
                 </div>
-                <p>Describe the tool you want to build and the AI will create it.</p>
+                <p>Describe the codebase changes you want and the AI will implement them.</p>
                 <small>Configure your API key in Settings first.</small>
             </div>
             <div class="claude-messages-inner" id="chatBody"></div>
@@ -749,7 +762,7 @@
                     <div class="file-chips" id="fileChips"></div>
                     <!-- Textarea -->
                     <textarea class="form-control" id="promptInput" rows="1"
-                        placeholder="Describe the tool you want to build..."
+                        placeholder="Describe what you want to change in the codebase..."
                         onkeydown="handleKeydown(event)"
                         onpaste="handlePaste(event)"></textarea>
                     <!-- Bottom row: toolbar left, send right -->
@@ -822,11 +835,7 @@
                 <div id="changedFilesList"></div>
             </div>
 
-            <!-- TOOL.md preview -->
-            <div class="panel-section" id="skillSection" style="display:none;">
-                <div class="panel-section-title">TOOL.MD Preview</div>
-                <div class="skill-preview"><code id="skillPreviewCode"></code></div>
-            </div>
+            <!-- (No TOOL.MD section for AI Coder) -->
 
             <!-- Sandbox status indicator -->
             <div id="sandboxStatus" style="display:none; margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(var(--provider-color-rgb),0.06); border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary);">
@@ -839,7 +848,7 @@
                 <i class="bi bi-eye me-1"></i> Preview
             </button>
             <button class="btn btn-success" id="publishBtn" onclick="publishBuild()">
-                <i class="bi bi-check-circle me-1"></i> Publish
+                <i class="bi bi-check-circle me-1"></i> Apply
             </button>
             <button class="btn btn-outline-danger" id="discardBtn" onclick="discardBuild()">
                 <i class="bi bi-trash me-1"></i> Discard
@@ -852,95 +861,42 @@
         accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.doc,.docx,.xls,.xlsx,.csv,.py,.js,.ts,.html,.css,.json,.yaml,.yml,.toml,.xml,.md,.txt,.sh,.java,.go,.rs,.c,.cpp,.h,.rb,.php,.sql,.log,.zip,.tar,.gz">
 </div>
 
-<!-- Publish Build Modal — collects tool metadata before merging -->
+<!-- Apply Changes Modal — collects title and description before applying -->
 <div class="modal fade" id="publishBuildModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
             <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
-                <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Publish Tool</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Apply Changes</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Tool Name <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="publishBuildName" placeholder="my-awesome-tool" required>
-                    <small class="text-muted">Kebab-case slug used internally</small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Display Name</label>
-                    <input type="text" class="form-control" id="publishBuildDisplayName" placeholder="My Awesome Tool">
+                    <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="publishBuildTitle" placeholder="Brief title for this modification" required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Description</label>
-                    <textarea class="form-control" id="publishBuildDescription" rows="2" placeholder="What does this tool do?"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Icon</label>
-                    <input type="text" class="form-control" id="publishBuildIcon" value="bi-gear" placeholder="bi-gear">
-                    <small class="text-muted">Bootstrap Icon class (e.g. bi-lightning, bi-robot)</small>
-                </div>
-                <div class="border rounded p-3" id="publishReadinessPanel" style="background: rgba(var(--provider-color-rgb),0.06); border-color: rgba(var(--provider-color-rgb),0.25) !important;">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="fw-semibold">Publish Readiness</span>
-                        <span class="badge" id="publishReadinessBadge">Checking...</span>
-                    </div>
-                    <div class="small text-muted mb-2" id="publishReadinessHint">Validating tool metadata and required files.</div>
-                    <div id="publishReadinessChecks"></div>
+                    <textarea class="form-control" id="publishBuildDescription" rows="3" placeholder="What changes were made and why?"></textarea>
                 </div>
             </div>
             <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="confirmPublishBtn" onclick="confirmPublish()">
-                    <i class="bi bi-check-circle me-1"></i> Publish
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm rounded-pill px-3" id="confirmPublishBtn" onclick="confirmPublish()" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: white;">
+                    <i class="bi bi-check-circle me-1"></i> Apply Changes
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Marketplace Publish Modal — for publishing an existing tool to the marketplace -->
-<div class="modal fade" id="publishModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
-            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
-                <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Publish to Marketplace</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body publish-form">
-                <div class="mb-3">
-                    <label class="form-label">Category</label>
-                    <select class="form-select" id="publishCategory">
-                        <option value="messaging">Messaging</option>
-                        <option value="ai">AI</option>
-                        <option value="automation" selected>Automation</option>
-                        <option value="analytics">Analytics</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Version</label>
-                    <input type="text" class="form-control" id="publishVersion" value="1.0.0">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Long Description (Markdown)</label>
-                    <textarea class="form-control" id="publishDescription" rows="4" placeholder="Detailed description..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="publishToolToMarketplace()">
-                    <i class="bi bi-rocket-takeoff me-1"></i> Publish
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- (No marketplace publish modal for AI Coder) -->
 
 <!-- Settings Modal -->
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>Tool Builder Settings</h6>
+                <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>AI Coder Settings</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -987,7 +943,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="oauthUrlPanel" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.75rem; background: rgba(218,106,70,0.06); border: 1px solid rgba(218,106,70,0.2); border-radius: 0.5rem;">
+                        <div id="oauthUrlPanel" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.75rem; background: rgba(14,165,233,0.06); border: 1px solid rgba(14,165,233,0.2); border-radius: 0.5rem;">
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
                                 <small class="text-muted"><i class="bi bi-link-45deg me-1"></i>Open this URL on any device to authorize:</small>
                                 <button type="button" class="btn-close" style="font-size: 0.6rem;" onclick="document.getElementById('oauthUrlPanel').style.display='none'" aria-label="Close"></button>
@@ -1116,8 +1072,8 @@
                 <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center py-4">
-                <p class="mb-1">Your tool has been published successfully.</p>
-                <p class="text-muted small mb-0">The server needs to restart for the new tool to become active.</p>
+                <p class="mb-1">Your changes have been applied successfully.</p>
+                <p class="text-muted small mb-0">The server needs to restart for the changes to take effect.</p>
             </div>
             <div class="modal-footer d-flex justify-content-center gap-2 border-top" style="border-color: var(--border-color) !important;">
                 <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Later</button>
@@ -1149,12 +1105,11 @@ let assistantBuffer = '';
 let currentAssistantEl = null;
 let turnHasStreamedText = false;
 let statusPollInterval = null;
-let publishedSkillId = null;
+// (publishedSkillId not used in AI Coder)
 let previewUrl = null;
 let previewWindow = null;
 let autoScroll = true;
-let publishReadiness = null;
-let publishReadinessTimer = null;
+// (No readiness checks for AI Coder)
 
 // File upload state
 let pendingFiles = [];
@@ -1621,7 +1576,7 @@ function stopMembershipPoll() {
 
 async function createSession() {
     try {
-        const resp = await fetch('/tools/api/tool-builder/sessions', {
+        const resp = await fetch('/tools/api/ai-coder/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider: currentProvider })
@@ -1696,7 +1651,7 @@ async function handleSend() {
 
 async function resumeHistoricalSession(dbId) {
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}/resume`, {
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${dbId}/resume`, {
             method: 'POST',
             credentials: 'include'
         });
@@ -1732,7 +1687,7 @@ async function sendMessage(text) {
     try {
         const body = { message: text };
         if (filePaths.length) body.file_paths = filePaths;
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/message`, {
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${sessionId}/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -1765,7 +1720,7 @@ function connectWebSocket() {
     turnHasStreamedText = false;
 
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${proto}//${location.host}/tools/api/tool-builder/stream/${sessionId}?no_replay=1`;
+    const wsUrl = `${proto}//${location.host}/tools/api/ai-coder/stream/${sessionId}?no_replay=1`;
     const newWs = new WebSocket(wsUrl);
     ws = newWs;
 
@@ -1810,7 +1765,7 @@ function connectWebSocket() {
 
 function renderStreamEvent(data) {
     const type = data.type;
-    console.log('[TB stream]', type, data);
+    console.log('[AC stream]', type, data);
 
     // Tool use — render as pill
     if (type === 'tool_use' || (type === 'content_block_start' && data.content_block?.type === 'tool_use')) {
@@ -2345,7 +2300,7 @@ function startStatusPolling() {
 async function refreshStatus() {
     if (!sessionId) return;
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/status`, {
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${sessionId}/status`, {
             credentials: 'include'
         });
         if (resp.status === 401) {
@@ -2387,157 +2342,18 @@ async function refreshStatus() {
             filesList.innerHTML = '';
         }
 
-        const toolFile = files.find(f => f.toUpperCase().includes('TOOL.MD'));
-        if (toolFile) {
-            document.getElementById('skillSection').style.display = '';
-            document.getElementById('skillPreviewCode').textContent = 'TOOL.md found in: ' + toolFile;
-        }
+        // No TOOL.md tracking for AI Coder
     } catch(e) {
         console.error('Status refresh failed:', e);
     }
 }
 
-function getPublishMetadataDraft() {
-    return {
-        name: document.getElementById('publishBuildName').value.trim(),
-        display_name: document.getElementById('publishBuildDisplayName').value.trim(),
-        description: document.getElementById('publishBuildDescription').value.trim(),
-        icon: document.getElementById('publishBuildIcon').value.trim() || 'bi-gear',
-    };
-}
-
 function applyPublishButtonState() {
+    // No readiness checks for AI Coder — always enabled if title is provided
     const confirmBtn = document.getElementById('confirmPublishBtn');
     if (!confirmBtn) return;
-    const hardBlocked = publishReadiness && !publishReadiness.hard_requirements_met;
-    confirmBtn.disabled = !!hardBlocked;
-}
-
-function renderPublishReadiness(readiness) {
-    publishReadiness = readiness;
-    const badge = document.getElementById('publishReadinessBadge');
-    const hint = document.getElementById('publishReadinessHint');
-    const checksEl = document.getElementById('publishReadinessChecks');
-
-    const badgeClass =
-        readiness.status === 'ready' ? 'text-bg-success' :
-        readiness.status === 'almost_ready' ? 'text-bg-warning' :
-        'text-bg-danger';
-
-    badge.className = `badge ${badgeClass}`;
-    badge.textContent = readiness.status_label || 'Not Ready';
-
-    if (readiness.status === 'ready') {
-        hint.textContent = 'All required publish checks passed.';
-    } else if (readiness.status === 'almost_ready') {
-        hint.textContent = 'Required checks passed. Optional metadata can still be improved.';
-    } else {
-        hint.textContent = 'Fix required items below to enable publish.';
-    }
-
-    checksEl.innerHTML = (readiness.checks || []).map(item => {
-        const icon = item.ok ? 'bi-check-circle-fill text-success' : (item.hard ? 'bi-x-circle-fill text-danger' : 'bi-exclamation-circle-fill text-warning');
-        const action = item.ok
-            ? ''
-            : `<button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline" onclick="focusReadinessFix('${item.key}')">Fix</button>`;
-        return `
-            <div class="d-flex align-items-start justify-content-between mb-1">
-                <div class="small">
-                    <i class="bi ${icon} me-1"></i>
-                    <span>${escapeHtml(item.label || item.key)}</span>
-                    ${item.hard ? '<span class="badge text-bg-secondary ms-1">Required</span>' : '<span class="badge text-bg-light ms-1">Optional</span>'}
-                </div>
-                ${action}
-            </div>
-        `;
-    }).join('');
-
-    applyPublishButtonState();
-}
-
-function focusReadinessFix(key) {
-    const inputMap = {
-        name: 'publishBuildName',
-        display_name: 'publishBuildDisplayName',
-        description: 'publishBuildDescription',
-        icon: 'publishBuildIcon',
-    };
-    const fieldId = inputMap[key];
-    if (fieldId) {
-        const el = document.getElementById(fieldId);
-        if (el) {
-            el.focus();
-            return;
-        }
-    }
-
-    // For skill_file: auto-generate TOOL.md from form fields via API
-    if (key === 'skill_file') {
-        const name = document.getElementById('publishBuildName').value.trim() || 'my-tool';
-        const displayName = document.getElementById('publishBuildDisplayName').value.trim() || 'My Tool';
-        const desc = document.getElementById('publishBuildDescription').value.trim() || '';
-        const icon = document.getElementById('publishBuildIcon').value.trim() || 'bi-gear';
-        generateToolFile(name, displayName, desc, icon);
-    } else if (key === 'trigger') {
-        bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
-        sendMessage('Add a `trigger` field to the TOOL.md frontmatter. The trigger should be a keyword or pattern that activates this tool. Then commit the change.');
-    }
-}
-
-async function generateToolFile(name, displayName, description, icon) {
-    if (!sessionId) return;
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/generate-tool`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name, display_name: displayName, description, icon, trigger: name })
-        });
-        if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            showToast(err.detail || 'Failed to generate TOOL.md', 'error');
-            return;
-        }
-        const readiness = await resp.json();
-        showToast('TOOL.md generated and committed', 'success');
-        renderReadiness(readiness);
-    } catch (e) {
-        showToast('Error generating TOOL.md', 'error');
-    }
-}
-
-async function refreshPublishReadiness() {
-    if (!sessionId) return;
-
-    const badge = document.getElementById('publishReadinessBadge');
-    if (badge) {
-        badge.className = 'badge text-bg-secondary';
-        badge.textContent = 'Checking...';
-    }
-
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/readiness`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(getPublishMetadataDraft()),
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-            showToast(data.detail || 'Failed to validate publish readiness', 'error');
-            return;
-        }
-        renderPublishReadiness(data);
-    } catch (e) {
-        showToast('Readiness check failed', 'error');
-    }
-}
-
-function schedulePublishReadinessRefresh() {
-    if (publishReadinessTimer) clearTimeout(publishReadinessTimer);
-    publishReadinessTimer = setTimeout(() => {
-        refreshPublishReadiness();
-    }, 250);
+    const title = document.getElementById('publishBuildTitle');
+    confirmBtn.disabled = title && !title.value.trim();
 }
 
 // ============================================================
@@ -2548,62 +2364,28 @@ async function publishBuild() {
     if (!sessionId) return;
     if (isRunning) { showToast('Wait for the agent to finish', 'warning'); return; }
 
-    // Reset fields to defaults before populating
-    document.getElementById('publishBuildName').value = '';
-    document.getElementById('publishBuildDisplayName').value = '';
+    // Reset fields
+    document.getElementById('publishBuildTitle').value = '';
     document.getElementById('publishBuildDescription').value = '';
-    document.getElementById('publishBuildIcon').value = 'bi-gear';
-    publishReadiness = null;
     applyPublishButtonState();
     new bootstrap.Modal(document.getElementById('publishBuildModal')).show();
-
-    // Fetch readiness with empty metadata to get TOOL.md frontmatter
-    try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/readiness`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name: '', display_name: '', description: '', icon: '' }),
-        });
-        const data = await resp.json();
-        if (resp.ok && data.frontmatter) {
-            const fm = data.frontmatter;
-            if (fm.name) document.getElementById('publishBuildName').value = fm.name;
-            if (fm.display_name) document.getElementById('publishBuildDisplayName').value = fm.display_name;
-            if (fm.description) document.getElementById('publishBuildDescription').value = fm.description;
-            if (fm.icon) document.getElementById('publishBuildIcon').value = fm.icon;
-        }
-        // Re-run readiness with now-populated fields
-        await refreshPublishReadiness();
-    } catch (e) {
-        // Fallback: just run normal readiness check
-        refreshPublishReadiness();
-    }
 }
 
 async function confirmPublish() {
-    await refreshPublishReadiness();
-    if (publishReadiness && !publishReadiness.hard_requirements_met) {
-        showToast('Fix required readiness items before publishing', 'warning');
-        return;
-    }
-
-    const name = document.getElementById('publishBuildName').value.trim();
-    if (!name) { showToast('Tool name is required', 'warning'); return; }
+    const title = document.getElementById('publishBuildTitle').value.trim();
+    if (!title) { showToast('Title is required', 'warning'); return; }
 
     const metadata = {
-        name: name,
-        display_name: document.getElementById('publishBuildDisplayName').value.trim() || name,
+        title: title,
         description: document.getElementById('publishBuildDescription').value.trim(),
-        icon: document.getElementById('publishBuildIcon').value.trim() || 'bi-gear',
     };
 
     const confirmBtn = document.getElementById('confirmPublishBtn');
     confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Publishing...';
+    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Applying...';
 
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/publish`, {
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${sessionId}/publish`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -2617,24 +2399,18 @@ async function confirmPublish() {
             bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
             if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
             previewWindow = null;
-            publishedSkillId = data.skill_id;
             sessionId = null;
             previewUrl = null;
             if (statusPollInterval) clearInterval(statusPollInterval);
             resetPanel();
             loadSessions();
-            if (data.skill_id) { currentToolId = data.skill_id; }
-            // Store restart flag for after marketplace modal
-            window._pendingRestart = !!data.restart_required;
-            // Show marketplace publish modal if we have a tool ID
-            if (data.skill_id) {
-                showPublishModal();
-            } else if (data.restart_required) {
+            if (data.restart_required) {
                 const restartModal = new bootstrap.Modal(document.getElementById('restartServerModal'));
                 restartModal.show();
             } else {
-                showToast('Tool published successfully!', 'success');
+                showToast('Changes applied successfully!', 'success');
             }
+            loadModifications();
         } else {
             // On failure: show error but keep build panel visible (don't resetPanel)
             showToast(data.detail || data.error || 'Publish failed', 'error');
@@ -2643,7 +2419,7 @@ async function confirmPublish() {
         showToast('Error publishing build', 'error');
     }
     confirmBtn.disabled = false;
-    confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Publish';
+    confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Apply Changes';
     applyPublishButtonState();
 }
 
@@ -2651,7 +2427,7 @@ async function discardBuild() {
     if (!sessionId) return;
     if (!confirm('Discard this build? All changes will be lost.')) return;
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/discard`, { method: 'POST', credentials: 'include' });
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${sessionId}/discard`, { method: 'POST', credentials: 'include' });
         if (resp.ok) {
             if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
             previewWindow = null;
@@ -2671,7 +2447,7 @@ async function discardBuild() {
 async function stopAgent() {
     if (!sessionId) return;
     try {
-        await fetch(`/tools/api/tool-builder/sessions/${sessionId}/stop`, { method: 'POST', credentials: 'include' });
+        await fetch(`/tools/api/ai-coder/sessions/${sessionId}/stop`, { method: 'POST', credentials: 'include' });
         setRunningState(false);
     } catch(e) {
         console.error('Stop failed:', e);
@@ -2698,7 +2474,7 @@ async function openPreview() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/preview`, {
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${sessionId}/preview`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'
@@ -2741,7 +2517,6 @@ function resetPanel() {
     document.getElementById('emptyPanel').style.display = '';
     document.getElementById('branchSection').style.display = 'none';
     document.getElementById('filesSection').style.display = 'none';
-    document.getElementById('skillSection').style.display = 'none';
     document.getElementById('panelActions').style.display = 'none';
 }
 
@@ -2785,7 +2560,7 @@ let currentDbSessionId = null;  // tracks which DB session is displayed in sideb
 
 async function loadSessions() {
     try {
-        const resp = await fetch('/tools/api/tool-builder/sessions', { credentials: 'include' });
+        const resp = await fetch('/tools/api/ai-coder/sessions', { credentials: 'include' });
         if (!resp.ok) return [];
         const sessions = await resp.json();
         const list = document.getElementById('sessionList');
@@ -2809,11 +2584,11 @@ async function loadSessions() {
 
             const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString([], {month:'short', day:'numeric'}) : '';
             const statusClass = `status-${s.status || 'idle'}`;
-            const publishedBadge = s.published ? `<span class="published-badge">Published</span>` : '';
+            const publishedBadge = s.published ? `<span class="published-badge">Applied</span>` : '';
             const activeBadge = isActive ? `<span class="mini-badge status-running">Live</span>` : '';
 
             div.innerHTML = `
-                <div class="prompt-preview">${escapeHtml(s.title || '[Tool Builder Session]')}</div>
+                <div class="prompt-preview">${escapeHtml(s.title || '[AI Coder Session]')}</div>
                 <div class="session-meta">
                     <span class="mini-badge ${statusClass}">${escapeHtml(s.status || 'idle')}</span>
                     ${activeBadge}
@@ -2842,7 +2617,7 @@ async function viewSession(dbId) {
     });
 
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}`, { credentials: 'include' });
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${dbId}`, { credentials: 'include' });
         if (!resp.ok) { showToast('Failed to load session', 'error'); return; }
         const data = await resp.json();
 
@@ -2882,7 +2657,7 @@ async function viewSession(dbId) {
 async function deleteBuilderSession(dbId) {
     if (!confirm('Delete this session? This cannot be undone.')) return;
     try {
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${dbId}`, {
+        const resp = await fetch(`/tools/api/ai-coder/sessions/${dbId}`, {
             method: 'DELETE',
             credentials: 'include'
         });
@@ -2957,38 +2732,104 @@ function replayMessages(messages) {
 }
 
 // ============================================================
-// Publish to Marketplace
+// Modifications Panel
 // ============================================================
 
-function showPublishModal() {
-    if (!currentToolId) { showToast('No tool to publish', 'warning'); return; }
-    new bootstrap.Modal(document.getElementById('publishModal')).show();
+async function loadModifications() {
+    try {
+        const resp = await fetch('/tools/api/ai-coder/modifications', { credentials: 'include' });
+        if (!resp.ok) return;
+        const mods = await resp.json();
+        const list = document.getElementById('modificationsList');
+        const noMods = document.getElementById('noModifications');
+
+        // Remove old items (keep #noModifications)
+        list.querySelectorAll('.mod-item').forEach(el => el.remove());
+
+        if (!mods || mods.length === 0) {
+            noMods.style.display = '';
+            return;
+        }
+        noMods.style.display = 'none';
+
+        mods.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'mod-item session-item';
+            div.style.cursor = 'default';
+
+            const dateStr = m.created_at ? new Date(m.created_at).toLocaleDateString([], {month:'short', day:'numeric'}) : '';
+            const filesCount = m.files_count || 0;
+            const isActive = m.status === 'active';
+            const statusBadge = isActive
+                ? '<span class="mini-badge" style="background: rgba(16,185,129,0.15); color: #10b981;">active</span>'
+                : '<span class="mini-badge" style="background: rgba(245,158,11,0.15); color: #d97706;">reverted</span>';
+
+            div.innerHTML = `
+                <div class="prompt-preview">${escapeHtml(m.title || 'Untitled')}</div>
+                <div class="session-meta">
+                    ${statusBadge}
+                    <span class="mini-badge" style="background: rgba(var(--provider-color-rgb),0.1); color: var(--provider-color);">${filesCount} file${filesCount !== 1 ? 's' : ''}</span>
+                    <span class="session-date">${dateStr}</span>
+                </div>
+                <div class="d-flex gap-1 mt-1">
+                    ${isActive ? `<button class="btn btn-sm btn-outline-warning rounded-pill px-2 py-0" style="font-size: 0.68rem;" onclick="event.stopPropagation(); revertModification(${m.id})" title="Revert changes">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
+                    </button>` : ''}
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0" style="font-size: 0.68rem;" onclick="event.stopPropagation(); shareModification(${m.id})" title="Share modification">
+                        <i class="bi bi-share me-1"></i>Share
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    } catch(e) {
+        console.error('Failed to load modifications:', e);
+    }
 }
 
-async function publishToolToMarketplace() {
-    if (!currentToolId) return;
+async function revertModification(modId) {
+    if (!confirm('Revert this modification? The changes will be undone.')) return;
     try {
-        const resp = await fetch(`/tools/api/tool-builder/tools/${currentToolId}/publish`, {
+        const resp = await fetch(`/tools/api/ai-coder/modifications/${modId}/revert`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            credentials: 'include',
-            body: JSON.stringify({
-                category: document.getElementById('publishCategory').value,
-                version: document.getElementById('publishVersion').value,
-                long_description: document.getElementById('publishDescription').value
-            })
+            credentials: 'include'
         });
-        const data = await resp.json();
-        if (resp.status === 401) {
-            showToast('Session expired. Please refresh the page and log in again.', 'error');
-        } else if (resp.ok) {
-            showToast('Tool published to marketplace!', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('publishModal')).hide();
-            loadSessions();
+        if (resp.ok) {
+            showToast('Modification reverted', 'success');
+            loadModifications();
         } else {
-            showToast(data.detail || 'Failed to publish', 'error');
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to revert', 'error');
         }
-    } catch(e) { showToast('Error publishing tool', 'error'); }
+    } catch(e) {
+        showToast('Error reverting modification', 'error');
+    }
+}
+
+async function shareModification(modId) {
+    try {
+        const resp = await fetch(`/tools/api/ai-coder/modifications/${modId}/share`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.share_url) {
+                navigator.clipboard.writeText(data.share_url).then(() => {
+                    showToast('Share URL copied to clipboard', 'success');
+                }).catch(() => {
+                    showToast('Share URL: ' + data.share_url, 'info');
+                });
+            } else {
+                showToast('Modification shared', 'success');
+            }
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to share', 'error');
+        }
+    } catch(e) {
+        showToast('Error sharing modification', 'error');
+    }
 }
 
 // ============================================================
@@ -3058,29 +2899,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
     });
 
-    ['publishBuildName', 'publishBuildDisplayName', 'publishBuildDescription', 'publishBuildIcon'].forEach(id => {
-        const field = document.getElementById(id);
-        if (field) field.addEventListener('input', schedulePublishReadinessRefresh);
-    });
+    // Enable/disable Apply Changes button based on title field
+    const titleField = document.getElementById('publishBuildTitle');
+    if (titleField) titleField.addEventListener('input', applyPublishButtonState);
 
-    const publishModalEl = document.getElementById('publishBuildModal');
-    publishModalEl.addEventListener('hidden.bs.modal', () => {
-        publishReadiness = null;
-        applyPublishButtonState();
-    });
-
-    // When marketplace publish modal closes, show restart modal if needed
-    const marketplaceModalEl = document.getElementById('publishModal');
-    if (marketplaceModalEl) {
-        marketplaceModalEl.addEventListener('hidden.bs.modal', function() {
-            if (window._pendingRestart) {
-                window._pendingRestart = false;
-                setTimeout(() => {
-                    new bootstrap.Modal(document.getElementById('restartServerModal')).show();
-                }, 300);
-            }
-        });
-    }
+    // Load modifications panel
+    loadModifications();
 });
 
 async function restartServer() {
@@ -3089,7 +2913,7 @@ async function restartServer() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('restartServerModal'));
         if (modal) modal.hide();
         showToast('Restarting server...', 'info');
-        await fetch('/tools/api/tool-builder/restart', { method: 'POST', credentials: 'include' });
+        await fetch('/tools/api/ai-coder/restart', { method: 'POST', credentials: 'include' });
     } catch(e) { /* expected — server is restarting */ }
     pollUntilServerReady();
 }

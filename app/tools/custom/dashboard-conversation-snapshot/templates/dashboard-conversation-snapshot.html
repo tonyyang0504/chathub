@@ -8,8 +8,18 @@
     background: linear-gradient(135deg, #5b8def 0%, #5f4dee 100%);
     color: white;
     border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.snapshot-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+.snapshot-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 600px;
 }
 .snapshot-card {
     border: 1px solid var(--border-color);
@@ -34,8 +44,15 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="snapshot-hero">
-        <h2 class="mb-2"><i class="bi bi-chat-left-text me-2"></i>Conversation Snapshot</h2>
-        <p class="mb-0 opacity-75">See where conversations are active across your hubs at a glance.</p>
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-chat-left-text me-3"></i>Conversation Snapshot</h1>
+                <p>See where conversations are active across your hubs at a glance.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-chat-square-dots" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
     </div>
 
     <div class="card snapshot-card mb-3">

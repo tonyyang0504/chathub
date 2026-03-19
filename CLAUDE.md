@@ -398,6 +398,44 @@ Any scrollable container (`overflow-y: auto`, `max-height`, textarea, etc.) must
 .my-scrollable { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; } /* Firefox */
 ```
 
+### Custom Tool Card Controls (Toggle + Delete)
+Toggle switch and delete button are positioned independently, NOT side by side:
+- **Toggle switch**: `position: absolute; top: 10px; right: 10px;` — uses CSS variable `--tool-theme-color` set from the tool's gradient end color so the checked state matches the tool's theme
+- **Delete button**: `position: absolute; bottom: 10px; right: 12px;` — vertically aligned with the toggle on the right edge
+- Delete icon: borderless `.btn-trash` class, muted by default (`opacity: 0.5; color: var(--text-muted)`), red on hover
+- Toggle CSS uses `var(--tool-theme-color, #6366f1)` for `background-color` and `border-color` on `:checked` and `:focus` states
+- Set the variable inline: `style="--tool-theme-color: {{ tool_gradients[tool.id][1] }};"`
+
+### Custom Tool Hero Layout — Match Built-in Tools
+Custom tool pages AND detail pages must use the same two-column hero layout as built-in tool pages:
+```html
+<div class="tool-hero"> <!-- or .attention-hero, .snapshot-hero, etc. -->
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-icon me-3"></i>Tool Title</h1>
+            <p>Description text...</p>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-decorative-icon" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+```
+- The decorative icon should differ from the heading icon (e.g., heading `bi-calendar-event`, decorative `bi-calendar-check`)
+- Hidden on small screens via `d-none d-lg-block`
+- The detail page (`custom_tool_detail.html`) uses the tool's own icon for both heading and decorative icon
+- Do NOT use a separate flex layout with the icon in a box next to the title — keep the icon inline in the `<h1>`
+
+### Custom Tool Theme Colors — Extract from Template
+Custom tools built by the AI Tool Builder hardcode their gradient colors in their HTML template hero section, which may differ from the DB `gradient_start`/`gradient_end` defaults. To keep card colors in sync with tool page colors:
+- Parse the actual gradient from the tool's template file: `app/tools/custom/{name}/templates/{name}.html`
+- Use regex on the first 500 chars: `linear-gradient(135deg, #hex 0%, #hex 100%)`
+- Pass resolved colors to the template via a separate dict (e.g., `tool_gradients[tool.id]`), NOT by setting attributes on SQLAlchemy model objects (ORM objects silently ignore arbitrary attribute assignment)
+- Fallback to DB values only if template parsing fails
+
+### SQLAlchemy ORM — No Dynamic Attributes
+Never set arbitrary attributes on SQLAlchemy model instances (e.g., `tool._my_attr = value`) — they will silently fail in templates. Instead, pass supplementary data as a separate dict to the Jinja2 template context.
+
 ## Testing
 
 Test fixtures in `tests/conftest.py`:

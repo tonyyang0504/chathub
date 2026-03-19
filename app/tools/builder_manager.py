@@ -197,7 +197,6 @@ Create `app/tools/custom/{tool-name}/templates/{tool-name}.html` extending `base
 - Use Bootstrap 5.3.2, Bootstrap Icons
 - Follow all CLAUDE.md UI conventions (CSS variables, rounded-pill buttons, gradient theming, etc.)
 - Study existing tool templates (in `app/templates/dashboard/tools/`) for reference
-
 ### CRITICAL RULES — What you MUST and MUST NOT do
 
 - **DO** create your tool directory at `app/tools/custom/{tool-name}/`
@@ -1214,14 +1213,8 @@ class ToolBuilderManager:
         if user_id in self._sessions:
             del self._sessions[user_id]
 
-        # Hot-reload: register the new tool's routes immediately (no restart needed)
-        try:
-            from . import register_custom_tools
-            from .routes import router as tools_router
-            register_custom_tools(tools_router)
-        except Exception as e:
-            logger.error(f"Hot-reload failed after publish: {e}")
-
+        # Restart required: the tool's routes need to be registered at startup
+        # (include_router after app startup doesn't reliably propagate routes)
         return {
             "success": True,
             "message": result.get("message", "Published"),
@@ -1229,7 +1222,7 @@ class ToolBuilderManager:
             "merged_branch": result.get("merged_branch", ""),
             "skill_id": tool_id,
             "skill_file": tool_file,
-            "restart_required": False,
+            "restart_required": True,
         }
 
     def _create_tool_from_md(self, user_id: int, tool_md_content: str, files: list = None, commit_hash: str = None) -> Optional[int]:

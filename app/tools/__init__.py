@@ -13,6 +13,7 @@ from .routes import router as tools_router
 from .monitoring import ToolMonitor
 from .builder_routes import router as builder_router
 from .marketplace_routes import router as marketplace_router
+from .coder_routes import router as coder_router
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,38 @@ def register_custom_tools(parent_router):
                 pass
 
 
+def register_custom_tools_on_app(app):
+    """Register any NEW custom tool routers directly on the running FastAPI app.
+
+    Unlike register_custom_tools() which adds to a source router before
+    include_router(), this adds routes directly to the live app so they
+    take effect immediately — even after startup.
+    """
+    if not CUSTOM_TOOLS_DIR.exists():
+        return
+
+    inactive_names = _get_inactive_tool_names()
+
+    for tool_dir in sorted(CUSTOM_TOOLS_DIR.iterdir()):
+        routes_file = tool_dir / "routes.py"
+        if not (tool_dir.is_dir() and routes_file.exists()):
+            continue
+        if tool_dir.name in _registered_tools:
+            continue
+        if tool_dir.name in inactive_names:
+            continue
+        try:
+            module = _load_module_from_file(
+                f"app.tools.custom.{tool_dir.name}.routes", routes_file
+            )
+            if hasattr(module, "router"):
+                app.include_router(module.router, prefix=f"/tools/{tool_dir.name}", tags=["Tools"])
+                _registered_tools.add(tool_dir.name)
+                logger.info(f"Live-registered custom tool on app: {tool_dir.name}")
+        except Exception as e:
+            logger.error(f"Failed to live-register custom tool '{tool_dir.name}': {e}")
+
+
 def unregister_custom_tool(parent_router, tool_name: str):
     """Remove a custom tool's routes from the parent router at runtime."""
     prefix = f"/tools/{tool_name}"
@@ -133,5 +166,5 @@ def get_active_widgets(page: str, db) -> list[dict]:
     return widgets
 
 
-__all__ = ['tools_router', 'ToolMonitor', 'builder_router', 'marketplace_router',
-           'register_custom_tools', 'unregister_custom_tool', 'get_active_widgets']
+__all__ = ['tools_router', 'ToolMonitor', 'builder_router', 'marketplace_router', 'coder_router',
+           'register_custom_tools', 'register_custom_tools_on_app', 'unregister_custom_tool', 'get_active_widgets']

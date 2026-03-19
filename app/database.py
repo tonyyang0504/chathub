@@ -873,7 +873,7 @@ class CustomToolListing(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    tool_id = Column(Integer, ForeignKey("built_tools.id", ondelete="CASCADE"), unique=True, nullable=False)
+    tool_id = Column(Integer, ForeignKey("built_tools.id", ondelete="CASCADE"), unique=True, nullable=True)
     name = Column(String(200), unique=True, nullable=False)
     display_name = Column(String(200))
     description = Column(Text)
@@ -884,6 +884,7 @@ class CustomToolListing(Base):
     gradient_start = Column(String(7), default="#6366f1")
     gradient_end = Column(String(7), default="#8b5cf6")
     install_count = Column(Integer, default=0)
+    listing_type = Column(String(20), default="tool")  # tool, mod
     status = Column(String(20), default="draft")  # draft, published, removed
     tool_md_content = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -893,6 +894,27 @@ class CustomToolListing(Base):
     author = relationship("User", backref="custom_tool_listings")
     tool = relationship("BuiltTool", back_populates="listing")
     installs = relationship("CustomToolInstall", back_populates="listing")
+
+
+class CodeModification(Base):
+    """Record of a codebase modification made by AI Coder."""
+    __tablename__ = "code_modifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(Integer, ForeignKey("claude_code_sessions.id"), nullable=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text)
+    commit_hash = Column(String(40))
+    revert_commit_hash = Column(String(40), nullable=True)
+    files_changed = Column(Text)  # JSON list
+    status = Column(String(20), default="active")  # active, reverted
+    published_at = Column(DateTime, default=datetime.utcnow)
+    reverted_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    user = relationship("User", backref="code_modifications")
+    session = relationship("AiWorkspaceSession", backref="code_modifications")
 
 
 class CustomToolInstall(Base):
