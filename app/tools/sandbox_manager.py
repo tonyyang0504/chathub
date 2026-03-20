@@ -133,12 +133,19 @@ class SandboxManager:
             )
         # Install colima + docker CLI (no sudo, no GUI, no license prompts)
         subprocess.run([brew, "install", "colima", "docker"], check=True)
-        # Start Colima VM (background, takes ~30s)
+        # Start Colima VM (takes ~30s). If a stale VM exists, delete and retry.
         colima = shutil.which("colima") or "/opt/homebrew/bin/colima"
-        subprocess.run(
+        result = subprocess.run(
             [colima, "start", "--cpu", "2", "--memory", "2"],
-            check=True
+            capture_output=True, text=True
         )
+        if result.returncode != 0:
+            logger.warning("Colima start failed — deleting stale VM and retrying...")
+            subprocess.run([colima, "delete", "-f"], capture_output=True)
+            subprocess.run(
+                [colima, "start", "--cpu", "2", "--memory", "2"],
+                check=True
+            )
 
     def _install_docker_linux(self):
         # Rootless install — no sudo required
