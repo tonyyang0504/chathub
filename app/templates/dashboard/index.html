@@ -336,6 +336,21 @@
     .scheduled-content-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
     .scheduled-content-list { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
 
+    /* Chart range buttons */
+    #chartRangeGroup .btn {
+        font-size: 0.75rem;
+        padding: 4px 12px;
+        border-radius: 20px !important;
+    }
+    #chartRangeGroup .btn.active {
+        background: var(--wa-green);
+        border-color: var(--wa-green);
+        color: white;
+    }
+    #chartRangeGroup .btn:focus {
+        box-shadow: none;
+    }
+
 </style>
 {% endblock %}
 
@@ -397,6 +412,31 @@
                         <h2 class="mb-0 fw-semibold" id="statMessagesToday">-</h2>
                     </div>
                     <i class="bi bi-envelope fs-1 text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Volume Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" style="border-radius: 12px;">
+            <div class="card-header d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Message Volume</h5>
+                <div class="btn-group btn-group-sm" role="group" id="chartRangeGroup">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill me-1 active" data-days="7" onclick="updateChartRange(7)">7 days</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill me-1" data-days="14" onclick="updateChartRange(14)">14 days</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-days="30" onclick="updateChartRange(30)">30 days</button>
+                </div>
+            </div>
+            <div class="card-body" style="position: relative;">
+                <div style="height: 240px;">
+                    <canvas id="messageVolumeChart"></canvas>
+                </div>
+                <div id="chartLoading" class="text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    <div class="spinner-border spinner-border-sm text-muted" role="status"></div>
+                    <small class="text-muted ms-2">Loading chart...</small>
                 </div>
             </div>
         </div>
@@ -616,6 +656,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     // Load custom tool widgets
     async function loadCustomWidgets() {
@@ -738,6 +779,127 @@
 
         // Load scheduled content across all hubs
         await loadScheduledContent();
+
+        // Load message volume chart
+        await loadMessageVolumeChart(7);
+    }
+
+    // Message Volume Chart
+    let messageVolumeChart = null;
+
+    async function loadMessageVolumeChart(days) {
+        const loading = document.getElementById('chartLoading');
+        try {
+            const res = await fetch(`/api/analytics/daily?days=${days}`);
+            const data = await res.json();
+            if (loading) loading.style.display = 'none';
+
+            const dailyStats = data.daily_stats || [];
+            // API returns latest first, reverse for chronological order
+            dailyStats.reverse();
+
+            const labels = dailyStats.map(d => {
+                const date = new Date(d.date + 'T00:00:00');
+                if (days <= 7) {
+                    return date.toLocaleDateString('en-US', { weekday: 'short' });
+                } else if (days <= 14) {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } else {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+            });
+            const received = dailyStats.map(d => d.messages_received);
+            const sent = dailyStats.map(d => d.messages_sent);
+
+            const ctx = document.getElementById('messageVolumeChart').getContext('2d');
+
+            if (messageVolumeChart) {
+                messageVolumeChart.destroy();
+            }
+
+            messageVolumeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Received',
+                            data: received,
+                            backgroundColor: 'rgba(37, 211, 102, 0.6)',
+                            borderColor: 'rgba(37, 211, 102, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: 'Sent',
+                            data: sent,
+                            backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                            borderColor: 'rgba(13, 110, 253, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded',
+                                padding: 16,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            cornerRadius: 8,
+                            padding: 10,
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#999'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.06)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#999',
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Error loading message volume chart:', e);
+            if (loading) loading.innerHTML = '<small class="text-muted">Failed to load chart</small>';
+        }
+    }
+
+    function updateChartRange(days) {
+        document.querySelectorAll('#chartRangeGroup .btn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.days) === days);
+        });
+        loadMessageVolumeChart(days);
     }
 
     async function loadScheduledContent() {
