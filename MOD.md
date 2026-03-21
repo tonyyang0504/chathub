@@ -1,4 +1,4 @@
 ---
-title: Agent Chat Playground with Multi-turn Conversations and Comparison Mode
-description: Added an Agent Playground feature to the Agents page — a chat-style interface for multi-turn conversations with AI agents. Users can test how agents handle follow-ups and context retention across multiple messages. Includes a side-by-side comparison mode to test two agents simultaneously with the same conversation, with per-message metadata (tokens, timing, model) and session stats tracking.
+title: Add Performance Analytics dashboard to Agents page
+description: Added a new Performance Analytics section to the AI Agents page with interactive charts and an agent leaderboard. Includes a new API endpoint (GET /agents/api/analytics) that aggregates execution data by day, with filterable date range (7d/30d/90d) and per-agent filtering. The frontend features stacked bar charts for executions with success rate overlay, token usage with avg response time overlay (via Chart.js), summary stat cards, and a ranked leaderboard table showing each agent's execution count, success rate, and token usage.
 ---

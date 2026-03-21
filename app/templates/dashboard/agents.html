@@ -832,6 +832,135 @@
 .pg-agent-label.primary { color: #ff6b6b; }
 .pg-agent-label.compare { color: #667eea; }
 
+/* Analytics Section */
+.analytics-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+.analytics-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.analytics-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+.analytics-period-btns .btn {
+    font-size: 0.8rem;
+    padding: 4px 14px;
+}
+.analytics-period-btns .btn.active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border-color: transparent;
+    color: white;
+}
+.analytics-body {
+    padding: 1.5rem;
+}
+.analytics-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.analytics-summary-card {
+    background: var(--hover-bg);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+}
+.analytics-summary-card .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.analytics-summary-card .label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.analytics-summary-card.accent-red .value { color: #ff6b6b; }
+.analytics-summary-card.accent-green .value { color: #28a745; }
+.analytics-summary-card.accent-blue .value { color: #667eea; }
+.analytics-summary-card.accent-orange .value { color: #ee5a24; }
+.chart-container {
+    position: relative;
+    height: 260px;
+    margin-bottom: 1.5rem;
+}
+.chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+@media (max-width: 991px) {
+    .chart-row { grid-template-columns: 1fr; }
+}
+.leaderboard-table {
+    width: 100%;
+    font-size: 0.875rem;
+}
+.leaderboard-table th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+}
+.leaderboard-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.leaderboard-table tr:last-child td { border-bottom: none; }
+.leaderboard-table tr:hover td { background: var(--hover-bg); }
+.leaderboard-rank {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+.leaderboard-rank.gold { background: #fff3cd; color: #856404; }
+.leaderboard-rank.silver { background: #e9ecef; color: #495057; }
+.leaderboard-rank.bronze { background: #fde8d0; color: #8a5a2b; }
+.leaderboard-rank.default { background: var(--hover-bg); color: var(--text-muted); }
+.success-bar {
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 60px;
+}
+.success-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+.analytics-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+.analytics-empty i {
+    font-size: 3rem;
+    opacity: 0.4;
+    margin-bottom: 1rem;
+    display: block;
+}
+
 </style>
 {% endblock %}
 
@@ -1108,6 +1237,34 @@
         </div>
     </div>
 
+    <!-- Performance Analytics -->
+    <div class="analytics-section" id="analyticsSection">
+        <div class="analytics-header">
+            <h5><i class="bi bi-graph-up-arrow me-2"></i>Performance Analytics</h5>
+            <div class="d-flex align-items-center gap-2">
+                <div class="dropdown instance-dropdown" style="min-width: 150px;">
+                    <button class="btn instance-dropdown-btn dropdown-toggle" type="button" id="analyticsAgentDropdown" data-bs-toggle="dropdown">
+                        All Agents
+                    </button>
+                    <div class="dropdown-menu instance-dropdown-menu" id="analyticsAgentOptions">
+                        <a class="dropdown-item analytics-agent-item selected" href="#" data-value="">All Agents</a>
+                    </div>
+                </div>
+                <input type="hidden" id="analyticsAgentValue" value="">
+                <div class="btn-group analytics-period-btns" role="group">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-days="7" onclick="changeAnalyticsPeriod(7, this)">7d</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill active" data-days="30" onclick="changeAnalyticsPeriod(30, this)">30d</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-days="90" onclick="changeAnalyticsPeriod(90, this)">90d</button>
+                </div>
+            </div>
+        </div>
+        <div class="analytics-body" id="analyticsBody">
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Activity -->
     <div class="tool-card">
         <div class="tool-card-header">
@@ -1355,6 +1512,7 @@
 {% block extra_js %}
 <!-- Markdown parser for AI responses -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 // Configure marked for safe rendering
 marked.setOptions({
@@ -1480,12 +1638,18 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAgents();
     loadTemplates();
     loadExecutionHistory();
+    loadAnalytics();
 
     // Auto-refresh every 30 seconds
     setInterval(() => {
         loadAgents();
         loadExecutionHistory();
     }, 30000);
+
+    // Refresh analytics every 60 seconds
+    setInterval(() => {
+        loadAnalytics();
+    }, 60000);
 });
 
 function setupDropdownHandlers() {
@@ -1698,6 +1862,7 @@ function updateActivityAgentDropdown() {
     });
     container.innerHTML = html;
     setupActivityAgentFilterHandlers();
+    updateAnalyticsAgentDropdown();
 }
 
 function renderAgents() {
@@ -2499,6 +2664,308 @@ function updatePlaygroundStats() {
         &middot; <i class="bi bi-coin me-1"></i>${pgTotalTokens.toLocaleString()} tokens
         &middot; <i class="bi bi-collection me-1"></i>${pgConversation.length} messages in context
     `;
+}
+
+// ============================================================================
+// Performance Analytics
+// ============================================================================
+
+let analyticsPeriod = 30;
+let executionsChart = null;
+let tokensChart = null;
+
+function updateAnalyticsAgentDropdown() {
+    const container = document.getElementById('analyticsAgentOptions');
+    let html = '<a class="dropdown-item analytics-agent-item selected" href="#" data-value="">All Agents</a>';
+    agents.forEach(agent => {
+        html += `<a class="dropdown-item analytics-agent-item" href="#" data-value="${agent.id}">${agent.name}</a>`;
+    });
+    container.innerHTML = html;
+    setupAnalyticsAgentFilterHandlers();
+}
+
+function setupAnalyticsAgentFilterHandlers() {
+    document.querySelectorAll('.analytics-agent-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.analytics-agent-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('analyticsAgentValue').value = this.dataset.value;
+            document.getElementById('analyticsAgentDropdown').textContent = this.textContent;
+            loadAnalytics();
+        });
+    });
+}
+
+function changeAnalyticsPeriod(days, btn) {
+    analyticsPeriod = days;
+    document.querySelectorAll('.analytics-period-btns .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadAnalytics();
+}
+
+async function loadAnalytics() {
+    const body = document.getElementById('analyticsBody');
+    const agentFilter = document.getElementById('analyticsAgentValue').value;
+
+    let url = `/agents/api/analytics?days=${analyticsPeriod}`;
+    if (agentFilter) url += `&agent_id=${agentFilter}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.detail || 'Failed to load analytics');
+
+        renderAnalytics(data);
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+        body.innerHTML = `<div class="analytics-empty"><i class="bi bi-exclamation-circle"></i><p>Failed to load analytics</p></div>`;
+    }
+}
+
+function renderAnalytics(data) {
+    const body = document.getElementById('analyticsBody');
+    const totals = data.totals;
+    const daily = data.daily;
+    const leaderboard = data.leaderboard;
+
+    if (totals.executions === 0 && leaderboard.length === 0) {
+        body.innerHTML = `<div class="analytics-empty"><i class="bi bi-bar-chart-line"></i><p>No execution data yet for this period.<br>Test your agents to start collecting analytics.</p></div>`;
+        return;
+    }
+
+    // Build summary + charts + leaderboard
+    let html = `
+        <div class="analytics-summary-grid">
+            <div class="analytics-summary-card accent-red">
+                <div class="value">${totals.executions.toLocaleString()}</div>
+                <div class="label">Total Executions</div>
+            </div>
+            <div class="analytics-summary-card accent-green">
+                <div class="value">${totals.success_rate}%</div>
+                <div class="label">Success Rate</div>
+            </div>
+            <div class="analytics-summary-card accent-blue">
+                <div class="value">${totals.success.toLocaleString()}</div>
+                <div class="label">Successful</div>
+            </div>
+            <div class="analytics-summary-card accent-orange">
+                <div class="value">${formatTokens(totals.tokens)}</div>
+                <div class="label">Tokens Used</div>
+            </div>
+        </div>
+
+        <div class="chart-row">
+            <div>
+                <h6 class="mb-2" style="font-weight: 600;"><i class="bi bi-lightning me-1"></i>Executions & Success Rate</h6>
+                <div class="chart-container"><canvas id="executionsChart"></canvas></div>
+            </div>
+            <div>
+                <h6 class="mb-2" style="font-weight: 600;"><i class="bi bi-coin me-1"></i>Token Usage</h6>
+                <div class="chart-container"><canvas id="tokensChart"></canvas></div>
+            </div>
+        </div>
+    `;
+
+    if (leaderboard.length > 0) {
+        html += `
+            <h6 class="mb-2 mt-2" style="font-weight: 600;"><i class="bi bi-trophy me-1"></i>Agent Leaderboard</h6>
+            <div style="overflow-x: auto;">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Agent</th>
+                            <th>Type</th>
+                            <th>Hub</th>
+                            <th>Executions</th>
+                            <th>Success Rate</th>
+                            <th>Tokens</th>
+                            <th>Last Run</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${leaderboard.map((a, i) => {
+                            const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'default';
+                            const barColor = a.success_rate >= 90 ? '#28a745' : a.success_rate >= 70 ? '#ffc107' : '#dc3545';
+                            const lastRun = a.last_run_at ? new Date(a.last_run_at).toLocaleDateString() : '—';
+                            return `<tr>
+                                <td><span class="leaderboard-rank ${rankClass}">${i + 1}</span></td>
+                                <td class="fw-semibold">${a.name}</td>
+                                <td><span class="badge bg-secondary">${a.agent_type}</span></td>
+                                <td class="text-muted">${a.hub_name}</td>
+                                <td>${a.total_executions.toLocaleString()}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="success-bar"><div class="success-bar-fill" style="width: ${a.success_rate}%; background: ${barColor};"></div></div>
+                                        <span class="small">${a.success_rate}%</span>
+                                    </div>
+                                </td>
+                                <td>${formatTokens(a.total_tokens_used)}</td>
+                                <td class="text-muted small">${lastRun}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    body.innerHTML = html;
+
+    // Render charts
+    if (daily.length > 0) {
+        renderExecutionsChart(daily);
+        renderTokensChart(daily);
+    }
+}
+
+function formatTokens(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+}
+
+function getChartDefaults() {
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#999';
+    const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim() || '#eee';
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 15, color: textColor } },
+            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, color: textColor, maxTicksLimit: 10 }, border: { color: borderColor } },
+            y: { grid: { color: borderColor + '40' }, ticks: { font: { size: 10 }, color: textColor }, border: { display: false }, beginAtZero: true }
+        }
+    };
+}
+
+function renderExecutionsChart(daily) {
+    const ctx = document.getElementById('executionsChart');
+    if (!ctx) return;
+
+    if (executionsChart) executionsChart.destroy();
+
+    const labels = daily.map(d => {
+        const dt = new Date(d.date + 'T00:00:00');
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const defaults = getChartDefaults();
+
+    executionsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Success',
+                    data: daily.map(d => d.success),
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                    borderRadius: 4,
+                    barPercentage: 0.7,
+                    stack: 'executions',
+                },
+                {
+                    label: 'Failed',
+                    data: daily.map(d => d.failure),
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderRadius: 4,
+                    barPercentage: 0.7,
+                    stack: 'executions',
+                },
+                {
+                    label: 'Success Rate %',
+                    data: daily.map(d => d.success_rate),
+                    type: 'line',
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#ff6b6b',
+                    tension: 0.3,
+                    fill: false,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            ...defaults,
+            scales: {
+                ...defaults.scales,
+                y: { ...defaults.scales.y, stacked: true, title: { display: true, text: 'Executions', font: { size: 10 } } },
+                y1: {
+                    position: 'right',
+                    min: 0, max: 100,
+                    grid: { display: false },
+                    ticks: { font: { size: 10 }, color: '#ff6b6b', callback: v => v + '%' },
+                    border: { display: false },
+                    title: { display: true, text: 'Success %', font: { size: 10 }, color: '#ff6b6b' },
+                },
+                x: { ...defaults.scales.x, stacked: true }
+            }
+        }
+    });
+}
+
+function renderTokensChart(daily) {
+    const ctx = document.getElementById('tokensChart');
+    if (!ctx) return;
+
+    if (tokensChart) tokensChart.destroy();
+
+    const labels = daily.map(d => {
+        const dt = new Date(d.date + 'T00:00:00');
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const defaults = getChartDefaults();
+
+    tokensChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Tokens',
+                data: daily.map(d => d.tokens),
+                backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                borderColor: '#667eea',
+                borderWidth: 1,
+                borderRadius: 4,
+                barPercentage: 0.6,
+            }, {
+                label: 'Avg Response (ms)',
+                data: daily.map(d => d.avg_time_ms),
+                type: 'line',
+                borderColor: '#ee5a24',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: '#ee5a24',
+                tension: 0.3,
+                yAxisID: 'y1',
+            }]
+        },
+        options: {
+            ...defaults,
+            scales: {
+                ...defaults.scales,
+                y: { ...defaults.scales.y, title: { display: true, text: 'Tokens', font: { size: 10 } } },
+                y1: {
+                    position: 'right',
+                    grid: { display: false },
+                    ticks: { font: { size: 10 }, color: '#ee5a24', callback: v => v + 'ms' },
+                    border: { display: false },
+                    beginAtZero: true,
+                    title: { display: true, text: 'Avg Time', font: { size: 10 }, color: '#ee5a24' },
+                }
+            }
+        }
+    });
 }
 </script>
 {% endblock %}

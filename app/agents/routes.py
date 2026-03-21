@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func, case, cast, Float
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
 from app.database import get_db, AIAgent, AgentTemplate, Hub, ToolExecution
@@ -832,6 +832,110 @@ async def get_agent_history(
             }
             for e in executions
         ]
+    }
+
+
+# ============================================================================
+# Analytics API Endpoint
+# ============================================================================
+
+@router.get("/api/analytics")
+async def agent_analytics(
+    request: Request,
+    days: int = 30,
+    agent_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Get aggregated agent performance analytics."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+    days = min(days, 90)  # Cap at 90 days
+    since = datetime.utcnow() - timedelta(days=days)
+
+    # Base query for executions - filter by user's agents
+    base_filter = [
+        ToolExecution.tool_type == "agent_execution",
+        ToolExecution.created_at >= since,
+    ]
+    if agent_id:
+        base_filter.append(ToolExecution.related_entity_id == agent_id)
+
+    # -- Daily aggregation --
+    daily_data = db.query(
+        func.date(ToolExecution.created_at).label("day"),
+        func.count().label("total"),
+        func.sum(case((ToolExecution.status == "success", 1), else_=0)).label("success"),
+        func.sum(case((ToolExecution.status != "success", 1), else_=0)).label("failure"),
+        func.coalesce(func.sum(ToolExecution.tokens_used), 0).label("tokens"),
+        func.coalesce(func.avg(ToolExecution.execution_time_ms), 0).label("avg_time"),
+    ).filter(*base_filter).group_by(
+        func.date(ToolExecution.created_at)
+    ).order_by(func.date(ToolExecution.created_at)).all()
+
+    daily = []
+    for row in daily_data:
+        day_str = str(row.day)
+        total = int(row.total)
+        success = int(row.success)
+        daily.append({
+            "date": day_str,
+            "executions": total,
+            "success": success,
+            "failure": int(row.failure),
+            "success_rate": round((success / total * 100), 1) if total > 0 else 0,
+            "tokens": int(row.tokens),
+            "avg_time_ms": round(float(row.avg_time), 1),
+        })
+
+    # -- Agent leaderboard --
+    agent_query = db.query(AIAgent)
+    if user_hub_ids:
+        agent_query = agent_query.filter(
+            or_(AIAgent.hub_id.in_(user_hub_ids), AIAgent.is_global == True)
+        )
+    else:
+        agent_query = agent_query.filter(AIAgent.is_global == True)
+
+    all_agents = agent_query.all()
+    leaderboard = []
+    for a in all_agents:
+        if (a.total_executions or 0) == 0:
+            continue
+        success_rate = round(((a.successful_executions or 0) / a.total_executions) * 100, 1)
+        leaderboard.append({
+            "id": a.id,
+            "name": a.name,
+            "agent_type": a.agent_type,
+            "hub_name": a.hub.name if a.hub else "Global",
+            "model": a.model or "gpt-4o-mini",
+            "total_executions": a.total_executions or 0,
+            "successful_executions": a.successful_executions or 0,
+            "success_rate": success_rate,
+            "total_tokens_used": a.total_tokens_used or 0,
+            "last_run_at": (a.last_run_at.isoformat() + "Z") if a.last_run_at else None,
+        })
+
+    leaderboard.sort(key=lambda x: x["total_executions"], reverse=True)
+
+    # -- Totals --
+    total_executions = sum(d["executions"] for d in daily)
+    total_success = sum(d["success"] for d in daily)
+    total_tokens = sum(d["tokens"] for d in daily)
+    overall_success_rate = round((total_success / total_executions * 100), 1) if total_executions > 0 else 0
+
+    return {
+        "period_days": days,
+        "daily": daily,
+        "leaderboard": leaderboard[:20],
+        "totals": {
+            "executions": total_executions,
+            "success": total_success,
+            "success_rate": overall_success_rate,
+            "tokens": total_tokens,
+        }
     }
 
 
