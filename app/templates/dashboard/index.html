@@ -336,6 +336,58 @@
     .scheduled-content-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
     .scheduled-content-list { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
 
+    /* Peak Hours chart */
+    .peak-hour-bar {
+        background: rgba(37, 211, 102, 0.5);
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .peak-hour-bar.is-peak {
+        background: rgba(37, 211, 102, 0.9);
+    }
+    .peak-hour-bar.is-current {
+        outline: 2px solid var(--wa-green);
+        outline-offset: -1px;
+    }
+    .peak-hours-grid {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 100px;
+        padding: 0 4px;
+    }
+    .peak-hours-grid > div {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        justify-content: flex-end;
+    }
+    .peak-hour-label {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        line-height: 1;
+    }
+    .peak-legend {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+    .peak-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .peak-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+    }
+
     /* Chart range buttons */
     #chartRangeGroup .btn {
         font-size: 0.75rem;
@@ -437,6 +489,39 @@
                 <div id="chartLoading" class="text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                     <div class="spinner-border spinner-border-sm text-muted" role="status"></div>
                     <small class="text-muted ms-2">Loading chart...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Peak Hours -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" style="border-radius: 12px;">
+            <div class="card-header d-flex justify-content-between align-items-center" style="border-radius: 12px 12px 0 0;">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Today's Activity by Hour</h5>
+                <div class="peak-legend">
+                    <div class="peak-legend-item">
+                        <div class="peak-legend-dot" style="background: rgba(37, 211, 102, 0.9);"></div>
+                        <span id="peakHourLabel">Peak hour</span>
+                    </div>
+                    <div class="peak-legend-item">
+                        <div class="peak-legend-dot" style="background: rgba(37, 211, 102, 0.5);"></div>
+                        <span>Other hours</span>
+                    </div>
+                    <div class="peak-legend-item">
+                        <div class="peak-legend-dot" style="outline: 2px solid var(--wa-green); outline-offset: -1px;"></div>
+                        <span>Now</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="peak-hours-grid" id="peakHoursGrid">
+                    <div class="text-center w-100" style="height: auto;">
+                        <div class="spinner-border spinner-border-sm text-muted" role="status"></div>
+                        <small class="text-muted ms-2">Loading...</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -780,8 +865,9 @@
         // Load scheduled content across all hubs
         await loadScheduledContent();
 
-        // Load message volume chart
+        // Load message volume chart + peak hours
         await loadMessageVolumeChart(7);
+        await loadPeakHours();
     }
 
     // Message Volume Chart
@@ -892,6 +978,51 @@
         } catch (e) {
             console.error('Error loading message volume chart:', e);
             if (loading) loading.innerHTML = '<small class="text-muted">Failed to load chart</small>';
+        }
+    }
+
+    // Peak Hours visualization
+    async function loadPeakHours() {
+        const grid = document.getElementById('peakHoursGrid');
+        try {
+            const res = await fetch('/api/analytics/daily?days=1');
+            const data = await res.json();
+            const hourly = data.hourly_stats || [];
+
+            if (hourly.length === 0 || hourly.every(h => h.count === 0)) {
+                grid.innerHTML = `
+                    <div class="text-center w-100" style="height: auto;">
+                        <i class="bi bi-clock text-muted" style="font-size: 1.5rem; opacity: 0.4;"></i>
+                        <p class="text-muted mb-0 mt-1 small">No messages yet today</p>
+                    </div>`;
+                return;
+            }
+
+            const maxCount = Math.max(...hourly.map(h => h.count));
+            const peakHour = hourly.reduce((best, h) => h.count > best.count ? h : best, hourly[0]);
+            const currentHour = new Date().getHours();
+
+            // Update peak hour label
+            const peakLabel = document.getElementById('peakHourLabel');
+            if (peakLabel && peakHour.count > 0) {
+                peakLabel.textContent = `Peak: ${peakHour.hour}:00 (${peakHour.count} msgs)`;
+            }
+
+            grid.innerHTML = hourly.map(h => {
+                const pct = maxCount > 0 ? Math.max(2, (h.count / maxCount) * 100) : 2;
+                const isPeak = h.count === maxCount && h.count > 0;
+                const isCurrent = h.hour === currentHour;
+                const classes = ['peak-hour-bar', isPeak ? 'is-peak' : '', isCurrent ? 'is-current' : ''].filter(Boolean).join(' ');
+                const showLabel = h.hour % 3 === 0;
+                return `
+                    <div title="${h.hour}:00 — ${h.count} message${h.count !== 1 ? 's' : ''}">
+                        <div class="${classes}" style="width: 100%; height: ${pct}%;"></div>
+                        ${showLabel ? `<span class="peak-hour-label">${h.hour}</span>` : '<span class="peak-hour-label">&nbsp;</span>'}
+                    </div>`;
+            }).join('');
+        } catch (e) {
+            console.error('Error loading peak hours:', e);
+            grid.innerHTML = '<div class="text-center w-100" style="height: auto;"><small class="text-muted">Failed to load</small></div>';
         }
     }
 
