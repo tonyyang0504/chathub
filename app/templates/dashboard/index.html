@@ -336,6 +336,50 @@
     .scheduled-content-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
     .scheduled-content-list { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
 
+    /* Needs Attention card */
+    .attention-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .attention-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .attention-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .attention-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: var(--hover-bg);
+        color: var(--text-muted);
+    }
+
+    .attention-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .attention-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
     /* Peak Hours chart */
     .peak-hour-bar {
         background: rgba(37, 211, 102, 0.5);
@@ -607,6 +651,19 @@
             </div>
         </div>
 
+        <!-- Needs Attention -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Needs Attention</h5>
+                <span class="badge bg-warning text-dark" id="attentionCountBadge">0</span>
+            </div>
+            <div class="card-body">
+                <ul class="attention-list" id="attentionList">
+                    <li class="text-muted small">Checking system status...</li>
+                </ul>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -763,6 +820,12 @@
     }
     loadCustomWidgets();
 
+    window.dashboardSignals = {
+        bots: [],
+        scheduledTotal: null,
+        scheduledDueSoon: null
+    };
+
     function getAvatarColorClass(name) {
         if (!name) return 'avatar-color-1';
         let hash = 0;
@@ -808,6 +871,7 @@
 
             if (botsData.bots.length === 0) {
                 window.allBotsData = [];
+                window.dashboardSignals.bots = [];
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center py-4">
@@ -826,12 +890,15 @@
 
                 // Store all bots data for expand/collapse functionality
                 window.allBotsData = botsData.bots;
+                window.dashboardSignals.bots = botsData.bots;
                 window.botsDisplayLimit = displayLimit;
 
                 // Render bots table with expand/collapse support
                 window.botsExpanded = false;
                 renderBotsTable(false);
             }
+
+            renderNeedsAttention();
         } catch (e) {
             console.error('Error loading bots:', e);
         }
@@ -1060,6 +1127,13 @@
 
             const allContent = (await Promise.all(contentPromises)).flat();
 
+            window.dashboardSignals.scheduledTotal = allContent.length;
+            window.dashboardSignals.scheduledDueSoon = allContent.filter(item => {
+                if (!item.scheduled_for) return false;
+                const timeDiff = new Date(item.scheduled_for) - new Date();
+                return timeDiff >= 0 && timeDiff <= (24 * 60 * 60 * 1000);
+            }).length;
+
             // Sort by scheduled_for (soonest first), nulls last
             allContent.sort((a, b) => {
                 if (!a.scheduled_for && !b.scheduled_for) return 0;
@@ -1074,6 +1148,7 @@
             if (display.length === 0) {
                 container.innerHTML = renderScheduledEmpty();
                 badge.style.display = 'none';
+                renderNeedsAttention();
                 return;
             }
 
@@ -1120,10 +1195,106 @@
                     </div>
                 `;
             }
+
+            renderNeedsAttention();
         } catch (e) {
             console.error('Error loading scheduled content:', e);
+            window.dashboardSignals.scheduledTotal = null;
+            window.dashboardSignals.scheduledDueSoon = null;
             container.innerHTML = renderScheduledEmpty();
+            renderNeedsAttention();
         }
+    }
+
+    function renderNeedsAttention() {
+        const attentionList = document.getElementById('attentionList');
+        const attentionCountBadge = document.getElementById('attentionCountBadge');
+        if (!attentionList || !attentionCountBadge) return;
+
+        const bots = window.dashboardSignals.bots || [];
+        const scheduledTotal = window.dashboardSignals.scheduledTotal;
+        const scheduledDueSoon = window.dashboardSignals.scheduledDueSoon;
+        const now = new Date();
+
+        const stoppedBots = bots.filter(bot => !bot.is_running);
+        const staleBots = bots.filter(bot => {
+            if (!bot.is_running || !bot.last_active) return false;
+            const lastActiveTime = new Date(bot.last_active);
+            const inactiveHours = (now - lastActiveTime) / (1000 * 60 * 60);
+            return inactiveHours >= 24;
+        });
+
+        const items = [];
+
+        if (bots.length === 0) {
+            items.push({
+                icon: 'bi-robot',
+                title: 'No bots configured yet',
+                subtitle: 'Create your first bot to start automations.',
+                href: '/dashboard/bots',
+                action: 'Create bot'
+            });
+        }
+
+        if (stoppedBots.length > 0) {
+            items.push({
+                icon: 'bi-pause-circle',
+                title: `${stoppedBots.length} bot${stoppedBots.length > 1 ? 's are' : ' is'} stopped`,
+                subtitle: 'Restart inactive bots to resume responses.',
+                href: '/dashboard/bots',
+                action: 'Manage bots'
+            });
+        }
+
+        if (staleBots.length > 0) {
+            items.push({
+                icon: 'bi-hourglass-split',
+                title: `${staleBots.length} running bot${staleBots.length > 1 ? 's have' : ' has'} no activity in 24h`,
+                subtitle: 'Review connections and message flow.',
+                href: '/dashboard/bots',
+                action: 'Review status'
+            });
+        }
+
+        if (scheduledTotal === 0) {
+            items.push({
+                icon: 'bi-calendar-plus',
+                title: 'No scheduled content queued',
+                subtitle: 'Plan messages to keep engagement consistent.',
+                href: '/tools/scheduled-content',
+                action: 'Schedule content'
+            });
+        } else if (typeof scheduledDueSoon === 'number' && scheduledDueSoon > 0) {
+            items.push({
+                icon: 'bi-clock',
+                title: `${scheduledDueSoon} scheduled item${scheduledDueSoon > 1 ? 's are' : ' is'} due within 24h`,
+                subtitle: 'Verify timing and recipients before send time.',
+                href: '/tools/scheduled-content',
+                action: 'Review queue'
+            });
+        }
+
+        attentionCountBadge.textContent = items.length;
+
+        if (items.length === 0) {
+            attentionList.innerHTML = `
+                <li class="text-success small d-flex align-items-center">
+                    <i class="bi bi-check-circle me-2"></i>Everything looks healthy right now.
+                </li>
+            `;
+            return;
+        }
+
+        attentionList.innerHTML = items.map(item => `
+            <li class="attention-item">
+                <span class="attention-icon"><i class="bi ${item.icon}"></i></span>
+                <div class="flex-grow-1">
+                    <div class="attention-title">${item.title}</div>
+                    <div class="attention-subtitle">${item.subtitle}</div>
+                </div>
+                <a href="${item.href}" class="btn btn-sm btn-outline-secondary rounded-pill">${item.action}</a>
+            </li>
+        `).join('');
     }
 
     function renderScheduledEmpty() {
