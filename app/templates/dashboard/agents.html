@@ -665,6 +665,173 @@
     margin-bottom: 0.5rem;
 }
 
+/* ========== Playground Styles ========== */
+.pg-selector-bar {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--hover-bg);
+}
+.pg-agent-select {
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+.pg-agent-select:focus {
+    border-color: #ff6b6b;
+    box-shadow: none;
+}
+.pg-chat-wrapper {
+    position: relative;
+}
+.pg-chat-area {
+    height: 100%;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+.pg-chat-area::-webkit-scrollbar { width: 6px; }
+.pg-chat-area::-webkit-scrollbar-track { background: transparent; }
+.pg-chat-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.pg-chat-area::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.pg-compare-chat {
+    border-left: 1px solid var(--border-color);
+}
+.pg-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 2rem;
+}
+.pg-message {
+    max-width: 85%;
+    animation: pgFadeIn 0.25s ease;
+}
+@keyframes pgFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.pg-message.user {
+    align-self: flex-end;
+}
+.pg-message.assistant {
+    align-self: flex-start;
+}
+.pg-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+}
+.pg-message.user .pg-bubble {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+.pg-message.assistant .pg-bubble {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 4px;
+}
+.pg-bubble p { margin-bottom: 0.5rem; }
+.pg-bubble p:last-child { margin-bottom: 0; }
+.pg-bubble code {
+    background: rgba(0,0,0,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+.pg-bubble pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 0.75rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+.pg-bubble pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+.pg-message-meta {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: flex;
+    gap: 0.75rem;
+}
+.pg-message.user .pg-message-meta {
+    justify-content: flex-end;
+}
+.pg-typing {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.75rem 1rem;
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    border-bottom-left-radius: 4px;
+}
+.pg-typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: pgTyping 1.4s infinite;
+}
+.pg-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.pg-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pgTyping {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+}
+.pg-input-bar {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+.pg-input {
+    border-radius: 20px;
+    padding: 10px 16px;
+    resize: none;
+    max-height: 120px;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
+}
+.pg-input:focus {
+    border-color: #ff6b6b;
+    box-shadow: none;
+    outline: none;
+}
+.pg-stats-row {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    margin-bottom: 6px;
+    display: flex;
+    gap: 1rem;
+}
+.pg-agent-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+}
+.pg-agent-label.primary { color: #ff6b6b; }
+.pg-agent-label.compare { color: #667eea; }
+
 </style>
 {% endblock %}
 
@@ -679,6 +846,9 @@
                    and analyze data. Deploy them across hubs or make them available globally.</p>
                 <button class="btn btn-light btn-lg mt-3" onclick="openAgentModal()">
                     <i class="bi bi-plus-lg me-2"></i>Create Agent
+                </button>
+                <button class="btn btn-outline-light btn-lg mt-3 ms-2" onclick="openPlayground()">
+                    <i class="bi bi-chat-square-text me-2"></i>Playground
                 </button>
             </div>
             <div class="col-lg-4 text-center d-none d-lg-block">
@@ -1090,6 +1260,92 @@
                 <button type="button" class="btn btn-outline-primary" id="duplicateAgentBtn" onclick="duplicateAgent()">Duplicate</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-theme" id="editAgentBtn" onclick="editAgentFromDetail()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Playground Modal -->
+<div class="modal fade" id="playgroundModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color); height: 85vh;">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-chat-square-text me-2"></i>Agent Playground</h5>
+                <div class="d-flex align-items-center gap-2 ms-auto me-3">
+                    <div class="form-check form-switch hub-form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="pgCompareToggle" onchange="toggleCompareMode()">
+                        <label class="form-check-label small" for="pgCompareToggle">Compare</label>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 d-flex flex-column" style="overflow: hidden;">
+                <!-- Agent Selector Bar -->
+                <div class="pg-selector-bar">
+                    <div class="row g-2 align-items-center">
+                        <div class="col" id="pgPrimaryCol">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); font-size: 0.7rem;">A</span>
+                                <select class="form-select form-select-sm pg-agent-select" id="pgAgentSelect" onchange="onPlaygroundAgentChange()">
+                                    <option value="">Select an agent...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col d-none" id="pgCompareCol">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: linear-gradient(135deg, #667eea, #764ba2); font-size: 0.7rem;">B</span>
+                                <select class="form-select form-select-sm pg-agent-select" id="pgCompareSelect">
+                                    <option value="">Select agent to compare...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="clearPlayground()" title="Clear conversation">
+                                <i class="bi bi-trash3 me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Area -->
+                <div class="pg-chat-wrapper flex-grow-1" style="overflow: hidden;">
+                    <div class="row g-0 h-100">
+                        <!-- Primary Chat -->
+                        <div class="col" id="pgPrimaryChatCol">
+                            <div class="pg-chat-area" id="pgChatArea">
+                                <div class="pg-empty-state" id="pgEmptyState">
+                                    <i class="bi bi-chat-square-text" style="font-size: 3rem; opacity: 0.3;"></i>
+                                    <h5 class="mt-3" style="color: var(--text-secondary);">Agent Playground</h5>
+                                    <p class="small" style="color: var(--text-muted); max-width: 400px;">
+                                        Select an agent and start a multi-turn conversation. Test how your agents handle follow-ups, context retention, and complex dialogues.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Compare Chat (hidden by default) -->
+                        <div class="col d-none" id="pgCompareChatCol">
+                            <div class="pg-chat-area pg-compare-chat" id="pgCompareChatArea">
+                                <div class="pg-empty-state">
+                                    <i class="bi bi-arrow-left-right" style="font-size: 2rem; opacity: 0.3;"></i>
+                                    <p class="small mt-2" style="color: var(--text-muted);">Select a second agent to compare responses</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Bar -->
+                <div class="pg-input-bar">
+                    <div class="pg-stats-row" id="pgStatsRow" style="display: none;">
+                        <span id="pgStatsContent"></span>
+                    </div>
+                    <div class="d-flex gap-2 align-items-end">
+                        <textarea class="form-control pg-input" id="pgMessageInput" rows="1" placeholder="Type a message..." onkeydown="handlePlaygroundKeydown(event)"></textarea>
+                        <button class="btn btn-theme rounded-pill px-3" id="pgSendBtn" onclick="sendPlaygroundMessage()" disabled>
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1997,6 +2253,252 @@ async function duplicateAgent() {
         console.error('Error duplicating agent:', error);
         alert('Error duplicating agent');
     }
+}
+
+// ============================================================================
+// Agent Playground
+// ============================================================================
+
+let playgroundModal;
+let pgConversation = [];  // [{role, content}]
+let pgCompareMode = false;
+let pgSending = false;
+let pgTotalTokens = 0;
+let pgMessageCount = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    playgroundModal = new bootstrap.Modal(document.getElementById('playgroundModal'));
+
+    // Auto-resize textarea
+    const pgInput = document.getElementById('pgMessageInput');
+    pgInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        document.getElementById('pgSendBtn').disabled = !this.value.trim() || pgSending;
+    });
+});
+
+function openPlayground() {
+    populatePlaygroundAgents();
+    playgroundModal.show();
+    setTimeout(() => document.getElementById('pgMessageInput').focus(), 300);
+}
+
+function populatePlaygroundAgents() {
+    const primary = document.getElementById('pgAgentSelect');
+    const compare = document.getElementById('pgCompareSelect');
+    const options = agents.filter(a => a.is_active).map(a =>
+        `<option value="${a.id}">${a.name} (${a.agent_type})</option>`
+    ).join('');
+
+    primary.innerHTML = '<option value="">Select an agent...</option>' + options;
+    compare.innerHTML = '<option value="">Select agent to compare...</option>' + options;
+}
+
+function onPlaygroundAgentChange() {
+    const agentId = document.getElementById('pgAgentSelect').value;
+    document.getElementById('pgSendBtn').disabled = !agentId || !document.getElementById('pgMessageInput').value.trim();
+}
+
+function toggleCompareMode() {
+    pgCompareMode = document.getElementById('pgCompareToggle').checked;
+    const compareCol = document.getElementById('pgCompareCol');
+    const compareChatCol = document.getElementById('pgCompareChatCol');
+
+    if (pgCompareMode) {
+        compareCol.classList.remove('d-none');
+        compareChatCol.classList.remove('d-none');
+    } else {
+        compareCol.classList.add('d-none');
+        compareChatCol.classList.add('d-none');
+    }
+}
+
+function clearPlayground() {
+    pgConversation = [];
+    pgTotalTokens = 0;
+    pgMessageCount = 0;
+
+    document.getElementById('pgChatArea').innerHTML = `
+        <div class="pg-empty-state" id="pgEmptyState">
+            <i class="bi bi-chat-square-text" style="font-size: 3rem; opacity: 0.3;"></i>
+            <h5 class="mt-3" style="color: var(--text-secondary);">Agent Playground</h5>
+            <p class="small" style="color: var(--text-muted); max-width: 400px;">
+                Select an agent and start a multi-turn conversation. Test how your agents handle follow-ups, context retention, and complex dialogues.
+            </p>
+        </div>
+    `;
+
+    document.getElementById('pgCompareChatArea').innerHTML = `
+        <div class="pg-empty-state">
+            <i class="bi bi-arrow-left-right" style="font-size: 2rem; opacity: 0.3;"></i>
+            <p class="small mt-2" style="color: var(--text-muted);">Select a second agent to compare responses</p>
+        </div>
+    `;
+
+    document.getElementById('pgStatsRow').style.display = 'none';
+    document.getElementById('pgMessageInput').value = '';
+    document.getElementById('pgMessageInput').style.height = 'auto';
+}
+
+function handlePlaygroundKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!pgSending) sendPlaygroundMessage();
+    }
+}
+
+function addMessageBubble(container, role, content, meta = null) {
+    // Remove empty state if present
+    const empty = container.querySelector('.pg-empty-state');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = `pg-message ${role}`;
+
+    let bubbleContent = content;
+    if (role === 'assistant') {
+        bubbleContent = renderMarkdown(content);
+    } else {
+        bubbleContent = escapeHtml(content).replace(/\n/g, '<br>');
+    }
+
+    let metaHtml = '';
+    if (meta) {
+        const parts = [];
+        if (meta.tokens) parts.push(`<i class="bi bi-coin"></i> ${meta.tokens} tokens`);
+        if (meta.time) parts.push(`<i class="bi bi-clock"></i> ${meta.time}ms`);
+        if (meta.model) parts.push(`<i class="bi bi-cpu"></i> ${meta.model}`);
+        metaHtml = `<div class="pg-message-meta">${parts.join(' &middot; ')}</div>`;
+    }
+
+    div.innerHTML = `<div class="pg-bubble">${bubbleContent}</div>${metaHtml}`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function addTypingIndicator(container) {
+    const div = document.createElement('div');
+    div.className = 'pg-typing';
+    div.id = 'pgTyping_' + container.id;
+    div.innerHTML = '<div class="pg-typing-dot"></div><div class="pg-typing-dot"></div><div class="pg-typing-dot"></div>';
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function removeTypingIndicator(container) {
+    const typing = document.getElementById('pgTyping_' + container.id);
+    if (typing) typing.remove();
+}
+
+async function sendPlaygroundMessage() {
+    const input = document.getElementById('pgMessageInput');
+    const message = input.value.trim();
+    const agentId = document.getElementById('pgAgentSelect').value;
+
+    if (!message || !agentId || pgSending) return;
+
+    pgSending = true;
+    document.getElementById('pgSendBtn').disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+
+    const primaryChat = document.getElementById('pgChatArea');
+    const compareChat = document.getElementById('pgCompareChatArea');
+
+    // Add user message to primary chat
+    addMessageBubble(primaryChat, 'user', message);
+
+    // Add to compare chat if in compare mode
+    if (pgCompareMode) {
+        addMessageBubble(compareChat, 'user', message);
+    }
+
+    // Add to conversation history
+    pgConversation.push({ role: 'user', content: message });
+
+    // Show typing indicators
+    addTypingIndicator(primaryChat);
+    if (pgCompareMode) addTypingIndicator(compareChat);
+
+    // Build request
+    const compareAgentId = pgCompareMode ? document.getElementById('pgCompareSelect').value : null;
+    const body = {
+        agent_id: parseInt(agentId),
+        messages: pgConversation
+    };
+    if (compareAgentId) body.compare_agent_id = parseInt(compareAgentId);
+
+    try {
+        const response = await fetch('/agents/api/playground/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Chat failed');
+        }
+
+        // Remove typing indicators
+        removeTypingIndicator(primaryChat);
+        if (pgCompareMode) removeTypingIndicator(compareChat);
+
+        // Primary response
+        const primary = result.primary;
+        if (primary.error) {
+            addMessageBubble(primaryChat, 'assistant', `⚠️ Error: ${primary.error}`);
+        } else {
+            addMessageBubble(primaryChat, 'assistant', primary.response, {
+                tokens: primary.tokens_used,
+                time: primary.execution_time_ms,
+                model: primary.model
+            });
+            // Add assistant response to conversation history (only primary)
+            pgConversation.push({ role: 'assistant', content: primary.response });
+            pgTotalTokens += primary.tokens_used || 0;
+        }
+
+        // Compare response
+        if (result.compare) {
+            const comp = result.compare;
+            if (comp.error) {
+                addMessageBubble(compareChat, 'assistant', `⚠️ Error: ${comp.error}`);
+            } else {
+                addMessageBubble(compareChat, 'assistant', comp.response, {
+                    tokens: comp.tokens_used,
+                    time: comp.execution_time_ms,
+                    model: comp.model
+                });
+                pgTotalTokens += comp.tokens_used || 0;
+            }
+        }
+
+        pgMessageCount++;
+        updatePlaygroundStats();
+
+    } catch (error) {
+        removeTypingIndicator(primaryChat);
+        if (pgCompareMode) removeTypingIndicator(compareChat);
+        addMessageBubble(primaryChat, 'assistant', `⚠️ ${error.message}`);
+    }
+
+    pgSending = false;
+    document.getElementById('pgSendBtn').disabled = false;
+    input.focus();
+}
+
+function updatePlaygroundStats() {
+    const statsRow = document.getElementById('pgStatsRow');
+    const statsContent = document.getElementById('pgStatsContent');
+    statsRow.style.display = 'flex';
+    statsContent.innerHTML = `
+        <i class="bi bi-chat-dots me-1"></i>${pgMessageCount} turn${pgMessageCount !== 1 ? 's' : ''}
+        &middot; <i class="bi bi-coin me-1"></i>${pgTotalTokens.toLocaleString()} tokens
+        &middot; <i class="bi bi-collection me-1"></i>${pgConversation.length} messages in context
+    `;
 }
 </script>
 {% endblock %}

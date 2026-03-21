@@ -1,4 +1,4 @@
 ---
-title: Add dashboard Needs Attention status card
-description: Added a new Needs Attention card to the main dashboard that highlights actionable operational issues, including stopped bots, stale running bots, and scheduled content readiness. The section reuses existing dashboard API data and computes alerts client-side to avoid introducing new backend endpoints or schema changes. It includes clear call-to-action links for each alert and a healthy-state fallback when no issues are detected.
+title: Agent Chat Playground with Multi-turn Conversations and Comparison Mode
+description: Added an Agent Playground feature to the Agents page — a chat-style interface for multi-turn conversations with AI agents. Users can test how agents handle follow-ups and context retention across multiple messages. Includes a side-by-side comparison mode to test two agents simultaneously with the same conversation, with per-message metadata (tokens, timing, model) and session stats tracking.
 ---

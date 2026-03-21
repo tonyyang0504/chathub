@@ -76,6 +76,17 @@ class AgentTestRequest(BaseModel):
     message: str
 
 
+class PlaygroundMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class PlaygroundChatRequest(BaseModel):
+    agent_id: int
+    messages: List[PlaygroundMessage]
+    compare_agent_id: Optional[int] = None
+
+
 # ============================================================================
 # Agent API Endpoints
 # ============================================================================
@@ -612,6 +623,171 @@ async def test_agent(
         "agent_name": agent.name,
         "agent_type": agent.agent_type
     }
+
+
+@router.post("/api/playground/chat")
+async def playground_chat(
+    request: Request,
+    chat_data: PlaygroundChatRequest,
+    db: Session = Depends(get_db)
+):
+    """Chat with an agent using full conversation history (playground mode).
+    Optionally compare with a second agent."""
+    import time
+    from app.ai.factory import get_ai_provider
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    # Validate primary agent
+    agent = db.query(AIAgent).filter(AIAgent.id == chat_data.agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if not agent.is_global and agent.hub_id not in user_hub_ids:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Validate compare agent if provided
+    compare_agent = None
+    if chat_data.compare_agent_id:
+        compare_agent = db.query(AIAgent).filter(AIAgent.id == chat_data.compare_agent_id).first()
+        if not compare_agent:
+            raise HTTPException(status_code=404, detail="Compare agent not found")
+        if not compare_agent.is_global and compare_agent.hub_id not in user_hub_ids:
+            raise HTTPException(status_code=404, detail="Compare agent not found")
+
+    async def _call_agent(ag):
+        """Execute a single agent call with conversation history."""
+        start_time = time.time()
+
+        # Resolve API key: agent → hub → user
+        api_key = None
+        if ag.api_key_encrypted:
+            api_key = decrypt_string(ag.api_key_encrypted)
+        if not api_key and ag.hub_id:
+            hub = db.query(Hub).filter(Hub.id == ag.hub_id).first()
+            if hub and hub.api_key_encrypted:
+                api_key = decrypt_string(hub.api_key_encrypted)
+        if not api_key and hasattr(user, 'api_key_encrypted') and user.api_key_encrypted:
+            api_key = decrypt_string(user.api_key_encrypted)
+        if not api_key:
+            return {
+                "error": f"No API key configured for {ag.name}.",
+                "agent_id": ag.id,
+                "agent_name": ag.name
+            }
+
+        # Build system prompt
+        system_prompt = ag.system_prompt or f"You are {ag.name}, a helpful AI assistant."
+        if ag.agent_type in ['classifier', 'router'] and ag.additional_instructions:
+            system_prompt = f"You are {ag.name}. {ag.additional_instructions}"
+
+        model = ag.model or "gpt-4o-mini"
+        config = json.loads(ag.config) if ag.config else {}
+        temperature = config.get('temperature', 0.7)
+        max_tokens = config.get('max_tokens', 1000)
+
+        # Build messages array with full conversation history
+        messages = [{"role": "system", "content": system_prompt}]
+        for msg in chat_data.messages:
+            messages.append({"role": msg.role, "content": msg.content})
+
+        try:
+            # Determine provider from model name
+            provider_name = "openai"
+            if "claude" in model.lower():
+                provider_name = "anthropic"
+            elif "gemini" in model.lower():
+                provider_name = "google"
+
+            provider = get_ai_provider(provider_name, api_key, model)
+            ai_response = provider.chat_completion(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            response_text = ai_response.content
+            tokens_used = ai_response.usage.get('total_tokens', 0)
+
+        except Exception as e:
+            # Fallback: try direct OpenAI client
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                response_text = response.choices[0].message.content
+                tokens_used = response.usage.total_tokens if response.usage else 0
+            except Exception as e2:
+                return {
+                    "error": str(e2),
+                    "agent_id": ag.id,
+                    "agent_name": ag.name
+                }
+
+        execution_time_ms = int((time.time() - start_time) * 1000)
+
+        # Update agent stats
+        ag.total_executions = (ag.total_executions or 0) + 1
+        ag.successful_executions = (ag.successful_executions or 0) + 1
+        ag.total_tokens_used = (ag.total_tokens_used or 0) + tokens_used
+        ag.last_run_at = datetime.utcnow()
+
+        return {
+            "agent_id": ag.id,
+            "agent_name": ag.name,
+            "agent_type": ag.agent_type,
+            "model": model,
+            "response": response_text,
+            "execution_time_ms": execution_time_ms,
+            "tokens_used": tokens_used
+        }
+
+    # Execute primary agent
+    primary_result = await _call_agent(agent)
+
+    # Execute compare agent if requested
+    compare_result = None
+    if compare_agent:
+        compare_result = await _call_agent(compare_agent)
+
+    db.commit()
+
+    # Log execution
+    ToolMonitor.log_execution(
+        db=db,
+        tool_type="agent_execution",
+        operation=f"playground_chat: {agent.name}",
+        hub_id=agent.hub_id,
+        input_data={
+            "message_count": len(chat_data.messages),
+            "agent_id": agent.id,
+            "compare_agent_id": chat_data.compare_agent_id
+        },
+        output_data={
+            "response_length": len(primary_result.get("response", "")),
+            "tokens_used": primary_result.get("tokens_used", 0)
+        },
+        status="success" if "error" not in primary_result else "error",
+        execution_time_ms=primary_result.get("execution_time_ms", 0),
+        tokens_used=primary_result.get("tokens_used", 0),
+        triggered_by="user",
+        related_entity_type="agent",
+        related_entity_id=agent.id,
+        user_id=user.id
+    )
+
+    result = {"success": True, "primary": primary_result}
+    if compare_result:
+        result["compare"] = compare_result
+
+    return result
 
 
 @router.get("/api/{agent_id}/history")
