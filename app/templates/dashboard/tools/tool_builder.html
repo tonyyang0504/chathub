@@ -218,40 +218,7 @@
 .msg-tool-pill i { font-size: 0.7rem; }
 .msg-tool-pill .pill-hint { font-size: 0.62rem; opacity: 0.6; font-weight: 400; }
 
-/* Tool result — collapsible block */
-.tool-block {
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    overflow: hidden;
-}
-.tool-block-header {
-    background: rgba(var(--provider-color-rgb),0.06);
-    padding: 0.4rem 0.75rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 500;
-    font-size: 0.78rem;
-    user-select: none;
-    color: var(--text-secondary);
-}
-.tool-block-header:hover { background: rgba(var(--provider-color-rgb),0.12); }
-.tool-block-header .chevron {
-    transition: transform 0.2s;
-    font-size: 0.65rem;
-}
-.tool-block-header.collapsed .chevron { transform: rotate(-90deg); }
-.tool-block-body {
-    padding: 0.5rem 0.75rem;
-    max-height: 300px;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 0.75rem;
-    white-space: pre-wrap;
-    word-break: break-all;
-    background: rgba(0,0,0,0.08);
-}
+/* Tool result — removed inline tool-block CSS (now uses artifact panel) */
 
 .msg-system {
     align-self: center;
@@ -528,17 +495,94 @@
 #sendBtn:disabled { opacity: 0.35; }
 #sendBtn:not(:disabled):hover { opacity: 0.85; }
 
-/* Right panel: Build Status (claude-artifacts style) */
-.claude-artifacts { width: 340px; min-width: 340px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; transition: margin-right 0.25s, opacity 0.25s; }
-.claude-artifacts.collapsed { margin-right: -346px; opacity: 0; pointer-events: none; }
+/* Right panel: Artifacts + Build Status (claude-artifacts style) */
+.claude-artifacts { width: 420px; min-width: 420px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; transition: margin-right 0.25s, opacity 0.25s; }
+.claude-artifacts.collapsed { margin-right: -426px; opacity: 0; pointer-events: none; }
 .artifacts-header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-.artifacts-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; }
-.btn-artifact-close { background: none; border: none; color: var(--text-secondary); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
-.btn-artifact-close:hover { background: rgba(var(--provider-color-rgb),0.1); color: var(--provider-color); }
-.artifacts-body { flex: 1; overflow-y: auto; padding: 1rem; }
+.artifacts-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+.btn-artifact-close {
+    width: 36px; height: 36px; min-width: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+    cursor: pointer; position: relative; padding: 0;
+}
+.btn-artifact-close:hover { background: rgba(0, 0, 0, 0.1); transform: scale(1.05); }
+.btn-artifact-close:active { transform: scale(0.95); }
+.btn-artifact-close::before,
+.btn-artifact-close::after {
+    content: ''; position: absolute; width: 16px; height: 2px;
+    background-color: #636363; border-radius: 1px;
+    transition: background-color 0.2s ease;
+}
+.btn-artifact-close::before { transform: rotate(45deg); }
+.btn-artifact-close::after { transform: rotate(-45deg); }
+.btn-artifact-close:hover::before,
+.btn-artifact-close:hover::after { background-color: #1a1a1a; }
+[data-bs-theme="dark"] .btn-artifact-close { background: rgba(255, 255, 255, 0.1); }
+[data-bs-theme="dark"] .btn-artifact-close:hover { background: rgba(255, 255, 255, 0.15); }
+[data-bs-theme="dark"] .btn-artifact-close::before,
+[data-bs-theme="dark"] .btn-artifact-close::after { background-color: #a0a0a0; }
+[data-bs-theme="dark"] .btn-artifact-close:hover::before,
+[data-bs-theme="dark"] .btn-artifact-close:hover::after { background-color: #ffffff; }
+.artifacts-body { flex: 1; overflow-y: auto; padding: 0.75rem; min-height: 0; font-size: 0.8rem; }
 .artifacts-footer { padding: 0.75rem 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; flex-wrap: wrap; flex-shrink: 0; }
 .artifacts-footer .btn { font-size: 0.82rem; border-radius: 8px; flex: 1; min-width: 0; }
+.artifact-card { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.6rem; overflow: hidden; transition: border-color 0.3s; }
+.artifact-card.highlight { border-color: var(--provider-color); }
+.artifact-card-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0.45rem 0.7rem;
+    background: rgba(var(--provider-color-rgb),0.05);
+    font-size: 0.75rem; font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+.artifact-card-header i { color: var(--provider-color); font-size: 0.7rem; }
+.artifact-card-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artifact-card-time { font-size: 0.65rem; opacity: 0.6; flex-shrink: 0; }
+.artifact-card-content { padding: 0.5rem 0.7rem; }
+.artifact-section-label {
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 0.35rem;
+}
+.artifact-code {
+    background: #1e1e2e; color: #cdd6f4; border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+    position: relative; margin-bottom: 0.5rem;
+}
+.artifact-terminal {
+    background: #0d1117; color: #3fb950; border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.75rem; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+    margin-bottom: 0.5rem;
+}
+.artifact-copy-btn {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(255,255,255,0.1); border: none;
+    color: #cdd6f4; border-radius: 4px;
+    padding: 2px 7px; font-size: 0.65rem;
+    cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+.artifact-code:hover .artifact-copy-btn { opacity: 1; }
+.artifact-copy-btn:hover { background: rgba(255,255,255,0.2); }
+.artifact-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; color: var(--text-secondary);
+    text-align: center; gap: 0.5rem;
+}
+.artifact-empty i { font-size: 2rem; opacity: 0.2; }
+.artifact-empty span { font-size: 0.8rem; }
 #artifactsToggleBtn { font-size: 0.8rem; padding: 4px 10px; border-radius: 8px; }
+.chevron.collapsed { transform: rotate(-90deg); }
 
 /* Inner panel sections (unchanged selectors used by status panel JS) */
 .panel-section { margin-bottom: 1rem; }
@@ -572,14 +616,6 @@
     border-bottom: 1px solid rgba(var(--provider-color-rgb), 0.05);
 }
 .changed-file i { font-size: 0.7rem; color: var(--provider-color); }
-.no-changes {
-    text-align: center;
-    padding: 1.5rem;
-    color: var(--text-secondary);
-    font-size: 0.82rem;
-}
-.no-changes i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.3; }
-
 /* TOOL.md preview */
 .skill-preview {
     background: rgba(0,0,0,0.03);
@@ -654,7 +690,7 @@
 }
 
 @media (max-width: 1200px) {
-    .claude-artifacts { width: 280px; min-width: 280px; }
+    .claude-artifacts { width: 340px; min-width: 340px; }
     .claude-sidebar { width: 220px; min-width: 220px; }
 }
 @media (max-width: 992px) {
@@ -706,8 +742,9 @@
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn" onclick="toggleArtifacts()" title="Toggle build panel">
-                    <i class="bi bi-layout-sidebar-reverse me-1"></i>Build
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn" onclick="toggleArtifacts()" style="display: none;">
+                    <i class="bi bi-layers me-1"></i>Details
+                    <span class="badge ms-1" style="background: rgba(var(--provider-color-rgb),0.2); color: var(--provider-color);" id="artifactCount">0</span>
                 </button>
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
                     <i class="bi bi-gear me-1"></i>Settings
@@ -789,51 +826,55 @@
         <div class="drag-overlay" id="dragOverlay"><span><i class="bi bi-cloud-upload me-2"></i>Drop files to attach</span></div>
     </div>
 
-    <!-- Right: Build Status Panel (claude-artifacts style) -->
+    <!-- Right: Artifacts + Build Status Panel -->
     <div class="claude-artifacts collapsed" id="buildPanel">
         <div class="artifacts-header">
-            <h6><i class="bi bi-git me-2"></i>Build Status</h6>
+            <h6><i class="bi bi-layers me-2"></i>Details</h6>
             <div class="d-flex align-items-center gap-1">
-                <button class="btn-artifact-close" onclick="refreshStatus()" title="Refresh">
+                <button onclick="refreshStatus()" title="Refresh" style="width:28px;height:28px;border-radius:6px;background:none;border:none;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;">
                     <i class="bi bi-arrow-clockwise"></i>
                 </button>
-                <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close panel">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close panel"></button>
             </div>
         </div>
-        <div class="artifacts-body" id="panelContent">
-            <div class="no-changes" id="emptyPanel">
-                <i class="bi bi-code-slash"></i>
-                <p>Start a build session to see changes here.</p>
+        <div class="artifacts-body" id="artifactsBody">
+            <div class="artifact-empty" id="artifactEmpty">
+                <i class="bi bi-layers"></i>
+                <span>Tool calls will appear here</span>
             </div>
-
-            <!-- Branch info -->
-            <div class="panel-section" id="branchSection" style="display:none;">
-                <div class="panel-section-title">Branch</div>
-                <div class="branch-badge" id="branchName">
-                    <i class="bi bi-git"></i> <span>-</span>
+        </div>
+        <!-- Build Status Section (collapsible, below artifacts) -->
+        <div id="buildStatusSection" style="border-top: 1px solid var(--border-color); display: none;">
+            <div style="padding: 0.65rem 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);" onclick="this.nextElementSibling.classList.toggle('d-none'); this.querySelector('.chevron').classList.toggle('collapsed');">
+                <span><i class="bi bi-git me-1"></i>Build Status</span>
+                <i class="bi bi-chevron-down chevron" style="font-size: 0.6rem; transition: transform 0.2s;"></i>
+            </div>
+            <div id="buildStatusContent" style="padding: 0 0.85rem 0.65rem;">
+                <!-- Branch info -->
+                <div class="panel-section" id="branchSection" style="display:none;">
+                    <div class="panel-section-title">Branch</div>
+                    <div class="branch-badge" id="branchName">
+                        <i class="bi bi-git"></i> <span>-</span>
+                    </div>
+                </div>
+                <!-- Changed files -->
+                <div class="panel-section" id="filesSection" style="display:none;">
+                    <div class="panel-section-title">Changed Files</div>
+                    <div id="changedFilesList"></div>
+                </div>
+                <!-- TOOL.md preview -->
+                <div class="panel-section" id="skillSection" style="display:none;">
+                    <div class="panel-section-title">TOOL.MD Preview</div>
+                    <div class="skill-preview"><code id="skillPreviewCode"></code></div>
+                </div>
+                <!-- Sandbox status -->
+                <div id="sandboxStatus" style="display:none; margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(var(--provider-color-rgb),0.06); border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary);">
+                    <i class="bi bi-box me-1"></i>
+                    <span id="sandboxStatusText">Sandbox running</span>
                 </div>
             </div>
-
-            <!-- Changed files -->
-            <div class="panel-section" id="filesSection" style="display:none;">
-                <div class="panel-section-title">Changed Files</div>
-                <div id="changedFilesList"></div>
-            </div>
-
-            <!-- TOOL.md preview -->
-            <div class="panel-section" id="skillSection" style="display:none;">
-                <div class="panel-section-title">TOOL.MD Preview</div>
-                <div class="skill-preview"><code id="skillPreviewCode"></code></div>
-            </div>
-
-            <!-- Sandbox status indicator -->
-            <div id="sandboxStatus" style="display:none; margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(var(--provider-color-rgb),0.06); border-radius: 8px; font-size: 0.78rem; color: var(--text-secondary);">
-                <i class="bi bi-box me-1"></i>
-                <span id="sandboxStatusText">Sandbox running</span>
-            </div>
         </div>
+        <!-- Action buttons footer -->
         <div class="artifacts-footer" id="panelActions" style="display:none;">
             <button class="btn btn-info text-white" id="previewBtn" onclick="openPreview()" title="Open sandbox preview in new tab" style="display:none;">
                 <i class="bi bi-eye me-1"></i> Preview
@@ -1155,6 +1196,12 @@ let previewWindow = null;
 let autoScroll = true;
 let publishReadiness = null;
 let publishReadinessTimer = null;
+
+// Artifact system
+let artifacts = [];
+let activeArtifactId = null;
+let artifactsPanelOpen = false;
+let artifactIdCounter = 0;
 
 // File upload state
 let pendingFiles = [];
@@ -1978,48 +2025,33 @@ function flushAssistantBuffer() {
     currentAssistantEl = null;
 }
 
-// Tool use — render as inline pill
+// Tool use — render as clickable pill that opens artifact in right panel
 function appendToolUse(toolName, toolInput) {
+    const inputData = typeof toolInput === 'object' ? toolInput : {};
+    const inputStr = typeof toolInput === 'object' ? JSON.stringify(toolInput, null, 2) : (toolInput || '');
+    const artifact = createArtifact(toolName, inputData, inputStr, null, null);
     const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-tool';
-
     const icon = getToolIcon(toolName);
-    const inputData = typeof toolInput === 'object' ? toolInput : {};
-    const title = getToolTitle(toolName, inputData);
-
-    div.innerHTML = `<span class="msg-tool-pill" onclick="this.nextElementSibling && this.nextElementSibling.classList.toggle('d-none')">
+    const title = getArtifactTitle(toolName, inputData);
+    div.innerHTML = `<span class="msg-tool-pill" data-artifact-id="${artifact.id}" onclick="selectArtifact(${artifact.id})">
         <i class="bi ${icon}"></i>
         <span>${escapeHtml(title)}</span>
-        <span class="pill-hint">click to expand</span>
-    </span>
-    <div class="tool-block d-none" style="margin-top: 4px;">
-        <div class="tool-block-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('d-none');">
-            <i class="bi bi-chevron-down chevron"></i>
-            <span>${escapeHtml(toolName)}</span>
-        </div>
-        <div class="tool-block-body">${escapeHtml(typeof toolInput === 'string' ? toolInput : JSON.stringify(toolInput, null, 2))}</div>
-    </div>`;
+        <span class="pill-hint">click to view</span>
+    </span>`;
     chatBody.appendChild(div);
     scrollToBottom();
 }
 
-// Tool result — render as collapsible block
+// Tool result — update the latest artifact in the right panel
 function appendToolResult(content) {
-    const displayContent = content.length > 3000 ? content.slice(0, 3000) + '\n... (truncated)' : content;
-    const chatBody = document.getElementById('chatBody');
-    const div = document.createElement('div');
-    div.className = 'msg msg-tool';
-    div.innerHTML = `<div class="tool-block">
-        <div class="tool-block-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('d-none');">
-            <i class="bi bi-chevron-down chevron"></i>
-            <i class="bi bi-check-circle" style="color: #10b981;"></i>
-            <span>Result</span>
-        </div>
-        <div class="tool-block-body d-none">${escapeHtml(displayContent)}</div>
-    </div>`;
-    chatBody.appendChild(div);
-    scrollToBottom();
+    let text;
+    try {
+        const parsed = JSON.parse(content);
+        text = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+    } catch { text = content; }
+    updateArtifactResult(text);
 }
 
 function appendSystemMessage(text) {
@@ -2062,18 +2094,218 @@ function getToolIcon(toolName) {
     return icons[toolName] || 'bi-wrench';
 }
 
-function getToolTitle(toolName, input) {
+function getArtifactTitle(toolName, input) {
     if (!input || typeof input !== 'object') return toolName;
     if ((toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') && (input.command || input.cmd)) {
-        const cmd = input.command || input.cmd;
-        return '$ ' + (cmd.length > 40 ? cmd.substring(0, 40) + '...' : cmd);
+        const cmd = (input.command || input.cmd);
+        const display = cmd.length > 40 ? cmd.substring(0, 40) + '...' : cmd;
+        return `$ ${display}`;
     }
-    if ((toolName === 'Read' || toolName === 'read_file') && input.file_path) return input.file_path.split('/').pop();
-    if ((toolName === 'Edit' || toolName === 'edit_file') && input.file_path) return 'Edit: ' + input.file_path.split('/').pop();
-    if ((toolName === 'Write' || toolName === 'write_file') && input.file_path) return 'New: ' + input.file_path.split('/').pop();
-    if ((toolName === 'Grep' || toolName === 'grep' || toolName === 'search_files') && input.pattern) return 'Search: ' + (input.pattern.length > 30 ? input.pattern.substring(0, 30) + '...' : input.pattern);
-    if ((toolName === 'Glob' || toolName === 'glob' || toolName === 'list_files') && input.pattern) return 'Files: ' + input.pattern;
+    if ((toolName === 'Read' || toolName === 'read_file') && input.file_path) {
+        return input.file_path.split('/').pop();
+    }
+    if ((toolName === 'Edit' || toolName === 'edit_file') && input.file_path) {
+        return `Edit: ${input.file_path.split('/').pop()}`;
+    }
+    if ((toolName === 'Write' || toolName === 'write_file') && input.file_path) {
+        return `New: ${input.file_path.split('/').pop()}`;
+    }
+    if ((toolName === 'Grep' || toolName === 'grep' || toolName === 'search_files') && input.pattern) {
+        return `Search: ${input.pattern.length > 30 ? input.pattern.substring(0, 30) + '...' : input.pattern}`;
+    }
+    if ((toolName === 'Glob' || toolName === 'glob' || toolName === 'list_files') && input.pattern) {
+        return `Files: ${input.pattern}`;
+    }
     return toolName;
+}
+
+function createArtifact(toolName, inputData, inputStr, timestamp, toolUseId) {
+    const id = ++artifactIdCounter;
+    const artifact = {
+        id,
+        toolName,
+        toolUseId: toolUseId || null,
+        title: getArtifactTitle(toolName, inputData),
+        input: inputStr || '',
+        inputData,
+        result: null,
+        timestamp: timestamp ? new Date(timestamp) : new Date()
+    };
+    artifacts.push(artifact);
+
+    // Show toggle button and update count
+    const toggleBtn = document.getElementById('artifactsToggleBtn');
+    toggleBtn.style.display = 'inline-flex';
+    document.getElementById('artifactCount').textContent = artifacts.length;
+
+    // Auto-open panel on first artifact
+    if (!artifactsPanelOpen) {
+        toggleArtifacts();
+    }
+
+    // Append card to body and scroll to it
+    appendArtifactToBody(artifact);
+
+    return artifact;
+}
+
+function updateArtifactResult(resultText) {
+    if (artifacts.length === 0) return;
+    // Find first artifact still waiting for a result (results arrive in order)
+    const pending = artifacts.find(a => a.result === null);
+    if (!pending) return;
+    pending.result = resultText;
+    // Update the specific artifact card
+    const cardEl = document.getElementById(`artifact-${pending.id}`);
+    if (cardEl) {
+        const contentEl = cardEl.querySelector('.artifact-card-content');
+        if (contentEl) {
+            // Remove waiting placeholder
+            const waiting = contentEl.querySelector('.artifact-waiting');
+            if (waiting) waiting.remove();
+            // Append result section
+            contentEl.insertAdjacentHTML('beforeend', renderArtifactResultHtml(pending.toolName, resultText));
+        }
+    }
+}
+
+function selectArtifact(id) {
+    activeArtifactId = id;
+    const cardEl = document.getElementById(`artifact-${id}`);
+    if (!cardEl) return;
+
+    // Scroll card into view
+    cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Briefly highlight
+    cardEl.classList.add('highlight');
+    setTimeout(() => cardEl.classList.remove('highlight'), 1500);
+
+    // On mobile, ensure panel is open
+    if (!artifactsPanelOpen) {
+        const panel = document.getElementById('buildPanel');
+        panel.classList.remove('collapsed');
+        artifactsPanelOpen = true;
+    }
+}
+
+function renderSingleArtifactCard(artifact) {
+    const icon = getToolIcon(artifact.toolName);
+    const time = artifact.timestamp ? new Date(artifact.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    let inputHtml = renderArtifactInputHtml(artifact);
+    let resultHtml = '';
+    if (artifact.result !== null) {
+        resultHtml = renderArtifactResultHtml(artifact.toolName, artifact.result);
+    } else {
+        resultHtml = `<div class="artifact-waiting" style="color: var(--text-secondary); font-size: 0.78rem; font-style: italic; margin-top: 0.5rem;">
+            <i class="bi bi-hourglass-split me-1"></i>Waiting for result...
+        </div>`;
+    }
+    return `<div class="artifact-card" id="artifact-${artifact.id}">
+        <div class="artifact-card-header">
+            <i class="bi ${icon}"></i>
+            <span class="artifact-card-title">${escapeHtml(artifact.title)}</span>
+            <span class="artifact-card-time">${time}</span>
+        </div>
+        <div class="artifact-card-content">${inputHtml}${resultHtml}</div>
+    </div>`;
+}
+
+function renderArtifactInputHtml(artifact) {
+    const toolName = artifact.toolName;
+    let html = '';
+    if (artifact.input) {
+        if (toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') {
+            html += `<div class="artifact-section-label">Command</div>`;
+            let cmd = artifact.input;
+            try { cmd = JSON.parse(artifact.input).command || JSON.parse(artifact.input).cmd || artifact.input; } catch {}
+            html += `<div class="artifact-terminal">$ ${escapeHtml(typeof cmd === 'string' ? cmd : JSON.stringify(cmd, null, 2))}</div>`;
+        } else if (toolName === 'Edit' || toolName === 'edit_file') {
+            html += `<div class="artifact-section-label">Edit Operation</div>`;
+            html += renderEditArtifact(artifact.inputData);
+        } else if (toolName === 'Read' || toolName === 'read_file' || toolName === 'Write' || toolName === 'write_file') {
+            const isWrite = toolName === 'Write' || toolName === 'write_file';
+            html += `<div class="artifact-section-label">${isWrite ? 'File Content' : 'Parameters'}</div>`;
+            if (isWrite && artifact.inputData && artifact.inputData.content) {
+                const fname = artifact.inputData.file_path || '';
+                html += `<div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px;">${escapeHtml(fname)}</div>`;
+                html += `<div class="artifact-code"><button class="artifact-copy-btn" onclick="copyArtifactContent(this)">Copy</button>${escapeHtml(artifact.inputData.content)}</div>`;
+            } else {
+                html += `<div class="artifact-code">${escapeHtml(artifact.input)}</div>`;
+            }
+        } else {
+            html += `<div class="artifact-section-label">Input</div>`;
+            html += `<div class="artifact-code">${escapeHtml(artifact.input)}</div>`;
+        }
+    }
+    return html;
+}
+
+function renderArtifactResultHtml(toolName, resultText) {
+    if (toolName === 'Bash' || toolName === 'bash' || toolName === 'execute_command') {
+        return `<div class="artifact-section-label">Output</div>
+            <div class="artifact-terminal">${escapeHtml(resultText)}</div>`;
+    } else if (toolName === 'Read' || toolName === 'read_file') {
+        return `<div class="artifact-section-label">File Content</div>
+            <div class="artifact-code"><button class="artifact-copy-btn" onclick="copyArtifactContent(this)">Copy</button>${escapeHtml(resultText)}</div>`;
+    } else {
+        return `<div class="artifact-section-label">Result</div>
+            <div class="artifact-code">${escapeHtml(resultText)}</div>`;
+    }
+}
+
+function appendArtifactToBody(artifact) {
+    const body = document.getElementById('artifactsBody');
+    // Remove empty state if present
+    const empty = body.querySelector('.artifact-empty');
+    if (empty) empty.remove();
+    // Append card
+    body.insertAdjacentHTML('beforeend', renderSingleArtifactCard(artifact));
+    // Scroll to new card
+    const cardEl = document.getElementById(`artifact-${artifact.id}`);
+    if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderEditArtifact(inputData) {
+    if (!inputData || typeof inputData !== 'object') return '<div class="artifact-code">No data</div>';
+    let html = '';
+    if (inputData.file_path) {
+        html += `<div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px;">${escapeHtml(inputData.file_path)}</div>`;
+    }
+    if (inputData.old_string !== undefined) {
+        html += `<div style="font-size:0.68rem; font-weight:600; color:#ef4444; margin-bottom:2px;">- Old</div>`;
+        html += `<div class="artifact-code" style="border-left: 3px solid #ef4444;">${escapeHtml(inputData.old_string)}</div>`;
+    }
+    if (inputData.new_string !== undefined) {
+        html += `<div style="font-size:0.68rem; font-weight:600; color:#10b981; margin-bottom:2px;">+ New</div>`;
+        html += `<div class="artifact-code" style="border-left: 3px solid #10b981;">${escapeHtml(inputData.new_string)}</div>`;
+    }
+    return html;
+}
+
+function copyArtifactContent(btn) {
+    const codeBlock = btn.parentElement;
+    const text = codeBlock.textContent.replace('Copy', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+}
+
+function resetArtifacts() {
+    artifacts = [];
+    activeArtifactId = null;
+    artifactIdCounter = 0;
+    artifactsPanelOpen = false;
+    document.getElementById('buildPanel').classList.add('collapsed');
+    document.getElementById('artifactsBody').innerHTML = `<div class="artifact-empty" id="artifactEmpty">
+        <i class="bi bi-layers"></i>
+        <span>Tool calls will appear here</span>
+    </div>`;
+    const toggleBtn = document.getElementById('artifactsToggleBtn');
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    const countEl = document.getElementById('artifactCount');
+    if (countEl) countEl.textContent = '0';
 }
 
 function wrapTables(el) {
@@ -2357,7 +2589,7 @@ async function refreshStatus() {
         const status = await resp.json();
         if (status.error) return;
 
-        document.getElementById('emptyPanel').style.display = 'none';
+        document.getElementById('buildStatusSection').style.display = '';
         document.getElementById('panelActions').style.display = '';
 
         // Update preview URL if container has started; always keep button visible
@@ -2738,11 +2970,12 @@ function resetPanel() {
     previewUrl = null;
     document.getElementById('previewBtn').style.display = 'none';
     document.getElementById('sandboxStatus').style.display = 'none';
-    document.getElementById('emptyPanel').style.display = '';
+    document.getElementById('buildStatusSection').style.display = 'none';
     document.getElementById('branchSection').style.display = 'none';
     document.getElementById('filesSection').style.display = 'none';
     document.getElementById('skillSection').style.display = 'none';
     document.getElementById('panelActions').style.display = 'none';
+    resetArtifacts();
 }
 
 // ============================================================
@@ -2762,6 +2995,7 @@ function setRunningState(running) {
 
 function toggleArtifacts() {
     const panel = document.getElementById('buildPanel');
+    artifactsPanelOpen = panel.classList.contains('collapsed');
     panel.classList.toggle('collapsed');
 }
 
@@ -2932,6 +3166,7 @@ function clearChat() {
     assistantBuffer = '';
     currentAssistantEl = null;
     turnHasStreamedText = false;
+    resetArtifacts();
 }
 
 function replayMessages(messages) {

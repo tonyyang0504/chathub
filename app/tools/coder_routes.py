@@ -6,13 +6,17 @@ Endpoints for creating, managing, and publishing codebase modifications via codi
 import asyncio
 import json
 import logging
+import os
+import sys
+import threading
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.database import get_db, SessionLocal, CustomToolListing, AiWorkspaceSession
+from app.database import get_db, SessionLocal, CustomToolListing, AiWorkspaceSession, CodeModification
 from app.auth.utils import get_current_user_optional, get_websocket_user, decrypt_string
 from .coder_manager import ai_coder_manager
 from .sandbox_manager import sandbox_manager
@@ -41,6 +45,7 @@ class PublishRequest(BaseModel):
 
 class ShareRequest(BaseModel):
     category: str = "modification"
+    version: str = "1.0.0"
     long_description: Optional[str] = None
 
 
@@ -444,6 +449,18 @@ async def stop_session(
     return {"stopped": stopped}
 
 
+@router.get("/sessions/{session_id}/mod-summary")
+async def get_mod_summary(request: Request, session_id: str, db: Session = Depends(get_db)):
+    """Read MOD.md from worktree and return parsed title + description."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+    session = ai_coder_manager.get_session(user.id)
+    if not session or session.session_id != session_id:
+        raise HTTPException(status_code=404)
+    return ai_coder_manager.get_mod_summary(user.id)
+
+
 # ============================================================================
 # Modifications Endpoints
 # ============================================================================
@@ -475,7 +492,6 @@ async def share_modification(mod_id: int, request: Request, data: ShareRequest =
     if not user:
         raise HTTPException(status_code=401)
 
-    from app.database import CodeModification
     mod = db.query(CodeModification).filter(
         CodeModification.id == mod_id,
         CodeModification.user_id == user.id,
@@ -498,7 +514,7 @@ async def share_modification(mod_id: int, request: Request, data: ShareRequest =
         description=mod.description or mod.title,
         long_description=(data.long_description if data else None) or mod.description,
         category=(data.category if data else None) or "modification",
-        version="1.0.0",
+        version=(data.version if data else None) or "1.0.0",
         icon="bi-cpu",
         listing_type="mod",
         status="published",
@@ -512,3 +528,83 @@ async def share_modification(mod_id: int, request: Request, data: ShareRequest =
     db.refresh(listing)
 
     return {"listing_id": listing.id, "message": "Modification shared to marketplace"}
+
+
+# ============================================================================
+# Modifications Page & Detail
+# ============================================================================
+
+@router.get("/modifications/page", response_class=HTMLResponse)
+async def modifications_page(request: Request, db: Session = Depends(get_db)):
+    """Full modifications history page."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    from fastapi.templating import Jinja2Templates
+    from pathlib import Path
+    _base = Path(__file__).resolve().parent.parent
+    templates = Jinja2Templates(directory=str(_base / "templates"))
+    return templates.TemplateResponse(
+        "dashboard/tools/ai_coder_modifications.html",
+        {"request": request, "user": user, "active_page": "tools_ai_coder", "page_title": "AI Coder - Modifications"},
+    )
+
+
+@router.get("/modifications/{mod_id}")
+async def get_modification_detail(mod_id: int, request: Request, db: Session = Depends(get_db)):
+    """Get full details of a single modification."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+
+    mod = db.query(CodeModification).filter(
+        CodeModification.id == mod_id,
+        CodeModification.user_id == user.id,
+    ).first()
+    if not mod:
+        raise HTTPException(status_code=404)
+
+    files = []
+    if mod.files_changed:
+        try:
+            files = json.loads(mod.files_changed)
+        except Exception:
+            pass
+
+    return {
+        "id": mod.id,
+        "title": mod.title,
+        "description": mod.description,
+        "commit_hash": mod.commit_hash,
+        "revert_commit_hash": mod.revert_commit_hash,
+        "files_changed": files,
+        "files_count": len(files),
+        "status": mod.status,
+        "published_at": mod.published_at.isoformat() if mod.published_at else None,
+        "reverted_at": mod.reverted_at.isoformat() if mod.reverted_at else None,
+        "session_id": mod.session_id,
+    }
+
+
+# ============================================================================
+# Restart Endpoint
+# ============================================================================
+
+@router.post("/restart")
+async def restart_server(request: Request, db: Session = Depends(get_db)):
+    """Restart the server process so code modifications take effect."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401)
+
+    def _do_restart():
+        import time
+        time.sleep(1.5)
+        if getattr(sys, 'frozen', False):
+            os.execv(sys.executable, [sys.executable])
+        else:
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return {"success": True, "message": "Server restarting..."}

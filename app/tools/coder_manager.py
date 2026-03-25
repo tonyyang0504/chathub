@@ -8,11 +8,12 @@ import asyncio
 import json
 import logging
 import os
+import re
 import subprocess
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Tuple
 
 from fastapi import WebSocket
 
@@ -54,6 +55,15 @@ Wait for the user to approve the plan before making changes.
 ### Phase 4 — Execute
 
 Implement the approved changes. Make clean, focused commits.
+
+After implementing all changes, **create MOD.md** at the worktree root with this exact format:
+```
+---
+title: Concise 5-10 word title describing what was changed
+description: 2-4 sentence professional description of the changes, their purpose, and key implementation details
+---
+```
+This file is metadata only — it will NOT be copied to the main project. It provides a professional summary for the modification record. Always create it as the final step.
 
 ## RESTRICTIONS
 
@@ -509,6 +519,13 @@ class AiCoderManager:
                     else str(PROJECT_ROOT)
                 )
                 session.cli_provider.cleanup_session(_cleanup_path)
+
+                # Auto-generate MOD.md if agent didn't create one
+                try:
+                    await self._auto_generate_mod_md(session)
+                except Exception as e:
+                    logger.warning(f"Auto-generate MOD.md failed: {e}")
+
                 await session.broadcast({"type": "turn_end", "exit_code": 0})
                 session.output_buffer.clear()
             else:
@@ -670,12 +687,16 @@ class AiCoderManager:
         if user_id in self._sessions:
             del self._sessions[user_id]
 
+        # Determine if restart is needed (Python files changed)
+        py_changed = any(f.endswith('.py') for f in changed_files)
+
         return {
             "success": True,
             "message": "Changes applied successfully",
             "commit_hash": commit_hash,
             "mod_id": mod_id,
             "files_changed": changed_files,
+            "restart_required": py_changed,
         }
 
     async def revert(self, mod_id: int, user_id: int) -> dict:
@@ -694,12 +715,31 @@ class AiCoderManager:
             if not mod.commit_hash:
                 return {"error": "No commit hash to revert"}
 
+            # Clean up any stuck revert/merge state first
+            status = subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+            )
+            if status.stdout.strip():
+                lines = status.stdout.splitlines()
+                if any(l.startswith('UU') or l.startswith('AA') or l.startswith('DU') for l in lines):
+                    subprocess.run(["git", "revert", "--abort"], capture_output=True, cwd=str(PROJECT_ROOT))
+                    subprocess.run(["git", "merge", "--abort"], capture_output=True, cwd=str(PROJECT_ROOT))
+
             # Run git revert
             result = subprocess.run(
                 ["git", "revert", "--no-edit", mod.commit_hash],
                 capture_output=True, text=True, cwd=str(PROJECT_ROOT)
             )
+            # If failed due to merge commit, retry with --mainline 1
+            if result.returncode != 0 and "mainline" in result.stderr.lower():
+                result = subprocess.run(
+                    ["git", "revert", "--no-edit", "--mainline", "1", mod.commit_hash],
+                    capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                )
             if result.returncode != 0:
+                # Abort to clean up and not leave repo in broken state
+                subprocess.run(["git", "revert", "--abort"], capture_output=True, cwd=str(PROJECT_ROOT))
                 return {"error": f"Git revert failed: {result.stderr.strip()}"}
 
             # Get the revert commit hash
@@ -729,17 +769,22 @@ class AiCoderManager:
             mods = db.query(CodeModification).filter(
                 CodeModification.user_id == user_id
             ).order_by(CodeModification.published_at.desc()).all()
-            return [{
-                "id": m.id,
-                "title": m.title,
-                "description": m.description,
-                "commit_hash": m.commit_hash,
-                "revert_commit_hash": m.revert_commit_hash,
-                "files_changed": json.loads(m.files_changed) if m.files_changed else [],
-                "status": m.status,
-                "published_at": m.published_at.isoformat() if m.published_at else None,
-                "reverted_at": m.reverted_at.isoformat() if m.reverted_at else None,
-            } for m in mods]
+            results = []
+            for m in mods:
+                files = json.loads(m.files_changed) if m.files_changed else []
+                results.append({
+                    "id": m.id,
+                    "title": m.title,
+                    "description": m.description,
+                    "commit_hash": m.commit_hash,
+                    "revert_commit_hash": m.revert_commit_hash,
+                    "files": files,
+                    "files_count": len(files),
+                    "status": m.status,
+                    "created_at": m.published_at.isoformat() if m.published_at else None,
+                    "reverted_at": m.reverted_at.isoformat() if m.reverted_at else None,
+                })
+            return results
         finally:
             db.close()
 
@@ -870,6 +915,197 @@ class AiCoderManager:
         """Stop all active sessions."""
         for user_id in list(self._sessions.keys()):
             await self.discard(user_id)
+
+    # ================================================================
+    # MOD.md Auto-Generation (mirrors Tool Builder's TOOL.md pattern)
+    # ================================================================
+
+    CLI_TO_AI_PROVIDER = {
+        "claude": "anthropic",
+        "codex": "openai",
+        "gemini": "google",
+        "chathub": None,  # uses session._ai_provider
+    }
+
+    def get_mod_summary(self, user_id: int) -> dict:
+        """Read and parse MOD.md from the worktree."""
+        session = self._sessions.get(user_id)
+        if not session or not session.sandbox_info or not session.sandbox_info.worktree_path:
+            return {"title": "", "description": ""}
+
+        for candidate in ["MOD.md", "mod.md"]:
+            mod_path = session.sandbox_info.worktree_path / candidate
+            if mod_path.exists():
+                content = mod_path.read_text(encoding="utf-8", errors="ignore")
+                match = re.match(r"^---\s*\n([\s\S]*?)\n---", content.strip())
+                if not match:
+                    return {"title": "", "description": ""}
+
+                fields = {}
+                for line in match.group(1).split("\n"):
+                    m = re.match(r"^(\w+)\s*:\s*(.+)$", line.strip())
+                    if m:
+                        fields[m.group(1)] = m.group(2).strip().strip('"\'')
+
+                return {
+                    "title": fields.get("title", ""),
+                    "description": fields.get("description", ""),
+                }
+
+        return {"title": "", "description": ""}
+
+    async def _auto_generate_mod_md(self, session: AiCoderSession) -> None:
+        """Auto-generate MOD.md via AI if the agent didn't create one."""
+        if not session.sandbox_info:
+            return
+
+        # Check if MOD.md already exists in changed files
+        changed_files = sandbox_manager.get_changed_files(session.session_id)
+        for f in changed_files:
+            if f.upper().endswith("MOD.MD"):
+                logger.info("MOD.md already exists in changed files, skipping auto-generation")
+                return
+
+        # Also check worktree root directly
+        if session.sandbox_info.worktree_path:
+            for candidate in ["MOD.md", "mod.md"]:
+                if (session.sandbox_info.worktree_path / candidate).exists():
+                    logger.info("MOD.md already exists in worktree root, skipping auto-generation")
+                    return
+
+        if not changed_files:
+            return
+
+        logger.info(f"Auto-generating MOD.md for session {session.session_id}")
+
+        # Gather context
+        session_title = self._get_session_title(session)
+        diffs = self._gather_diffs(session, changed_files)
+        conversation_summary = self._get_conversation_summary(session)
+
+        prompt = (
+            "You are generating a MOD.md manifest for a codebase modification.\n"
+            "Analyze the following context and generate a MOD.md file.\n\n"
+            f"## User's Request\n{session_title}\n\n"
+            f"## Changed Files\n{chr(10).join('- ' + f for f in changed_files)}\n\n"
+            f"## Code Changes (Diffs)\n```\n{diffs[:6000]}\n```\n\n"
+            f"## Conversation Summary\n{conversation_summary}\n\n"
+            "Output the MOD.md with this EXACT format (no markdown code fences, no extra text):\n"
+            "---\n"
+            "title: Concise 5-10 word title describing what was changed\n"
+            "description: 2-4 sentence professional description of the changes, their purpose, and key implementation details\n"
+            "---\n"
+        )
+
+        mod_md_content = None
+        try:
+            result = await self._call_ai_for_mod_md(session, prompt)
+            if result:
+                mod_md_content = result
+        except Exception as e:
+            logger.warning(f"AI call for MOD.md generation failed: {e}")
+
+        # Fallback: generate basic MOD.md
+        if not mod_md_content:
+            clean_title = session_title[:80].replace('\n', ' ').strip()
+            mod_md_content = (
+                f"---\n"
+                f"title: {clean_title}\n"
+                f"description: Modified {len(changed_files)} file(s): {', '.join(changed_files[:5])}\n"
+                f"---\n"
+            )
+
+        # Write and commit MOD.md
+        sandbox_manager.write_file(session.session_id, "MOD.md", mod_md_content)
+        sandbox_manager.commit_file(session.session_id, "MOD.md", "Auto-generate MOD.md manifest")
+        logger.info(f"Auto-generated MOD.md for session {session.session_id}")
+
+    async def _call_ai_for_mod_md(self, session: AiCoderSession, prompt: str) -> Optional[str]:
+        """Call AI provider to generate MOD.md content."""
+        from app.ai.factory import get_ai_provider
+
+        ai_provider_name = self.CLI_TO_AI_PROVIDER.get(session.provider)
+        if ai_provider_name is None:
+            ai_provider_name = session._ai_provider or "openai"
+
+        provider = get_ai_provider(
+            provider_name=ai_provider_name,
+            api_key=session._api_key,
+        )
+
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: provider.chat_completion(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=500,
+            )
+        )
+
+        content = response.content.strip() if response and response.content else None
+        if not content:
+            return None
+
+        # Ensure it has frontmatter
+        if not content.startswith("---"):
+            return None
+
+        return content
+
+    def _get_session_title(self, session: AiCoderSession) -> str:
+        """Get the session title (first user message)."""
+        try:
+            from app.database import SessionLocal, AiWorkspaceMessage
+            db = SessionLocal()
+            first_msg = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == session.db_session_id,
+                AiWorkspaceMessage.role == "user"
+            ).order_by(AiWorkspaceMessage.id.asc()).first()
+            title = first_msg.content[:300] if first_msg and first_msg.content else "Code modification"
+            db.close()
+            return title
+        except Exception:
+            return "Code modification"
+
+    def _gather_diffs(self, session: AiCoderSession, changed_files: list) -> str:
+        """Gather file diffs for context."""
+        diffs = []
+        for f in changed_files[:10]:
+            try:
+                diff = sandbox_manager.get_file_diff(session.session_id, f) if hasattr(sandbox_manager, 'get_file_diff') else None
+                if diff:
+                    diffs.append(f"=== {f} ===\n{diff[:1500]}")
+                else:
+                    wt = session.sandbox_info.worktree_path
+                    if wt:
+                        fp = wt / f
+                        if fp.exists():
+                            content = fp.read_text(encoding="utf-8", errors="ignore")[:1500]
+                            diffs.append(f"=== {f} ===\n{content}")
+            except Exception:
+                pass
+        return "\n\n".join(diffs) if diffs else "(no diffs available)"
+
+    def _get_conversation_summary(self, session: AiCoderSession) -> str:
+        """Get a summary of the conversation for context."""
+        try:
+            from app.database import SessionLocal, AiWorkspaceMessage
+            db = SessionLocal()
+            messages = db.query(AiWorkspaceMessage).filter(
+                AiWorkspaceMessage.session_id == session.db_session_id
+            ).order_by(AiWorkspaceMessage.id.asc()).limit(20).all()
+            db.close()
+
+            parts = []
+            for msg in messages:
+                if msg.role == "user" and msg.content:
+                    parts.append(f"User: {msg.content[:200]}")
+                elif msg.role == "assistant" and msg.message_type == "result" and msg.content:
+                    parts.append(f"Assistant: {msg.content[:300]}")
+            return "\n".join(parts[:10]) if parts else "(no conversation history)"
+        except Exception:
+            return "(no conversation history)"
 
 
 # Singleton

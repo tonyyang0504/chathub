@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}AI Coder Modifications - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css?v={{ cache_bust }}">
+<style>
+.mods-hero {
+    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+    color: white;
+    margin-bottom: 1.5rem;
+}
+.mods-hero h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem; }
+.mods-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.95rem; }
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.2rem;
+    text-align: center;
+}
+.stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); }
+.stat-card .stat-label { font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.mod-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+}
+.mod-card:hover { border-color: #0ea5e9; }
+
+.mod-card .mod-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; }
+.mod-card .mod-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.6rem; white-space: pre-line; }
+.mod-card .mod-meta { font-size: 0.78rem; color: var(--text-muted); }
+
+.mod-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+.mod-badge.active { background: rgba(16,185,129,0.15); color: #10b981; }
+.mod-badge.reverted { background: rgba(245,158,11,0.15); color: #d97706; }
+
+.commit-hash {
+    font-family: monospace;
+    font-size: 0.78rem;
+    background: var(--hover-bg);
+    padding: 2px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.commit-hash:hover { color: #0ea5e9; }
+
+.files-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+}
+.files-list li {
+    font-size: 0.8rem;
+    font-family: monospace;
+    color: var(--text-secondary);
+    padding: 2px 0;
+}
+.files-list li::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #0ea5e9;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+.empty-state i { font-size: 4rem; opacity: 0.2; display: block; margin-bottom: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Hero -->
+    <div class="mods-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-journal-code me-3"></i>AI Coder Modifications</h1>
+                <p>History of all codebase changes applied through AI Coder sessions.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-journal-check" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4" id="statsRow">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Total</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="statActive" style="color: #10b981;">-</div>
+                <div class="stat-label">Active</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="statReverted" style="color: #d97706;">-</div>
+                <div class="stat-label">Reverted</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="statFiles" style="color: #0ea5e9;">-</div>
+                <div class="stat-label">Files Changed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back link -->
+    <div class="mb-3">
+        <a href="/tools/ai-coder" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i>Back to AI Coder
+        </a>
+    </div>
+
+    <!-- Modifications List -->
+    <div id="modsList"></div>
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="bi bi-journal-code"></i>
+        <h5>No modifications yet</h5>
+        <p>Start an AI Coder session and apply changes to see them here.</p>
+    </div>
+</div>
+
+<!-- Marketplace Modal -->
+<div class="modal fade" id="marketplaceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Publish to Marketplace</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="marketplaceModId">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Category</label>
+                    <select class="form-select" id="marketplaceCategory">
+                        <option value="feature">Feature</option>
+                        <option value="bugfix">Bug Fix</option>
+                        <option value="enhancement" selected>Enhancement</option>
+                        <option value="ui">UI/UX</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Version</label>
+                    <input type="text" class="form-control" id="marketplaceVersion" value="1.0.0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Long Description (Markdown)</label>
+                    <textarea class="form-control" id="marketplaceDescription" rows="4" placeholder="Detailed description of this modification..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-sm rounded-pill px-3" onclick="publishToMarketplace()" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: white;">
+                    <i class="bi bi-rocket-takeoff me-1"></i>Publish
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const id = 'toast_' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning text-dark' : 'bg-info';
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+            <div class="d-flex"><div class="toast-body">${escapeHtml(message)}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+        </div>`);
+    const el = document.getElementById(id);
+    new bootstrap.Toast(el, { delay: 4000 }).show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
+}
+
+async function loadModifications() {
+    try {
+        const resp = await fetch('/tools/api/ai-coder/modifications', { credentials: 'include' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const mods = data.modifications || data || [];
+        const list = document.getElementById('modsList');
+        const empty = document.getElementById('emptyState');
+
+        if (!mods || mods.length === 0) {
+            list.innerHTML = '';
+            empty.style.display = '';
+            document.getElementById('statTotal').textContent = '0';
+            document.getElementById('statActive').textContent = '0';
+            document.getElementById('statReverted').textContent = '0';
+            document.getElementById('statFiles').textContent = '0';
+            return;
+        }
+        empty.style.display = 'none';
+
+        // Stats
+        const active = mods.filter(m => m.status === 'active').length;
+        const reverted = mods.filter(m => m.status === 'reverted').length;
+        const totalFiles = mods.reduce((sum, m) => sum + (m.files_count || 0), 0);
+        document.getElementById('statTotal').textContent = mods.length;
+        document.getElementById('statActive').textContent = active;
+        document.getElementById('statReverted').textContent = reverted;
+        document.getElementById('statFiles').textContent = totalFiles;
+
+        list.innerHTML = mods.map(m => {
+            const dateStr = m.created_at ? new Date(m.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+            const revertedStr = m.reverted_at ? new Date(m.reverted_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+            const isActive = m.status === 'active';
+            const shortHash = m.commit_hash ? m.commit_hash.substring(0, 7) : '';
+            const filesCount = m.files_count || 0;
+            const files = m.files || [];
+
+            return `
+            <div class="mod-card">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="mod-title">${escapeHtml(m.title || 'Untitled')}</div>
+                    <span class="mod-badge ${isActive ? 'active' : 'reverted'}">${m.status}</span>
+                </div>
+                ${m.description ? `<div class="mod-desc">${escapeHtml(m.description)}</div>` : ''}
+                <div class="mod-meta d-flex flex-wrap align-items-center gap-2 mb-2">
+                    ${shortHash ? `<span class="commit-hash" onclick="navigator.clipboard.writeText('${escapeHtml(m.commit_hash)}'); showToast('Commit hash copied', 'success');" title="Click to copy full hash">${shortHash}</span>` : ''}
+                    <span><i class="bi bi-file-earmark-code me-1"></i>${filesCount} file${filesCount !== 1 ? 's' : ''}</span>
+                    <span><i class="bi bi-clock me-1"></i>${dateStr}</span>
+                    ${revertedStr ? `<span><i class="bi bi-arrow-counterclockwise me-1"></i>Reverted ${revertedStr}</span>` : ''}
+                </div>
+                ${files.length > 0 ? `
+                <details>
+                    <summary style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 0.3rem;">Show files</summary>
+                    <ul class="files-list">${files.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
+                </details>` : ''}
+                <div class="d-flex gap-2 mt-2">
+                    ${isActive ? `<button class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="revertMod(${m.id})">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
+                    </button>` : ''}
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="shareMod(${m.id})">
+                        <i class="bi bi-share me-1"></i>Share
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        console.error('Failed to load modifications:', e);
+    }
+}
+
+async function revertMod(modId) {
+    if (!confirm('Revert this modification? The changes will be undone.')) return;
+    try {
+        const resp = await fetch(`/tools/api/ai-coder/modifications/${modId}/revert`, { method: 'POST', credentials: 'include' });
+        if (resp.ok) {
+            showToast('Modification reverted', 'success');
+            loadModifications();
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to revert', 'error');
+        }
+    } catch(e) {
+        showToast('Error reverting', 'error');
+    }
+}
+
+function shareMod(modId) {
+    document.getElementById('marketplaceModId').value = modId;
+    document.getElementById('marketplaceCategory').value = 'enhancement';
+    document.getElementById('marketplaceVersion').value = '1.0.0';
+    document.getElementById('marketplaceDescription').value = '';
+    new bootstrap.Modal(document.getElementById('marketplaceModal')).show();
+}
+
+async function publishToMarketplace() {
+    const modId = document.getElementById('marketplaceModId').value;
+    if (!modId) return;
+    const payload = {
+        category: document.getElementById('marketplaceCategory').value,
+        version: document.getElementById('marketplaceVersion').value,
+        long_description: document.getElementById('marketplaceDescription').value.trim() || null,
+    };
+    try {
+        const resp = await fetch(`/tools/api/ai-coder/modifications/${modId}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+        });
+        if (resp.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('marketplaceModal')).hide();
+            showToast('Published to marketplace!', 'success');
+            loadModifications();
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showToast(err.detail || 'Failed to publish', 'error');
+        }
+    } catch(e) {
+        showToast('Error publishing', 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => { loadModifications(); });
+</script>
+{% endblock %}

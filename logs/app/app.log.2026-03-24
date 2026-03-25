@@ -1,0 +1,8 @@
+2026-03-24 18:15:51,592 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-03-24 19:22:07,167 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-8e4faebd on branch tool-builder/1/1774365726
+2026-03-24 19:22:07,167 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 8e4faebd for user 1
+2026-03-24 19:22:07,171 - app.tools.builder_manager - INFO - Created tool builder session 8e4faebd-535b-4bec-8367-36626033715d for user 1 (preview deferred)
+2026-03-24 19:22:07,284 - app.tools.builder_manager - INFO - Tool builder turn started, session=8e4faebd-535b-4bec-8367-36626033715d, PID=81906, cwd=/Users/tony/chathub/.worktrees/tb-8e4faebd
+2026-03-24 19:23:16,568 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-24 19:23:16,569 - app.tools.builder_manager - INFO - Tool builder turn completed, session=8e4faebd-535b-4bec-8367-36626033715d
+2026-03-24 19:24:23,758 - app.tools.builder_manager - INFO - Tool builder turn started, session=8e4faebd-535b-4bec-8367-36626033715d, PID=82944, cwd=/Users/tony/chathub/.worktrees/tb-8e4faebd

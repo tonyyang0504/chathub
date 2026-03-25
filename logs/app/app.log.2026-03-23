@@ -1,0 +1,41 @@
+2026-03-23 17:36:50,836 - root - INFO - Enhanced logging system initialized
+2026-03-23 17:36:50,836 - root - INFO - === Server Starting ===
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-23 17:36:51,761 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-23 17:36:51,874 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-23 17:36:51,876 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-23 17:36:51,877 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-23 17:36:51,879 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-23 17:36:51,903 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-23 17:36:51,905 - root - INFO - Enhanced logging system initialized
+2026-03-23 17:36:51,909 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-23 17:36:51,909 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-23 17:36:51,909 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-23 17:36:51,909 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-23 17:36:51,910 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-23 17:37:27,579 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-03-23 17:38:25,552 - app.tools - INFO - Unregistered custom tool: dashboard-message-trends
+2026-03-23 17:38:26,809 - app.tools - INFO - Unregistered custom tool: dashboard-hub-health
+2026-03-23 17:38:27,827 - app.tools - INFO - Unregistered custom tool: dashboard-conversation-snapshot
+2026-03-23 17:38:29,560 - app.tools - INFO - Unregistered custom tool: contacts-attention
+2026-03-23 17:38:36,728 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-23 17:38:36,728 - app.tools - INFO - Skipping inactive custom tool: dashboard-conversation-snapshot
+2026-03-23 17:38:36,728 - app.tools - INFO - Skipping inactive custom tool: dashboard-hub-health
+2026-03-23 17:38:36,732 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-23 17:38:37,794 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-23 17:38:37,794 - app.tools - INFO - Skipping inactive custom tool: dashboard-conversation-snapshot
+2026-03-23 17:38:37,798 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-23 17:38:39,179 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-23 17:38:39,184 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-23 17:38:40,165 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-23 17:42:33,147 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-23 17:42:33,162 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-23 17:42:36,227 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-23 17:42:36,228 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
