@@ -9,7 +9,7 @@
 .main-content { overflow-y: hidden !important; }
 
 /* Provider theming — CSS custom properties driven by data-provider on .claude-app */
-.claude-app, #settingsModal { --provider-color: #0ea5e9; --provider-color-rgb: 14,165,233; --provider-gradient: linear-gradient(135deg, #0ea5e9, #06b6d4); }
+.claude-app, #settingsModal { --provider-color: #da6a46; --provider-color-rgb: 218,106,70; --provider-gradient: linear-gradient(135deg, #da6a46, #d4562a); }
 .claude-app[data-provider="codex"], #settingsModal[data-provider="codex"] { --provider-color: #10a37f; --provider-color-rgb: 16,163,127; --provider-gradient: linear-gradient(135deg, #10a37f, #0d8c6c); }
 .claude-app[data-provider="gemini"], #settingsModal[data-provider="gemini"] { --provider-color: #4285f4; --provider-color-rgb: 66,133,244; --provider-gradient: linear-gradient(135deg, #4285f4, #3367d6); }
 .claude-app[data-provider="chathub"], #settingsModal[data-provider="chathub"] { --provider-color: #8b5cf6; --provider-color-rgb: 139,92,246; --provider-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed); }
@@ -20,7 +20,8 @@
 .provider-pill:hover { color: var(--text-primary); }
 .provider-pill.active { background: var(--card-bg); color: var(--provider-color); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 .provider-pill .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.provider-pill[data-provider="claude"] .pill-dot { background: #0ea5e9; }
+.provider-pill[data-provider="claude"] .pill-dot { background: #da6a46; }
+.provider-pill.disabled { opacity: 0.5; pointer-events: none; cursor: default; }
 .provider-pill[data-provider="codex"] .pill-dot { background: #10a37f; }
 .provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
 .provider-pill[data-provider="chathub"] .pill-dot { background: #8b5cf6; }
@@ -573,8 +574,8 @@
     min-height: 0;
     font-size: 0.8rem;
 }
-.artifacts-footer { padding: 0.75rem 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; flex-wrap: wrap; flex-shrink: 0; }
-.artifacts-footer .btn { font-size: 0.82rem; border-radius: 8px; flex: 1; min-width: 0; }
+.artifacts-footer { padding: 0.75rem 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; flex-shrink: 0; align-items: center; }
+.artifacts-footer .btn { font-size: 0.82rem; border-radius: 20px; flex: 1; min-width: 0; padding: 0.4rem 0.75rem; }
 #artifactsToggleBtn { font-size: 0.8rem; padding: 4px 10px; border-radius: 8px; }
 
 /* Artifact cards */
@@ -1797,6 +1798,10 @@ async function createSession() {
         if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
         sessionId = data.session_id;
         previewUrl = data.preview_url || null;
+        // Lock provider pills after session creation
+        document.querySelectorAll('.provider-pill').forEach(pill => {
+            pill.classList.toggle('disabled', pill.dataset.provider !== currentProvider);
+        });
         setStatus('connected');
         connectWebSocket();
         startStatusPolling();
@@ -3113,6 +3118,12 @@ async function viewSession(dbId) {
         if (!resp.ok) { showToast('Failed to load session', 'error'); return; }
         const data = await resp.json();
 
+        // Lock provider pills to session's provider
+        if (data.provider) selectProvider(data.provider);
+        document.querySelectorAll('.provider-pill').forEach(pill => {
+            pill.classList.toggle('disabled', pill.dataset.provider !== currentProvider);
+        });
+
         // If this session is already the live active session, just reconnect WS
         if (data.active_session_id && data.active_session_id === sessionId) {
             showToast('Session already active', 'info');
@@ -3188,6 +3199,10 @@ function newSession() {
         setStatus('idle');
     }
     currentDbSessionId = null;
+    // Unlock provider pills for new session
+    document.querySelectorAll('.provider-pill').forEach(pill => {
+        pill.classList.remove('disabled');
+    });
     document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
     clearChat();
     document.getElementById('emptyState').style.display = '';
