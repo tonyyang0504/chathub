@@ -1414,9 +1414,39 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger me-auto" id="deleteAgentBtn" onclick="deleteAgent()">Delete</button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill" onclick="openSaveAsTemplateModal()"><i class="bi bi-bookmark-plus me-1"></i>Save as Template</button>
                 <button type="button" class="btn btn-outline-primary" id="duplicateAgentBtn" onclick="duplicateAgent()">Duplicate</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-theme" id="editAgentBtn" onclick="editAgentFromDetail()">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save as Template Modal -->
+<div class="modal fade" id="saveAsTemplateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-bookmark-plus me-2"></i>Save Agent as Template</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Save this agent's configuration as a reusable template. You can use it later to quickly create new agents with the same setup.</p>
+                <div class="mb-3">
+                    <label class="form-label">Template Name</label>
+                    <input type="text" class="form-control" id="templateSaveName" placeholder="e.g. My Customer Support Agent">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+                    <textarea class="form-control" id="templateSaveDescription" rows="2" placeholder="What does this template do?"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-sm rounded-pill px-3" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white;" onclick="saveAgentAsTemplate()">
+                    <i class="bi bi-bookmark-check me-1"></i>Save Template
+                </button>
             </div>
         </div>
     </div>
@@ -2417,6 +2447,59 @@ async function duplicateAgent() {
     } catch (error) {
         console.error('Error duplicating agent:', error);
         alert('Error duplicating agent');
+    }
+}
+
+// ============================================================================
+// Save Agent as Template
+// ============================================================================
+
+let saveAsTemplateModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    saveAsTemplateModal = new bootstrap.Modal(document.getElementById('saveAsTemplateModal'));
+});
+
+function openSaveAsTemplateModal() {
+    if (!selectedAgentId) return;
+    const agent = agents.find(a => a.id === selectedAgentId);
+    document.getElementById('templateSaveName').value = agent ? `${agent.name} Template` : '';
+    document.getElementById('templateSaveDescription').value = '';
+    agentDetailModal.hide();
+    saveAsTemplateModal.show();
+}
+
+async function saveAgentAsTemplate() {
+    if (!selectedAgentId) return;
+
+    const name = document.getElementById('templateSaveName').value.trim();
+    if (!name) {
+        alert('Please enter a template name');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/agents/api/${selectedAgentId}/save-as-template`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                description: document.getElementById('templateSaveDescription').value.trim()
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            saveAsTemplateModal.hide();
+            loadTemplates();
+            alert(`Template "${result.template_name}" saved successfully!`);
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Error saving template');
+        }
+    } catch (error) {
+        console.error('Error saving as template:', error);
+        alert('Error saving template');
     }
 }
 

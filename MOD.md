@@ -1,4 +1,4 @@
 ---
-title: Add Performance Analytics dashboard to Agents page
-description: Added a new Performance Analytics section to the AI Agents page with interactive charts and an agent leaderboard. Includes a new API endpoint (GET /agents/api/analytics) that aggregates execution data by day, with filterable date range (7d/30d/90d) and per-agent filtering. The frontend features stacked bar charts for executions with success rate overlay, token usage with avg response time overlay (via Chart.js), summary stat cards, and a ranked leaderboard table showing each agent's execution count, success rate, and token usage.
+title: Save Agent as Template feature for Agents page
+description: Added a "Save as Template" button to the agent detail modal that lets users save any configured agent as a reusable template. Includes a new backend endpoint (POST /agents/api/{agent_id}/save-as-template) that extracts the agent's system prompt, type, and config into an AgentTemplate record, and a frontend modal for naming and describing the template before saving.
 ---
