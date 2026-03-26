@@ -479,69 +479,6 @@ async def duplicate_agent(
     return {"success": True, "agent_id": duplicated_agent.id, "name": duplicated_agent.name}
 
 
-@router.post("/api/{agent_id}/save-as-template")
-async def save_agent_as_template(
-    request: Request,
-    agent_id: int,
-    db: Session = Depends(get_db)
-):
-    """Save an existing agent's configuration as a reusable template."""
-    user = await get_current_user_optional(request, None, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    user_hub_ids = get_user_hub_ids(user, db)
-
-    agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-
-    if not agent.is_global and agent.hub_id not in user_hub_ids:
-        raise HTTPException(status_code=404, detail="Agent not found")
-
-    # Parse request body for optional name/description overrides
-    body = await request.json()
-    template_name = body.get("name", f"{agent.name} Template")
-    template_description = body.get("description", "")
-
-    # Build default_config from agent's config
-    config = {}
-    if agent.config:
-        try:
-            config = json.loads(agent.config)
-        except:
-            pass
-
-    template = AgentTemplate(
-        name=template_name,
-        agent_type=agent.agent_type,
-        description=template_description or f"Template created from agent: {agent.name}",
-        system_prompt=agent.system_prompt,
-        default_config=json.dumps(config) if config else None,
-        is_system=False,
-        user_id=user.id
-    )
-
-    db.add(template)
-    db.commit()
-    db.refresh(template)
-
-    ToolMonitor.log_execution(
-        db=db,
-        tool_type="agent_execution",
-        operation="save_as_template",
-        hub_id=agent.hub_id,
-        input_data={"agent_id": agent.id, "agent_name": agent.name},
-        output_data={"template_id": template.id, "template_name": template.name},
-        triggered_by="user",
-        related_entity_type="agent",
-        related_entity_id=agent.id,
-        user_id=user.id
-    )
-
-    return {"success": True, "template_id": template.id, "template_name": template.name}
-
-
 @router.post("/api/{agent_id}/toggle")
 async def toggle_agent(
     request: Request,
