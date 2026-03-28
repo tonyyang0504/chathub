@@ -448,8 +448,9 @@ class AiWorkspaceManager:
             )
             stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=10.0)
             output = stdout.decode("utf-8", errors="replace").strip()
-            # Remove ANSI codes
-            clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', output)
+            err_output = stderr.decode("utf-8", errors="replace").strip()
+            # Remove ANSI codes — codex outputs status to stderr
+            clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', output or err_output)
             logged_in = "logged in" in clean.lower() and "not logged in" not in clean.lower()
             return {"loggedIn": logged_in, "raw": clean}
         except FileNotFoundError:

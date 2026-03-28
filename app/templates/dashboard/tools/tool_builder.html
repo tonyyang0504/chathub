@@ -1498,7 +1498,7 @@ function toggleKeyVis(inputId, iconId) {
     }
 }
 
-async function loadSettings() {
+async function loadSettings(autoSelectProvider = true) {
     let autoProvider = null;
     // Load CLI settings
     try {
@@ -1530,7 +1530,7 @@ async function loadSettings() {
             : (data.openai_api_key_set || data.codex_auth_method === 'membership') ? 'codex'
             : (data.gemini_api_key_set || data.gemini_auth_method === 'membership') ? 'gemini'
             : null;
-        if (autoProvider) selectProvider(autoProvider);
+        if (autoSelectProvider && autoProvider) selectProvider(autoProvider);
     } catch (e) {
         console.error('Failed to load CLI settings:', e);
     }
@@ -1555,7 +1555,7 @@ async function loadSettings() {
         console.error('Failed to load ChatHub settings:', e);
     }
     // If no CLI provider had a key configured, fall back to chathub
-    if (!autoProvider && chathubKeySet) {
+    if (autoSelectProvider && !autoProvider && chathubKeySet) {
         selectProvider('chathub');
     }
     updateProviderModelLabel();
@@ -1627,7 +1627,7 @@ async function saveSettings() {
         document.getElementById('openaiKeyInput').value = '';
         document.getElementById('geminiKeyInput').value = '';
         document.getElementById('chathubApiKeyInput').value = '';
-        loadSettings();
+        loadSettings(false);
         const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
         if (modal) modal.hide();
     }
