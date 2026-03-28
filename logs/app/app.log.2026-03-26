@@ -1,0 +1,591 @@
+2026-03-26 11:55:52,270 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-26 11:55:52,272 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-26 11:55:52,273 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-26 11:55:52,273 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-26 11:55:52,273 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-26 11:55:52,277 - app.chathub_agent.manager - INFO - Stopped session 5 for user 1
+2026-03-26 11:55:52,277 - app.bots.manager - INFO - All bots stopped
+2026-03-26 11:55:54,814 - root - INFO - Enhanced logging system initialized
+2026-03-26 11:55:54,814 - root - INFO - === Server Starting ===
+2026-03-26 11:55:56,507 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-26 11:55:56,508 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-26 11:55:56,625 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-26 11:55:56,627 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-26 11:55:56,628 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-26 11:55:56,629 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-26 11:55:56,653 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-26 11:55:56,656 - root - INFO - Enhanced logging system initialized
+2026-03-26 11:55:56,660 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-26 11:55:56,660 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-26 11:55:56,660 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-26 11:55:56,660 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-26 11:55:56,660 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-26 15:41:40,985 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-afd5a315 on branch tool-builder/1/1774525300
+2026-03-26 15:41:40,986 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session afd5a315 for user 1
+2026-03-26 15:41:40,989 - app.tools.coder_manager - INFO - Created AI Coder session afd5a315-d66c-41bb-b0e0-61a5d053efcb for user 1
+2026-03-26 15:41:41,097 - app.tools.coder_manager - INFO - AI Coder turn started, session=afd5a315-d66c-41bb-b0e0-61a5d053efcb, PID=31888
+2026-03-26 15:43:18,872 - app.tools.coder_manager - INFO - MOD.md already exists in worktree root, skipping auto-generation
+2026-03-26 15:56:34,556 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-26 15:56:34,558 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-26 15:56:34,558 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-26 15:56:34,558 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-26 15:56:34,558 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-26 15:56:34,559 - app.bots.manager - INFO - All bots stopped
+2026-03-26 15:56:37,367 - root - INFO - Enhanced logging system initialized
+2026-03-26 15:56:37,367 - root - INFO - === Server Starting ===
+2026-03-26 15:56:38,299 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-26 15:56:38,300 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-26 15:56:38,418 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-26 15:56:38,420 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-26 15:56:38,421 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-26 15:56:38,422 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-26 15:56:38,448 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-26 15:56:38,450 - root - INFO - Enhanced logging system initialized
+2026-03-26 15:56:38,454 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-26 15:56:38,454 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-26 15:56:38,454 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-26 15:56:38,454 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-26 15:56:38,454 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-26 15:57:01,377 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-c9eeda51 on branch tool-builder/1/1774526221
+2026-03-26 15:57:01,377 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session c9eeda51 for user 1
+2026-03-26 15:57:01,381 - app.tools.coder_manager - INFO - Created AI Coder session c9eeda51-2620-478d-a779-14cb3cd3df16 for user 1
+2026-03-26 15:57:01,476 - app.tools.coder_manager - INFO - AI Coder turn started, session=c9eeda51-2620-478d-a779-14cb3cd3df16, PID=33406
+2026-03-26 15:58:29,373 - app.tools.coder_manager - INFO - MOD.md already exists in worktree root, skipping auto-generation
+2026-03-26 16:00:12,062 - app.tools.coder_manager - INFO - AI Coder turn started, session=c9eeda51-2620-478d-a779-14cb3cd3df16, PID=33733
+2026-03-26 16:01:49,674 - app.tools.coder_manager - INFO - MOD.md already exists in changed files, skipping auto-generation
+2026-03-26 16:02:46,179 - app.tools.sandbox_manager - INFO - Docker not found — attempting auto-install...
+2026-03-26 16:03:06,039 - app.tools.sandbox_manager - WARNING - Colima start failed — deleting stale VM and retrying...
+2026-03-26 16:03:21,134 - app.tools.sandbox_manager - INFO - Docker is ready
+2026-03-26 16:03:21,167 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-26 16:03:21,315 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-c9eeda51 on port 9001
+2026-03-26 16:03:21,315 - app.tools.sandbox_manager - INFO - Container tb-sandbox-c9eeda51 started, waiting for HTTP /health on port 9001...
+2026-03-26 16:03:23,372 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-26 16:06:26,173 - root - INFO - Enhanced logging system initialized
+2026-03-26 16:06:26,173 - root - INFO - === Server Starting ===
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-26 16:06:26,980 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-26 16:06:27,094 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-26 16:06:27,095 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-26 16:06:27,096 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-26 16:06:27,097 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-26 16:06:27,122 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-26 16:06:27,125 - root - INFO - Enhanced logging system initialized
+2026-03-26 16:06:27,128 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-26 16:06:27,128 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-26 16:06:27,128 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-26 16:06:27,128 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-26 16:06:27,128 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-26 16:09:11,172 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-1d426c06 on branch tool-builder/1/1774526950
+2026-03-26 16:09:11,172 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 1d426c06 for user 1
+2026-03-26 16:09:11,175 - app.tools.builder_manager - INFO - Created tool builder session 1d426c06-b15d-4d36-8b6c-d45bf5f1fa96 for user 1 (preview deferred)
+2026-03-26 16:09:11,268 - app.tools.builder_manager - INFO - Tool builder turn started, session=1d426c06-b15d-4d36-8b6c-d45bf5f1fa96, PID=37047, cwd=/Users/tony/chathub/.worktrees/tb-1d426c06
+2026-03-26 16:10:20,830 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-26 16:10:20,831 - app.tools.builder_manager - INFO - Tool builder turn completed, session=1d426c06-b15d-4d36-8b6c-d45bf5f1fa96
+2026-03-26 16:13:25,658 - app.ai_workspace.manager - INFO - Safety commit created: 53732f4fdabe95b99cc9ba1e783d48f8d20d9195
+2026-03-26 16:13:25,662 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260326_121325.db
+2026-03-26 16:13:25,668 - app.ai_workspace.manager - INFO - Turn started for session 93, PID=37626, first=False
+2026-03-26 16:13:27,967 - app.ai_workspace.manager - INFO - Session 93 ended with exit code 1
+2026-03-26 16:14:13,403 - app.tools.builder_manager - INFO - Tool builder turn started, session=1d426c06-b15d-4d36-8b6c-d45bf5f1fa96, PID=37800, cwd=/Users/tony/chathub/.worktrees/tb-1d426c06
+2026-03-26 16:15:39,478 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-26 16:15:39,478 - app.tools.builder_manager - INFO - Tool builder turn completed, session=1d426c06-b15d-4d36-8b6c-d45bf5f1fa96
+2026-03-26 16:15:54,176 - app.tools.builder_manager - INFO - Tool builder turn started, session=1d426c06-b15d-4d36-8b6c-d45bf5f1fa96, PID=38167, cwd=/Users/tony/chathub/.worktrees/tb-1d426c06
+2026-03-26 16:21:18,836 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-26 16:21:18,836 - app.tools.builder_manager - INFO - Tool builder turn completed, session=1d426c06-b15d-4d36-8b6c-d45bf5f1fa96
+2026-03-26 16:25:14,014 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-26 16:25:14,150 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-1d426c06 on port 9001
+2026-03-26 16:25:14,151 - app.tools.sandbox_manager - INFO - Container tb-sandbox-1d426c06 started, waiting for HTTP /health on port 9001...
+2026-03-26 16:25:15,706 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-26 16:42:01,567 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-26 16:42:01,569 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-26 16:42:01,569 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-26 16:42:01,569 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-26 16:42:01,569 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-26 16:42:01,570 - app.bots.manager - INFO - All bots stopped
+2026-03-26 16:42:04,083 - root - INFO - Enhanced logging system initialized
+2026-03-26 16:42:04,083 - root - INFO - === Server Starting ===
+2026-03-26 16:42:05,168 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-26 16:42:05,168 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-26 16:42:05,168 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-26 16:42:05,168 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-26 16:42:05,168 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-26 16:42:05,169 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-26 16:42:05,169 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-26 16:42:05,169 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-26 16:42:05,169 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-26 16:42:05,280 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-26 16:42:05,282 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-26 16:42:05,283 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-26 16:42:05,284 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-26 16:42:05,309 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-26 16:42:05,311 - root - INFO - Enhanced logging system initialized
+2026-03-26 16:42:05,314 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-26 16:42:05,314 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-26 16:42:05,314 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-26 16:42:05,315 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-26 16:42:05,315 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-26 16:46:41,219 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-26 16:46:41,220 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-26 16:46:41,220 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-26 16:46:41,221 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-26 16:46:41,221 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-26 16:46:41,221 - app.bots.manager - INFO - All bots stopped
+2026-03-26 16:46:43,358 - root - INFO - Enhanced logging system initialized
+2026-03-26 16:46:43,359 - root - INFO - === Server Starting ===
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-26 16:46:44,196 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-26 16:46:44,310 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-26 16:46:44,311 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-26 16:46:44,313 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-26 16:46:44,314 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-26 16:46:44,338 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-26 16:46:44,341 - root - INFO - Enhanced logging system initialized
+2026-03-26 16:46:44,344 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-26 16:46:44,344 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-26 16:46:44,344 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-26 16:46:44,345 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-26 16:46:44,345 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-26 17:05:56,532 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-26 17:05:56,545 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-26 17:05:58,930 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-26 17:05:58,931 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-26 17:42:15,098 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-26 17:42:15,121 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-26 17:42:15,635 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-26 17:42:15,636 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-26 17:42:21,796 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-26 17:42:21,809 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-26 17:42:22,835 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-26 17:42:22,836 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-26 17:42:23,488 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-03-26 17:42:23,512 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-03-26 17:42:24,300 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-03-26 17:42:24,301 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-03-26 17:47:39,873 - app.chathub_agent.manager - INFO - Safety commit created: f2762c8d5a6a0123fd3fbb55b0d796a0951d88d4
+2026-03-26 17:47:39,901 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260326_134739.db
+2026-03-26 17:47:39,945 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 6 for user 1
+2026-03-26 17:47:39,949 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-03-26 17:47:42,425 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:47:42,437 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:47:42,538 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 4 messages
+2026-03-26 17:47:44,771 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:47:44,771 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=62
+2026-03-26 17:47:45,806 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:52:05,978 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 6 messages
+2026-03-26 17:52:09,274 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:52:09,278 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=354
+2026-03-26 17:52:26,780 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 8 messages
+2026-03-26 17:52:36,467 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:52:36,477 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=1877
+2026-03-26 17:53:22,196 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 10 messages
+2026-03-26 17:53:24,641 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:53:24,643 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=384
+2026-03-26 17:53:43,082 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 12 messages
+2026-03-26 17:53:45,293 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:53:45,296 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:53:45,391 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 14 messages
+2026-03-26 17:53:46,494 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:53:46,496 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=25
+2026-03-26 17:53:51,919 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 16 messages
+2026-03-26 17:53:54,594 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:53:54,596 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=336
+2026-03-26 17:54:38,263 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 18 messages
+2026-03-26 17:54:39,790 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:54:39,793 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:54:39,870 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 20 messages
+2026-03-26 17:54:41,954 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:54:41,955 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=25
+2026-03-26 17:54:47,628 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 22 messages
+2026-03-26 17:54:51,377 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:54:51,379 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:54:51,915 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 24 messages
+2026-03-26 17:55:10,114 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:55:10,118 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=3893
+2026-03-26 17:56:36,552 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 26 messages
+2026-03-26 17:56:39,298 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:56:39,300 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:56:39,331 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 28 messages
+2026-03-26 17:56:41,637 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:56:41,648 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:56:41,678 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 30 messages
+2026-03-26 17:56:43,094 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:56:43,098 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-03-26 17:56:43,595 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 32 messages
+2026-03-26 17:56:53,848 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:56:53,851 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=2065
+2026-03-26 17:57:11,726 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 34 messages
+2026-03-26 17:57:13,177 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-03-26 17:57:13,181 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=105
+2026-03-26 18:00:58,515 - app.chathub_agent.manager - INFO - Stopped session 6 for user 1
+2026-03-26 18:00:58,591 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260326_140058.db
+2026-03-26 18:00:59,195 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 7 for user 1
+2026-03-26 18:00:59,200 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-03-26 18:00:59,206 - app.chathub_agent.agent_loop - ERROR - Agent loop error: Unknown field for Schema: default
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 36, in to_proto
+    return self._descriptor(**value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Parameter to MergeFrom() must be instance of same class: expected google.ai.generativelanguage.v1beta.Schema got dict.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 36, in to_proto
+    return self._descriptor(**value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Protocol message Schema has no "default" field.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/tony/chathub/app/chathub_agent/agent_loop.py", line 100, in _agent_loop
+    response: AIResponse = await asyncio.to_thread(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/base.py", line 175, in chat_completion
+    response = self._chat_completion_impl(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/google_provider.py", line 116, in _chat_completion_impl
+    response = self._make_api_call(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 314, in iter
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/google_provider.py", line 277, in _make_api_call
+    return chat.send_message(
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 562, in send_message
+    tools_lib = self.model._get_tools_lib(tools)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 182, in _get_tools_lib
+    return content_types.to_function_library(tools)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 917, in to_function_library
+    return FunctionLibrary(tools=lib)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 855, in __init__
+    tools = _make_tools(tools)
+            ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 898, in _make_tools
+    tools = [_make_tool(t) for t in tools]
+             ^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 820, in _make_tool
+    return Tool(**tool)
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 731, in __init__
+    _make_function_declaration(f) for f in function_declarations
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 664, in _make_function_declaration
+    return FunctionDeclaration(**fun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 572, in __init__
+    self._proto = protos.FunctionDeclaration(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 728, in __init__
+    pb_value = marshal.to_proto(pb_type, value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 235, in to_proto
+    pb_value = self.get_rule(proto_type=proto_type).to_proto(value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 46, in to_proto
+    return self._wrapper(value)._pb
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 728, in __init__
+    pb_value = marshal.to_proto(pb_type, value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 233, in to_proto
+    return {k: self.to_proto(recursive_type, v) for k, v in value.items()}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 235, in to_proto
+    pb_value = self.get_rule(proto_type=proto_type).to_proto(value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 46, in to_proto
+    return self._wrapper(value)._pb
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 724, in __init__
+    raise ValueError(
+ValueError: Unknown field for Schema: default
+2026-03-26 18:00:59,953 - app.ai.providers.google_provider - ERROR - Google rate limit exceeded: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:00:59,955 - app.chathub_agent.manager - ERROR - Failed to generate session title: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:01:57,708 - app.chathub_agent.manager - INFO - Stopped session 7 for user 1
+2026-03-26 18:01:57,780 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260326_140157.db
+2026-03-26 18:01:57,785 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 8 for user 1
+2026-03-26 18:01:57,788 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-03-26 18:01:57,789 - app.chathub_agent.agent_loop - ERROR - Agent loop error: Unknown field for Schema: default
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 36, in to_proto
+    return self._descriptor(**value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Parameter to MergeFrom() must be instance of same class: expected google.ai.generativelanguage.v1beta.Schema got dict.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 36, in to_proto
+    return self._descriptor(**value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Protocol message Schema has no "default" field.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/tony/chathub/app/chathub_agent/agent_loop.py", line 100, in _agent_loop
+    response: AIResponse = await asyncio.to_thread(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/base.py", line 175, in chat_completion
+    response = self._chat_completion_impl(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/google_provider.py", line 116, in _chat_completion_impl
+    response = self._make_api_call(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 314, in iter
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/google_provider.py", line 277, in _make_api_call
+    return chat.send_message(
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 562, in send_message
+    tools_lib = self.model._get_tools_lib(tools)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 182, in _get_tools_lib
+    return content_types.to_function_library(tools)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 917, in to_function_library
+    return FunctionLibrary(tools=lib)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 855, in __init__
+    tools = _make_tools(tools)
+            ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 898, in _make_tools
+    tools = [_make_tool(t) for t in tools]
+             ^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 820, in _make_tool
+    return Tool(**tool)
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 731, in __init__
+    _make_function_declaration(f) for f in function_declarations
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 664, in _make_function_declaration
+    return FunctionDeclaration(**fun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 572, in __init__
+    self._proto = protos.FunctionDeclaration(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 728, in __init__
+    pb_value = marshal.to_proto(pb_type, value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 235, in to_proto
+    pb_value = self.get_rule(proto_type=proto_type).to_proto(value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 46, in to_proto
+    return self._wrapper(value)._pb
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 728, in __init__
+    pb_value = marshal.to_proto(pb_type, value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 233, in to_proto
+    return {k: self.to_proto(recursive_type, v) for k, v in value.items()}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 235, in to_proto
+    pb_value = self.get_rule(proto_type=proto_type).to_proto(value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 46, in to_proto
+    return self._wrapper(value)._pb
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 724, in __init__
+    raise ValueError(
+ValueError: Unknown field for Schema: default
+2026-03-26 18:01:58,253 - app.ai.providers.google_provider - ERROR - Google rate limit exceeded: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:01:58,254 - app.chathub_agent.manager - ERROR - Failed to generate session title: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:02:45,405 - app.chathub_agent.manager - INFO - Stopped session 8 for user 1
+2026-03-26 18:02:45,438 - app.chathub_agent.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/chathub_agent/app_db_backup_20260326_140245.db
+2026-03-26 18:02:45,444 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 9 for user 1
+2026-03-26 18:02:45,447 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-03-26 18:02:45,447 - app.chathub_agent.agent_loop - ERROR - Agent loop error: Unknown field for Schema: default
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 36, in to_proto
+    return self._descriptor(**value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Parameter to MergeFrom() must be instance of same class: expected google.ai.generativelanguage.v1beta.Schema got dict.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 36, in to_proto
+    return self._descriptor(**value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Protocol message Schema has no "default" field.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/tony/chathub/app/chathub_agent/agent_loop.py", line 100, in _agent_loop
+    response: AIResponse = await asyncio.to_thread(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/base.py", line 175, in chat_completion
+    response = self._chat_completion_impl(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/google_provider.py", line 116, in _chat_completion_impl
+    response = self._make_api_call(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 314, in iter
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/anaconda3/lib/python3.12/site-packages/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/tony/chathub/app/ai/providers/google_provider.py", line 277, in _make_api_call
+    return chat.send_message(
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 562, in send_message
+    tools_lib = self.model._get_tools_lib(tools)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 182, in _get_tools_lib
+    return content_types.to_function_library(tools)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 917, in to_function_library
+    return FunctionLibrary(tools=lib)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 855, in __init__
+    tools = _make_tools(tools)
+            ^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 898, in _make_tools
+    tools = [_make_tool(t) for t in tools]
+             ^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 820, in _make_tool
+    return Tool(**tool)
+           ^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 731, in __init__
+    _make_function_declaration(f) for f in function_declarations
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 664, in _make_function_declaration
+    return FunctionDeclaration(**fun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/google/generativeai/types/content_types.py", line 572, in __init__
+    self._proto = protos.FunctionDeclaration(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 728, in __init__
+    pb_value = marshal.to_proto(pb_type, value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 235, in to_proto
+    pb_value = self.get_rule(proto_type=proto_type).to_proto(value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 46, in to_proto
+    return self._wrapper(value)._pb
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 728, in __init__
+    pb_value = marshal.to_proto(pb_type, value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 233, in to_proto
+    return {k: self.to_proto(recursive_type, v) for k, v in value.items()}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/marshal.py", line 235, in to_proto
+    pb_value = self.get_rule(proto_type=proto_type).to_proto(value)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/marshal/rules/message.py", line 46, in to_proto
+    return self._wrapper(value)._pb
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/proto/message.py", line 724, in __init__
+    raise ValueError(
+ValueError: Unknown field for Schema: default
+2026-03-26 18:02:45,770 - app.ai.providers.google_provider - ERROR - Google rate limit exceeded: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:02:45,771 - app.chathub_agent.manager - ERROR - Failed to generate session title: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:03:14,013 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260326_140314.db
+2026-03-26 18:03:14,061 - app.ai_workspace.manager - INFO - Turn started for session 96, PID=48921, first=True
+2026-03-26 18:05:07,352 - app.ai_workspace.manager - INFO - Stopped session 96 for user 1
+2026-03-26 18:05:07,354 - app.ai_workspace.manager - INFO - Output reader cancelled for session 96
+2026-03-26 18:05:11,420 - app.ai_workspace.manager - INFO - Stopped session 96 for user 1
+2026-03-26 18:05:12,863 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260326_140512.db
+2026-03-26 18:05:12,872 - app.ai_workspace.manager - INFO - Turn started for session 96, PID=49079, first=False
+2026-03-26 18:12:36,142 - app.ai_workspace.manager - INFO - Turn completed for session 96, waiting for follow-up
+2026-03-26 18:12:36,619 - app.ai.providers.google_provider - ERROR - Google rate limit exceeded: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:12:36,620 - app.ai_workspace.manager - ERROR - Failed to generate session title: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-03-26 18:12:47,141 - app.ai_workspace.manager - INFO - Stopped session 96 for user 1
+2026-03-26 18:12:47,241 - app.ai_workspace.manager - INFO - Safety commit created: cd271d617e749c999c7c4ed2df6641a8902a2dad
+2026-03-26 18:12:47,243 - app.ai_workspace.manager - INFO - DB backup created: /Users/tony/chathub/data/backups/ai_workspace/app_db_backup_20260326_141247.db
+2026-03-26 18:12:47,253 - app.ai_workspace.manager - INFO - Turn started for session 97, PID=49645, first=True
+2026-03-26 18:12:49,965 - app.ai_workspace.manager - ERROR - Failed to persist message: slice(None, 10000, None)
+2026-03-26 18:12:49,973 - app.ai_workspace.manager - INFO - Session 97 ended with exit code 1

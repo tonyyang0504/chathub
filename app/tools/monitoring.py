@@ -280,12 +280,12 @@ class ToolMonitor:
         Returns:
             Dict with statistics (total, success_count, error_count, avg_time, total_tokens)
         """
-        from sqlalchemy import func
+        from sqlalchemy import func, case
 
         query = db.query(
             func.count(ToolExecution.id).label('total'),
-            func.sum(func.case([(ToolExecution.status == 'success', 1)], else_=0)).label('success_count'),
-            func.sum(func.case([(ToolExecution.status == 'error', 1)], else_=0)).label('error_count'),
+            func.sum(case((ToolExecution.status == 'success', 1), else_=0)).label('success_count'),
+            func.sum(case((ToolExecution.status == 'error', 1), else_=0)).label('error_count'),
             func.avg(ToolExecution.execution_time_ms).label('avg_time_ms'),
             func.sum(ToolExecution.tokens_used).label('total_tokens')
         )

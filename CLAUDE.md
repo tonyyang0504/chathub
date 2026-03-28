@@ -436,6 +436,59 @@ Custom tools built by the AI Tool Builder hardcode their gradient colors in thei
 ### SQLAlchemy ORM — No Dynamic Attributes
 Never set arbitrary attributes on SQLAlchemy model instances (e.g., `tool._my_attr = value`) — they will silently fail in templates. Instead, pass supplementary data as a separate dict to the Jinja2 template context.
 
+### AI Tools Unified Styling (AI Workspace, AI Coder, Tool Builder)
+
+All three AI tools share the same 3-panel layout and must stay visually aligned. AI Workspace is the canonical reference.
+
+**Layout**: Left sidebar | Center chat | Right panel (Tools). All use `.claude-app` flex container with `.claude-sidebar`, `.claude-main`, `.claude-artifacts`.
+
+**Provider Theming**: All three use the same CSS custom properties driven by `data-provider` on `.claude-app`:
+- Claude: `#da6a46` (orange/coral) — AI Coder uses this same color, NOT sky blue
+- Codex: `#10a37f`, Gemini: `#4285f4`, ChatHub: `#8b5cf6`
+
+**Session Type Separation**: Each tool filters sessions by `session_type` in the DB:
+- AI Workspace: `claude_code`, Tool Builder: `tool_builder`, AI Coder: `ai_coder`
+- Never query without this filter or sessions will mix across tools
+
+**Provider Locking**: Once a session is created with a provider, lock the provider pills (`.provider-pill.disabled`) so the user can't switch mid-session. Unlock on `newSession()`.
+
+**Left Sidebar**:
+- Headers: AI Workspace = "Tasks" (`bi-list-task`), AI Coder = "Coding" (`bi-code-slash`), Tool Builder = "Builds" (`bi-hammer`)
+- Session items show provider badge (`.provider-badge.pb-{provider}`) before status badge
+- Delete button is inline in `.session-meta` flex row (not absolutely positioned), uses `bi-trash3`, `border-radius: 6px`
+- `.session-item:hover` uses `var(--border-color)` background (not provider-tinted)
+- `.prompt-preview` must have `title` attribute for hover tooltip
+- `.btn-new-session`: 32x32, `border-radius: 12px`, no border
+
+**Center Section**:
+- Sidebar toggle button (`.btn-sidebar-toggle`): 34x34, `border-radius: 12px`, no border, `bi-layout-sidebar-inset` icon
+- Tools toggle button: `bi-layers` icon, label "Tools", uses standard `btn btn-sm btn-outline-secondary rounded-pill`
+- Provider/model label: `<span id="providerModelLabel">` near voice button in input toolbar, updated via `updateProviderModelLabel()`
+- Empty state: Bootstrap icon in provider color at 3.5rem/0.5 opacity (AI Workspace: `bi-stars`, AI Coder: `bi-terminal`, Tool Builder: `bi-hammer`)
+
+**Right Panel (Tools)**:
+- Header title: "Tools" with `bi-layers` icon, only close button (no refresh button)
+- Shows artifact cards for tool calls (same system across all three)
+- AI Coder/Tool Builder: collapsible Build Status section below artifacts, action buttons (Apply/Publish + Discard) in footer
+- Footer buttons: `border-radius: 20px`, `padding: 0.4rem 0.75rem`, no `flex-wrap`
+- `.artifacts-header` padding: `0.65rem 0.85rem`
+
+**Tool Use Rendering**: Tool calls render as clickable pills in chat (`.msg-tool-pill`) that open artifact cards in the right panel. Must handle three event types:
+1. `content_block_start` with `tool_use` type — pass `toolUseId`
+2. `assistant` with `message.content` containing `tool_use` blocks — update existing artifact or create new
+3. `content_block_delta` with `input_json_delta` — stream partial input into artifact card
+
+**Settings Modal**: Use `modal-close-btn` class (not Bootstrap's `btn-close`)
+
+**Toast Notifications**: Use the same `showToast()` implementation as `app.js` — with icons (`bi-check-circle-fill`, etc.), 5000ms duration, and `error`→`danger` type mapping
+
+**AI Coder Modifications Section**: Collapsed by default, toggle arrow in header, "View all" link with `stopPropagation()`
+
+**Tools Index Cards** (`tools/index.html`):
+- AI Workspace: `bi-stars`, teal gradient (`#0ea5e9/#06b6d4`)
+- Tool Builder: `bi-hammer`, purple gradient (`#6366f1/#8b5cf6`)
+- AI Coder: `bi-terminal`, dark navy gradient (`#1a1a2e/#16213e`)
+
 ## Testing
 
 Test fixtures in `tests/conftest.py`:

@@ -1,0 +1,59 @@
+2026-03-27 22:46:01,312 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-27 22:46:01,316 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-27 22:46:01,317 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-27 22:46:01,318 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-27 22:46:01,319 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-27 22:46:01,328 - app.chathub_agent.manager - INFO - Stopped session 9 for user 1
+2026-03-27 22:46:01,331 - app.bots.manager - INFO - All bots stopped
+2026-03-27 22:46:06,524 - root - INFO - Enhanced logging system initialized
+2026-03-27 22:46:06,524 - root - INFO - === Server Starting ===
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-27 22:46:07,444 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-27 22:46:07,555 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-27 22:46:07,556 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-27 22:46:07,557 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-27 22:46:07,558 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-27 22:46:07,582 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-27 22:46:07,584 - root - INFO - Enhanced logging system initialized
+2026-03-27 22:46:07,588 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-27 22:46:07,588 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-27 22:46:07,588 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-27 22:46:07,588 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-27 22:46:07,588 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-27 22:46:29,402 - app.auth.routes - WARNING - Login attempt with invalid password for: test@test.com
+2026-03-27 22:46:33,001 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-03-27 22:59:06,949 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-27 22:59:06,950 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-27 22:59:06,951 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-27 22:59:06,951 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-27 22:59:06,951 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-27 22:59:06,951 - app.bots.manager - INFO - All bots stopped
+2026-03-27 22:59:08,971 - root - INFO - Enhanced logging system initialized
+2026-03-27 22:59:08,971 - root - INFO - === Server Starting ===
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-27 22:59:09,839 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-27 22:59:09,957 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-27 22:59:09,958 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-27 22:59:09,959 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-27 22:59:09,961 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-27 22:59:09,985 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-27 22:59:09,988 - root - INFO - Enhanced logging system initialized
+2026-03-27 22:59:09,992 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-27 22:59:09,992 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-27 22:59:09,992 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-27 22:59:09,992 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-27 22:59:09,992 - app.bots.message_scheduler - INFO - Message scheduler started

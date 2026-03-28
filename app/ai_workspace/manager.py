@@ -434,6 +434,264 @@ class AiWorkspaceManager:
             logger.error(f"Failed to trigger membership logout: {e}")
             return {"status": "error", "message": str(e)}
 
+    # ================================================================
+    # Codex Auth Management
+    # ================================================================
+
+    async def codex_login_status(self) -> dict:
+        """Check Codex login status via `codex login status`."""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "codex", "login", "status",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=10.0)
+            output = stdout.decode("utf-8", errors="replace").strip()
+            # Remove ANSI codes
+            clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', output)
+            logged_in = "logged in" in clean.lower() and "not logged in" not in clean.lower()
+            return {"loggedIn": logged_in, "raw": clean}
+        except FileNotFoundError:
+            return {"loggedIn": False, "error": "Codex CLI not installed"}
+        except asyncio.TimeoutError:
+            return {"loggedIn": False, "error": "Timeout checking status"}
+        except Exception as e:
+            logger.error(f"Failed to check codex login status: {e}")
+            return {"loggedIn": False, "error": str(e)}
+
+    async def codex_device_login(self) -> dict:
+        """Trigger `codex login --device-auth`, capture URL + device code."""
+        try:
+            self._cleanup_codex_login()
+            codex_path = shutil.which("codex")
+            if not codex_path:
+                return {"status": "error", "message": "Codex CLI not installed"}
+
+            child = pexpect.spawn(
+                codex_path, ["login", "--device-auth"],
+                encoding="utf-8",
+                timeout=30,
+                dimensions=(24, 120),
+            )
+
+            loop = asyncio.get_event_loop()
+            login_info = {"url": None, "code": None}
+
+            def _wait_for_code():
+                buf = ""
+                deadline = time.time() + 20.0
+                while time.time() < deadline:
+                    try:
+                        chunk = child.read_nonblocking(4096, timeout=0.5)
+                        if chunk:
+                            buf += chunk
+                            clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', buf)
+                            # Extract URL
+                            url_match = re.search(r'(https://\S+)', clean)
+                            if url_match:
+                                login_info["url"] = url_match.group(1)
+                            # Extract device code (e.g., "LJEH-TOTLV")
+                            code_match = re.search(r'\b([A-Z0-9]{4,}-[A-Z0-9]{4,})\b', clean)
+                            if code_match:
+                                login_info["code"] = code_match.group(1)
+                            if login_info["url"] and login_info["code"]:
+                                return
+                    except pexpect.TIMEOUT:
+                        continue
+                    except pexpect.EOF:
+                        break
+
+            await loop.run_in_executor(None, _wait_for_code)
+
+            # Start drain thread to keep process alive
+            stop_event = threading.Event()
+            drain_thread = threading.Thread(
+                target=self._drain_pexpect, args=(child, stop_event), daemon=True
+            )
+            drain_thread.start()
+
+            self._codex_login_pty = {
+                "child": child,
+                "drain_stop": stop_event,
+                "drain_thread": drain_thread,
+            }
+
+            if login_info["url"] and login_info["code"]:
+                return {"status": "ok", "url": login_info["url"], "device_code": login_info["code"]}
+            elif login_info["url"]:
+                return {"status": "ok", "url": login_info["url"], "device_code": ""}
+            else:
+                self._cleanup_codex_login()
+                return {"status": "error", "message": "Could not capture device code"}
+
+        except FileNotFoundError:
+            return {"status": "error", "message": "Codex CLI not installed"}
+        except Exception as e:
+            logger.error(f"Failed to trigger codex device login: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def _cleanup_codex_login(self):
+        if not hasattr(self, '_codex_login_pty') or not self._codex_login_pty:
+            return
+        pty_info = self._codex_login_pty
+        self._codex_login_pty = None
+        stop = pty_info.get("drain_stop")
+        if stop:
+            stop.set()
+        thread = pty_info.get("drain_thread")
+        if thread:
+            thread.join(timeout=2.0)
+        child = pty_info.get("child")
+        if child and child.isalive():
+            try:
+                child.terminate(force=True)
+            except Exception:
+                pass
+
+    async def codex_logout(self) -> dict:
+        """Run `codex logout`."""
+        try:
+            self._cleanup_codex_login()
+            process = await asyncio.create_subprocess_exec(
+                "codex", "logout",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            await asyncio.wait_for(process.communicate(), timeout=10.0)
+            return {"status": "ok"}
+        except FileNotFoundError:
+            return {"status": "error", "message": "Codex CLI not installed"}
+        except Exception as e:
+            logger.error(f"Failed to codex logout: {e}")
+            return {"status": "error", "message": str(e)}
+
+    # ================================================================
+    # Gemini Auth Management
+    # ================================================================
+
+    async def gemini_login_status(self) -> dict:
+        """Check Gemini login status by checking ~/.gemini/oauth_creds.json."""
+        try:
+            oauth_path = Path.home() / ".gemini" / "oauth_creds.json"
+            if not oauth_path.exists():
+                return {"loggedIn": False}
+            creds = json.loads(oauth_path.read_text())
+            has_token = bool(creds.get("access_token"))
+            # Check google accounts
+            accounts_path = Path.home() / ".gemini" / "google_accounts.json"
+            email = ""
+            if accounts_path.exists():
+                accounts = json.loads(accounts_path.read_text())
+                active = accounts.get("active", [])
+                if isinstance(active, list) and active:
+                    email = active[0].get("email", "") if isinstance(active[0], dict) else str(active[0])
+                elif isinstance(active, dict):
+                    email = active.get("email", "")
+            return {"loggedIn": has_token, "email": email}
+        except Exception as e:
+            logger.error(f"Failed to check gemini login status: {e}")
+            return {"loggedIn": False, "error": str(e)}
+
+    async def gemini_login(self) -> dict:
+        """Trigger Gemini Google OAuth login. Gemini CLI handles the browser flow."""
+        try:
+            self._cleanup_gemini_login()
+            gemini_path = shutil.which("gemini")
+            if not gemini_path:
+                return {"status": "error", "message": "Gemini CLI not installed"}
+
+            # Gemini CLI uses Google OAuth browser flow
+            # We spawn it and capture the OAuth URL
+            child = pexpect.spawn(
+                gemini_path, ["auth", "login"],
+                encoding="utf-8",
+                timeout=30,
+                dimensions=(24, 120),
+            )
+
+            loop = asyncio.get_event_loop()
+            oauth_url = None
+
+            def _wait_for_url():
+                nonlocal oauth_url
+                buf = ""
+                deadline = time.time() + 15.0
+                while time.time() < deadline:
+                    try:
+                        chunk = child.read_nonblocking(4096, timeout=0.5)
+                        if chunk:
+                            buf += chunk
+                            clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', buf)
+                            url_match = re.search(r'(https://accounts\.google\.com\S+|https://\S*google\S*/auth\S+)', clean)
+                            if url_match:
+                                oauth_url = url_match.group(1)
+                                return
+                            generic_url = re.search(r'(https://\S+)', clean)
+                            if generic_url and 'google' in generic_url.group(1).lower():
+                                oauth_url = generic_url.group(1)
+                                return
+                    except pexpect.TIMEOUT:
+                        continue
+                    except pexpect.EOF:
+                        break
+
+            await loop.run_in_executor(None, _wait_for_url)
+
+            stop_event = threading.Event()
+            drain_thread = threading.Thread(
+                target=self._drain_pexpect, args=(child, stop_event), daemon=True
+            )
+            drain_thread.start()
+
+            self._gemini_login_pty = {
+                "child": child,
+                "drain_stop": stop_event,
+                "drain_thread": drain_thread,
+            }
+
+            if oauth_url:
+                return {"status": "ok", "oauth_url": oauth_url}
+            else:
+                # Gemini may open browser directly without outputting a URL
+                return {"status": "ok", "message": "Browser opened for Google login"}
+
+        except FileNotFoundError:
+            return {"status": "error", "message": "Gemini CLI not installed"}
+        except Exception as e:
+            logger.error(f"Failed to trigger gemini login: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def _cleanup_gemini_login(self):
+        if not hasattr(self, '_gemini_login_pty') or not self._gemini_login_pty:
+            return
+        pty_info = self._gemini_login_pty
+        self._gemini_login_pty = None
+        stop = pty_info.get("drain_stop")
+        if stop:
+            stop.set()
+        thread = pty_info.get("drain_thread")
+        if thread:
+            thread.join(timeout=2.0)
+        child = pty_info.get("child")
+        if child and child.isalive():
+            try:
+                child.terminate(force=True)
+            except Exception:
+                pass
+
+    async def gemini_logout(self) -> dict:
+        """Remove Gemini OAuth credentials."""
+        try:
+            self._cleanup_gemini_login()
+            oauth_path = Path.home() / ".gemini" / "oauth_creds.json"
+            if oauth_path.exists():
+                oauth_path.unlink()
+            return {"status": "ok"}
+        except Exception as e:
+            logger.error(f"Failed to gemini logout: {e}")
+            return {"status": "error", "message": str(e)}
+
     async def start_session(
         self,
         user_id: int,

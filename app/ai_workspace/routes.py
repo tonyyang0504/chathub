@@ -205,6 +205,68 @@ async def membership_logout(request: Request, db: Session = Depends(get_db)):
 
 
 # ============================================================================
+# Codex Auth Endpoints
+# ============================================================================
+
+@router.get("/api/ai-workspace/codex-login-status")
+async def codex_login_status(request: Request, db: Session = Depends(get_db)):
+    """Check Codex CLI login status."""
+    await get_current_user(request, None, db)
+    return await ai_workspace_manager.codex_login_status()
+
+
+@router.post("/api/ai-workspace/codex-login")
+async def codex_login(request: Request, db: Session = Depends(get_db)):
+    """Trigger Codex device auth login."""
+    await get_current_user(request, None, db)
+    result = await ai_workspace_manager.codex_device_login()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@router.post("/api/ai-workspace/codex-logout")
+async def codex_logout(request: Request, db: Session = Depends(get_db)):
+    """Logout from Codex CLI."""
+    await get_current_user(request, None, db)
+    result = await ai_workspace_manager.codex_logout()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+# ============================================================================
+# Gemini Auth Endpoints
+# ============================================================================
+
+@router.get("/api/ai-workspace/gemini-login-status")
+async def gemini_login_status(request: Request, db: Session = Depends(get_db)):
+    """Check Gemini CLI login status."""
+    await get_current_user(request, None, db)
+    return await ai_workspace_manager.gemini_login_status()
+
+
+@router.post("/api/ai-workspace/gemini-login")
+async def gemini_login(request: Request, db: Session = Depends(get_db)):
+    """Trigger Gemini Google OAuth login."""
+    await get_current_user(request, None, db)
+    result = await ai_workspace_manager.gemini_login()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@router.post("/api/ai-workspace/gemini-logout")
+async def gemini_logout(request: Request, db: Session = Depends(get_db)):
+    """Logout from Gemini CLI."""
+    await get_current_user(request, None, db)
+    result = await ai_workspace_manager.gemini_logout()
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+# ============================================================================
 # File Upload & External Connectors
 # ============================================================================
 
@@ -519,7 +581,8 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
     """List user's AI Workspace sessions."""
     user = await get_current_user(request, None, db)
     sessions = db.query(AiWorkspaceSession).filter(
-        AiWorkspaceSession.user_id == user.id
+        AiWorkspaceSession.user_id == user.id,
+        AiWorkspaceSession.session_type == "claude_code"
     ).order_by(func.coalesce(AiWorkspaceSession.ended_at, AiWorkspaceSession.created_at).desc()).limit(50).all()
 
     return [{

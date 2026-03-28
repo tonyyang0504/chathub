@@ -26,6 +26,13 @@
 .provider-pill[data-provider="gemini"] .pill-dot { background: #4285f4; }
 .provider-pill[data-provider="chathub"] .pill-dot { background: #8b5cf6; }
 
+/* Provider badge on session items */
+.provider-badge { font-size: 0.55rem; padding: 1px 5px; border-radius: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
+.provider-badge.pb-claude { background: rgba(218,106,70,0.12); color: #da6a46; }
+.provider-badge.pb-codex { background: rgba(16,163,127,0.12); color: #10a37f; }
+.provider-badge.pb-gemini { background: rgba(66,133,244,0.12); color: #4285f4; }
+.provider-badge.pb-chathub { background: rgba(139,92,246,0.12); color: #8b5cf6; }
+
 /* App shell — flex layout matching AI Workspace */
 .claude-app {
     display: flex;
@@ -38,18 +45,24 @@
 }
 
 /* Left sidebar — Sessions list (claude-sidebar style) */
-.claude-sidebar { width: 260px; min-width: 260px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.claude-sidebar { width: 260px; min-width: 260px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; transition: margin-left 0.25s ease, opacity 0.25s ease; z-index: 20; }
+.claude-sidebar.collapsed { margin-left: -266px; }
+.btn-sidebar-toggle { width: 34px; height: 34px; border-radius: 12px; border: none; background: transparent; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.15s; }
+.btn-sidebar-toggle:hover { background: var(--border-color); color: var(--text-primary); }
+.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 19; }
+.sidebar-backdrop.show { display: block; }
 .claude-sidebar-header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .claude-sidebar-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; }
-.btn-new-session { background: none; border: none; color: var(--text-secondary); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
-.btn-new-session:hover { background: rgba(var(--provider-color-rgb),0.1); color: var(--provider-color); }
+.btn-new-session { width: 32px; height: 32px; border-radius: 12px; border: none; background: transparent; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; cursor: pointer; }
+.btn-new-session:hover { background: rgba(var(--provider-color-rgb),0.1); border-color: var(--provider-color); color: var(--provider-color); }
 .session-list-wrapper { flex: 1; overflow-y: auto; padding: 0.5rem; }
-.session-item { padding: 0.6rem 0.75rem; border-radius: 12px; cursor: pointer; border: 1px solid transparent; margin-bottom: 0.25rem; transition: background 0.15s; position: relative; }
-.session-item:hover { background: rgba(var(--provider-color-rgb),0.08); }
-.session-item.active { background: rgba(var(--provider-color-rgb),0.12); border-color: rgba(var(--provider-color-rgb),0.25); }
-.prompt-preview { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 0.2rem; }
-.session-meta { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
-.mini-badge { font-size: 0.62rem; padding: 1px 6px; border-radius: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.session-item { padding: 0.6rem 0.75rem; border-radius: 12px; cursor: pointer; margin-bottom: 0.25rem; transition: background 0.15s; }
+.session-item:hover { background: var(--border-color); }
+.session-item.active { background: rgba(var(--provider-color-rgb),0.12); border: 1px solid rgba(var(--provider-color-rgb),0.25); }
+.prompt-preview { font-size: 0.8rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 0.2rem; }
+.session-meta { font-size: 0.68rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; overflow: hidden; }
+.session-meta > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-item .mini-badge { font-size: 0.6rem; padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
 .mini-badge.status-running { background: rgba(var(--provider-color-rgb),0.15); color: var(--provider-color); }
 .mini-badge.status-completed { background: rgba(34,197,94,0.15); color: #16a34a; }
 .mini-badge.status-failed { background: rgba(239,68,68,0.15); color: #dc2626; }
@@ -57,9 +70,9 @@
 .mini-badge.status-published { background: rgba(16,185,129,0.2); color: #059669; }
 .published-badge { font-size: 0.62rem; padding: 1px 7px; border-radius: 8px; background: rgba(16,185,129,0.2); color: #059669; font-weight: 600; border: 1px solid rgba(16,185,129,0.3); }
 .session-date { font-size: 0.68rem; color: var(--text-secondary); }
-.btn-delete-session { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); opacity: 0; padding: 2px 4px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+.btn-delete-session { font-size: 0.65rem; padding: 1px 6px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; background: transparent; flex-shrink: 0; white-space: nowrap; opacity: 0; transition: opacity 0.15s, background 0.15s; }
 .session-item:hover .btn-delete-session { opacity: 1; }
-.btn-delete-session:hover { color: #ef4444; }
+.btn-delete-session:hover { background: rgba(239,68,68,0.08); }
 #noSessions { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); font-size: 0.82rem; }
 
 /* Main chat area — matches AI Workspace .claude-main */
@@ -499,7 +512,7 @@
 /* Right panel: Artifacts + Build Status (claude-artifacts style) */
 .claude-artifacts { width: 420px; min-width: 420px; height: 100%; background: var(--card-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; transition: margin-right 0.25s, opacity 0.25s; }
 .claude-artifacts.collapsed { margin-right: -426px; opacity: 0; pointer-events: none; }
-.artifacts-header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.artifacts-header { padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .artifacts-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
 .btn-artifact-close {
     width: 36px; height: 36px; min-width: 36px;
@@ -582,7 +595,6 @@
 }
 .artifact-empty i { font-size: 2rem; opacity: 0.2; }
 .artifact-empty span { font-size: 0.8rem; }
-#artifactsToggleBtn { font-size: 0.8rem; padding: 4px 10px; border-radius: 8px; }
 .chevron.collapsed { transform: rotate(-90deg); }
 
 /* Inner panel sections (unchanged selectors used by status panel JS) */
@@ -705,16 +717,17 @@
 
 {% block content %}
 <div class="claude-app" id="claudeApp" data-provider="claude">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
     <!-- Left: Sessions List -->
-    <div class="claude-sidebar">
+    <div class="claude-sidebar" id="claudeSidebar">
         <div class="claude-sidebar-header">
-            <h6><i class="bi bi-hammer me-2"></i>Tool Builder</h6>
+            <h6><i class="bi bi-hammer me-2"></i>Builds</h6>
             <button class="btn-new-session" onclick="newSession()" title="New session">
                 <i class="bi bi-plus-lg"></i>
             </button>
         </div>
         <div class="session-list-wrapper" id="sessionList">
-            <div id="noSessions"><i class="bi bi-chat-left-dots" style="font-size:1.8rem;opacity:0.25;display:block;margin-bottom:0.6rem;"></i>No sessions yet.<br>Start by describing a tool.</div>
+            <div id="noSessions"><i class="bi bi-chat-left-dots" style="font-size:1.8rem;opacity:0.25;display:block;margin-bottom:0.6rem;"></i>No builds yet.<br>Describe the tool you want to create.</div>
         </div>
     </div>
 
@@ -723,6 +736,9 @@
         <!-- Top bar -->
         <div class="claude-topbar">
             <div class="d-flex align-items-center gap-2">
+                <button class="btn-sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+                    <i class="bi bi-layout-sidebar-inset"></i>
+                </button>
                 <div class="provider-pills" id="providerPills">
                     <button class="provider-pill active" data-provider="claude" onclick="selectProvider('claude')">
                         <span class="pill-dot"></span>Claude
@@ -744,7 +760,7 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" id="artifactsToggleBtn" onclick="toggleArtifacts()" style="display: none;">
-                    <i class="bi bi-layers me-1"></i>Details
+                    <i class="bi bi-layers me-1"></i>Tools
                     <span class="badge ms-1" style="background: rgba(var(--provider-color-rgb),0.2); color: var(--provider-color);" id="artifactCount">0</span>
                 </button>
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openSettingsModal()">
@@ -760,12 +776,7 @@
         <div class="claude-messages" id="chatBodyWrapper">
             <div class="builder-empty-state" id="emptyState">
                 <div style="margin-bottom: 0.75rem;">
-                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="64" height="64" rx="16" fill="var(--provider-color)"/>
-                        <path d="M20 22h24v4H20z" fill="white" opacity="0.6"/>
-                        <path d="M20 30h18v4H20z" fill="white" opacity="0.8"/>
-                        <path d="M20 38h22v4H20z" fill="white"/>
-                    </svg>
+                    <i class="bi bi-hammer" style="font-size: 3.5rem; color: var(--provider-color); opacity: 0.5;"></i>
                 </div>
                 <p>Describe the tool you want to build and the AI will create it.</p>
                 <small>Configure your API key in Settings first.</small>
@@ -815,6 +826,7 @@
                             <button class="toolbar-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice input" style="display:none;">
                                 <i class="bi bi-mic"></i>
                             </button>
+                            <span id="providerModelLabel" style="font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap; opacity: 0.7;">Claude · Sonnet</span>
                         </div>
                         <button id="sendBtn" onclick="handleSend()" title="Send">
                             <i class="bi bi-arrow-up" style="font-size: 1rem;"></i>
@@ -830,13 +842,8 @@
     <!-- Right: Artifacts + Build Status Panel -->
     <div class="claude-artifacts collapsed" id="buildPanel">
         <div class="artifacts-header">
-            <h6><i class="bi bi-layers me-2"></i>Details</h6>
-            <div class="d-flex align-items-center gap-1">
-                <button onclick="refreshStatus()" title="Refresh" style="width:28px;height:28px;border-radius:6px;background:none;border:none;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </button>
-                <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close panel"></button>
-            </div>
+            <h6><i class="bi bi-layers me-2"></i>Tools</h6>
+            <button class="btn-artifact-close" onclick="toggleArtifacts()" title="Close panel"></button>
         </div>
         <div class="artifacts-body" id="artifactsBody">
             <div class="artifact-empty" id="artifactEmpty">
@@ -983,7 +990,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h6 class="modal-title" id="settingsModalLabel"><i class="bi bi-gear me-2"></i>Tool Builder Settings</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-3">
@@ -1050,8 +1057,21 @@
                         </div>
                     </div>
 
+                    <!-- Codex Auth Method -->
+                    <div class="col-12 settings-provider-codex" style="display:none;">
+                        <label class="form-label">Authentication Method</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm rounded-pill auth-method-btn active" id="codexAuthMethodApiKey" onclick="setCodexAuthMethod('api_key')">
+                                <i class="bi bi-key me-1"></i>API Key
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill auth-method-btn" id="codexAuthMethodMembership" onclick="setCodexAuthMethod('membership')">
+                                <i class="bi bi-person-badge me-1"></i>Membership
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- OpenAI API Key (for Codex) -->
-                    <div class="col-md-6 settings-provider-codex" id="openaiKeySection">
+                    <div class="col-md-6 settings-provider-codex codex-apikey-section" id="openaiKeySection">
                         <label class="form-label">OpenAI API Key <small class="text-muted">(for Codex)</small></label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="openaiKeyInput" placeholder="sk-...">
@@ -1062,8 +1082,53 @@
                         <small class="text-muted" id="openaiKeyStatus"></small>
                     </div>
 
+                    <!-- Codex Membership -->
+                    <div class="col-12 settings-provider-codex codex-membership-section" style="display:none;">
+                        <div class="card" style="background: var(--hover-bg); border: 1px solid var(--border-color); border-radius: 12px;">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="small fw-semibold">Codex Login Status</span>
+                                    <span id="codexMembershipStatus" class="badge bg-secondary">Checking...</span>
+                                </div>
+                                <div id="codexMembershipActions">
+                                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="codexLogin()" id="codexLoginBtn">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>Login with OpenAI
+                                    </button>
+                                </div>
+                                <div id="codexDeviceCodePanel" style="display:none;" class="mt-2">
+                                    <p class="small mb-1">Open this URL and enter the device code:</p>
+                                    <div class="d-flex gap-2 align-items-center mb-2">
+                                        <a href="#" id="codexDeviceUrl" target="_blank" class="small text-break" style="color: var(--provider-color);">URL</a>
+                                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="navigator.clipboard.writeText(document.getElementById('codexDeviceUrl').href); showToast('URL copied', 'success');">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <code id="codexDeviceCode" style="font-size: 1.1rem; font-weight: 700; letter-spacing: 2px;"></code>
+                                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="navigator.clipboard.writeText(document.getElementById('codexDeviceCode').textContent); showToast('Code copied', 'success');">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gemini Auth Method -->
+                    <div class="col-12 settings-provider-gemini" style="display:none;">
+                        <label class="form-label">Authentication Method</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm rounded-pill auth-method-btn active" id="geminiAuthMethodApiKey" onclick="setGeminiAuthMethod('api_key')">
+                                <i class="bi bi-key me-1"></i>API Key
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill auth-method-btn" id="geminiAuthMethodMembership" onclick="setGeminiAuthMethod('membership')">
+                                <i class="bi bi-person-badge me-1"></i>Google Login
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Gemini API Key -->
-                    <div class="col-md-6 settings-provider-gemini" id="geminiKeySection">
+                    <div class="col-md-6 settings-provider-gemini gemini-apikey-section" id="geminiKeySection">
                         <label class="form-label">Gemini API Key</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="geminiKeyInput" placeholder="AIza...">
@@ -1072,6 +1137,23 @@
                             </button>
                         </div>
                         <small class="text-muted" id="geminiKeyStatus"></small>
+                    </div>
+
+                    <!-- Gemini Membership -->
+                    <div class="col-12 settings-provider-gemini gemini-membership-section" style="display:none;">
+                        <div class="card" style="background: var(--hover-bg); border: 1px solid var(--border-color); border-radius: 12px;">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="small fw-semibold">Google Login Status</span>
+                                    <span id="geminiMembershipStatus" class="badge bg-secondary">Checking...</span>
+                                </div>
+                                <div id="geminiMembershipActions">
+                                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="geminiLogin()" id="geminiLoginBtn">
+                                        <i class="bi bi-google me-1"></i>Login with Google
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Claude Model -->
@@ -1356,6 +1438,15 @@ function onChathubProviderChange() {
 // Provider Selection
 // ============================================================
 
+function toggleSidebar() {
+    const sidebar = document.getElementById('claudeSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    sidebar.classList.toggle('collapsed');
+    if (window.innerWidth < 992) {
+        backdrop.classList.toggle('show', !sidebar.classList.contains('collapsed'));
+    }
+}
+
 function selectProvider(provider) {
     currentProvider = provider;
     document.querySelectorAll('.provider-pill').forEach(p => {
@@ -1370,6 +1461,18 @@ function selectProvider(provider) {
             el.style.display = (p === provider) ? '' : 'none';
         });
     });
+    updateProviderModelLabel();
+}
+
+function updateProviderModelLabel() {
+    const label = document.getElementById('providerModelLabel');
+    if (!label) return;
+    const modelSelects = { claude: 'modelSelect', codex: 'codexModelSelect', gemini: 'geminiModelSelect', chathub: 'chathubModelSelect' };
+    const selectId = modelSelects[currentProvider];
+    const selectEl = selectId ? document.getElementById(selectId) : null;
+    const modelName = selectEl ? (selectEl.options[selectEl.selectedIndex]?.text || selectEl.value || '') : '';
+    const providerName = currentProvider.charAt(0).toUpperCase() + currentProvider.slice(1);
+    label.textContent = modelName ? `${providerName} · ${modelName}` : providerName;
 }
 
 // ============================================================
@@ -1396,6 +1499,7 @@ function toggleKeyVis(inputId, iconId) {
 }
 
 async function loadSettings() {
+    let autoProvider = null;
     // Load CLI settings
     try {
         const res = await fetch('/tools/api/ai-workspace/settings', { credentials: 'include' });
@@ -1419,18 +1523,23 @@ async function loadSettings() {
         document.getElementById('codexModelSelect').value = data.codex_default_model || 'gpt-5.3-codex';
         document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'auto-gemini-3';
         setAuthMethod(data.auth_method || 'api_key', true);
-        if (data.default_provider) {
-            selectProvider(data.default_provider);
-        }
+        // Auto-select provider by priority: claude > codex > gemini (chathub checked below)
+        autoProvider = (data.api_key_set || data.auth_method === 'membership') ? 'claude'
+            : data.openai_api_key_set ? 'codex'
+            : data.gemini_api_key_set ? 'gemini'
+            : null;
+        if (autoProvider) selectProvider(autoProvider);
     } catch (e) {
         console.error('Failed to load CLI settings:', e);
     }
 
     // Load ChatHub Agent settings
+    let chathubKeySet = false;
     try {
         const res = await fetch('/tools/api/chathub-agent/settings', { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
+            chathubKeySet = !!data.api_key_set;
             if (data.api_key_set) {
                 document.getElementById('chathubApiKeyInput').placeholder = data.api_key_masked || '****';
                 document.getElementById('chathubApiKeyStatus').textContent = 'API key configured';
@@ -1443,6 +1552,11 @@ async function loadSettings() {
     } catch (e) {
         console.error('Failed to load ChatHub settings:', e);
     }
+    // If no CLI provider had a key configured, fall back to chathub
+    if (!autoProvider && chathubKeySet) {
+        selectProvider('chathub');
+    }
+    updateProviderModelLabel();
 }
 
 async function saveSettings() {
@@ -1661,6 +1775,135 @@ function startMembershipPoll() {
 
 function stopMembershipPoll() {
     if (membershipPollTimer) { clearInterval(membershipPollTimer); membershipPollTimer = null; }
+}
+
+// --- Codex Auth ---
+let codexAuthMethod = 'api_key';
+
+function setCodexAuthMethod(method) {
+    codexAuthMethod = method;
+    document.getElementById('codexAuthMethodApiKey').classList.toggle('active', method === 'api_key');
+    document.getElementById('codexAuthMethodMembership').classList.toggle('active', method === 'membership');
+    document.querySelectorAll('.codex-apikey-section').forEach(el => el.style.display = method === 'api_key' ? '' : 'none');
+    document.querySelectorAll('.codex-membership-section').forEach(el => el.style.display = method === 'membership' ? '' : 'none');
+    if (method === 'membership') checkCodexLoginStatus();
+}
+
+async function checkCodexLoginStatus() {
+    try {
+        const resp = await fetch('/tools/api/ai-workspace/codex-login-status', { credentials: 'include' });
+        const data = await resp.json();
+        const badge = document.getElementById('codexMembershipStatus');
+        const actions = document.getElementById('codexMembershipActions');
+        if (data.loggedIn) {
+            badge.className = 'badge bg-success';
+            badge.textContent = 'Logged In';
+            actions.innerHTML = `<button class="btn btn-sm btn-outline-danger rounded-pill" onclick="codexLogout()"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>`;
+        } else {
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Not Logged In';
+            actions.innerHTML = `<button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="codexLogin()" id="codexLoginBtn"><i class="bi bi-box-arrow-in-right me-1"></i>Login with OpenAI</button>`;
+        }
+    } catch(e) { console.error('Codex status check failed:', e); }
+}
+
+async function codexLogin() {
+    const btn = document.getElementById('codexLoginBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Starting...'; }
+    try {
+        const resp = await fetch('/tools/api/ai-workspace/codex-login', { method: 'POST', credentials: 'include' });
+        const data = await resp.json();
+        if (data.url && data.device_code) {
+            document.getElementById('codexDeviceUrl').href = data.url;
+            document.getElementById('codexDeviceUrl').textContent = data.url;
+            document.getElementById('codexDeviceCode').textContent = data.device_code;
+            document.getElementById('codexDeviceCodePanel').style.display = '';
+            const poll = setInterval(async () => {
+                const status = await fetch('/tools/api/ai-workspace/codex-login-status', { credentials: 'include' }).then(r => r.json());
+                if (status.loggedIn) {
+                    clearInterval(poll);
+                    document.getElementById('codexDeviceCodePanel').style.display = 'none';
+                    checkCodexLoginStatus();
+                    showToast('Codex login successful!', 'success');
+                }
+            }, 3000);
+            setTimeout(() => clearInterval(poll), 300000);
+        } else {
+            showToast(data.message || 'Login started', 'info');
+        }
+    } catch(e) { showToast('Failed to start Codex login', 'error'); }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i>Login with OpenAI'; }
+}
+
+async function codexLogout() {
+    try {
+        await fetch('/tools/api/ai-workspace/codex-logout', { method: 'POST', credentials: 'include' });
+        checkCodexLoginStatus();
+        showToast('Codex logged out', 'success');
+    } catch(e) { showToast('Failed to logout', 'error'); }
+}
+
+// --- Gemini Auth ---
+let geminiAuthMethod = 'api_key';
+
+function setGeminiAuthMethod(method) {
+    geminiAuthMethod = method;
+    document.getElementById('geminiAuthMethodApiKey').classList.toggle('active', method === 'api_key');
+    document.getElementById('geminiAuthMethodMembership').classList.toggle('active', method === 'membership');
+    document.querySelectorAll('.gemini-apikey-section').forEach(el => el.style.display = method === 'api_key' ? '' : 'none');
+    document.querySelectorAll('.gemini-membership-section').forEach(el => el.style.display = method === 'membership' ? '' : 'none');
+    if (method === 'membership') checkGeminiLoginStatus();
+}
+
+async function checkGeminiLoginStatus() {
+    try {
+        const resp = await fetch('/tools/api/ai-workspace/gemini-login-status', { credentials: 'include' });
+        const data = await resp.json();
+        const badge = document.getElementById('geminiMembershipStatus');
+        const actions = document.getElementById('geminiMembershipActions');
+        if (data.loggedIn) {
+            badge.className = 'badge bg-success';
+            badge.textContent = data.email ? `Logged In (${data.email})` : 'Logged In';
+            actions.innerHTML = `<button class="btn btn-sm btn-outline-danger rounded-pill" onclick="geminiLogout()"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>`;
+        } else {
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Not Logged In';
+            actions.innerHTML = `<button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="geminiLogin()" id="geminiLoginBtn"><i class="bi bi-google me-1"></i>Login with Google</button>`;
+        }
+    } catch(e) { console.error('Gemini status check failed:', e); }
+}
+
+async function geminiLogin() {
+    const btn = document.getElementById('geminiLoginBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Starting...'; }
+    try {
+        const resp = await fetch('/tools/api/ai-workspace/gemini-login', { method: 'POST', credentials: 'include' });
+        const data = await resp.json();
+        if (data.oauth_url) {
+            window.open(data.oauth_url, '_blank');
+            showToast('Google login page opened in new tab', 'info');
+        } else {
+            showToast(data.message || 'Login started — check your browser', 'info');
+        }
+        const poll = setInterval(async () => {
+            const status = await fetch('/tools/api/ai-workspace/gemini-login-status', { credentials: 'include' }).then(r => r.json());
+            if (status.loggedIn) {
+                clearInterval(poll);
+                checkGeminiLoginStatus();
+                showToast('Google login successful!', 'success');
+            }
+        }, 3000);
+        setTimeout(() => clearInterval(poll), 300000);
+    } catch(e) { showToast('Failed to start Google login', 'error'); }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-google me-1"></i>Login with Google'; }
+}
+
+async function geminiLogout() {
+    try {
+        await fetch('/tools/api/ai-workspace/gemini-logout', { method: 'POST', credentials: 'include' });
+        checkGeminiLoginStatus();
+        showToast('Google account logged out', 'success');
+    } catch(e) { showToast('Failed to logout', 'error'); }
 }
 
 // ============================================================
@@ -2897,20 +3140,21 @@ async function confirmPublish() {
         if (resp.status === 401) {
             showToast('Session expired. Please refresh the page and log in again.', 'error');
         } else if (resp.ok && data.success) {
-            // Close publish modal, reset panel, refresh sidebar
             bootstrap.Modal.getInstance(document.getElementById('publishBuildModal')).hide();
             if (previewWindow && !previewWindow.closed) { previewWindow.close(); }
             previewWindow = null;
             publishedSkillId = data.skill_id;
+
+            // Clean up old session state (worktree is destroyed by publish)
+            if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
             sessionId = null;
             previewUrl = null;
             if (statusPollInterval) clearInterval(statusPollInterval);
-            resetPanel();
+
             loadSessions();
             if (data.skill_id) { currentToolId = data.skill_id; }
-            // Store restart flag for after marketplace modal
             window._pendingRestart = !!data.restart_required;
-            // Show marketplace publish modal if we have a tool ID
+
             if (data.skill_id) {
                 showPublishModal();
             } else if (data.restart_required) {
@@ -2918,6 +3162,30 @@ async function confirmPublish() {
                 restartModal.show();
             } else {
                 showToast('Tool published successfully!', 'success');
+            }
+
+            // Auto-resume: create new worktree to continue working
+            if (currentDbSessionId) {
+                try {
+                    const resumeResp = await fetch(`/tools/api/tool-builder/sessions/${currentDbSessionId}/resume`, {
+                        method: 'POST', credentials: 'include'
+                    });
+                    if (resumeResp.ok) {
+                        const resumeData = await resumeResp.json();
+                        sessionId = resumeData.session_id;
+                        connectWebSocket();
+                        startStatusPolling();
+                        setStatus('connected');
+                        loadSessions();
+                    }
+                } catch(e) {
+                    console.error('Auto-resume failed:', e);
+                }
+            }
+            // If resume didn't work, reset to clean state
+            if (!sessionId) {
+                resetPanel();
+                setStatus('idle');
             }
         } else {
             // On failure: show error but keep build panel visible (don't resetPanel)
@@ -3097,18 +3365,18 @@ async function loadSessions() {
             const statusClass = `status-${s.status || 'idle'}`;
             const publishedBadge = s.published ? `<span class="published-badge">Published</span>` : '';
             const activeBadge = isActive ? `<span class="mini-badge status-running">Live</span>` : '';
+            const providerBadge = s.provider ? `<span class="provider-badge pb-${s.provider}">${s.provider}</span>` : '';
 
             div.innerHTML = `
-                <div class="prompt-preview">${escapeHtml(s.title || '[Tool Builder Session]')}</div>
+                <div class="prompt-preview" title="${escapeHtml(s.title || '')}">${escapeHtml(s.title || '[Tool Builder Session]')}</div>
                 <div class="session-meta">
+                    ${providerBadge}
                     <span class="mini-badge ${statusClass}">${escapeHtml(s.status || 'idle')}</span>
                     ${activeBadge}
                     ${publishedBadge}
-                    <span class="session-date">${dateStr}</span>
+                    <span>${dateStr}</span>
+                    <button class="btn-delete-session" onclick="event.stopPropagation(); deleteBuilderSession(${s.db_id})" title="Delete session"><i class="bi bi-trash3"></i></button>
                 </div>
-                <button class="btn-delete-session" onclick="event.stopPropagation(); deleteBuilderSession(${s.db_id})" title="Delete session">
-                    <i class="bi bi-trash"></i>
-                </button>
             `;
             div.onclick = () => viewSession(s.db_id);
             list.appendChild(div);
@@ -3299,23 +3567,25 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function showToast(message, type = 'info') {
+function showToast(message, type = 'info', duration = 5000) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
-    const id = 'toast_' + Date.now();
-    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning';
-    container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
-            <div class="d-flex">
-                <div class="toast-body">${escapeHtml(message)}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-    `);
-    const el = document.getElementById(id);
-    const toast = new bootstrap.Toast(el, { delay: 3000 });
-    toast.show();
-    el.addEventListener('hidden.bs.toast', () => el.remove());
+    const typeMap = { error: 'danger' };
+    const bgType = typeMap[type] || type;
+    const icons = { success: 'check-circle-fill', danger: 'exclamation-triangle-fill', warning: 'exclamation-circle-fill', info: 'info-circle-fill' };
+    const icon = icons[bgType] || 'info-circle-fill';
+    const toast = document.createElement('div');
+    toast.className = `toast text-white bg-${bgType} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.style.position = 'relative';
+    toast.innerHTML = `
+        <button type="button" class="btn-close btn-close-white toast-close-btn" data-bs-dismiss="toast" aria-label="Close"></button>
+        <div class="toast-body"><i class="bi bi-${icon} me-2"></i>${message}</div>
+    `;
+    container.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: duration });
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
 // ============================================================

@@ -134,10 +134,14 @@ class CodexProvider(CLIProvider):
         except OSError:
             pass
 
-    def build_env(self, base_env, api_key, **kwargs):
+    def build_env(self, base_env, api_key, auth_method="api_key", **kwargs):
         env = dict(base_env)
-        if api_key:
-            env["OPENAI_API_KEY"] = api_key
+        if auth_method == "membership":
+            # Codex uses stored device-auth credentials — don't pass API key
+            env.pop("OPENAI_API_KEY", None)
+        else:
+            if api_key:
+                env["OPENAI_API_KEY"] = api_key
         return env
 
     def normalize_event(self, raw):
@@ -245,10 +249,14 @@ class GeminiProvider(CLIProvider):
         except OSError:
             pass
 
-    def build_env(self, base_env, api_key, **kwargs):
+    def build_env(self, base_env, api_key, auth_method="api_key", **kwargs):
         env = dict(base_env)
-        if api_key:
-            env["GOOGLE_API_KEY"] = api_key
+        if auth_method == "membership":
+            # Gemini uses stored Google OAuth credentials — don't pass API key
+            env.pop("GOOGLE_API_KEY", None)
+        else:
+            if api_key:
+                env["GOOGLE_API_KEY"] = api_key
         return env
 
     def normalize_event(self, raw):
