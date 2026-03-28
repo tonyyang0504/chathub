@@ -105,6 +105,8 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
         "gemini_api_key_masked": "****" + decrypt_string(settings.gemini_api_key_encrypted)[-4:] if settings.gemini_api_key_encrypted else "",
         "codex_default_model": settings.codex_default_model or "gpt-5.3-codex",
         "gemini_default_model": settings.gemini_default_model or "auto-gemini-3",
+        "codex_auth_method": getattr(settings, 'codex_auth_method', None) or "api_key",
+        "gemini_auth_method": getattr(settings, 'gemini_auth_method', None) or "api_key",
     }
 
 
@@ -153,6 +155,10 @@ async def save_settings(request: Request, db: Session = Depends(get_db)):
         settings.gemini_default_model = data["gemini_default_model"]
     if "default_provider" in data and data["default_provider"] in ("claude", "codex", "gemini"):
         settings.default_provider = data["default_provider"]
+    if "codex_auth_method" in data and data["codex_auth_method"] in ("api_key", "membership"):
+        settings.codex_auth_method = data["codex_auth_method"]
+    if "gemini_auth_method" in data and data["gemini_auth_method"] in ("api_key", "membership"):
+        settings.gemini_auth_method = data["gemini_auth_method"]
 
     db.commit()
     return {"status": "ok"}
@@ -454,13 +460,23 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
             if settings and settings.oauth_token_encrypted:
                 oauth_token = decrypt_string(settings.oauth_token_encrypted)
     elif provider == "codex":
-        if not settings or not settings.openai_api_key_encrypted:
-            raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
-        api_key = decrypt_string(settings.openai_api_key_encrypted)
+        codex_auth = getattr(settings, 'codex_auth_method', None) or "api_key"
+        if codex_auth == "membership":
+            api_key = "membership"
+            auth_method = "membership"
+        else:
+            if not settings or not settings.openai_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
+            api_key = decrypt_string(settings.openai_api_key_encrypted)
     elif provider == "gemini":
-        if not settings or not settings.gemini_api_key_encrypted:
-            raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
-        api_key = decrypt_string(settings.gemini_api_key_encrypted)
+        gemini_auth = getattr(settings, 'gemini_auth_method', None) or "api_key"
+        if gemini_auth == "membership":
+            api_key = "membership"
+            auth_method = "membership"
+        else:
+            if not settings or not settings.gemini_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
+            api_key = decrypt_string(settings.gemini_api_key_encrypted)
     else:
         raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
 
@@ -739,13 +755,23 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
             if settings and settings.oauth_token_encrypted:
                 oauth_token = decrypt_string(settings.oauth_token_encrypted)
     elif provider == "codex":
-        if not settings or not settings.openai_api_key_encrypted:
-            raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
-        api_key = decrypt_string(settings.openai_api_key_encrypted)
+        codex_auth = getattr(settings, 'codex_auth_method', None) or "api_key"
+        if codex_auth == "membership":
+            api_key = "membership"
+            auth_method = "membership"
+        else:
+            if not settings or not settings.openai_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your OpenAI API key in Settings")
+            api_key = decrypt_string(settings.openai_api_key_encrypted)
     elif provider == "gemini":
-        if not settings or not settings.gemini_api_key_encrypted:
-            raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
-        api_key = decrypt_string(settings.gemini_api_key_encrypted)
+        gemini_auth = getattr(settings, 'gemini_auth_method', None) or "api_key"
+        if gemini_auth == "membership":
+            api_key = "membership"
+            auth_method = "membership"
+        else:
+            if not settings or not settings.gemini_api_key_encrypted:
+                raise HTTPException(status_code=400, detail="Please configure your Gemini API key in Settings")
+            api_key = decrypt_string(settings.gemini_api_key_encrypted)
     else:
         api_key = ""
 

@@ -1523,10 +1523,12 @@ async function loadSettings() {
         document.getElementById('codexModelSelect').value = data.codex_default_model || 'gpt-5.3-codex';
         document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'auto-gemini-3';
         setAuthMethod(data.auth_method || 'api_key', true);
+        if (data.codex_auth_method) setCodexAuthMethod(data.codex_auth_method);
+        if (data.gemini_auth_method) setGeminiAuthMethod(data.gemini_auth_method);
         // Auto-select provider by priority: claude > codex > gemini (chathub checked below)
         autoProvider = (data.api_key_set || data.auth_method === 'membership') ? 'claude'
-            : data.openai_api_key_set ? 'codex'
-            : data.gemini_api_key_set ? 'gemini'
+            : (data.openai_api_key_set || data.codex_auth_method === 'membership') ? 'codex'
+            : (data.gemini_api_key_set || data.gemini_auth_method === 'membership') ? 'gemini'
             : null;
         if (autoProvider) selectProvider(autoProvider);
     } catch (e) {
@@ -1571,7 +1573,9 @@ async function saveSettings() {
         codex_default_model: document.getElementById('codexModelSelect').value,
         gemini_default_model: document.getElementById('geminiModelSelect').value,
         auth_method: currentAuthMethod,
-        default_provider: currentProvider
+        default_provider: currentProvider,
+        codex_auth_method: codexAuthMethod,
+        gemini_auth_method: geminiAuthMethod
     };
     if (apiKey && !apiKey.startsWith('****')) payload.anthropic_api_key = apiKey;
     if (openaiKey && !openaiKey.startsWith('****')) payload.openai_api_key = openaiKey;

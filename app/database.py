@@ -707,8 +707,10 @@ class AiWorkspaceSettings(Base):
     auto_commit = Column(Boolean, default=True)
     auto_backup_db = Column(Boolean, default=True)
     auto_approve_scope = Column(Boolean, default=False)
-    auth_method = Column(String(20), default="api_key")  # "api_key" or "membership"
-    oauth_token_encrypted = Column(Text)  # Fernet-encrypted setup-token for membership
+    auth_method = Column(String(20), default="api_key")  # "api_key" or "membership" (Claude)
+    oauth_token_encrypted = Column(Text)  # Fernet-encrypted setup-token for Claude membership
+    codex_auth_method = Column(String(20), default="api_key")   # "api_key" or "membership" (Codex)
+    gemini_auth_method = Column(String(20), default="api_key")  # "api_key" or "membership" (Gemini)
     # Multi-provider support
     openai_api_key_encrypted = Column(Text)
     gemini_api_key_encrypted = Column(Text)
