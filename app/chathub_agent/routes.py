@@ -858,25 +858,33 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
 
         # Get active session (with retry for resume race condition)
         active = chathub_agent_manager.get_active_session(user.id)
+        logger.info(f"[WS DEBUG] session_id={session_id}, no_replay={no_replay}, active={'found id='+str(active.session_id) if active else 'None'}")
 
         # If no_replay and session not yet active, wait briefly for resume to register
         waited_for_session = False
         if no_replay and (not active or active.session_id != session_id):
             waited_for_session = True
-            for _ in range(10):  # Wait up to 5 seconds
+            logger.info(f"[WS DEBUG] Waiting for session {session_id} to become active...")
+            for i in range(10):  # Wait up to 5 seconds
                 await asyncio.sleep(0.5)
                 active = chathub_agent_manager.get_active_session(user.id)
                 if active and active.session_id == session_id:
+                    logger.info(f"[WS DEBUG] Session found after {(i+1)*0.5}s wait")
                     break
+            if not active or active.session_id != session_id:
+                logger.warning(f"[WS DEBUG] Session {session_id} NOT found after 5s wait. _sessions keys: {list(chathub_agent_manager._sessions.keys())}")
 
         if active and active.session_id == session_id:
             # Always replay buffer — ChatHub Agent events can race ahead of WS connection
+            logger.info(f"[WS DEBUG] Session matched. buffer_size={len(active.output_buffer)}, is_running={active.is_running}, is_waiting={active.is_waiting}, ws_count={len(active.websockets)}")
             if active.output_buffer:
                 for data in active.output_buffer:
                     await websocket.send_text(json.dumps(data))
+                logger.info(f"[WS DEBUG] Replayed {len(active.output_buffer)} buffered events")
 
             # Register for live broadcasts
             active.websockets.add(websocket)
+            logger.info(f"[WS DEBUG] WS registered. Total websockets: {len(active.websockets)}")
 
             try:
                 while active.is_running or active.is_waiting:

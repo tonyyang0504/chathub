@@ -196,6 +196,7 @@ class ChatHubAgentManager:
 
     async def _run_session(self, session: AgentSession, prompt: str, file_paths: list = None):
         """Run the agent loop and handle completion."""
+        logger.info(f"[AGENT DEBUG] _run_session started for session {session.session_id}, ws_count={len(session.websockets)}")
         try:
             effective_prompt = prompt
             if file_paths:
@@ -207,6 +208,7 @@ class ChatHubAgentManager:
                 )
             await session.agent_loop.run(effective_prompt)
             session.is_waiting = True
+            logger.info(f"[AGENT DEBUG] _run_session completed for session {session.session_id}, buffer_size={len(session.output_buffer)}, ws_count={len(session.websockets)}")
 
             # Update ended_at to mark recent activity (for session ordering)
             self._update_session_ended_at(session.session_id)
