@@ -2535,8 +2535,8 @@ async function startSession(prompt) {
         }
 
         const data = await res.json();
+        currentSessionEngine = currentProvider === 'chathub' ? 'agent' : 'cli';
         currentSessionId = data.session_id;
-        currentSessionEngine = isChathubEngine() ? 'agent' : 'cli';
         setStatus('running');
         wsSkipCount = 0;
         connectWebSocket(data.session_id);
