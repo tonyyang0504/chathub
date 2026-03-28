@@ -497,6 +497,84 @@
 .agent-card.color-purple:hover { border-color: #a18cd1; }
 .agent-card.color-green:hover { border-color: #56ab2f; }
 .agent-card.color-indigo:hover { border-color: #6366f1; }
+.agent-card.selected {
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.04);
+}
+.agent-card .bulk-checkbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 20px;
+    height: 20px;
+    accent-color: #ff6b6b;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 2;
+}
+.agent-card:hover .bulk-checkbox,
+.agent-card.selected .bulk-checkbox,
+.bulk-mode .agent-card .bulk-checkbox {
+    opacity: 1;
+}
+.agent-card {
+    position: relative;
+}
+
+/* Bulk Actions Toolbar */
+.bulk-toolbar {
+    display: none;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideDown 0.2s ease;
+}
+.bulk-toolbar.visible {
+    display: flex;
+}
+.bulk-toolbar .bulk-count {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.bulk-toolbar .btn-bulk {
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.82rem;
+    background: transparent;
+    transition: all 0.15s;
+}
+.bulk-toolbar .btn-bulk:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: white;
+}
+.bulk-toolbar .btn-bulk.btn-bulk-danger:hover {
+    background: rgba(220, 53, 69, 0.8);
+    border-color: rgba(220, 53, 69, 0.8);
+}
+.bulk-toolbar .btn-bulk-close {
+    background: transparent;
+    border: none;
+    color: white;
+    opacity: 0.7;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+}
+.bulk-toolbar .btn-bulk-close:hover {
+    opacity: 1;
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .agent-card.running {
     border-left: 4px solid var(--bs-success);
 }
@@ -979,6 +1057,10 @@
                 <button class="btn btn-outline-light btn-lg mt-3 ms-2" onclick="openPlayground()">
                     <i class="bi bi-chat-square-text me-2"></i>Playground
                 </button>
+                <button class="btn btn-outline-light btn-lg mt-3 ms-2" onclick="document.getElementById('importFileInput').click()">
+                    <i class="bi bi-upload me-2"></i>Import
+                </button>
+                <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importAgent(this)">
             </div>
             <div class="col-lg-4 text-center d-none d-lg-block">
                 <i class="bi bi-cpu" style="font-size: 8rem; opacity: 0.3;"></i>
@@ -1211,6 +1293,28 @@
                 </button>
             </div>
         </div>
+        <!-- Bulk Actions Toolbar -->
+        <div class="bulk-toolbar" id="bulkToolbar">
+            <span class="bulk-count" id="bulkCount">0 selected</span>
+            <div class="ms-auto d-flex gap-2">
+                <button class="btn-bulk" onclick="bulkSelectAll()">
+                    <i class="bi bi-check-all me-1"></i>Select All
+                </button>
+                <button class="btn-bulk" onclick="bulkAction('activate')">
+                    <i class="bi bi-check-circle me-1"></i>Activate
+                </button>
+                <button class="btn-bulk" onclick="bulkAction('deactivate')">
+                    <i class="bi bi-pause-circle me-1"></i>Deactivate
+                </button>
+                <button class="btn-bulk btn-bulk-danger" onclick="bulkAction('delete')">
+                    <i class="bi bi-trash3 me-1"></i>Delete
+                </button>
+            </div>
+            <button class="btn-bulk-close" onclick="clearBulkSelection()" title="Cancel">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
         <div id="agentsContainer">
             <div class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
@@ -1414,6 +1518,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger me-auto" id="deleteAgentBtn" onclick="deleteAgent()">Delete</button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill" id="exportAgentBtn" onclick="exportAgent()">
+                    <i class="bi bi-download me-1"></i>Export
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="testAgentBtn" onclick="testAgentFromDetail()">Test</button>
                 <button type="button" class="btn btn-outline-primary" id="duplicateAgentBtn" onclick="duplicateAgent()">Duplicate</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-theme" id="editAgentBtn" onclick="editAgentFromDetail()">Edit</button>
@@ -1620,6 +1728,7 @@ let allHubs = [];
 let agents = [];
 let templates = [];
 let selectedAgentId = null;
+let selectedAgentIds = new Set();
 
 // Predefined avatar color classes for random assignment
 const avatarColors = ['color-coral', 'color-blue', 'color-teal', 'color-orange', 'color-cyan', 'color-purple', 'color-green', 'color-indigo'];
@@ -1937,8 +2046,11 @@ function renderAgents() {
             ? Math.round((agent.successful_executions / agent.total_executions) * 100)
             : 0;
 
+        const isSelected = selectedAgentIds.has(agent.id);
+
         html += `
-            <div class="agent-card ${cardClass} ${colorClass}" onclick="showAgentDetail(${agent.id})">
+            <div class="agent-card ${cardClass} ${colorClass} ${isSelected ? 'selected' : ''}" data-agent-id="${agent.id}" onclick="showAgentDetail(${agent.id})">
+                <input type="checkbox" class="bulk-checkbox" ${isSelected ? 'checked' : ''} onclick="toggleBulkSelect(event, ${agent.id})">
                 <div class="d-flex align-items-center">
                     <div class="agent-avatar ${colorClass}">
                         <i class="bi bi-robot"></i>
@@ -2213,6 +2325,7 @@ async function createFromTemplate(agentType, templateId = null) {
             document.getElementById('agentPrompt').value = template.system_prompt || '';
         } catch (error) {
             console.error('Error loading template:', error);
+            showToast('Error loading template', 'error');
         }
     }
 
@@ -2222,7 +2335,7 @@ async function createFromTemplate(agentType, templateId = null) {
 async function saveAgent() {
     const name = document.getElementById('agentName').value;
     if (!name) {
-        alert('Please enter an agent name');
+        showToast('Please enter an agent name', 'warning');
         return;
     }
 
@@ -2257,13 +2370,14 @@ async function saveAgent() {
         if (response.ok) {
             agentModal.hide();
             loadAgents();
+            showToast(agentId ? 'Agent updated successfully' : 'Agent created successfully', 'success');
         } else {
             const error = await response.json();
-            alert(error.detail || 'Error saving agent');
+            showToast(error.detail || 'Error saving agent', 'error');
         }
     } catch (error) {
         console.error('Error saving agent:', error);
-        alert('Error saving agent');
+        showToast('Error saving agent', 'error');
     }
 }
 
@@ -2386,14 +2500,46 @@ async function deleteAgent() {
         if (response.ok) {
             agentDetailModal.hide();
             loadAgents();
+            showToast('Agent deleted successfully', 'success');
         } else {
-            alert('Error deleting agent');
+            const error = await response.json();
+            showToast(error.detail || 'Error deleting agent', 'error');
         }
     } catch (error) {
         console.error('Error deleting agent:', error);
-        alert('Error deleting agent');
+        showToast('Error deleting agent', 'error');
     }
 }
+
+async function exportAgent() {
+    if (!selectedAgentId) return;
+
+    try {
+        const response = await fetch(`/agents/api/${selectedAgentId}/export`);
+        if (!response.ok) {
+            const error = await response.json();
+            showToast(error.detail || 'Error exporting agent', 'error');
+            return;
+        }
+
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.agent?.name
+            ? `${data.agent.name.toLowerCase().replace(/\s+/g, '_')}_agent.json`
+            : 'agent_export.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error exporting agent:', error);
+        showToast('Error exporting agent', 'error');
+    }
+}
+
 
 async function duplicateAgent() {
     if (!selectedAgentId) return;
@@ -2406,17 +2552,183 @@ async function duplicateAgent() {
 
         if (!response.ok) {
             const error = await response.json();
-            alert(error.detail || 'Error duplicating agent');
+            showToast(error.detail || 'Error duplicating agent', 'error');
             return;
         }
 
         const result = await response.json();
         agentDetailModal.hide();
         await loadAgents();
-        alert(`Agent duplicated: ${result.name}`);
+        showToast(`Agent duplicated: ${result.name}`, 'success');
     } catch (error) {
         console.error('Error duplicating agent:', error);
-        alert('Error duplicating agent');
+        showToast('Error duplicating agent', 'error');
+    }
+}
+
+function testAgentFromDetail() {
+    if (!selectedAgentId) return;
+
+    const agent = agents.find(a => a.id === selectedAgentId);
+    if (!agent) return;
+
+    agentDetailModal.hide();
+    openPlayground();
+
+    // Wait for playground to be ready
+    setTimeout(() => {
+        const select = document.getElementById('pgAgentSelect');
+        select.value = selectedAgentId;
+        onPlaygroundAgentChange();
+    }, 300);
+}
+
+// ============================================================================
+// Bulk Actions
+// ============================================================================
+
+function toggleBulkSelect(event, agentId) {
+    event.stopPropagation();
+    if (selectedAgentIds.has(agentId)) {
+        selectedAgentIds.delete(agentId);
+    } else {
+        selectedAgentIds.add(agentId);
+    }
+    updateBulkToolbar();
+
+    // Update card visual
+    const card = event.target.closest('.agent-card');
+    if (card) card.classList.toggle('selected', selectedAgentIds.has(agentId));
+}
+
+function updateBulkToolbar() {
+    const toolbar = document.getElementById('bulkToolbar');
+    const count = selectedAgentIds.size;
+    if (count > 0) {
+        toolbar.classList.add('visible');
+        document.getElementById('bulkCount').textContent = `${count} selected`;
+    } else {
+        toolbar.classList.remove('visible');
+    }
+}
+
+function bulkSelectAll() {
+    const container = document.getElementById('agentsContainer');
+    const cards = container.querySelectorAll('.agent-card[data-agent-id]');
+    cards.forEach(card => {
+        const id = parseInt(card.dataset.agentId);
+        selectedAgentIds.add(id);
+        card.classList.add('selected');
+        const cb = card.querySelector('.bulk-checkbox');
+        if (cb) cb.checked = true;
+    });
+    updateBulkToolbar();
+}
+
+function clearBulkSelection() {
+    selectedAgentIds.clear();
+    document.querySelectorAll('.agent-card.selected').forEach(card => {
+        card.classList.remove('selected');
+        const cb = card.querySelector('.bulk-checkbox');
+        if (cb) cb.checked = false;
+    });
+    updateBulkToolbar();
+}
+
+async function bulkAction(action) {
+    if (selectedAgentIds.size === 0) return;
+
+    const count = selectedAgentIds.size;
+    const actionLabel = action === 'delete' ? 'delete' : action;
+    if (!confirm(`Are you sure you want to ${actionLabel} ${count} agent${count > 1 ? 's' : ''}?`)) return;
+
+    try {
+        const response = await fetch('/agents/api/bulk-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                agent_ids: Array.from(selectedAgentIds),
+                action: action
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            showToast(result.detail || 'Error performing bulk action', 'error');
+            return;
+        }
+
+        clearBulkSelection();
+        await loadAgents();
+        showToast(`${result.affected} agent${result.affected > 1 ? 's' : ''} ${action}d successfully`, 'success');
+    } catch (error) {
+        console.error('Bulk action error:', error);
+        showToast('Error performing bulk action', 'error');
+    }
+}
+
+// ============================================================================
+// Agent Import / Export
+// ============================================================================
+
+async function exportAgent() {
+    if (!selectedAgentId) return;
+
+    try {
+        const response = await fetch(`/agents/api/${selectedAgentId}/export`);
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error.detail || 'Error exporting agent');
+            return;
+        }
+
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.agent?.name
+            ? `${data.agent.name.toLowerCase().replace(/\s+/g, '_')}_agent.json`
+            : 'agent_export.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error exporting agent:', error);
+        alert('Error exporting agent');
+    }
+}
+
+async function importAgent(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Reset input so the same file can be re-selected
+    input.value = '';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/agents/api/import', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            showToast(result.detail || 'Error importing agent', 'error');
+            return;
+        }
+
+        await loadAgents();
+        showToast(`Agent imported: ${result.name}`, 'success');
+    } catch (error) {
+        console.error('Error importing agent:', error);
+        showToast('Error importing agent', 'error');
     }
 }
 
