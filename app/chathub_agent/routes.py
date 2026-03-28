@@ -880,7 +880,7 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
             active.websockets.add(websocket)
 
             try:
-                while active.is_running or (active.agent_loop and not active.agent_loop.is_waiting):
+                while active.is_running or active.is_waiting:
                     try:
                         msg = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
                         if msg == "ping":
