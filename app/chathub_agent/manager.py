@@ -210,9 +210,6 @@ class ChatHubAgentManager:
             session.is_waiting = True
             logger.info(f"[AGENT DEBUG] _run_session completed for session {session.session_id}, buffer_size={len(session.output_buffer)}, ws_count={len(session.websockets)}")
 
-            # Update ended_at to mark recent activity (for session ordering)
-            self._update_session_ended_at(session.session_id)
-
             # Generate title after first turn
             asyncio.create_task(self._generate_title(session))
         except asyncio.CancelledError:
