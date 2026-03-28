@@ -468,8 +468,8 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
         "total_tokens": s.total_tokens,
         "git_commit_hash": s.git_commit_hash,
         "rolled_back": s.rolled_back,
-        "created_at": s.created_at.isoformat() if s.created_at else None,
-        "ended_at": s.ended_at.isoformat() if s.ended_at else None,
+        "created_at": (s.created_at.isoformat() + "Z") if s.created_at else None,
+        "ended_at": (s.ended_at.isoformat() + "Z") if s.ended_at else None,
     } for s in sessions]
 
 
@@ -515,9 +515,9 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         "git_commit_hash": session.git_commit_hash,
         "db_backup_path": session.db_backup_path,
         "rolled_back": session.rolled_back,
-        "created_at": session.created_at.isoformat() if session.created_at else None,
-        "started_at": session.started_at.isoformat() if session.started_at else None,
-        "ended_at": session.ended_at.isoformat() if session.ended_at else None,
+        "created_at": (session.created_at.isoformat() + "Z") if session.created_at else None,
+        "started_at": (session.started_at.isoformat() + "Z") if session.started_at else None,
+        "ended_at": (session.ended_at.isoformat() + "Z") if session.ended_at else None,
         "messages": [{
             "id": m.id,
             "role": m.role,
@@ -527,7 +527,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
             "tool_call_id": m.tool_call_id,
             "tokens_used": m.tokens_used,
             "execution_time_ms": m.execution_time_ms,
-            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "created_at": (m.created_at.isoformat() + "Z") if m.created_at else None,
         } for m in messages],
     }
 
