@@ -433,11 +433,6 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required")
 
-    # Auto-stop any existing session (running or waiting) before creating a new one
-    active = ai_workspace_manager.get_active_session(user.id)
-    if active:
-        await ai_workspace_manager.stop_session(user.id)
-
     # Get settings
     settings = db.query(AiWorkspaceSettings).filter(
         AiWorkspaceSettings.user_id == user.id
@@ -579,17 +574,22 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/api/ai-workspace/active-session")
 async def get_active_session(request: Request, db: Session = Depends(get_db)):
-    """Check if user has an active (running or waiting) session."""
+    """Check if user has active (running or waiting) sessions."""
     user = await get_current_user(request, None, db)
-    active = ai_workspace_manager.get_active_session(user.id)
-    if active:
+    active_sessions = ai_workspace_manager.get_user_sessions(user_id=user.id)
+    # Filter to only running/waiting
+    active_sessions = [s for s in active_sessions if s.is_running or s.is_waiting]
+    if active_sessions:
+        # Return first active for backward compat, plus list of all active session IDs
+        first = active_sessions[0]
         return {
             "active": True,
-            "session_id": active.session_id,
-            "is_running": active.is_running,
-            "is_waiting": active.is_waiting
+            "session_id": first.session_id,
+            "is_running": first.is_running,
+            "is_waiting": first.is_waiting,
+            "active_session_ids": [s.session_id for s in active_sessions]
         }
-    return {"active": False}
+    return {"active": False, "active_session_ids": []}
 
 
 @router.get("/api/ai-workspace/sessions")
@@ -632,9 +632,9 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
     ).order_by(AiWorkspaceMessage.created_at.asc(), AiWorkspaceMessage.id.asc()).all()
 
     # Check if this session is actively waiting for follow-up
-    active = ai_workspace_manager.get_active_session(user.id)
+    active = ai_workspace_manager.get_active_session(session.id)
     session_is_waiting = bool(
-        active and active.session_id == session.id and active.is_waiting and not active.is_running
+        active and active.is_waiting and not active.is_running
     )
 
     return {
@@ -677,7 +677,7 @@ async def delete_session(session_id: int, request: Request, db: Session = Depend
 
     # If session is running, stop it first
     if session.status in ("running", "pending"):
-        await ai_workspace_manager.stop_session(user.id)
+        await ai_workspace_manager.stop_session(session_id)
         session.status = "stopped"
         session.ended_at = datetime.utcnow()
 
@@ -698,26 +698,6 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
 
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required")
-
-    # Check for existing active session
-    active = ai_workspace_manager.get_active_session(user.id)
-    if active:
-        if active.is_waiting and not active.is_running:
-            # Clean up idle waiting session
-            try:
-                db_old = db.query(AiWorkspaceSession).filter(
-                    AiWorkspaceSession.id == active.session_id
-                ).first()
-                if db_old and db_old.status == "running":
-                    db_old.status = "completed"
-                    db_old.ended_at = datetime.utcnow()
-                    db.commit()
-            except Exception:
-                pass
-            if user.id in ai_workspace_manager._sessions:
-                del ai_workspace_manager._sessions[user.id]
-        else:
-            raise HTTPException(status_code=409, detail="You already have an active session")
 
     # Verify the old session belongs to user and is resumable
     old_session = db.query(AiWorkspaceSession).filter(
@@ -893,10 +873,10 @@ async def send_message(session_id: int, request: Request, db: Session = Depends(
     file_paths = data.get("file_paths", [])
 
     # Send via stdin
-    sent = await ai_workspace_manager.send_message(user.id, prompt, file_paths=file_paths)
+    sent = await ai_workspace_manager.send_message(session_id, prompt, file_paths=file_paths)
     if not sent:
         # Check if session is actively running in memory (not just stale)
-        active = ai_workspace_manager.get_active_session(user.id)
+        active = ai_workspace_manager.get_active_session(session_id)
         if active and active.is_running:
             raise HTTPException(status_code=409, detail="Session is currently processing. Please wait.")
 
@@ -978,7 +958,7 @@ async def stop_session(session_id: int, request: Request, db: Session = Depends(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    stopped = await ai_workspace_manager.stop_session(user.id)
+    stopped = await ai_workspace_manager.stop_session(session_id)
     if not stopped:
         raise HTTPException(status_code=400, detail="No active session to stop")
 
@@ -1057,20 +1037,20 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
             await websocket.close(code=4004, reason="Session not found")
             return
 
-        # Get active session
-        active = ai_workspace_manager.get_active_session(user.id)
+        # Get active session by session_id
+        active = ai_workspace_manager.get_active_session(session_id)
 
         # If no_replay and session not yet active, wait briefly for CLI to start
         waited_for_session = False
-        if no_replay and (not active or active.session_id != session_id):
+        if no_replay and not active:
             waited_for_session = True
             for _ in range(10):  # Wait up to 5 seconds
                 await asyncio.sleep(0.5)
-                active = ai_workspace_manager.get_active_session(user.id)
-                if active and active.session_id == session_id:
+                active = ai_workspace_manager.get_active_session(session_id)
+                if active:
                     break
 
-        if active and active.session_id == session_id:
+        if active:
             # Send buffer if: full replay requested, OR we waited for session startup
             # (events generated while waiting would otherwise be lost)
             if (not no_replay or waited_for_session) and active.output_buffer:

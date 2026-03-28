@@ -72,18 +72,22 @@ class ActiveSession:
 class AiWorkspaceManager:
     """
     Singleton manager for AI Workspace CLI sessions.
-    One active session per user enforced.
+    Multiple simultaneous sessions per user supported.
     """
 
     def __init__(self):
-        self._sessions: Dict[int, ActiveSession] = {}  # user_id -> ActiveSession
+        self._sessions: Dict[int, ActiveSession] = {}  # session_id (DB) -> ActiveSession
 
-    def get_active_session(self, user_id: int) -> Optional[ActiveSession]:
-        """Get the active session for a user (running or waiting for follow-up)."""
-        session = self._sessions.get(user_id)
+    def get_active_session(self, session_id: int) -> Optional[ActiveSession]:
+        """Get an active session by its DB session ID (running or waiting for follow-up)."""
+        session = self._sessions.get(session_id)
         if session and (session.is_running or session.is_waiting):
             return session
         return None
+
+    def get_user_sessions(self, user_id: int) -> list:
+        """Get all active sessions for a user."""
+        return [s for s in self._sessions.values() if s.user_id == user_id]
 
     def create_safety_commit(self) -> Optional[str]:
         """Create a safety git commit before running AI Workspace. Returns commit hash or None."""
@@ -709,7 +713,7 @@ class AiWorkspaceManager:
     ) -> Optional[ActiveSession]:
         """Create an ActiveSession and run the first turn."""
         session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name, provider=provider)
-        self._sessions[user_id] = session
+        self._sessions[session.session_id] = session
 
         # Persist the CLI session UUID to DB for future --resume
         try:
@@ -729,12 +733,12 @@ class AiWorkspaceManager:
         except FileNotFoundError:
             cli_name = session.cli_provider.display_name
             logger.error(f"{cli_name} CLI not found")
-            del self._sessions[user_id]
+            del self._sessions[session.session_id]
             return None
         except Exception as e:
             logger.error(f"Failed to start AI Workspace session: {e}")
-            if user_id in self._sessions and self._sessions[user_id] is session:
-                del self._sessions[user_id]
+            if session.session_id in self._sessions and self._sessions[session.session_id] is session:
+                del self._sessions[session.session_id]
             return None
 
     def _build_conversation_history(self, session: ActiveSession) -> str:
@@ -935,11 +939,11 @@ class AiWorkspaceManager:
         except Exception as e:
             logger.error(f"Error reading stderr for session {session.session_id}: {e}")
 
-    async def send_message(self, user_id: int, message: str, file_paths: list = None) -> bool:
+    async def send_message(self, session_id: int, message: str, file_paths: list = None) -> bool:
         """Send a follow-up message by spawning a new CLI process with --resume."""
-        session = self._sessions.get(user_id)
+        session = self._sessions.get(session_id)
         if not session:
-            logger.warning(f"No active session for user {user_id}")
+            logger.warning(f"No active session with id {session_id}")
             return False
         if not session.is_waiting:
             logger.warning(f"Session {session.session_id} is not waiting for input")
@@ -1164,8 +1168,8 @@ class AiWorkspaceManager:
                 session.cli_provider.cleanup_session(str(PROJECT_ROOT))
 
                 # Clean up
-                if session.user_id in self._sessions and self._sessions[session.user_id] is session:
-                    del self._sessions[session.user_id]
+                if session.session_id in self._sessions and self._sessions[session.session_id] is session:
+                    del self._sessions[session.session_id]
 
         except asyncio.CancelledError:
             logger.info(f"Output reader cancelled for session {session.session_id}")
@@ -1175,8 +1179,8 @@ class AiWorkspaceManager:
             session.is_running = False
             session.is_waiting = False
             session.cli_provider.cleanup_session(str(PROJECT_ROOT))
-            if session.user_id in self._sessions and self._sessions[session.user_id] is session:
-                del self._sessions[session.user_id]
+            if session.session_id in self._sessions and self._sessions[session.session_id] is session:
+                del self._sessions[session.session_id]
 
     async def resume_session(
         self,
@@ -1201,7 +1205,7 @@ class AiWorkspaceManager:
         session = ActiveSession(session_id, user_id, api_key, model, auth_method, oauth_token, user_email, user_name, provider=provider)
         # Reuse the old CLI session UUID so --resume picks up the conversation
         session.claude_session_id = claude_session_uuid
-        self._sessions[user_id] = session
+        self._sessions[session.session_id] = session
 
         try:
             # is_first=False triggers --resume instead of --session-id
@@ -1209,13 +1213,13 @@ class AiWorkspaceManager:
             return session
         except Exception as e:
             logger.error(f"Failed to resume session: {e}")
-            if user_id in self._sessions and self._sessions[user_id] is session:
-                del self._sessions[user_id]
+            if session.session_id in self._sessions and self._sessions[session.session_id] is session:
+                del self._sessions[session.session_id]
             return None
 
-    async def stop_session(self, user_id: int) -> bool:
-        """Stop a running or waiting session."""
-        session = self._sessions.get(user_id)
+    async def stop_session(self, session_id: int) -> bool:
+        """Stop a running or waiting session by its DB session ID."""
+        session = self._sessions.get(session_id)
         if not session:
             return False
 
@@ -1263,15 +1267,15 @@ class AiWorkspaceManager:
             # Notify clients
             await session.broadcast({"type": "session_end", "exit_code": -1, "stopped": True, "status": "stopped"})
 
-            logger.info(f"Stopped session {session.session_id} for user {user_id}")
+            logger.info(f"Stopped session {session.session_id}")
             return True
 
         except Exception as e:
             logger.error(f"Error stopping session: {e}")
             return False
         finally:
-            if user_id in self._sessions:
-                del self._sessions[user_id]
+            if session_id in self._sessions:
+                del self._sessions[session_id]
 
     def rollback_session(self, git_hash: Optional[str], db_backup_path: Optional[str]) -> dict:
         """Rollback git state and/or DB to pre-session state."""
@@ -1375,12 +1379,12 @@ class AiWorkspaceManager:
 
     async def stop_all(self):
         """Stop all active sessions (shutdown hook)."""
-        user_ids = list(self._sessions.keys())
-        for user_id in user_ids:
+        session_ids = list(self._sessions.keys())
+        for sid in session_ids:
             try:
-                await self.stop_session(user_id)
+                await self.stop_session(sid)
             except Exception as e:
-                logger.error(f"Error stopping session for user {user_id}: {e}")
+                logger.error(f"Error stopping session {sid}: {e}")
 
 
 # Singleton instance
