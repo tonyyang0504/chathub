@@ -208,6 +208,9 @@ class ChatHubAgentManager:
             await session.agent_loop.run(effective_prompt)
             session.is_waiting = True
 
+            # Update ended_at to mark recent activity (for session ordering)
+            self._update_session_ended_at(session.session_id)
+
             # Generate title after first turn
             asyncio.create_task(self._generate_title(session))
         except asyncio.CancelledError:
@@ -262,6 +265,7 @@ class ChatHubAgentManager:
         finally:
             session.is_waiting = True
             session.agent_loop.is_waiting = True
+            self._update_session_ended_at(session.session_id)
 
     async def resume_session(
         self,
@@ -474,6 +478,23 @@ class ChatHubAgentManager:
         if user_id in self._sessions:
             del self._sessions[user_id]
         return True
+
+    def _update_session_ended_at(self, session_id: int):
+        """Update ended_at to current time to mark recent activity (for session ordering)."""
+        try:
+            from app.database import SessionLocal, ChatHubAgentSession
+            db = SessionLocal()
+            try:
+                db_session = db.query(ChatHubAgentSession).filter(
+                    ChatHubAgentSession.id == session_id
+                ).first()
+                if db_session:
+                    db_session.ended_at = datetime.utcnow()
+                    db.commit()
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Failed to update session ended_at: {e}")
 
     def _update_session_status(self, session_id: int, status: str):
         """Update session status in the database."""

@@ -451,7 +451,10 @@ async def list_sessions(request: Request, db: Session = Depends(get_db)):
 
     sessions = db.query(ChatHubAgentSession).filter(
         ChatHubAgentSession.user_id == user.id
-    ).order_by(func.coalesce(ChatHubAgentSession.ended_at, ChatHubAgentSession.created_at).desc()).limit(50).all()
+    ).order_by(
+        ChatHubAgentSession.ended_at.is_(None).desc(),
+        func.coalesce(ChatHubAgentSession.ended_at, ChatHubAgentSession.created_at).desc()
+    ).limit(50).all()
 
     return [{
         "id": s.id,
