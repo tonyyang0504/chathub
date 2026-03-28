@@ -40,8 +40,8 @@ PROVIDERS: Dict[str, Type[AIProvider]] = {
 DEFAULT_MODELS: Dict[str, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-3-5-sonnet-20241022",
-    "google": "gemini-1.5-flash",
-    "gemini": "gemini-1.5-flash",
+    "google": "gemini-2.0-flash",
+    "gemini": "gemini-2.0-flash",
     "deepseek": "deepseek-chat",
     "qwen": "qwen-turbo",
     "dashscope": "qwen-turbo",

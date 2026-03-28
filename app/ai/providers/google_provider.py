@@ -165,7 +165,7 @@ class GoogleProvider(AIProvider):
         **kwargs
     ) -> AIResponse:
         """Analyze an image using Gemini's vision capabilities."""
-        use_model = model or "gemini-1.5-flash"
+        use_model = model or "gemini-2.0-flash"
         genai_model = self._genai.GenerativeModel(use_model)
 
         # Prepare image
