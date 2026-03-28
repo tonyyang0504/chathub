@@ -901,8 +901,9 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
                         break
 
             except WebSocketDisconnect:
-                pass
+                logger.info(f"[WS DEBUG] WebSocket disconnected by client")
             finally:
+                logger.info(f"[WS DEBUG] WS loop exited. is_running={active.is_running}, is_waiting={active.is_waiting}")
                 active.websockets.discard(websocket)
         else:
             if no_replay:
