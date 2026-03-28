@@ -870,9 +870,8 @@ async def stream_session(websocket: WebSocket, session_id: int, no_replay: int =
                     break
 
         if active and active.session_id == session_id:
-            # Send buffer if: full replay requested, OR we waited for session startup
-            # (events generated while waiting would otherwise be lost)
-            if (not no_replay or waited_for_session) and active.output_buffer:
+            # Always replay buffer — ChatHub Agent events can race ahead of WS connection
+            if active.output_buffer:
                 for data in active.output_buffer:
                     await websocket.send_text(json.dumps(data))
 
