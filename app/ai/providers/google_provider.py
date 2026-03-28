@@ -1,7 +1,7 @@
 """
 Google Provider
 
-Implementation for Google's Gemini API.
+Implementation for Google's Gemini API using the google-genai SDK.
 """
 
 import base64
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class GoogleProvider(AIProvider):
-    """Google Gemini API provider."""
+    """Google Gemini API provider using google-genai SDK."""
 
     provider_name = "google"
     supports_tools = True
@@ -27,7 +27,6 @@ class GoogleProvider(AIProvider):
         "gemini-3-flash-preview",
         "gemini-2.5-pro", "gemini-2.5-flash",
         "gemini-2.0-flash", "gemini-2.0-flash-lite",
-        "gemini-1.5-pro", "gemini-1.5-flash",
     ]
 
     def __init__(
@@ -40,25 +39,18 @@ class GoogleProvider(AIProvider):
         super().__init__(api_key, model or "gemini-2.0-flash", base_url, **kwargs)
 
         try:
-            import google.generativeai as genai
+            from google import genai
+            from google.genai import types
             self._genai = genai
+            self._types = types
+            self._client = genai.Client(api_key=api_key)
         except ImportError:
             raise ImportError(
-                "google-generativeai package is required for Google provider. "
-                "Install it with: pip install google-generativeai"
+                "google-genai package is required for Google provider. "
+                "Install it with: pip install google-genai"
             )
 
-        # Configure the API
-        genai.configure(api_key=api_key)
-        self._model_instance = None
         logger.debug(f"Google provider initialized with model: {self.model}")
-
-    def _get_model(self, model: Optional[str] = None):
-        """Get or create a GenerativeModel instance."""
-        use_model = model or self.model
-        if self._model_instance is None or self._model_instance.model_name != use_model:
-            self._model_instance = self._genai.GenerativeModel(use_model)
-        return self._model_instance
 
     def _chat_completion_impl(
         self,
@@ -76,76 +68,72 @@ class GoogleProvider(AIProvider):
     ) -> AIResponse:
         """Generate a chat completion using Google Gemini."""
         use_model = model or self.model
-        genai_model = self._get_model(use_model)
 
         # Normalize messages
         normalized = self._normalize_messages(messages)
 
         # Convert messages to Gemini format
-        gemini_messages, system_instruction = self._convert_messages(normalized)
+        gemini_contents, system_instruction = self._convert_messages(normalized)
 
         # Build generation config
-        generation_config = {
+        config_kwargs = {
             "temperature": temperature,
             "top_p": top_p,
         }
 
         if max_tokens:
-            generation_config["max_output_tokens"] = max_tokens
+            config_kwargs["max_output_tokens"] = max_tokens
+
+        if frequency_penalty:
+            config_kwargs["frequency_penalty"] = frequency_penalty
+
+        if presence_penalty:
+            config_kwargs["presence_penalty"] = presence_penalty
 
         if json_mode:
-            generation_config["response_mime_type"] = "application/json"
+            config_kwargs["response_mime_type"] = "application/json"
 
-        # Create model with system instruction if present
         if system_instruction:
-            genai_model = self._genai.GenerativeModel(
-                use_model,
-                system_instruction=system_instruction
-            )
+            config_kwargs["system_instruction"] = system_instruction
 
         # Convert tools if present
-        gemini_tools = None
         if tools:
             gemini_tools = self._convert_tools(tools)
+            if gemini_tools:
+                config_kwargs["tools"] = gemini_tools
 
-        logger.debug(f"Gemini request: model={use_model}, messages={len(gemini_messages)}")
+        config = self._types.GenerateContentConfig(**config_kwargs)
 
-        # Start chat and send message with retry logic
-        chat = genai_model.start_chat(history=gemini_messages[:-1] if len(gemini_messages) > 1 else [])
+        logger.debug(f"Gemini request: model={use_model}, messages={len(gemini_contents)}")
 
-        response = self._make_api_call(
-            chat,
-            gemini_messages[-1] if gemini_messages else "",
-            generation_config,
-            gemini_tools
-        )
+        response = self._make_api_call(use_model, gemini_contents, config)
 
         # Extract content and tool calls
         content = ""
         tool_calls = []
 
-        for candidate in response.candidates:
-            for part in candidate.content.parts:
-                if hasattr(part, 'text') and part.text:
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.text:
                     content += part.text
-                if hasattr(part, 'function_call') and part.function_call:
+                if part.function_call:
                     fc = part.function_call
                     tool_calls.append(ToolCall(
-                        id=f"call_{len(tool_calls)}",  # Gemini doesn't provide IDs
+                        id=f"call_{len(tool_calls)}",
                         name=fc.name,
                         arguments=dict(fc.args) if fc.args else {}
                     ))
 
-        # Estimate token usage (Gemini doesn't always provide this)
+        # Token usage
         usage = {
             "prompt_tokens": 0,
             "completion_tokens": 0,
             "total_tokens": 0,
         }
-        if hasattr(response, 'usage_metadata') and response.usage_metadata:
-            usage["prompt_tokens"] = getattr(response.usage_metadata, 'prompt_token_count', 0)
-            usage["completion_tokens"] = getattr(response.usage_metadata, 'candidates_token_count', 0)
-            usage["total_tokens"] = getattr(response.usage_metadata, 'total_token_count', 0)
+        if response.usage_metadata:
+            usage["prompt_tokens"] = response.usage_metadata.prompt_token_count or 0
+            usage["completion_tokens"] = response.usage_metadata.candidates_token_count or 0
+            usage["total_tokens"] = response.usage_metadata.total_token_count or 0
 
         return AIResponse(
             content=content,
@@ -166,16 +154,11 @@ class GoogleProvider(AIProvider):
     ) -> AIResponse:
         """Analyze an image using Gemini's vision capabilities."""
         use_model = model or "gemini-2.0-flash"
-        genai_model = self._genai.GenerativeModel(use_model)
 
-        # Prepare image
+        # Prepare image part
         if isinstance(image_data, bytes):
-            image_part = {
-                "mime_type": "image/jpeg",
-                "data": image_data
-            }
+            image_part = self._types.Part.from_bytes(data=image_data, mime_type="image/jpeg")
         elif image_data.startswith('data:'):
-            # Parse data URL
             parts = image_data.split(',', 1)
             if len(parts) == 2:
                 mime_type = parts[0].split(':')[1].split(';')[0]
@@ -183,23 +166,23 @@ class GoogleProvider(AIProvider):
             else:
                 mime_type = "image/jpeg"
                 b64_data = image_data
-            image_part = {
-                "mime_type": mime_type,
-                "data": base64.b64decode(b64_data)
-            }
+            image_part = self._types.Part.from_bytes(
+                data=base64.b64decode(b64_data), mime_type=mime_type
+            )
         else:
-            # Assume it's base64 data
-            image_part = {
-                "mime_type": "image/jpeg",
-                "data": base64.b64decode(image_data)
-            }
+            image_part = self._types.Part.from_bytes(
+                data=base64.b64decode(image_data), mime_type="image/jpeg"
+            )
 
-        response = genai_model.generate_content([prompt, image_part])
+        response = self._client.models.generate_content(
+            model=use_model,
+            contents=[prompt, image_part],
+        )
 
         content = ""
-        for candidate in response.candidates:
-            for part in candidate.content.parts:
-                if hasattr(part, 'text') and part.text:
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.text:
                     content += part.text
 
         usage = {
@@ -207,10 +190,10 @@ class GoogleProvider(AIProvider):
             "completion_tokens": 0,
             "total_tokens": 0,
         }
-        if hasattr(response, 'usage_metadata') and response.usage_metadata:
-            usage["prompt_tokens"] = getattr(response.usage_metadata, 'prompt_token_count', 0)
-            usage["completion_tokens"] = getattr(response.usage_metadata, 'candidates_token_count', 0)
-            usage["total_tokens"] = getattr(response.usage_metadata, 'total_token_count', 0)
+        if response.usage_metadata:
+            usage["prompt_tokens"] = response.usage_metadata.prompt_token_count or 0
+            usage["completion_tokens"] = response.usage_metadata.candidates_token_count or 0
+            usage["total_tokens"] = response.usage_metadata.total_token_count or 0
 
         return AIResponse(
             content=content,
@@ -223,44 +206,52 @@ class GoogleProvider(AIProvider):
     def _convert_messages(self, messages: List[AIMessage]) -> tuple:
         """Convert messages to Gemini format and extract system instruction."""
         system_instruction = None
-        gemini_messages = []
+        gemini_contents = []
 
         for msg in messages:
             if msg.role == "system":
                 system_instruction = msg.content
             elif msg.role == "user":
-                gemini_messages.append({"role": "user", "parts": [msg.content]})
+                gemini_contents.append(
+                    self._types.Content(role="user", parts=[self._types.Part.from_text(text=msg.content)])
+                )
             elif msg.role == "assistant":
-                gemini_messages.append({"role": "model", "parts": [msg.content]})
+                gemini_contents.append(
+                    self._types.Content(role="model", parts=[self._types.Part.from_text(text=msg.content)])
+                )
             elif msg.role == "tool":
-                # Tool responses go as user messages
-                gemini_messages.append({
-                    "role": "user",
-                    "parts": [{"function_response": {"name": msg.name, "response": {"result": msg.content}}}]
-                })
+                gemini_contents.append(
+                    self._types.Content(
+                        role="user",
+                        parts=[self._types.Part(function_response=self._types.FunctionResponse(
+                            name=msg.name or "tool",
+                            response={"result": msg.content}
+                        ))]
+                    )
+                )
 
-        return gemini_messages, system_instruction
+        return gemini_contents, system_instruction
 
     def _convert_tools(self, tools: List[Dict]) -> List:
         """Convert OpenAI-style tools to Gemini format."""
-        gemini_tools = []
+        declarations = []
         for tool in tools:
             if tool.get("type") == "function":
                 func = tool.get("function", {})
-                gemini_tools.append({
-                    "function_declarations": [{
-                        "name": func.get("name"),
-                        "description": func.get("description", ""),
-                        "parameters": func.get("parameters", {})
-                    }]
-                })
-        return gemini_tools if gemini_tools else None
+                declarations.append(self._types.FunctionDeclaration(
+                    name=func.get("name"),
+                    description=func.get("description", ""),
+                    parameters=func.get("parameters", {}),
+                ))
+        if declarations:
+            return [self._types.Tool(function_declarations=declarations)]
+        return None
 
     def _get_finish_reason(self, response) -> str:
         """Get finish reason from Gemini response."""
-        if hasattr(response, 'candidates') and response.candidates:
+        if response.candidates:
             candidate = response.candidates[0]
-            if hasattr(candidate, 'finish_reason'):
+            if hasattr(candidate, 'finish_reason') and candidate.finish_reason:
                 reason = str(candidate.finish_reason)
                 if "STOP" in reason:
                     return "stop"
@@ -271,17 +262,17 @@ class GoogleProvider(AIProvider):
         return "stop"
 
     @create_retry_decorator(max_attempts=3)
-    def _make_api_call(self, chat, message, generation_config, tools) -> Any:
+    def _make_api_call(self, model: str, contents, config) -> Any:
         """Make API call with retry logic."""
         try:
-            return chat.send_message(
-                message,
-                generation_config=self._genai.GenerationConfig(**generation_config),
-                tools=tools
+            return self._client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
             )
         except Exception as e:
             error_str = str(e).lower()
-            if "rate" in error_str or "quota" in error_str:
+            if "rate" in error_str or "quota" in error_str or "capacity" in error_str:
                 logger.error(f"Google rate limit exceeded: {e}")
                 raise
             elif "connection" in error_str or "network" in error_str:
