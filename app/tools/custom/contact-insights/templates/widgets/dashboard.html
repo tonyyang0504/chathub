@@ -1,0 +1,71 @@
+<div class="card" style="border-radius: 12px; border: 1px solid var(--border-color);">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0"><i class="bi bi-people-fill me-2"></i>Contact Insights</h6>
+            <span class="badge text-bg-secondary rounded-pill">{{ totals.contacts }} contacts</span>
+        </div>
+
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+            <span class="badge rounded-pill" style="background: #dc3545; color: white;">
+                <i class="bi bi-exclamation-triangle me-1"></i>{{ totals.follow_up }} follow-up
+            </span>
+            <span class="badge rounded-pill" style="background: #f59e0b; color: white;">
+                <i class="bi bi-arrow-up-circle me-1"></i>{{ totals.high_urgency }} high urgency
+            </span>
+            <span class="badge rounded-pill" style="background: #ef4444; color: white;">
+                <i class="bi bi-emoji-frown me-1"></i>{{ totals.negative }} negative
+            </span>
+        </div>
+
+        {% set total_sentiment = sentiment.positive + sentiment.neutral + sentiment.negative %}
+        {% if total_sentiment > 0 %}
+        <div class="small fw-semibold mb-1">Sentiment</div>
+        <div class="d-flex mb-3" style="height: 8px; border-radius: 4px; overflow: hidden; background: var(--hover-bg);">
+            {% if sentiment.positive > 0 %}
+            <div style="width: {{ (sentiment.positive / total_sentiment * 100)|round(1) }}%; background: #10b981;" title="Positive: {{ sentiment.positive }}"></div>
+            {% endif %}
+            {% if sentiment.neutral > 0 %}
+            <div style="width: {{ (sentiment.neutral / total_sentiment * 100)|round(1) }}%; background: #6b7280;" title="Neutral: {{ sentiment.neutral }}"></div>
+            {% endif %}
+            {% if sentiment.negative > 0 %}
+            <div style="width: {{ (sentiment.negative / total_sentiment * 100)|round(1) }}%; background: #ef4444;" title="Negative: {{ sentiment.negative }}"></div>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-3 mb-3 small text-muted">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px;"></span>{{ sentiment.positive }} positive</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:4px;"></span>{{ sentiment.neutral }} neutral</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:4px;"></span>{{ sentiment.negative }} negative</span>
+        </div>
+        {% endif %}
+
+        {% if needs_attention %}
+        <div class="small fw-semibold mb-2">Needs Attention</div>
+        <div class="d-grid gap-2">
+            {% for c in needs_attention %}
+            <div class="p-2" style="border: 1px solid var(--border-color); border-radius: 10px;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-semibold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;" title="{{ c.name }}">{{ c.name }}</span>
+                    <div class="d-flex gap-1">
+                        {% if c.urgency == 'high' %}
+                        <span class="badge text-bg-danger rounded-pill" style="font-size:0.7rem;">High</span>
+                        {% endif %}
+                        {% if c.sentiment == 'negative' %}
+                        <span class="badge text-bg-warning rounded-pill" style="font-size:0.7rem;">Negative</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if c.follow_up_reason %}
+                <div class="small text-muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ c.follow_up_reason }}">{{ c.follow_up_reason }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="small text-muted mb-0"><i class="bi bi-check-circle me-1"></i>No contacts need immediate attention.</p>
+        {% endif %}
+
+        <a href="/tools/contact-insights/" class="btn btn-sm rounded-pill mt-3" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: white;">
+            <i class="bi bi-arrow-right me-1"></i>View All Insights
+        </a>
+    </div>
+</div>

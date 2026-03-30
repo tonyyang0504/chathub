@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Insights - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.insights-hero {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.insights-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.insights-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.insights-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* Sentiment donut */
+.donut-container { position: relative; width: 160px; height: 160px; margin: 0 auto; }
+.donut-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center;
+}
+.donut-center .value { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+.donut-center .label { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Engagement bar */
+.engagement-bar {
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    overflow: hidden;
+    background: var(--hover-bg);
+}
+.engagement-bar > div { transition: width 0.4s ease; }
+
+/* Contact list item */
+.contact-item {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: background 0.15s;
+}
+.contact-item:hover { background: var(--hover-bg); }
+
+.contact-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 0.85rem; color: white; flex-shrink: 0;
+}
+.contact-avatar.avatar-color-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+.contact-avatar.avatar-color-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.contact-avatar.avatar-color-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.contact-avatar.avatar-color-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.contact-avatar.avatar-color-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
+.contact-avatar.avatar-color-6 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+.contact-avatar.avatar-color-7 { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+.contact-avatar.avatar-color-8 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+
+/* Tag chip */
+.tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+.tag-chip .tag-count { font-weight: 700; color: #6366f1; }
+
+/* Scrollable lists */
+.insights-scroll {
+    max-height: 340px;
+    overflow-y: auto;
+}
+.insights-scroll::-webkit-scrollbar { width: 6px; }
+.insights-scroll::-webkit-scrollbar-track { background: transparent; }
+.insights-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.insights-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.insights-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+#hubFilter:focus, #searchInput:focus {
+    border-color: #6366f1;
+    box-shadow: none;
+}
+
+.score-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hover-bg);
+    width: 60px;
+    display: inline-block;
+    vertical-align: middle;
+}
+.score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="insights-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-people-fill me-3"></i>Contact Insights</h1>
+                <p>Understand your contacts at a glance — sentiment, engagement, urgency, and follow-up needs across all hubs.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-bar-chart-line" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card insights-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-5 col-md-6">
+                    <label class="form-label">Hub</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-3 d-grid">
+                    <button id="refreshBtn" class="btn rounded-pill" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: white;">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="col-lg-5 col-md-3 text-lg-end">
+                    <span id="updatedAt" class="small text-muted">Last updated: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl col-md-4 col-6">
+            <div class="card insights-card h-100">
+                <div class="card-body text-center">
+                    <div id="totalContacts" class="stat-value" style="color: #6366f1;">0</div>
+                    <div class="stat-label">Total Contacts</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card insights-card h-100">
+                <div class="card-body text-center">
+                    <div id="followUpCount" class="stat-value" style="color: #ef4444;">0</div>
+                    <div class="stat-label">Need Follow-up</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card insights-card h-100">
+                <div class="card-body text-center">
+                    <div id="highUrgencyCount" class="stat-value" style="color: #f59e0b;">0</div>
+                    <div class="stat-label">High Urgency</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card insights-card h-100">
+                <div class="card-body text-center">
+                    <div id="negativeCount" class="stat-value" style="color: #dc3545;">0</div>
+                    <div class="stat-label">Negative Sentiment</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-4 col-6">
+            <div class="card insights-card h-100">
+                <div class="card-body text-center">
+                    <div id="tagCount" class="stat-value" style="color: #8b5cf6;">0</div>
+                    <div class="stat-label">Tags Applied</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sentiment + Urgency + Engagement row -->
+    <div class="row g-3 mb-3">
+        <!-- Sentiment donut -->
+        <div class="col-lg-4">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-emoji-smile me-2"></i>Sentiment Distribution</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="donut-container">
+                        <canvas id="sentimentDonut" width="160" height="160"></canvas>
+                        <div class="donut-center">
+                            <div class="value" id="sentimentTotal">0</div>
+                            <div class="label">analyzed</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-3 mt-3 small">
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:4px;"></span><span id="sentPos">0</span> positive</span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6b7280;margin-right:4px;"></span><span id="sentNeu">0</span> neutral</span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px;"></span><span id="sentNeg">0</span> negative</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Urgency breakdown -->
+        <div class="col-lg-4">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-diamond me-2"></i>Urgency Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <div id="urgencyBars" class="d-grid gap-3 mt-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Engagement distribution -->
+        <div class="col-lg-4">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Engagement Levels</h6>
+                </div>
+                <div class="card-body">
+                    <div id="engagementBars" class="d-grid gap-3 mt-2"></div>
+                    <div class="engagement-bar mt-3" id="engagementBar"></div>
+                    <div class="d-flex justify-content-between small text-muted mt-1">
+                        <span>None</span><span>Low</span><span>Medium</span><span>High</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Needs Attention + Top Engaged -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Needs Attention</h6>
+                    <span id="attentionBadge" class="badge text-bg-danger rounded-pill">0</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="attentionList" class="insights-scroll d-grid gap-2">
+                        <div class="small text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-trophy me-2"></i>Top Engaged</h6>
+                    <span class="badge text-bg-secondary rounded-pill" style="background: #6366f1 !important;">Top 6</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="engagedList" class="insights-scroll d-grid gap-2">
+                        <div class="small text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Contacts + Top Tags -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recently Active</h6>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="recentList" class="insights-scroll d-grid gap-2">
+                        <div class="small text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card insights-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-tags me-2"></i>Top Tags</h6>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="tagsList" class="d-flex flex-wrap gap-2">
+                        <div class="small text-muted">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+const updatedAt = document.getElementById('updatedAt');
+
+function getAvatarColorClass(name) {
+    if (!name) return 'avatar-color-1';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name[0].toUpperCase();
+}
+
+function sentimentBadge(s) {
+    if (s === 'positive') return '<span class="badge rounded-pill" style="background:#10b981;color:white;font-size:0.7rem;">Positive</span>';
+    if (s === 'negative') return '<span class="badge rounded-pill" style="background:#ef4444;color:white;font-size:0.7rem;">Negative</span>';
+    if (s === 'neutral') return '<span class="badge rounded-pill" style="background:#6b7280;color:white;font-size:0.7rem;">Neutral</span>';
+    return '';
+}
+
+function urgencyBadge(u) {
+    if (u === 'high') return '<span class="badge text-bg-danger rounded-pill" style="font-size:0.7rem;">High</span>';
+    if (u === 'medium') return '<span class="badge text-bg-warning rounded-pill" style="font-size:0.7rem;">Medium</span>';
+    if (u === 'low') return '<span class="badge text-bg-secondary rounded-pill" style="font-size:0.7rem;">Low</span>';
+    return '';
+}
+
+function timeAgo(isoStr) {
+    if (!isoStr) return 'Never';
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+}
+
+function contactCard(c, extra = '') {
+    return `
+        <div class="contact-item d-flex gap-2 align-items-start">
+            <div class="contact-avatar ${getAvatarColorClass(c.name)}">${getInitials(c.name)}</div>
+            <div class="flex-grow-1 min-width-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;" title="${c.name}">${c.name}</span>
+                    <div class="d-flex gap-1">${urgencyBadge(c.urgency)}${sentimentBadge(c.sentiment)}</div>
+                </div>
+                <div class="small text-muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.hub_name}">${c.hub_name}${c.phone ? ' · ' + c.phone : ''}</div>
+                ${extra}
+            </div>
+        </div>`;
+}
+
+// Sentiment donut (lightweight canvas, no Chart.js dependency)
+let donutCanvas = document.getElementById('sentimentDonut');
+function drawDonut(positive, neutral, negative) {
+    const ctx = donutCanvas.getContext('2d');
+    const size = 160, cx = size / 2, cy = size / 2, radius = 60, lineWidth = 18;
+    ctx.clearRect(0, 0, size, size);
+
+    const total = positive + neutral + negative;
+    if (total === 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'var(--hover-bg)';
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+        return;
+    }
+
+    const segments = [
+        { value: positive, color: '#10b981' },
+        { value: neutral, color: '#6b7280' },
+        { value: negative, color: '#ef4444' },
+    ];
+
+    let startAngle = -Math.PI / 2;
+    segments.forEach(seg => {
+        if (seg.value <= 0) return;
+        const sweep = (seg.value / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, startAngle, startAngle + sweep);
+        ctx.strokeStyle = seg.color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'butt';
+        ctx.stroke();
+        startAngle += sweep;
+    });
+}
+
+function renderUrgencyBars(urgency) {
+    const total = urgency.high + urgency.medium + urgency.low;
+    const container = document.getElementById('urgencyBars');
+    if (total === 0) {
+        container.innerHTML = '<div class="small text-muted text-center py-3">No urgency data yet</div>';
+        return;
+    }
+    const items = [
+        { label: 'High', value: urgency.high, color: '#ef4444' },
+        { label: 'Medium', value: urgency.medium, color: '#f59e0b' },
+        { label: 'Low', value: urgency.low, color: '#6b7280' },
+    ];
+    container.innerHTML = items.map(item => {
+        const pct = total > 0 ? (item.value / total * 100).toFixed(1) : 0;
+        return `
+            <div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="fw-semibold">${item.label}</span>
+                    <span class="text-muted">${item.value} (${pct}%)</span>
+                </div>
+                <div style="height:8px;border-radius:4px;background:var(--hover-bg);">
+                    <div style="height:100%;width:${pct}%;border-radius:4px;background:${item.color};transition:width 0.4s ease;"></div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+function renderEngagement(dist) {
+    const total = dist.high + dist.medium + dist.low + dist.none;
+    const container = document.getElementById('engagementBars');
+    const bar = document.getElementById('engagementBar');
+
+    if (total === 0) {
+        container.innerHTML = '<div class="small text-muted text-center py-3">No engagement data yet</div>';
+        bar.innerHTML = '';
+        return;
+    }
+
+    const items = [
+        { label: 'High (70+)', value: dist.high, color: '#6366f1' },
+        { label: 'Medium (40-69)', value: dist.medium, color: '#a855f7' },
+        { label: 'Low (1-39)', value: dist.low, color: '#c4b5fd' },
+        { label: 'None (0)', value: dist.none, color: '#e5e7eb' },
+    ];
+    container.innerHTML = items.map(item => {
+        const pct = total > 0 ? (item.value / total * 100).toFixed(1) : 0;
+        return `
+            <div class="d-flex justify-content-between small">
+                <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${item.color};margin-right:6px;"></span>${item.label}</span>
+                <span class="fw-semibold">${item.value}</span>
+            </div>`;
+    }).join('');
+
+    bar.innerHTML = items.map(item => {
+        const pct = total > 0 ? (item.value / total * 100) : 0;
+        return pct > 0 ? `<div style="width:${pct}%;background:${item.color};" title="${item.label}: ${item.value}"></div>` : '';
+    }).join('');
+}
+
+function renderAttention(contacts) {
+    const el = document.getElementById('attentionList');
+    const badge = document.getElementById('attentionBadge');
+    badge.textContent = contacts.length;
+
+    if (!contacts.length) {
+        el.innerHTML = '<div class="text-center py-3"><i class="bi bi-check-circle text-success" style="font-size:2rem;opacity:0.5;"></i><div class="small text-muted mt-2">All contacts are in good standing</div></div>';
+        return;
+    }
+    el.innerHTML = contacts.map(c => {
+        let extra = '';
+        if (c.follow_up_reason) extra += `<div class="small text-muted fst-italic" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${c.follow_up_reason}">${c.follow_up_reason}</div>`;
+        if (c.predicted_intent) extra += `<div class="small" style="color:#6366f1;">Intent: ${c.predicted_intent}</div>`;
+        return contactCard(c, extra);
+    }).join('');
+}
+
+function renderEngaged(contacts) {
+    const el = document.getElementById('engagedList');
+    if (!contacts.length) {
+        el.innerHTML = '<div class="text-center py-3"><i class="bi bi-graph-up-arrow" style="font-size:2rem;opacity:0.3;"></i><div class="small text-muted mt-2">No engagement data yet</div></div>';
+        return;
+    }
+    el.innerHTML = contacts.map(c => {
+        const pct = Math.min(c.engagement_score, 100);
+        const extra = `<div class="d-flex align-items-center gap-2 mt-1">
+            <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;"></div></div>
+            <span class="small fw-semibold" style="color:#6366f1;">${c.engagement_score}</span>
+        </div>`;
+        return contactCard(c, extra);
+    }).join('');
+}
+
+function renderRecent(contacts) {
+    const el = document.getElementById('recentList');
+    if (!contacts.length) {
+        el.innerHTML = '<div class="text-center py-3"><i class="bi bi-clock" style="font-size:2rem;opacity:0.3;"></i><div class="small text-muted mt-2">No recent activity</div></div>';
+        return;
+    }
+    el.innerHTML = contacts.map(c => {
+        const extra = `<div class="small text-muted">${timeAgo(c.last_interaction)}</div>`;
+        return contactCard(c, extra);
+    }).join('');
+}
+
+function renderTags(tags) {
+    const el = document.getElementById('tagsList');
+    if (!tags.length) {
+        el.innerHTML = '<div class="small text-muted">No tags yet</div>';
+        return;
+    }
+    el.innerHTML = tags.map(t => `<span class="tag-chip"><i class="bi bi-tag"></i>${t.tag}<span class="tag-count">${t.count}</span></span>`).join('');
+}
+
+async function loadInsights() {
+    refreshBtn.disabled = true;
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+
+    try {
+        const resp = await fetch(`./api/stats?${params.toString()}`);
+        if (!resp.ok) throw new Error('Failed to load');
+        const data = await resp.json();
+
+        // Stat cards
+        document.getElementById('totalContacts').textContent = data.totals.contacts;
+        document.getElementById('followUpCount').textContent = data.totals.follow_up;
+        document.getElementById('highUrgencyCount').textContent = data.totals.high_urgency;
+        document.getElementById('negativeCount').textContent = data.totals.negative;
+        document.getElementById('tagCount').textContent = data.totals.tags;
+
+        // Sentiment donut
+        const s = data.sentiment;
+        drawDonut(s.positive, s.neutral, s.negative);
+        document.getElementById('sentimentTotal').textContent = s.positive + s.neutral + s.negative;
+        document.getElementById('sentPos').textContent = s.positive;
+        document.getElementById('sentNeu').textContent = s.neutral;
+        document.getElementById('sentNeg').textContent = s.negative;
+
+        // Charts
+        renderUrgencyBars(data.urgency);
+        renderEngagement(data.engagement_distribution);
+
+        // Contact lists
+        renderAttention(data.needs_attention || []);
+        renderEngaged(data.top_engaged || []);
+        renderRecent(data.recent_contacts || []);
+        renderTags(data.top_tags || []);
+
+        updatedAt.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+        console.error('Contact insights error:', err);
+    } finally {
+        refreshBtn.disabled = false;
+    }
+}
+
+hubFilter.addEventListener('change', loadInsights);
+refreshBtn.addEventListener('click', loadInsights);
+
+loadInsights();
+setInterval(loadInsights, 60000);
+</script>
+{% endblock %}
