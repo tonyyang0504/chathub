@@ -375,6 +375,7 @@ class SandboxManager:
             "-e", "DATABASE_URL=sqlite:///./data/app.db",
             "-e", f"SECRET_KEY={secret_key}",
             "-e", "COOKIE_NAME=sandbox_access_token",
+            "-e", "SANDBOX_MODE=true",
             "-e", "PORT=8000",
             "-e", "DEBUG=true",
             "--memory=512m", "--cpus=1",

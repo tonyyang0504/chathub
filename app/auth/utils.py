@@ -72,6 +72,12 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # Sandbox mode: auto-authenticate as first active user (no JWT needed)
+    if settings.SANDBOX_MODE:
+        user = db.query(User).filter(User.is_active == True).first()
+        if user:
+            return user
+
     token = None
 
     # Try to get token from Authorization header

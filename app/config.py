@@ -35,6 +35,9 @@ class Settings:
     # Cookie
     COOKIE_NAME: str = os.getenv("COOKIE_NAME", "access_token")
 
+    # Sandbox mode — disables auth checks (for Docker preview containers)
+    SANDBOX_MODE: bool = os.getenv("SANDBOX_MODE", "").lower() in ("true", "1", "yes")
+
     # Session
     SESSION_PATH: str = os.getenv("SESSION_PATH", os.path.join("data", "sessions"))
 
