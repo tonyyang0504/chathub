@@ -1565,7 +1565,13 @@ function updateProviderModelLabel() {
     const selectId = modelSelects[currentProvider];
     const selectEl = selectId ? document.getElementById(selectId) : null;
     const modelName = selectEl ? (selectEl.options[selectEl.selectedIndex]?.text || selectEl.value || '') : '';
-    const providerName = currentProvider.charAt(0).toUpperCase() + currentProvider.slice(1);
+    let providerName;
+    if (currentProvider === 'chathub') {
+        const aiProvider = document.getElementById('chathubProviderSelect')?.value || 'openai';
+        providerName = aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1);
+    } else {
+        providerName = currentProvider.charAt(0).toUpperCase() + currentProvider.slice(1);
+    }
     label.textContent = modelName ? `${providerName} · ${modelName}` : providerName;
 }
 
@@ -1747,9 +1753,13 @@ async function saveSettings() {
         document.getElementById('openaiKeyInput').value = '';
         document.getElementById('geminiKeyInput').value = '';
         document.getElementById('chathubApiKeyInput').value = '';
-        loadSettings(false);
         const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-        if (modal) modal.hide();
+        if (modal) {
+            document.getElementById('settingsModal').addEventListener('hidden.bs.modal', () => loadSettings(false), { once: true });
+            modal.hide();
+        } else {
+            loadSettings(false);
+        }
     }
 }
 
@@ -3676,6 +3686,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSettings();
     initVoiceRecognition();
     initDragDrop();
+
+    // Pick up prompt from AI Workspace intent routing
+    const pendingPrompt = sessionStorage.getItem('pendingPrompt');
+    if (pendingPrompt) {
+        sessionStorage.removeItem('pendingPrompt');
+        document.getElementById('promptInput').value = pendingPrompt;
+        document.getElementById('promptInput').focus();
+    }
 
     // Auto-resume active session if one exists
     if (sessions && sessions.length > 0) {

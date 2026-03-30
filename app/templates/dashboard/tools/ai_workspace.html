@@ -1093,6 +1093,68 @@
 }
 .approval-badge.approved { background: rgba(16,185,129,0.15); color: #10b981; }
 .approval-badge.denied { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* Intent routing suggestion card — uses provider theme color */
+.intent-card {
+    background: linear-gradient(135deg, rgba(var(--provider-color-rgb),0.08) 0%, rgba(var(--provider-color-rgb),0.03) 100%);
+    border: 1px solid rgba(var(--provider-color-rgb),0.3);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin: 0.5rem 0;
+    max-width: 520px;
+}
+.intent-card.resolved { opacity: 0.5; pointer-events: none; }
+.intent-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--provider-color);
+}
+.intent-header i { font-size: 1.1rem; }
+.intent-description {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+.intent-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.intent-card .btn-intent {
+    border: 1px solid rgba(var(--provider-color-rgb),0.4);
+    border-radius: 20px;
+    padding: 0.35rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: rgba(var(--provider-color-rgb),0.1);
+    color: var(--provider-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.intent-card .btn-intent:hover { background: rgba(var(--provider-color-rgb),0.2); border-color: var(--provider-color); }
+.intent-card .btn-intent.primary { background: var(--provider-color); color: #fff; border-color: var(--provider-color); }
+.intent-card .btn-intent.primary:hover { opacity: 0.85; }
+.intent-card .btn-continue {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 0.35rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.intent-card .btn-continue:hover { border-color: var(--text-secondary); }
 </style>
 {% endblock %}
 
@@ -1489,18 +1551,6 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3">
-                        <div class="form-check form-switch mt-4">
-                            <input class="form-check-input" type="checkbox" id="autoCommitToggle" checked>
-                            <label class="form-check-label" for="autoCommitToggle">Auto safety commit</label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch mt-4">
-                            <input class="form-check-input" type="checkbox" id="autoBackupToggle" checked>
-                            <label class="form-check-label" for="autoBackupToggle">Auto DB backup</label>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1750,7 +1800,13 @@ function updateProviderModelLabel() {
     const selectId = modelSelects[currentProvider];
     const selectEl = selectId ? document.getElementById(selectId) : null;
     const modelName = selectEl ? (selectEl.options[selectEl.selectedIndex]?.text || selectEl.value || '') : '';
-    const providerName = currentProvider.charAt(0).toUpperCase() + currentProvider.slice(1);
+    let providerName;
+    if (currentProvider === 'chathub') {
+        const aiProvider = document.getElementById('chathubProviderSelect')?.value || 'openai';
+        providerName = aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1);
+    } else {
+        providerName = currentProvider.charAt(0).toUpperCase() + currentProvider.slice(1);
+    }
     label.textContent = modelName ? `${providerName} · ${modelName}` : providerName;
 }
 
@@ -1826,8 +1882,6 @@ async function loadSettings(autoSelectProvider = true) {
         document.getElementById('modelSelect').value = data.default_model || 'sonnet';
         document.getElementById('codexModelSelect').value = data.codex_default_model || 'gpt-5.3-codex';
         document.getElementById('geminiModelSelect').value = data.gemini_default_model || 'auto-gemini-3';
-        document.getElementById('autoCommitToggle').checked = data.auto_commit !== false;
-        document.getElementById('autoBackupToggle').checked = data.auto_backup_db !== false;
         setAuthMethod(data.auth_method || 'api_key', true);
         if (data.codex_auth_method) setCodexAuthMethod(data.codex_auth_method);
         if (data.gemini_auth_method) setGeminiAuthMethod(data.gemini_auth_method);
@@ -1879,8 +1933,6 @@ async function saveSettings() {
         default_model: document.getElementById('modelSelect').value,
         codex_default_model: document.getElementById('codexModelSelect').value,
         gemini_default_model: document.getElementById('geminiModelSelect').value,
-        auto_commit: document.getElementById('autoCommitToggle').checked,
-        auto_backup_db: document.getElementById('autoBackupToggle').checked,
         auth_method: currentAuthMethod,
         default_provider: currentProvider,
         codex_auth_method: codexAuthMethod,
@@ -1918,8 +1970,6 @@ async function saveSettings() {
         ai_provider: document.getElementById('chathubProviderSelect').value,
         default_model: document.getElementById('chathubModelSelect').value,
         approval_mode: document.getElementById('chathubApprovalModeSelect').value,
-        auto_commit: document.getElementById('autoCommitToggle').checked,
-        auto_backup_db: document.getElementById('autoBackupToggle').checked
     };
     if (chathubKey && !chathubKey.startsWith('****')) {
         chathubPayload.api_key = chathubKey;
@@ -1947,9 +1997,13 @@ async function saveSettings() {
         document.getElementById('openaiKeyInput').value = '';
         document.getElementById('geminiKeyInput').value = '';
         document.getElementById('chathubApiKeyInput').value = '';
-        loadSettings(false);
         const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-        if (modal) modal.hide();
+        if (modal) {
+            document.getElementById('settingsModal').addEventListener('hidden.bs.modal', () => loadSettings(false), { once: true });
+            modal.hide();
+        } else {
+            loadSettings(false);
+        }
     }
 }
 
@@ -2359,7 +2413,7 @@ async function viewSession(sessionId, engine, provider) {
                 } else if (msg.role === 'assistant') {
                     if (msg.content) appendAssistantMessage(msg.content);
                 } else if (msg.role === 'tool_call') {
-                    appendToolUse(msg.content, msg.tool_name);
+                    appendToolUse(msg.content, msg.tool_name, msg.created_at);
                 } else if (msg.role === 'tool_result') {
                     appendToolResult(msg.content);
                 } else if (msg.role === 'approval_request') {
@@ -2449,6 +2503,61 @@ async function viewSession(sessionId, engine, provider) {
     } catch (e) {
         console.error('Failed to load session:', e);
     }
+}
+
+// --- Intent Routing (AI-detected via [SUGGEST:...] markers in response) ---
+
+function showIntentSuggestion(intent) {
+    const chatBody = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg msg-assistant';
+
+    if (intent === 'ai_coder') {
+        div.innerHTML = `<div class="intent-card">
+            <div class="intent-header">
+                <i class="bi bi-lightbulb"></i> Code Change Suggested
+            </div>
+            <div class="intent-description">
+                This task involves codebase modification. <strong>AI Coder</strong> provides a sandboxed environment with preview, apply, and revert — safer for code changes.
+            </div>
+            <div class="intent-actions">
+                <a href="/tools/ai-coder" class="btn-intent primary">
+                    <i class="bi bi-terminal me-1"></i>Open AI Coder
+                </a>
+            </div>
+        </div>`;
+    } else if (intent === 'tool_builder') {
+        div.innerHTML = `<div class="intent-card">
+            <div class="intent-header">
+                <i class="bi bi-lightbulb"></i> New Tool Suggested
+            </div>
+            <div class="intent-description">
+                This task involves building a new tool. <strong>Tool Builder</strong> creates isolated tools with their own routes and templates — ideal for plugin development.
+            </div>
+            <div class="intent-actions">
+                <a href="/tools/tool-builder" class="btn-intent primary">
+                    <i class="bi bi-hammer me-1"></i>Open Tool Builder
+                </a>
+            </div>
+        </div>`;
+    }
+
+    chatBody.appendChild(div);
+    scrollToBottom();
+}
+
+function processIntentMarkers(text) {
+    // Check for [SUGGEST:AI_CODER] or [SUGGEST:TOOL_BUILDER] markers in AI response
+    let intent = null;
+    let cleanText = text;
+    if (text.includes('[SUGGEST:AI_CODER]')) {
+        intent = 'ai_coder';
+        cleanText = text.replace(/\[SUGGEST:AI_CODER\]\s*/g, '');
+    } else if (text.includes('[SUGGEST:TOOL_BUILDER]')) {
+        intent = 'tool_builder';
+        cleanText = text.replace(/\[SUGGEST:TOOL_BUILDER\]\s*/g, '');
+    }
+    return { intent, cleanText };
 }
 
 function handleSend() {
@@ -2886,7 +2995,9 @@ function renderStreamEvent(data, timestamp) {
             if (!currentAssistantEl) {
                 currentAssistantEl = createAssistantBubble();
             }
-            currentAssistantEl.innerHTML = marked.parse(assistantBuffer);
+            // Strip intent markers from streaming display
+            const streamDisplay = assistantBuffer.replace(/\[SUGGEST:(AI_CODER|TOOL_BUILDER)\]\s*/g, '');
+            currentAssistantEl.innerHTML = marked.parse(streamDisplay);
             wrapTables(currentAssistantEl);
             scrollToBottom();
         } else if (delta.type === 'input_json_delta' && delta.partial_json) {
@@ -3014,27 +3125,36 @@ function appendUserMessage(text) {
 
 function appendAssistantMessage(text) {
     turnHasStreamedText = true;
-    const chatBody = document.getElementById('chatBody');
 
+    // Check for intent routing markers from AI response
+    const { intent, cleanText } = processIntentMarkers(text);
+    if (intent) {
+        showIntentSuggestion(intent);
+    }
+    const displayText = cleanText.trim();
+    if (!displayText) return;  // Marker was the only content
+
+    const chatBody = document.getElementById('chatBody');
     const div = document.createElement('div');
     div.className = 'msg msg-assistant';
-    div.innerHTML = marked.parse(text);
+    div.innerHTML = marked.parse(displayText);
     wrapTables(div);
     chatBody.appendChild(div);
     scrollToBottom();
 }
 
-function appendToolUse(content, timestampOrToolName) {
+function appendToolUse(content, timestampOrToolName, explicitTimestamp) {
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = { tool: 'unknown', input: content }; }
 
     // timestampOrToolName can be a timestamp string or a tool name (from ChatHub agent)
-    let timestamp = null;
+    // explicitTimestamp is an optional third param for when both tool name and timestamp are needed
+    let timestamp = explicitTimestamp || null;
     let explicitToolName = null;
     if (timestampOrToolName) {
         // If it looks like a date string, it's a timestamp; otherwise it's a tool name
         if (/^\d{4}-/.test(timestampOrToolName) || timestampOrToolName instanceof Date) {
-            timestamp = timestampOrToolName;
+            timestamp = timestamp || timestampOrToolName;
         } else {
             explicitToolName = timestampOrToolName;
         }

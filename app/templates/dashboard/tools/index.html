@@ -318,7 +318,7 @@
         </div>
         {% endfor %}
         {% for tool in preview_tools %}
-        <div class="tool-card" style="position: relative; opacity: 0.6;">
+        <div class="tool-card" style="position: relative;">
             <a href="/tools/{{ tool.name }}" style="text-decoration: none; color: inherit; display: block;">
                 <div class="tool-card-accent" style="background: linear-gradient(90deg, {{ tool.gradient_start }}, {{ tool.gradient_end }});"></div>
                 <div class="tool-card-body">
@@ -326,8 +326,8 @@
                         <i class="bi {{ tool.icon }}"></i>
                     </div>
                     <div class="tool-card-info">
-                        <h3>{{ tool.display_name }} <span class="badge" style="font-size: 0.6rem; vertical-align: middle; background: linear-gradient(135deg, #94a3b8, #64748b);">Preview</span></h3>
-                        <p>{{ tool.description }}</p>
+                        <h3>{{ tool.display_name }} <span class="badge" style="font-size: 0.6rem; vertical-align: middle; background: linear-gradient(135deg, #10b981, #059669);">Ready to Test</span></h3>
+                        <p>Click to preview this tool before publishing.</p>
                     </div>
                 </div>
             </a>

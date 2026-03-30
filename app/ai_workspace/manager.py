@@ -858,7 +858,20 @@ class AiWorkspaceManager:
             f"- Starting/stopping bots: Use the server API\n"
             f"- Creating/modifying DB records (bots, hubs, agents, settings): Use direct DB access\n\n"
             f"TABLE OUTPUT: When displaying tabular data (CSV, DB results, etc.), show at most 5 rows by default "
-            f"plus a summary (e.g., 'Showing 5 of 145 rows'). Show all rows only if the user explicitly asks for the full data."
+            f"plus a summary (e.g., 'Showing 5 of 145 rows'). Show all rows only if the user explicitly asks for the full data.\n\n"
+            f"INTENT ROUTING (CRITICAL):\n"
+            f"If the user asks you to modify the codebase (add features, fix bugs, change code, update templates, edit files):\n"
+            f"1. Include [SUGGEST:AI_CODER] at the START of your response\n"
+            f"2. Briefly explain what the task involves\n"
+            f"3. DO NOT modify any files. DO NOT write code. DO NOT make changes. DO NOT create or edit files.\n"
+            f"4. Tell the user to use AI Coder for this task, which provides a sandboxed environment.\n"
+            f"If the user asks you to build a new tool or plugin:\n"
+            f"1. Include [SUGGEST:TOOL_BUILDER] at the START of your response\n"
+            f"2. Briefly explain what the task involves\n"
+            f"3. DO NOT modify any files. DO NOT write code. DO NOT create files.\n"
+            f"4. Tell the user to use Tool Builder for this task.\n"
+            f"Only include the marker if the task clearly involves code modification or tool creation. "
+            f"Do NOT include it for questions, analysis, data queries, running commands, or informational requests."
         )
 
         # Use provider adapter to build command

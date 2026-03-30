@@ -443,28 +443,41 @@ All three AI tools share the same 3-panel layout and must stay visually aligned.
 **Layout**: Left sidebar | Center chat | Right panel (Tools). All use `.claude-app` flex container with `.claude-sidebar`, `.claude-main`, `.claude-artifacts`.
 
 **Provider Theming**: All three use the same CSS custom properties driven by `data-provider` on `.claude-app`:
-- Claude: `#da6a46` (orange/coral) — AI Coder uses this same color, NOT sky blue
+- Claude: `#da6a46` (orange/coral) — all three tools use this same color for Claude
 - Codex: `#10a37f`, Gemini: `#4285f4`, ChatHub: `#8b5cf6`
 
 **Session Type Separation**: Each tool filters sessions by `session_type` in the DB:
 - AI Workspace: `claude_code`, Tool Builder: `tool_builder`, AI Coder: `ai_coder`
 - Never query without this filter or sessions will mix across tools
 
+**Multi-Session Support**: AI Workspace supports multiple simultaneous sessions per user (`_sessions` keyed by `session_id`). AI Coder and Tool Builder enforce single-session (`_sessions` keyed by `user_id`).
+
+**Provider Auto-Selection**: On page load, `loadSettings()` auto-selects the best provider by priority: Claude > Codex > Gemini > ChatHub (based on which API keys/membership are configured). On save, use `loadSettings(false)` to skip auto-selection and preserve the current provider.
+
 **Provider Locking**: Once a session is created with a provider, lock the provider pills (`.provider-pill.disabled`) so the user can't switch mid-session. Unlock on `newSession()`.
+
+**Per-Provider Auth Methods**: Each provider has its own auth method field in `AiWorkspaceSettings`:
+- Claude: `auth_method` ("api_key" or "membership")
+- Codex: `codex_auth_method` ("api_key" or "membership") — device auth via `codex login --device-auth`
+- Gemini: `gemini_auth_method` ("api_key" or "membership") — Google OAuth via `~/.gemini/oauth_creds.json`
+- When membership: don't pass API key env var → CLI uses stored OAuth credentials
+- Note: `codex login status` outputs to stderr, not stdout
 
 **Left Sidebar**:
 - Headers: AI Workspace = "Tasks" (`bi-list-task`), AI Coder = "Coding" (`bi-code-slash`), Tool Builder = "Builds" (`bi-hammer`)
 - Session items show provider badge (`.provider-badge.pb-{provider}`) before status badge
 - Delete button is inline in `.session-meta` flex row (not absolutely positioned), uses `bi-trash3`, `border-radius: 6px`
 - `.session-item:hover` uses `var(--border-color)` background (not provider-tinted)
-- `.prompt-preview` must have `title` attribute for hover tooltip
+- `.session-meta`: `gap: 6px; flex-wrap: nowrap; overflow: hidden;` with child span truncation
+- `.prompt-preview` must have `title` attribute for hover tooltip, `font-size: 0.8rem`
 - `.btn-new-session`: 32x32, `border-radius: 12px`, no border
+- Empty state text: AI Workspace = "No tasks yet", AI Coder = "No coding sessions yet", Tool Builder = "No builds yet"
 
 **Center Section**:
 - Sidebar toggle button (`.btn-sidebar-toggle`): 34x34, `border-radius: 12px`, no border, `bi-layout-sidebar-inset` icon
-- Tools toggle button: `bi-layers` icon, label "Tools", uses standard `btn btn-sm btn-outline-secondary rounded-pill`
+- Tools toggle button: `bi-layers` icon, label "Tools", uses standard `btn btn-sm btn-outline-secondary rounded-pill` (no `#artifactsToggleBtn` CSS override)
 - Provider/model label: `<span id="providerModelLabel">` near voice button in input toolbar, updated via `updateProviderModelLabel()`
-- Empty state: Bootstrap icon in provider color at 3.5rem/0.5 opacity (AI Workspace: `bi-stars`, AI Coder: `bi-terminal`, Tool Builder: `bi-hammer`)
+- Empty state: Bootstrap icon (no background) at 3.5rem/0.5 opacity (AI Workspace: `bi-stars`, AI Coder: `bi-terminal`, Tool Builder: `bi-hammer`)
 
 **Right Panel (Tools)**:
 - Header title: "Tools" with `bi-layers` icon, only close button (no refresh button)
@@ -478,16 +491,35 @@ All three AI tools share the same 3-panel layout and must stay visually aligned.
 2. `assistant` with `message.content` containing `tool_use` blocks — update existing artifact or create new
 3. `content_block_delta` with `input_json_delta` — stream partial input into artifact card
 
-**Settings Modal**: Use `modal-close-btn` class (not Bootstrap's `btn-close`)
+**Settings Modal**:
+- Use `modal-close-btn` class (not Bootstrap's `btn-close`)
+- On save: hide modal FIRST via `hidden.bs.modal` event, THEN call `loadSettings(false)` — prevents visible flash during close animation
 
 **Toast Notifications**: Use the same `showToast()` implementation as `app.js` — with icons (`bi-check-circle-fill`, etc.), 5000ms duration, and `error`→`danger` type mapping
 
-**AI Coder Modifications Section**: Collapsed by default, toggle arrow in header, "View all" link with `stopPropagation()`
+**AI Coder Modifications Section**: Collapsed by default, toggle arrow integrated in header, "View all" link with `stopPropagation()`
+
+**AI Coder/Tool Builder Post-Publish**: After apply/publish, session auto-resumes (new worktree created from updated main). User can continue modifying. Tool Builder updates existing `BuiltTool` by name (no duplicates).
+
+**Session Sorting (Frontend)**: Sessions sorted by `ended_at || created_at` with `null ended_at` (active sessions) always first. ChatHub Agent datetime must include `"Z"` UTC suffix (matching CLI sessions) to prevent timezone-based mis-sorting.
+
+**ChatHub Agent WebSocket**:
+- In `startSession()`, set `currentSessionEngine` BEFORE `currentSessionId` to avoid wrong WS endpoint
+- WS while loop: `active.is_running or active.is_waiting` (same as CLI — keeps WS open for follow-ups)
+- Always replay `output_buffer` regardless of `no_replay` param (events can race ahead of WS connection)
+
+**ChatHub Agent Session Ordering**: Don't set `ended_at` on first turn completion (keeps session at top with `null ended_at`). Only set `ended_at` on follow-up turns via `_run_followup()`.
+
+**Artifact Timestamps**: When replaying ChatHub Agent tool calls from DB, pass `msg.created_at` as third param to `appendToolUse(content, toolName, timestamp)`. Without this, artifact cards show current time instead of original time. CLI sessions already pass timestamps via `renderStreamEvent(data, msg.created_at)`.
 
 **Tools Index Cards** (`tools/index.html`):
 - AI Workspace: `bi-stars`, teal gradient (`#0ea5e9/#06b6d4`)
 - Tool Builder: `bi-hammer`, purple gradient (`#6366f1/#8b5cf6`)
 - AI Coder: `bi-terminal`, dark navy gradient (`#1a1a2e/#16213e`)
+
+**Intent Routing**: The AI agent CLI detects code-change or tool-building intent and includes `[SUGGEST:AI_CODER]` or `[SUGGEST:TOOL_BUILDER]` markers in its response (instruction added to system context in `manager.py` and `agent_loop.py`). The frontend strips these markers and renders an inline suggestion card with a link to the appropriate tool. No regex pre-filtering — the AI itself determines intent. AI Coder and Tool Builder pick up pending prompts via `sessionStorage`.
+
+**Google AI Provider**: Uses `google-genai` SDK (not deprecated `google-generativeai`). Default model: `gemini-2.0-flash`.
 
 ## Testing
 

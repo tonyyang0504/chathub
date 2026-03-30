@@ -4,8 +4,8 @@ Agents Routes - Global AI Agent management APIs and pages
 
 import sys
 from pathlib import Path
-from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func, case, cast, Float
@@ -505,6 +505,67 @@ async def toggle_agent(
     db.commit()
 
     return {"success": True, "is_active": agent.is_active}
+
+
+class BulkActionRequest(BaseModel):
+    agent_ids: List[int]
+    action: str  # "activate", "deactivate", "delete"
+
+
+@router.post("/api/bulk-action")
+async def bulk_agent_action(
+    request: Request,
+    bulk_data: BulkActionRequest,
+    db: Session = Depends(get_db)
+):
+    """Perform bulk actions on multiple agents."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if bulk_data.action not in ("activate", "deactivate", "delete"):
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    if not bulk_data.agent_ids:
+        raise HTTPException(status_code=400, detail="No agents selected")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    agents = db.query(AIAgent).filter(AIAgent.id.in_(bulk_data.agent_ids)).all()
+
+    # Filter to only agents the user owns
+    owned_agents = [a for a in agents if a.hub_id in user_hub_ids]
+
+    if not owned_agents:
+        raise HTTPException(status_code=404, detail="No accessible agents found")
+
+    affected = 0
+    for agent in owned_agents:
+        if bulk_data.action == "activate":
+            agent.is_active = True
+            affected += 1
+        elif bulk_data.action == "deactivate":
+            agent.is_active = False
+            affected += 1
+        elif bulk_data.action == "delete":
+            db.delete(agent)
+            affected += 1
+
+    db.commit()
+
+    ToolMonitor.log_execution(
+        db=db,
+        tool_type="agent_execution",
+        operation=f"bulk_{bulk_data.action}",
+        hub_id=None,
+        input_data={"agent_ids": bulk_data.agent_ids, "action": bulk_data.action},
+        output_data={"affected": affected},
+        triggered_by="user",
+        related_entity_type="agent",
+        user_id=user.id
+    )
+
+    return {"success": True, "affected": affected}
 
 
 @router.post("/api/test")
@@ -1031,6 +1092,151 @@ async def create_template(
     db.refresh(template)
 
     return {"success": True, "template_id": template.id}
+
+
+# ============================================================================
+# Agent Import / Export
+# ============================================================================
+
+@router.get("/api/{agent_id}/export")
+async def export_agent(
+    request: Request,
+    agent_id: int,
+    db: Session = Depends(get_db)
+):
+    """Export an agent configuration as a JSON file."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_hub_ids = get_user_hub_ids(user, db)
+
+    agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    if not agent.is_global and agent.hub_id not in user_hub_ids:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    config = {}
+    if agent.config:
+        try:
+            config = json.loads(agent.config)
+        except:
+            pass
+
+    export_data = {
+        "chathub_agent_export": True,
+        "version": "1.0",
+        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "agent": {
+            "name": agent.name,
+            "agent_type": agent.agent_type,
+            "description": agent.description,
+            "model": agent.model,
+            "system_prompt": agent.system_prompt,
+            "additional_instructions": agent.additional_instructions,
+            "config": config,
+            "is_global": agent.is_global,
+        }
+    }
+
+    filename = f"{agent.name.lower().replace(' ', '_')}_agent.json"
+    return JSONResponse(
+        content=export_data,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
+
+@router.post("/api/import")
+async def import_agent(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Import an agent from a JSON file."""
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Read and parse the file
+    try:
+        content = await file.read()
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read file: {str(e)}")
+
+    # Validate structure
+    if not data.get("chathub_agent_export") or "agent" not in data:
+        raise HTTPException(status_code=400, detail="Invalid agent export file. Must be a ChatHub agent export.")
+
+    agent_data = data["agent"]
+
+    # Validate required fields
+    if not agent_data.get("name") or not agent_data.get("agent_type"):
+        raise HTTPException(status_code=400, detail="Agent export missing required fields (name, agent_type)")
+
+    # Get hub_id from query params if provided
+    from urllib.parse import parse_qs
+    query_string = str(request.url.query)
+    params = parse_qs(query_string)
+    hub_id = params.get("hub_id", [None])[0]
+    if hub_id:
+        hub_id = int(hub_id)
+        verify_hub_ownership(hub_id, user, db)
+
+    # Deduplicate name
+    base_name = agent_data["name"]
+    import_name = base_name
+    counter = 2
+    while db.query(AIAgent).filter(
+        AIAgent.name == import_name,
+        AIAgent.hub_id == hub_id if hub_id else AIAgent.hub_id.is_(None)
+    ).first():
+        import_name = f"{base_name} ({counter})"
+        counter += 1
+
+    config_json = json.dumps(agent_data.get("config", {})) if agent_data.get("config") else None
+
+    agent = AIAgent(
+        hub_id=hub_id,
+        name=import_name,
+        agent_type=agent_data["agent_type"],
+        description=agent_data.get("description"),
+        model=agent_data.get("model", "gpt-4"),
+        system_prompt=agent_data.get("system_prompt"),
+        additional_instructions=agent_data.get("additional_instructions"),
+        config=config_json,
+        is_active=True,
+        is_global=agent_data.get("is_global", False) if not hub_id else False,
+        status="idle",
+        total_executions=0,
+        successful_executions=0,
+        total_tokens_used=0
+    )
+
+    db.add(agent)
+    db.commit()
+    db.refresh(agent)
+
+    ToolMonitor.log_execution(
+        db=db,
+        tool_type="agent_execution",
+        operation="import_agent",
+        hub_id=hub_id,
+        input_data={"imported_name": import_name, "source_file": file.filename},
+        output_data={"agent_id": agent.id},
+        triggered_by="user",
+        related_entity_type="agent",
+        related_entity_id=agent.id,
+        user_id=user.id
+    )
+
+    return {"success": True, "agent_id": agent.id, "name": import_name}
 
 
 # ============================================================================

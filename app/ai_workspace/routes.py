@@ -483,15 +483,8 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
     elif provider == "gemini":
         model = data.get("model") or (settings.gemini_default_model if settings else "auto-gemini-3")
 
-    # Safety commit and backup
     git_hash = None
     db_backup_path = None
-
-    if settings.auto_commit:
-        git_hash = ai_workspace_manager.create_safety_commit()
-
-    if settings.auto_backup_db:
-        db_backup_path = ai_workspace_manager.create_db_backup()
 
     # Create session record
     session = AiWorkspaceSession(
@@ -765,12 +758,6 @@ async def resume_session(session_id: int, request: Request, db: Session = Depend
     # Safety commit and backup
     git_hash = None
     db_backup_path = None
-
-    if settings and settings.auto_commit:
-        git_hash = ai_workspace_manager.create_safety_commit()
-
-    if settings and settings.auto_backup_db:
-        db_backup_path = ai_workspace_manager.create_db_backup()
 
     # Reuse the existing session — update it back to running
     old_session.status = "pending"
