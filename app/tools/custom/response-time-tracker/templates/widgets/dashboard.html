@@ -1,0 +1,50 @@
+<div class="card" style="border-radius: 12px; border: 1px solid var(--border-color);">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0"><i class="bi bi-stopwatch me-2"></i>Response Times</h6>
+            <span class="badge rounded-pill" style="background: rgba(99,102,241,0.12); color: #6366f1;">7-day avg</span>
+        </div>
+
+        {% if overall.count > 0 %}
+        <div class="d-flex align-items-baseline gap-1 mb-1">
+            <span style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">{{ overall.avg }}</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">sec avg</span>
+            {% if overall.avg <= 30 %}
+            <span class="ms-2" style="display:inline-block;border-radius:999px;padding:0.15rem 0.6rem;font-size:0.72rem;font-weight:600;background:rgba(16,185,129,0.12);color:#059669;">Fast</span>
+            {% elif overall.avg <= 60 %}
+            <span class="ms-2" style="display:inline-block;border-radius:999px;padding:0.15rem 0.6rem;font-size:0.72rem;font-weight:600;background:rgba(245,158,11,0.12);color:#d97706;">OK</span>
+            {% else %}
+            <span class="ms-2" style="display:inline-block;border-radius:999px;padding:0.15rem 0.6rem;font-size:0.72rem;font-weight:600;background:rgba(239,68,68,0.12);color:#dc2626;">Slow</span>
+            {% endif %}
+        </div>
+        <div class="small text-muted mb-3">{{ overall.count }} responses · median {{ overall.median }}s</div>
+
+        {% if per_bot %}
+        <div class="small fw-semibold mb-2">Per bot</div>
+        {% for bot in per_bot %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <div style="width:90px;font-size:0.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ bot.bot_name }}">{{ bot.bot_name }}</div>
+            <div style="flex:1;height:16px;background:var(--hover-bg);border-radius:8px;overflow:hidden;">
+                {% set max_avg = per_bot[0].avg if per_bot[0].avg > 0 else 1 %}
+                {% set pct = (bot.avg / (overall.max if overall.max > 0 else 1) * 100) %}
+                {% set pct_clamped = pct if pct > 8 else 8 %}
+                {% if bot.avg <= 30 %}
+                <div style="width:{{ pct_clamped }}%;height:100%;border-radius:8px;background:linear-gradient(90deg,#10b981,#059669);"></div>
+                {% elif bot.avg <= 60 %}
+                <div style="width:{{ pct_clamped }}%;height:100%;border-radius:8px;background:linear-gradient(90deg,#f59e0b,#d97706);"></div>
+                {% else %}
+                <div style="width:{{ pct_clamped }}%;height:100%;border-radius:8px;background:linear-gradient(90deg,#ef4444,#dc2626);"></div>
+                {% endif %}
+            </div>
+            <span style="width:42px;text-align:right;font-size:0.72rem;font-weight:600;color:var(--text-secondary);">{{ bot.avg }}s</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% else %}
+        <p class="small text-muted mb-0">No response data available yet. Start chatting with your bots to see response times here.</p>
+        {% endif %}
+
+        <a href="/tools/response-time-tracker/" class="btn btn-sm btn-outline-primary rounded-pill mt-3">View Details</a>
+    </div>
+</div>
