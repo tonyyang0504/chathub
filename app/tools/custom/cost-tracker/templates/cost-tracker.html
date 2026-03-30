@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+
+{% block title %}Cost Tracker - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.cost-hero {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.cost-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.cost-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.stat-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 1.25rem;
+    background: var(--card-bg);
+    text-align: center;
+}
+.stat-card .stat-value { font-size: 1.75rem; font-weight: 700; }
+.stat-card .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card .stat-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+.cost-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+.cost-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+.breakdown-table { width: 100%; }
+.breakdown-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.breakdown-table td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.88rem;
+}
+.breakdown-table tbody tr:last-child td { border-bottom: none; }
+.breakdown-table tbody tr:hover { background: var(--hover-bg); }
+
+.provider-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.filter-bar select:focus, .filter-bar input:focus {
+    border-color: #10b981;
+    box-shadow: none;
+}
+
+.chart-container { position: relative; height: 280px; }
+
+/* Scrollbar */
+.cost-scroll::-webkit-scrollbar { width: 6px; }
+.cost-scroll::-webkit-scrollbar-track { background: transparent; }
+.cost-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.cost-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.cost-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+.tab-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.tab-btn:hover { border-color: #10b981; color: #10b981; }
+.tab-btn.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: transparent;
+}
+
+@media (max-width: 768px) {
+    .cost-hero { padding: 2rem 1.25rem; }
+    .cost-hero h1 { font-size: 1.75rem; }
+    .stat-card .stat-value { font-size: 1.3rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="cost-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-currency-dollar me-3"></i>Cost Tracker</h1>
+                <p>Monitor AI token usage and estimated costs across all your bots, hubs, and agents.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-graph-up-arrow" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <select id="daysFilter" class="form-select form-select-sm rounded-pill">
+                    <option value="7">Last 7 days</option>
+                    <option value="14">Last 14 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="0">All time</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select id="providerFilter" class="form-select form-select-sm rounded-pill">
+                    <option value="">All Providers</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button id="refreshBtn" class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4" id="summaryCards">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Cost</div>
+                <div class="stat-value" style="color: #10b981;" id="statCost">$0</div>
+                <div class="stat-sub" id="statAvgCost">$0 avg/call</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-label">Total Tokens</div>
+                <div class="stat-value" id="statTokens">0</div>
+                <div class="stat-sub" id="statAvgTokens">0 avg/call</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-label">API Calls</div>
+                <div class="stat-value" style="color: #6366f1;" id="statCalls">0</div>
+                <div class="stat-sub" id="statTokenBreakdown">0 in / 0 out</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-label">Top Provider</div>
+                <div class="stat-value" style="font-size: 1.25rem;" id="statTopProvider">—</div>
+                <div class="stat-sub" id="statTopProviderCost">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="cost-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-graph-up me-2"></i>Daily Cost Trend</span>
+                    <div class="d-flex gap-1">
+                        <button class="tab-btn active" data-chart="cost">Cost</button>
+                        <button class="tab-btn" data-chart="tokens">Tokens</button>
+                        <button class="tab-btn" data-chart="calls">Calls</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="cost-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-2"></i>Provider Breakdown
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div style="position: relative; width: 100%; max-width: 240px;">
+                        <canvas id="providerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown Tables Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="cost-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-cpu me-2"></i>By Model</span>
+                    <span class="badge text-bg-secondary rounded-pill" id="modelCount">0</span>
+                </div>
+                <div class="card-body p-0 cost-scroll" style="max-height: 360px; overflow-y: auto;">
+                    <table class="breakdown-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th class="text-end">Calls</th>
+                                <th class="text-end">Tokens</th>
+                                <th class="text-end">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modelBody">
+                            <tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="cost-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-diagram-3 me-2"></i>By Source</span>
+                    <span class="badge text-bg-secondary rounded-pill" id="sourceCount">0</span>
+                </div>
+                <div class="card-body p-0 cost-scroll" style="max-height: 360px; overflow-y: auto;">
+                    <table class="breakdown-table">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th class="text-end">Calls</th>
+                                <th class="text-end">Tokens</th>
+                                <th class="text-end">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sourceBody">
+                            <tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bot / Hub Tables Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="cost-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-robot me-2"></i>By Bot</span>
+                    <span class="badge text-bg-secondary rounded-pill" id="botCount">0</span>
+                </div>
+                <div class="card-body p-0 cost-scroll" style="max-height: 360px; overflow-y: auto;">
+                    <table class="breakdown-table">
+                        <thead>
+                            <tr>
+                                <th>Bot</th>
+                                <th class="text-end">Calls</th>
+                                <th class="text-end">Tokens</th>
+                                <th class="text-end">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="botBody">
+                            <tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="cost-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-collection me-2"></i>By Hub</span>
+                    <span class="badge text-bg-secondary rounded-pill" id="hubCount">0</span>
+                </div>
+                <div class="card-body p-0 cost-scroll" style="max-height: 360px; overflow-y: auto;">
+                    <table class="breakdown-table">
+                        <thead>
+                            <tr>
+                                <th>Hub</th>
+                                <th class="text-end">Calls</th>
+                                <th class="text-end">Tokens</th>
+                                <th class="text-end">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hubBody">
+                            <tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const daysFilter = document.getElementById('daysFilter');
+const providerFilter = document.getElementById('providerFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+
+const PROVIDER_COLORS = {
+    openai: '#10a37f',
+    anthropic: '#da6a46',
+    google: '#4285f4',
+    gemini: '#4285f4',
+    deepseek: '#4f8ff7',
+    qwen: '#6d28d9',
+    dashscope: '#6d28d9',
+    grok: '#1d9bf0',
+    xai: '#1d9bf0',
+};
+const CHART_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
+
+let trendChart = null;
+let providerChart = null;
+let currentChartMode = 'cost';
+let dailyData = null;
+
+function formatNumber(n) {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+    return n.toLocaleString();
+}
+
+function formatCost(n) {
+    if (n >= 1) return '$' + n.toFixed(2);
+    if (n >= 0.01) return '$' + n.toFixed(3);
+    return '$' + n.toFixed(4);
+}
+
+function getParams() {
+    const params = new URLSearchParams();
+    params.set('days', daysFilter.value);
+    if (providerFilter.value) params.set('provider', providerFilter.value);
+    return params;
+}
+
+// ── Summary ──
+async function loadSummary() {
+    try {
+        const res = await fetch(`./api/summary?${getParams()}`);
+        const d = await res.json();
+        document.getElementById('statCost').textContent = formatCost(d.total_cost);
+        document.getElementById('statAvgCost').textContent = formatCost(d.avg_cost_per_call) + ' avg/call';
+        document.getElementById('statTokens').textContent = formatNumber(d.total_tokens);
+        document.getElementById('statAvgTokens').textContent = formatNumber(d.avg_tokens_per_call) + ' avg/call';
+        document.getElementById('statCalls').textContent = formatNumber(d.total_calls);
+        document.getElementById('statTokenBreakdown').textContent =
+            formatNumber(d.prompt_tokens) + ' in / ' + formatNumber(d.completion_tokens) + ' out';
+    } catch (e) {
+        console.error('Failed to load summary', e);
+    }
+}
+
+// ── Daily Trend Chart ──
+function renderTrendChart(data, mode) {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+
+    const configs = {
+        cost: { label: 'Daily Cost ($)', data: data.costs, color: '#10b981', prefix: '$' },
+        tokens: { label: 'Daily Tokens', data: data.tokens, color: '#6366f1', prefix: '' },
+        calls: { label: 'Daily Calls', data: data.calls, color: '#f59e0b', prefix: '' },
+    };
+    const cfg = configs[mode];
+
+    trendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.labels.map(l => {
+                const d = new Date(l + 'T00:00:00');
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }),
+            datasets: [{
+                label: cfg.label,
+                data: cfg.data,
+                backgroundColor: cfg.color + '33',
+                borderColor: cfg.color,
+                borderWidth: 2,
+                borderRadius: 4,
+                hoverBackgroundColor: cfg.color + '66',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => cfg.prefix + (mode === 'cost' ? ctx.raw.toFixed(4) : formatNumber(ctx.raw)),
+                    },
+                },
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 11 } } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: v => cfg.prefix + (mode === 'cost' ? v.toFixed(2) : formatNumber(v)),
+                        font: { size: 11 },
+                    },
+                },
+            },
+        },
+    });
+}
+
+async function loadDaily() {
+    const days = daysFilter.value === '0' ? '90' : daysFilter.value;
+    const params = new URLSearchParams();
+    params.set('days', days);
+    if (providerFilter.value) params.set('provider', providerFilter.value);
+    try {
+        const res = await fetch(`./api/daily?${params}`);
+        dailyData = await res.json();
+        renderTrendChart(dailyData, currentChartMode);
+    } catch (e) {
+        console.error('Failed to load daily data', e);
+    }
+}
+
+// Chart mode tabs
+document.querySelectorAll('.tab-btn[data-chart]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn[data-chart]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentChartMode = btn.dataset.chart;
+        if (dailyData) renderTrendChart(dailyData, currentChartMode);
+    });
+});
+
+// ── Provider Donut ──
+async function loadProviderChart() {
+    try {
+        const res = await fetch(`./api/breakdown?${getParams()}&group_by=provider`);
+        const data = await res.json();
+        const items = data.items.filter(i => i.key);
+
+        // Update top provider stat card
+        if (items.length > 0) {
+            document.getElementById('statTopProvider').textContent = items[0].label;
+            document.getElementById('statTopProviderCost').textContent = formatCost(items[0].cost) + ' (' + items[0].calls + ' calls)';
+        } else {
+            document.getElementById('statTopProvider').textContent = '—';
+            document.getElementById('statTopProviderCost').textContent = '—';
+        }
+
+        // Populate provider filter
+        const currentVal = providerFilter.value;
+        providerFilter.innerHTML = '<option value="">All Providers</option>';
+        items.forEach(i => {
+            const opt = document.createElement('option');
+            opt.value = i.key;
+            opt.textContent = i.label.charAt(0).toUpperCase() + i.label.slice(1);
+            providerFilter.appendChild(opt);
+        });
+        providerFilter.value = currentVal;
+
+        const ctx = document.getElementById('providerChart').getContext('2d');
+        if (providerChart) providerChart.destroy();
+
+        if (!items.length) {
+            providerChart = null;
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = '#999';
+            ctx.textAlign = 'center';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('No data', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            return;
+        }
+
+        providerChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: items.map(i => i.label),
+                datasets: [{
+                    data: items.map(i => i.cost),
+                    backgroundColor: items.map((i, idx) => PROVIDER_COLORS[i.key] || CHART_COLORS[idx % CHART_COLORS.length]),
+                    borderWidth: 2,
+                    borderColor: 'var(--card-bg)',
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${formatCost(ctx.raw)} (${((ctx.raw / items.reduce((s, i) => s + i.cost, 0)) * 100).toFixed(1)}%)`,
+                        },
+                    },
+                },
+            },
+        });
+    } catch (e) {
+        console.error('Failed to load provider breakdown', e);
+    }
+}
+
+// ── Breakdown Tables ──
+function renderBreakdownTable(bodyId, countId, items) {
+    const body = document.getElementById(bodyId);
+    const badge = document.getElementById(countId);
+    badge.textContent = items.length;
+
+    if (!items.length) {
+        body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No data for this period.</td></tr>';
+        return;
+    }
+
+    body.innerHTML = items.map(i => `
+        <tr>
+            <td>
+                <span class="fw-semibold">${i.label || '(unknown)'}</span>
+            </td>
+            <td class="text-end">${formatNumber(i.calls)}</td>
+            <td class="text-end">${formatNumber(i.tokens)}</td>
+            <td class="text-end fw-semibold">${formatCost(i.cost)}</td>
+        </tr>
+    `).join('');
+}
+
+async function loadBreakdown(groupBy, bodyId, countId) {
+    try {
+        const res = await fetch(`./api/breakdown?${getParams()}&group_by=${groupBy}`);
+        const data = await res.json();
+        renderBreakdownTable(bodyId, countId, data.items);
+    } catch (e) {
+        document.getElementById(bodyId).innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4">Failed to load.</td></tr>';
+    }
+}
+
+// ── Load All ──
+async function loadAll() {
+    refreshBtn.disabled = true;
+    await Promise.all([
+        loadSummary(),
+        loadDaily(),
+        loadProviderChart(),
+        loadBreakdown('model', 'modelBody', 'modelCount'),
+        loadBreakdown('source', 'sourceBody', 'sourceCount'),
+        loadBreakdown('bot', 'botBody', 'botCount'),
+        loadBreakdown('hub', 'hubBody', 'hubCount'),
+    ]);
+    refreshBtn.disabled = false;
+}
+
+daysFilter.addEventListener('change', loadAll);
+providerFilter.addEventListener('change', loadAll);
+refreshBtn.addEventListener('click', loadAll);
+
+loadAll();
+</script>
+{% endblock %}
