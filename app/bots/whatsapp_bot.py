@@ -7638,8 +7638,8 @@ MULTI-BOT COORDINATION:
         else:
             logger.debug(f"Bot {bot_profile_id}: No hub_execution_id available for response logging")
     except Exception as e:
-        logger.error(f"OpenAI error: {e}")
-        reply = "Sorry, I encountered an error. Please try again."
+        logger.error(f"Bot {bot_profile_id}: AI response error: {e}")
+        reply = None  # Silently fail — don't send error messages to users
 
     # Broadcast typing indicator (stop) - wait to ensure proper ordering
     try:
@@ -7668,7 +7668,7 @@ MULTI-BOT COORDINATION:
             Conversation.chat_name == chat_name
         ).first()
 
-        if conversation:
+        if conversation and reply:
             # Get bot profile to use bot's WhatsApp ID and profile pic for assistant messages
             from app.database import BotProfile
             bot_profile = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
@@ -7738,6 +7738,10 @@ MULTI-BOT COORDINATION:
             logger.info(f"Bot {bot_profile_id}: Broadcast message to WebSocket for conversation {conversation_id}")
         except Exception as ws_err:
             logger.warning(f"Bot {bot_profile_id}: Could not broadcast message: {ws_err}")
+
+    # If no reply (AI failed), skip sending
+    if not reply:
+        return
 
     delay_min = config.get('response_delay_min', 3)
     delay_max = config.get('response_delay_max', 8)

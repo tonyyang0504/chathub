@@ -109,6 +109,7 @@ def convert_to_whatsapp_markdown(text: str) -> str:
 
 from app.database import SessionLocal, ScheduledContent, Hub, Contact, BotProfile, Conversation
 from app.bots.manager import bot_manager
+from app.tools.event_bus import tool_event_bus
 
 logger = logging.getLogger(__name__)
 
@@ -681,6 +682,11 @@ class ContentScheduler:
                 content.status = "sent"
                 content.sent_at = datetime.utcnow()
                 db.commit()
+                try:
+                    import asyncio
+                    asyncio.ensure_future(tool_event_bus.emit("content.sent", db=db, content_id=content.id, hub_id=content.hub_id))
+                except Exception:
+                    pass
                 # Clean up from cancelled tracking (in case it was added but we finished anyway)
                 self._cancelled_content.discard(content.id)
 

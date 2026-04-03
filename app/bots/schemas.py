@@ -6,8 +6,22 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
-VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen"]
-VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord"]
+VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "wechat"]
+
+# Platform auth method descriptions for the frontend
+PLATFORM_AUTH_INFO = {
+    "whatsapp": {"auth_method": "qr_code", "label": "WhatsApp", "icon": "bi-whatsapp", "color": "#25D366", "token_label": None},
+    "telegram": {"auth_method": "phone_code", "label": "Telegram", "icon": "bi-telegram", "color": "#26A5E4", "token_label": None, "extra_fields": [{"key": "telegram_api_id", "label": "API ID", "placeholder": "e.g. 12345678", "help": "Get from my.telegram.org → API development tools"}, {"key": "telegram_api_hash", "label": "API Hash", "placeholder": "e.g. abcdef1234567890...", "help": ""}]},
+    "instagram": {"auth_method": "api_token", "label": "Instagram", "icon": "bi-instagram", "color": "#E4405F", "token_label": None},
+    "messenger": {"auth_method": "api_token", "label": "Facebook Page", "icon": "bi-facebook", "color": "#1877F2", "token_label": None},
+    "discord": {"auth_method": "api_token", "label": "Discord", "icon": "bi-discord", "color": "#5865F2", "token_label": None},
+    "line": {"auth_method": "api_token", "label": "LINE", "icon": "bi-chat-dots-fill", "color": "#00B900", "token_label": None},
+    "linkedin": {"auth_method": "oauth", "label": "LinkedIn", "icon": "bi-linkedin", "color": "#0A66C2", "token_label": None},
+    "tinder": {"auth_method": "credentials", "label": "Tinder", "icon": "bi-fire", "color": "#FE3C72", "token_label": None},
+    "bumble": {"auth_method": "credentials", "label": "Bumble", "icon": "bi-heart-fill", "color": "#FFC629", "token_label": None},
+    "wechat": {"auth_method": "qr_code", "label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "token_label": None},
+}
 
 
 class BotProfileCreate(BaseModel):
@@ -15,8 +29,15 @@ class BotProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     platform_type: str = "whatsapp"
     ai_provider: str = "openai"
+    ai_provider: str = "openai"
     api_key: str = Field(..., min_length=10)
     model: str = "gpt-4o-mini"
+    # Platform-specific token (Discord bot token, etc.)
+    platform_token: Optional[str] = None
+    # Telegram API credentials (from my.telegram.org)
+    telegram_api_id: Optional[str] = None
+    telegram_api_hash: Optional[str] = None
+    app_secret: Optional[str] = None  # Meta App Secret (Messenger/Instagram)
 
     @field_validator('platform_type')
     @classmethod
@@ -59,6 +80,10 @@ class BotProfileUpdate(BaseModel):
     ai_provider: Optional[str] = None
     api_key: Optional[str] = Field(None, min_length=10)
     model: Optional[str] = None
+    platform_token: Optional[str] = None
+    telegram_api_id: Optional[str] = None
+    telegram_api_hash: Optional[str] = None
+    app_secret: Optional[str] = None
 
     @field_validator('platform_type')
     @classmethod
@@ -119,9 +144,12 @@ class BotProfileResponse(BaseModel):
     # Proxy Settings
     proxy_enabled: bool = False
     proxy_url: Optional[str] = None
+    # Platform token masked for display
+    platform_token_masked: Optional[str] = None
     is_active: bool
     is_running: bool
     whatsapp_connected: bool
+    platform_connected: bool = False
     last_active: Optional[datetime]
     created_at: datetime
     updated_at: datetime

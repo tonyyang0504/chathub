@@ -56,8 +56,9 @@ duckduckgo-search>=4.0.0
 # Discord bot
 discord.py>=2.3.0
 
-# Telegram Bot API
-python-telegram-bot>=21.0
+# Telegram Client API (real account login)
+telethon>=1.36
+qrcode>=7.4
 
 # AI Providers
 anthropic>=0.18.0

@@ -29,9 +29,12 @@ from app.bots.schemas import (
     BotProfileUpdate,
     BotProfileResponse,
     BotStatusResponse,
-    BotListResponse
+    BotListResponse,
+    PLATFORM_AUTH_INFO,
 )
 from app.bots.manager import bot_manager
+from app.tools.event_bus import tool_event_bus
+from app.platforms.message_handler import emit_event_sync
 
 router = APIRouter(tags=["Bots"])
 
@@ -75,6 +78,33 @@ def mask_api_key(encrypted_key: str) -> Optional[str]:
         return None
 
 
+def _mask_platform_token(bot: BotProfile) -> Optional[str]:
+    """Get masked platform token from platform_config JSON."""
+    import json
+    try:
+        config = json.loads(bot.platform_config or "{}")
+        encrypted_token = config.get("platform_token_encrypted")
+        if not encrypted_token:
+            return None
+        decrypted = decrypt_string(encrypted_token)
+        if not decrypted or len(decrypted) < 8:
+            return None
+        return f"{decrypted[:6]}...{decrypted[-4:]}"
+    except Exception:
+        return None
+
+
+def _is_platform_connected(bot: BotProfile) -> bool:
+    """Check if bot's platform is connected (generalized whatsapp_connected)."""
+    if bot.whatsapp_connected:
+        return True
+    if bot.is_running:
+        instance = bot_manager.get_instance(bot.id)
+        if instance and getattr(instance, 'platform_connected', False):
+            return True
+    return False
+
+
 def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
     """Convert BotProfile to response schema with counts."""
     # Get conversation count
@@ -110,9 +140,12 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
         # Proxy Settings
         proxy_enabled=bot.proxy_enabled if bot.proxy_enabled is not None else False,
         proxy_url=bot.proxy_url,
+        # Platform token masked
+        platform_token_masked=_mask_platform_token(bot),
         is_active=bot.is_active,
         is_running=bot.is_running,
         whatsapp_connected=bot.whatsapp_connected,
+        platform_connected=_is_platform_connected(bot),
         last_active=bot.last_active,
         created_at=bot.created_at,
         updated_at=bot.updated_at,
@@ -128,7 +161,13 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
     )
 
 
-# ============== Provider Info ==============
+# ============== Platform & Provider Info ==============
+
+@router.get("/platforms/info")
+async def get_platforms_info():
+    """Return available messaging platforms with their auth methods and capabilities."""
+    return {"platforms": PLATFORM_AUTH_INFO}
+
 
 @router.get("/providers/info")
 async def get_providers_info():
@@ -198,7 +237,7 @@ async def check_and_recover_bots(
         try:
             # Check if bot needs recovery
             if bot_manager.needs_recovery(bot.id, bot.is_running):
-                logger.info(f"Bot {bot.id} ({bot.name}) needs recovery")
+                logger.info(f"Bot {bot.id} ({bot.platform_type or 'whatsapp'}) needs recovery")
 
                 # Build config for recovery
                 api_key = decrypt_string(bot.api_key_encrypted) if bot.api_key_encrypted else None
@@ -210,10 +249,38 @@ async def check_and_recover_bots(
                     failed.append({"id": bot.id, "name": bot.name, "reason": "No API key"})
                     continue
 
+                import json as json_mod
+                platform_type = bot.platform_type or "whatsapp"
+
+                # Check if token-based platforms have credentials stored
+                platform_config_data = json_mod.loads(bot.platform_config or "{}")
+                needs_token = platform_type in ("messenger", "instagram", "discord", "line", "linkedin", "tinder", "bumble")
+                has_token = bool(platform_config_data.get("platform_token_encrypted"))
+                needs_telegram = platform_type == "telegram"
+                has_telegram = bool(platform_config_data.get("telegram_api_id"))
+
+                if needs_token and not has_token:
+                    logger.warning(f"Bot {bot.id}: No platform credentials, marking as stopped")
+                    bot.is_running = False
+                    db.commit()
+                    failed.append({"id": bot.id, "name": bot.name, "reason": "No platform credentials"})
+                    continue
+                if needs_telegram and not has_telegram:
+                    # Telegram without API ID — check for session file
+                    telegram_session = Path("data/sessions") / f"bot_{bot.id}" / "telegram.session"
+                    if not telegram_session.exists():
+                        logger.warning(f"Bot {bot.id}: No Telegram credentials or session, marking as stopped")
+                        bot.is_running = False
+                        db.commit()
+                        failed.append({"id": bot.id, "name": bot.name, "reason": "No Telegram credentials"})
+                        continue
+
                 config = {
                     "bot_profile_id": bot.id,
+                    "platform_type": platform_type,
                     "ai_provider": bot.ai_provider or "openai",
                     "api_key": api_key,
+                    "api_key_encrypted": bot.api_key_encrypted,
                     "model": bot.model or "gpt-4o-mini",
                     "system_prompt": bot.system_prompt,
                     "temperature": bot.temperature if bot.temperature is not None else 0.7,
@@ -228,6 +295,46 @@ async def check_and_recover_bots(
                     "headless": bot.headless if bot.headless is not None else False,
                     "browser_timezone": bot.browser_timezone or 'UTC',
                 }
+
+                # Inject platform-specific config from platform_config JSON
+                platform_config = json_mod.loads(bot.platform_config or "{}")
+                if platform_config.get("platform_token_encrypted"):
+                    config["platform_token_encrypted"] = platform_config["platform_token_encrypted"]
+                    config["platform_token"] = decrypt_string(platform_config["platform_token_encrypted"])
+                if platform_config.get("telegram_api_id"):
+                    config["telegram_api_id"] = platform_config["telegram_api_id"]
+                if platform_config.get("telegram_api_hash"):
+                    config["telegram_api_hash"] = platform_config["telegram_api_hash"]
+                if platform_config.get("app_secret"):
+                    config["app_secret"] = platform_config["app_secret"]
+                if platform_config.get("instagram_page_id"):
+                    config["instagram_page_id"] = platform_config["instagram_page_id"]
+                if platform_config.get("instagram_app_secret"):
+                    config["instagram_app_secret"] = platform_config["instagram_app_secret"]
+                if platform_config.get("webhook_verify_token"):
+                    config["webhook_verify_token"] = platform_config["webhook_verify_token"]
+                if platform_config.get("page_id"):
+                    config["page_id"] = platform_config["page_id"]
+
+                # Map platform_token to adapter-specific config keys (non-Telegram platforms)
+                pt = config.get("platform_token")
+                if pt:
+                    if platform_type == "instagram":
+                        config["api_key"] = pt
+                        config["instagram_page_id"] = platform_config.get("instagram_page_id", "")
+                        config["instagram_app_secret"] = platform_config.get("instagram_app_secret", "")
+                    elif platform_type == "messenger":
+                        config["page_access_token"] = pt
+                        config["api_key"] = pt
+                        config["app_secret"] = platform_config.get("app_secret", "")
+                        config["webhook_verify_token"] = platform_config.get("webhook_verify_token", "chathub_verify")
+                    elif platform_type == "line":
+                        config["channel_access_token"] = pt
+                        config["channel_secret"] = platform_config.get("channel_secret", "")
+                    elif platform_type == "tinder":
+                        config["tinder_auth_token"] = pt
+                    elif platform_type == "bumble":
+                        config["bumble_auth_token"] = pt
 
                 # Add proxy settings if enabled
                 if bot.proxy_enabled and bot.proxy_url:
@@ -316,9 +423,23 @@ async def create_bot(
         is_active=True
     )
 
+    # Store platform-specific config in platform_config JSON
+    import json
+    platform_config = json.loads(bot.platform_config or "{}")
+    if bot_data.platform_token:
+        platform_config["platform_token_encrypted"] = encrypt_string(bot_data.platform_token)
+    if bot_data.telegram_api_id:
+        platform_config["telegram_api_id"] = bot_data.telegram_api_id
+    if bot_data.telegram_api_hash:
+        platform_config["telegram_api_hash"] = bot_data.telegram_api_hash
+    if bot_data.app_secret:
+        platform_config["app_secret"] = bot_data.app_secret
+    bot.platform_config = json.dumps(platform_config)
+
     db.add(bot)
     db.commit()
     db.refresh(bot)
+    emit_event_sync("bot.created", db=db, bot_profile_id=bot.id)
 
     return bot_to_response(bot, db)
 
@@ -390,9 +511,28 @@ async def update_bot(
         bot.proxy_username = encrypt_string(bot_data.proxy_username) if bot_data.proxy_username else None
     if bot_data.proxy_password is not None:
         bot.proxy_password = encrypt_string(bot_data.proxy_password) if bot_data.proxy_password else None
+    # Platform-specific config
+    import json
+    platform_config = json.loads(bot.platform_config or "{}")
+    config_changed = False
+    if bot_data.platform_token is not None:
+        platform_config["platform_token_encrypted"] = encrypt_string(bot_data.platform_token)
+        config_changed = True
+    if bot_data.telegram_api_id is not None:
+        platform_config["telegram_api_id"] = bot_data.telegram_api_id
+        config_changed = True
+    if bot_data.telegram_api_hash is not None:
+        platform_config["telegram_api_hash"] = bot_data.telegram_api_hash
+        config_changed = True
+    if bot_data.app_secret is not None:
+        platform_config["app_secret"] = bot_data.app_secret
+        config_changed = True
+    if config_changed:
+        bot.platform_config = json.dumps(platform_config)
 
     db.commit()
     db.refresh(bot)
+    emit_event_sync("bot.updated", db=db, bot_profile_id=bot_id)
 
     return bot_to_response(bot, db)
 
@@ -412,6 +552,7 @@ async def delete_bot(
 
     db.delete(bot)
     db.commit()
+    emit_event_sync("bot.deleted", db=db, bot_profile_id=bot_id)
 
     return {"message": "Bot deleted successfully"}
 
@@ -437,34 +578,36 @@ async def start_bot(
                 detail="Bot is already running"
             )
 
-        # Check if this bot's WhatsApp account is already used by another running bot
-        if bot.whatsapp_phone:
-            existing_bot = db.query(BotProfile).filter(
-                BotProfile.whatsapp_phone == bot.whatsapp_phone,
-                BotProfile.id != bot_id,
-                BotProfile.is_running == True
-            ).first()
+        platform_type = bot.platform_type or "whatsapp"
 
-            if existing_bot:
-                logger.warning(f"WhatsApp phone {bot.whatsapp_phone} is already used by bot {existing_bot.id}")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"This WhatsApp account is already in use by another bot: {existing_bot.name}"
-                )
-        else:
-            # Bot has never connected to WhatsApp - ensure fresh session
-            # Clear any existing session data to prevent inheriting another bot's session
-            session_path = str(SESSIONS_DIR / f"bot_{bot_id}")
-            if os.path.exists(session_path):
-                try:
-                    shutil.rmtree(session_path)
-                    logger.info(f"Cleared session directory for new bot {bot_id} to ensure fresh QR code")
-                except Exception as e:
-                    logger.warning(f"Failed to clear session directory for bot {bot_id}: {e}")
+        # WhatsApp-specific: check for duplicate phone usage
+        if platform_type == "whatsapp":
+            if bot.whatsapp_phone:
+                existing_bot = db.query(BotProfile).filter(
+                    BotProfile.whatsapp_phone == bot.whatsapp_phone,
+                    BotProfile.id != bot_id,
+                    BotProfile.is_running == True
+                ).first()
+
+                if existing_bot:
+                    logger.warning(f"WhatsApp phone {bot.whatsapp_phone} is already used by bot {existing_bot.id}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"This WhatsApp account is already in use by another bot: {existing_bot.name}"
+                    )
+            else:
+                # Bot has never connected to WhatsApp - ensure fresh session
+                session_path = str(SESSIONS_DIR / f"bot_{bot_id}")
+                if os.path.exists(session_path):
+                    try:
+                        shutil.rmtree(session_path)
+                        logger.info(f"Cleared session directory for new bot {bot_id} to ensure fresh QR code")
+                    except Exception as e:
+                        logger.warning(f"Failed to clear session directory for bot {bot_id}: {e}")
 
         # Prepare config
         config = {
-            "platform_type": bot.platform_type or "whatsapp",
+            "platform_type": platform_type,
             "ai_provider": bot.ai_provider or "openai",
             "api_key_encrypted": bot.api_key_encrypted,
             "model": bot.model,
@@ -482,18 +625,75 @@ async def start_bot(
             "ending_detection_enabled": bot.ending_detection_enabled if bot.ending_detection_enabled is not None else False,
             "headless": bot.headless if bot.headless is not None else False,
             "browser_timezone": bot.browser_timezone or 'UTC',
-            # Proxy settings
+            # Proxy settings (decrypt credentials for adapters)
             "proxy_enabled": bot.proxy_enabled if bot.proxy_enabled is not None else False,
             "proxy_url": bot.proxy_url,
-            "proxy_username": bot.proxy_username,  # Encrypted
-            "proxy_password": bot.proxy_password   # Encrypted
+            "proxy_username": decrypt_string(bot.proxy_username) if bot.proxy_username else None,
+            "proxy_password": decrypt_string(bot.proxy_password) if bot.proxy_password else None,
         }
 
-        # Check if bot has existing session (doesn't need QR scan)
-        session_path = SESSIONS_DIR / f"bot_{bot_id}"
-        has_session = session_path.exists() and any(session_path.iterdir()) if session_path.exists() else False
-        needs_qr_scan = not has_session or not bot.whatsapp_phone
-        logger.info(f"Bot {bot_id}: has_session={has_session}, whatsapp_phone={bot.whatsapp_phone}, needs_qr_scan={needs_qr_scan}")
+        # Inject platform-specific config from platform_config JSON
+        import json as json_mod
+        platform_config = json_mod.loads(bot.platform_config or "{}")
+        if platform_config.get("platform_token_encrypted"):
+            config["platform_token_encrypted"] = platform_config["platform_token_encrypted"]
+            config["platform_token"] = decrypt_string(platform_config["platform_token_encrypted"])
+        # Pass Telegram API credentials
+        if platform_config.get("telegram_api_id"):
+            config["telegram_api_id"] = platform_config["telegram_api_id"]
+        if platform_config.get("telegram_api_hash"):
+            config["telegram_api_hash"] = platform_config["telegram_api_hash"]
+        if platform_config.get("app_secret"):
+            config["app_secret"] = platform_config["app_secret"]
+        if platform_config.get("instagram_page_id"):
+            config["instagram_page_id"] = platform_config["instagram_page_id"]
+        if platform_config.get("instagram_app_secret"):
+            config["instagram_app_secret"] = platform_config["instagram_app_secret"]
+        if platform_config.get("webhook_verify_token"):
+            config["webhook_verify_token"] = platform_config["webhook_verify_token"]
+        if platform_config.get("page_id"):
+            config["page_id"] = platform_config["page_id"]
+
+        # Map platform_token to adapter-specific config keys
+        # Each adapter expects the token under a different key
+        pt = config.get("platform_token")
+        if pt:
+            if platform_type == "instagram":
+                config["api_key"] = pt
+                config["instagram_page_id"] = platform_config.get("instagram_page_id", "")
+                config["instagram_app_secret"] = platform_config.get("instagram_app_secret", "")
+            elif platform_type == "messenger":
+                config["page_access_token"] = pt
+                config["api_key"] = pt
+                config["app_secret"] = platform_config.get("app_secret", "")
+                config["webhook_verify_token"] = platform_config.get("webhook_verify_token", "chathub_verify")
+            elif platform_type == "line":
+                config["channel_access_token"] = pt
+                config["channel_secret"] = platform_config.get("channel_secret", "")
+            elif platform_type == "tinder":
+                config["tinder_auth_token"] = pt
+            elif platform_type == "bumble":
+                config["bumble_auth_token"] = pt
+
+        # Determine if setup UI is needed
+        platform_auth = PLATFORM_AUTH_INFO.get(platform_type, {})
+        auth_method = platform_auth.get("auth_method", "qr_code")
+
+        if auth_method == "qr_code":
+            # QR-based platforms: check for existing session
+            session_path = SESSIONS_DIR / f"bot_{bot_id}"
+            has_session = session_path.exists() and any(session_path.iterdir()) if session_path.exists() else False
+            needs_qr_scan = not has_session or not bot.whatsapp_phone
+        elif auth_method == "phone_code":
+            # Telegram: check for existing Telethon session file
+            telegram_session = SESSIONS_DIR / f"bot_{bot_id}" / "telegram.session"
+            needs_qr_scan = not telegram_session.exists()  # reuse needs_qr_scan for "needs auth"
+        else:
+            # Token-based platforms: check if credentials are stored
+            has_platform_token = bool(platform_config.get("platform_token_encrypted"))
+            needs_qr_scan = not has_platform_token
+
+        logger.info(f"Bot {bot_id}: platform={platform_type}, auth_method={auth_method}, needs_qr_scan={needs_qr_scan}")
 
         # Start bot
         logger.info(f"Starting bot {bot_id}...")
@@ -511,7 +711,9 @@ async def start_bot(
         return {
             "message": "Bot started",
             "status": bot_manager.get_status(bot_id),
-            "needs_qr_scan": needs_qr_scan
+            "needs_qr_scan": needs_qr_scan,
+            "platform_type": platform_type,
+            "auth_method": auth_method,
         }
     except HTTPException:
         raise
@@ -569,7 +771,7 @@ async def disconnect_whatsapp(
         import asyncio
         await asyncio.sleep(2)
 
-    # Clear WhatsApp account info
+    # Clear account info and platform credentials
     bot.whatsapp_connected = False
     bot.whatsapp_phone = None
     bot.whatsapp_name = None
@@ -577,6 +779,7 @@ async def disconnect_whatsapp(
     bot.whatsapp_profile_pic = None
     bot.whatsapp_about = None
     bot.whatsapp_account_type = None
+    bot.platform_config = "{}"  # Clear stored tokens (Messenger, Discord, Telegram, etc.)
 
     # Clear conversations and messages for this bot
     conversations = db.query(Conversation).filter(Conversation.bot_profile_id == bot_id).all()
@@ -610,7 +813,8 @@ async def disconnect_whatsapp(
 
     db.commit()
 
-    return {"message": "WhatsApp disconnected. The bot will show a QR code on next start."}
+    platform_label = (bot.platform_type or "whatsapp").capitalize()
+    return {"message": f"{platform_label} disconnected. The bot will require new credentials on next start."}
 
 
 @router.get("/{bot_id}/status")
@@ -627,6 +831,8 @@ async def get_bot_status(
         "name": bot.name,
         "is_running": bot.is_running,
         "whatsapp_connected": bot.whatsapp_connected,
+        "platform_connected": _is_platform_connected(bot),
+        "platform_type": bot.platform_type or "whatsapp",
         "last_active": bot.last_active.isoformat() if bot.last_active else None,
     }
 
@@ -674,6 +880,48 @@ async def toggle_ai_response(
     return {"success": True, "ai_response_enabled": instance.ai_response_enabled}
 
 
+@router.post("/{bot_id}/auth-step")
+async def submit_auth_step(
+    bot_id: int,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Submit an authentication step (phone, code, password) for multi-step platform auth."""
+    bot = get_bot_profile(bot_id, current_user, db)
+
+    instance = bot_manager.get_instance(bot_id)
+    if not instance:
+        raise HTTPException(status_code=400, detail="Bot is not running")
+
+    step = body.get("step", "")
+    value = body.get("value", "")  # string for phone/code/password, ignored for "credentials"
+
+    if not step:
+        raise HTTPException(status_code=400, detail="Missing step")
+
+    pending = getattr(instance, "auth_pending", None)
+    if not pending or pending.get("step") != step:
+        raise HTTPException(status_code=400, detail=f"Not expecting step '{step}'")
+
+    # For "credentials" step, value is a dict with api_id, api_hash, phone
+    if step == "credentials":
+        api_id = body.get("api_id", "")
+        api_hash = body.get("api_hash", "")
+        phone = body.get("phone", "")
+        if not api_id or not api_hash or not phone:
+            raise HTTPException(status_code=400, detail="API ID, API Hash, and Phone are required")
+        value = {"api_id": api_id, "api_hash": api_hash, "phone": phone}
+    elif not value:
+        raise HTTPException(status_code=400, detail="Missing value")
+
+    # Set the value — the adapter's _wait_for_auth_input will pick it up
+    instance.auth_pending = {"step": step, "value": value}
+    logger.info(f"Bot {bot_id}: Auth step '{step}' submitted")
+
+    return {"success": True, "step": step}
+
+
 @router.post("/{bot_id}/sync-history")
 async def start_history_sync(
     bot_id: int,
@@ -694,7 +942,7 @@ async def start_history_sync(
     if not instance or not instance.whatsapp_connected:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bot is not connected to WhatsApp"
+            detail="Bot is not connected"
         )
 
     if instance.history_sync_active:
@@ -1016,22 +1264,23 @@ async def get_all_bots_contacts(
     conversations = db.query(Conversation).filter(
         Conversation.bot_profile_id.in_(filter_bot_ids),
         Conversation.is_group == False,
-        Conversation.phone.isnot(None),
-        Conversation.phone != ""
     ).all()
 
     contacts = []
-    seen_phones = set()
+    seen_ids = set()
     for conv in conversations:
-        if conv.phone not in seen_phones:
-            seen_phones.add(conv.phone)
-            contacts.append({
-                "phone": conv.phone,
-                "display_name": conv.chat_name or conv.phone,
-                "profile_pic": conv.profile_pic,
-                "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
-                "bot_id": conv.bot_profile_id
-            })
+        # Use phone if available, otherwise use chat_id (for Messenger/Instagram)
+        identifier = (conv.phone or "").strip() or conv.chat_id
+        if not identifier or identifier in seen_ids:
+            continue
+        seen_ids.add(identifier)
+        contacts.append({
+            "phone": identifier,
+            "display_name": conv.chat_name or conv.display_name or identifier,
+            "profile_pic": conv.profile_pic,
+            "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+            "bot_id": conv.bot_profile_id
+        })
 
     # Sort by last_message_at (most recent first)
     contacts.sort(key=lambda x: x["last_message_at"] or "", reverse=True)

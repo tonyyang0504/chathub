@@ -1,29 +1,34 @@
 """
 Telegram Platform Adapter
-Uses python-telegram-bot library with long polling for receiving messages.
+Uses Telethon (Telegram Client API) to login as a real user account.
 
-Auth method: API_TOKEN (bot token from @BotFather)
-The bot token is stored encrypted in bot.api_key_encrypted alongside the AI API key,
-using the format: "ai_api_key|||telegram_bot_token"
+Auth flow: Phone number → SMS code → optional 2FA password
+Session persists in data/sessions/bot_{id}/telegram.session
 
-If the encrypted value does NOT contain "|||", the entire value is treated as the
-AI API key and the bot cannot start (no Telegram token).
+This is NOT a @BotFather bot — it connects as a real Telegram account,
+just like WhatsApp connects via browser automation.
 """
 
 import asyncio
 import base64
+import io
+import json
 import logging
+import random
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
-from telegram import Bot, Update
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ContextTypes,
+from telethon import TelegramClient, events
+from telethon.sessions import StringSession
+from telethon.errors import (
+    SessionPasswordNeededError,
+    PhoneCodeInvalidError,
+    PhoneCodeExpiredError,
+    PasswordHashInvalidError,
+    FloodWaitError,
+    AuthKeyUnregisteredError,
 )
+from telethon.tl.types import User as TelegramUser, Chat, Channel
 
 from app.platforms.base import (
     PlatformAdapter,
@@ -34,28 +39,33 @@ from app.platforms.base import (
 
 logger = logging.getLogger(__name__)
 
-# Store active Telegram applications keyed by bot_profile_id
-_active_apps: Dict[int, Application] = {}
+# Active Telethon clients keyed by bot_profile_id
+_active_clients: Dict[int, TelegramClient] = {}
+
+# Session directory
+def _session_path(bot_profile_id: int) -> Path:
+    base = Path(__file__).resolve().parent.parent.parent / "data" / "sessions" / f"bot_{bot_profile_id}"
+    base.mkdir(parents=True, exist_ok=True)
+    return base / "telegram.session"
 
 
-def _parse_credentials(encrypted_value: str) -> tuple:
-    """Parse the encrypted credential string into (ai_api_key, telegram_token).
-
-    Format: "ai_api_key|||telegram_bot_token"
-    If no separator, returns (encrypted_value, None).
-    """
-    if "|||" in encrypted_value:
-        parts = encrypted_value.split("|||", 1)
-        return parts[0].strip(), parts[1].strip()
-    return encrypted_value, None
+def _get_user_display_name(user) -> str:
+    """Build display name from Telethon User entity."""
+    if not user:
+        return ""
+    if isinstance(user, dict):
+        parts = [user.get("first_name", ""), user.get("last_name", "")]
+        return " ".join(p for p in parts if p) or user.get("username", "")
+    parts = []
+    if getattr(user, "first_name", None):
+        parts.append(user.first_name)
+    if getattr(user, "last_name", None):
+        parts.append(user.last_name)
+    return " ".join(parts) if parts else (getattr(user, "username", None) or "")
 
 
 class TelegramAdapter(PlatformAdapter):
-    """Telegram adapter using Bot API with long polling.
-
-    Uses python-telegram-bot library for receiving and sending messages.
-    Leverages shared message_handler.py for all DB/AI/WebSocket operations.
-    """
+    """Telegram adapter using Telethon Client API (real account login)."""
 
     @property
     def platform_type(self) -> PlatformType:
@@ -68,135 +78,196 @@ class TelegramAdapter(PlatformAdapter):
             supports_media=True,
             supports_file_send=True,
             supports_reactions=True,
-            supports_read_receipts=False,
+            supports_read_receipts=True,
             supports_typing_indicator=True,
-            supports_history_sync=False,
-            supports_contacts_list=False,
-            supports_groups_list=False,
+            supports_history_sync=True,
+            supports_contacts_list=True,
+            supports_groups_list=True,
             supports_profile_pic=True,
-            auth_method=AuthMethod.API_TOKEN,
+            auth_method=AuthMethod.PHONE_CODE,
             max_message_length=4096,
             supported_media_types=[
                 "image/jpeg", "image/png", "image/gif", "image/webp",
                 "video/mp4",
                 "audio/mpeg", "audio/ogg",
                 "application/pdf",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ],
         )
 
     async def run(self, instance) -> None:
-        """Start Telegram bot polling loop.
-
-        Args:
-            instance: BotInstance with config, callbacks, and outbound queue
-        """
+        """Start Telegram client and enter message loop."""
+        from app.config import settings
         from app.auth.utils import decrypt_string
 
         config = instance.config
         bot_profile_id = instance.bot_profile_id
 
-        # Extract credentials
+        # Telegram API credentials: per-bot from platform_config, fallback to .env
+        api_id = config.get("telegram_api_id") or settings.TELEGRAM_API_ID
+        api_hash = config.get("telegram_api_hash") or settings.TELEGRAM_API_HASH
+
+        if api_id:
+            try:
+                api_id = int(api_id)
+            except (ValueError, TypeError):
+                api_id = 0
+
+        # Get AI API key for responses
         encrypted_key = config.get("api_key_encrypted", "")
-        decrypted = decrypt_string(encrypted_key) if encrypted_key else ""
-        ai_api_key, telegram_token = _parse_credentials(decrypted)
+        ai_api_key = decrypt_string(encrypted_key) if encrypted_key else ""
 
-        if not telegram_token:
-            error_msg = (
-                "No Telegram bot token found. Store credentials as "
-                "'ai_api_key|||telegram_bot_token' in the API key field."
-            )
-            logger.error(f"Bot {bot_profile_id}: {error_msg}")
-            instance.error = error_msg
-            instance.is_running = False
-            await instance.notify_status({"error": error_msg, "message": error_msg})
-            return
+        # Load existing session
+        session_file = _session_path(bot_profile_id)
+        session_string = ""
+        if session_file.exists():
+            try:
+                session_string = session_file.read_text().strip()
+                logger.info(f"Bot {bot_profile_id}: Loading existing Telegram session")
+            except Exception:
+                session_string = ""
 
-        # Verify the token works
+        # If no API credentials and no existing session, ask user for everything
+        if (not api_id or not api_hash) and not session_string:
+            logger.info(f"Bot {bot_profile_id}: No Telegram credentials — requesting via modal")
+            creds = await self._request_credentials(instance, bot_profile_id)
+            if not creds:
+                instance.is_running = False
+                return
+            api_id = int(creds["api_id"])
+            api_hash = creds["api_hash"]
+            phone = creds["phone"]
+
+            # Save credentials to DB for future reconnects
+            self._save_credentials_to_db(bot_profile_id, api_id, api_hash)
+
+            # Create client and authenticate with phone
+            session = StringSession()
+            client = TelegramClient(session, api_id, api_hash)
+            try:
+                await client.connect()
+                authorized = await self._authenticate_with_phone(client, instance, bot_profile_id, phone)
+                if not authorized:
+                    await client.disconnect()
+                    instance.is_running = False
+                    return
+            except Exception as e:
+                logger.error(f"Bot {bot_profile_id}: Auth failed: {e}", exc_info=True)
+                await instance.notify_status({"error": str(e), "message": f"Authentication failed: {e}"})
+                try:
+                    await client.disconnect()
+                except Exception:
+                    pass
+                instance.is_running = False
+                return
+        else:
+            # Have credentials — create client and connect
+            if not api_id or not api_hash:
+                error_msg = "Telegram API credentials missing. Delete and recreate the bot to re-enter them."
+                instance.error = error_msg
+                instance.is_running = False
+                await instance.notify_status({"error": error_msg, "message": error_msg})
+                return
+
+            session = StringSession(session_string) if session_string else StringSession()
+            client = TelegramClient(session, api_id, api_hash)
+
+            try:
+                await client.connect()
+
+                if not await client.is_user_authorized():
+                    # Session expired or first time with saved credentials — need phone
+                    logger.info(f"Bot {bot_profile_id}: Telegram auth required")
+                    creds = await self._request_credentials(instance, bot_profile_id, has_api_creds=True)
+                    if not creds:
+                        await client.disconnect()
+                        instance.is_running = False
+                        return
+                    phone = creds["phone"]
+                    authorized = await self._authenticate_with_phone(client, instance, bot_profile_id, phone)
+                    if not authorized:
+                        await client.disconnect()
+                        instance.is_running = False
+                        return
+            except Exception as e:
+                logger.error(f"Bot {bot_profile_id}: Connection failed: {e}", exc_info=True)
+                await instance.notify_status({"error": str(e), "message": f"Connection failed: {e}"})
+                try:
+                    await client.disconnect()
+                except Exception:
+                    pass
+                instance.is_running = False
+                return
+
+        # === Connected — save session, register handlers, run loop ===
         try:
-            bot = Bot(token=telegram_token)
-            bot_info = await bot.get_me()
-            logger.info(
-                f"Bot {bot_profile_id}: Telegram connected as @{bot_info.username} "
-                f"(id={bot_info.id})"
+            session_file.write_text(client.session.save())
+            logger.info(f"Bot {bot_profile_id}: Telegram session saved")
+
+            me = await client.get_me()
+            display_name = _get_user_display_name(me)
+            phone = getattr(me, "phone", "") or ""
+
+            logger.info(f"Bot {bot_profile_id}: Telegram connected as {display_name} (+{phone})")
+
+            _active_clients[bot_profile_id] = client
+
+            await self._save_account_info(bot_profile_id, me)
+
+            instance.whatsapp_connected = True
+            await instance.notify_status({
+                "message": f"Telegram connected: {display_name}",
+                "connected": True,
+                "platform": "telegram",
+                "status": "running",
+                "account_info": {
+                    "phone": phone,
+                    "name": display_name,
+                    "username": getattr(me, "username", "") or "",
+                },
+            })
+
+            handler_ctx = _HandlerContext(
+                bot_profile_id=bot_profile_id,
+                instance=instance,
+                ai_api_key=ai_api_key,
+                config=config,
+                client=client,
+                my_id=me.id,
             )
-        except Exception as e:
-            error_msg = f"Invalid Telegram bot token: {e}"
-            logger.error(f"Bot {bot_profile_id}: {error_msg}")
-            instance.error = error_msg
-            instance.is_running = False
-            await instance.notify_status({"error": error_msg, "message": error_msg})
-            return
 
-        # Store AI config for use in handlers
-        handler_context = _HandlerContext(
-            bot_profile_id=bot_profile_id,
-            instance=instance,
-            ai_api_key=ai_api_key,
-            config=config,
-        )
+            @client.on(events.NewMessage(incoming=True))
+            async def on_new_message(event):
+                await handler_ctx.handle_message(event)
 
-        # Build the Application
-        app = (
-            Application.builder()
-            .token(telegram_token)
-            .build()
-        )
+            logger.info(f"Bot {bot_profile_id}: Telegram listening for messages")
 
-        # Register handlers
-        app.add_handler(CommandHandler("start", handler_context.handle_start))
-        app.add_handler(
-            MessageHandler(
-                filters.TEXT & ~filters.COMMAND,
-                handler_context.handle_message,
-            )
-        )
-        app.add_handler(
-            MessageHandler(
-                filters.PHOTO | filters.Document.ALL | filters.AUDIO | filters.VIDEO | filters.VOICE,
-                handler_context.handle_media,
-            )
-        )
-
-        _active_apps[bot_profile_id] = app
-
-        # Notify connected
-        instance.whatsapp_connected = True  # reused field means "platform connected"
-        await instance.notify_status({
-            "message": f"Telegram bot @{bot_info.username} connected",
-            "connected": True,
-            "platform": "telegram",
-            "bot_username": bot_info.username,
-        })
-
-        try:
-            # Initialize and start polling
-            await app.initialize()
-            await app.start()
-            await app.updater.start_polling(drop_pending_updates=True)
-
-            logger.info(f"Bot {bot_profile_id}: Telegram polling started")
-
-            # Keep alive + process outbound queue
             while instance.is_running and not instance.stopped_by_user:
+                # Check for history sync request
+                if getattr(instance, 'history_sync_requested', False):
+                    instance.history_sync_requested = False
+                    instance.history_sync_active = True
+                    try:
+                        await self._sync_history(client, instance, bot_profile_id)
+                    except Exception as e:
+                        logger.error(f"Bot {bot_profile_id}: History sync error: {e}", exc_info=True)
+                    finally:
+                        instance.history_sync_active = False
+
                 # Process outbound messages
                 if instance.has_outbound_messages():
                     outbound = instance.get_outbound_messages()
                     for msg in outbound:
                         try:
-                            chunks = _split_message(msg["message"], 4096)
-                            for chunk in chunks:
-                                await app.bot.send_message(
-                                    chat_id=msg["chat_id"],
-                                    text=chunk,
-                                )
+                            await client.send_message(int(msg["chat_id"]), msg["message"])
                         except Exception as e:
-                            logger.error(
-                                f"Bot {bot_profile_id}: Failed to send outbound: {e}"
-                            )
+                            logger.error(f"Bot {bot_profile_id}: Failed to send outbound: {e}")
                 await asyncio.sleep(1)
 
+        except AuthKeyUnregisteredError:
+            logger.warning(f"Bot {bot_profile_id}: Session expired, clearing")
+            session_file.unlink(missing_ok=True)
+            instance.error = "Telegram session expired. Please restart to re-authenticate."
+            await instance.notify_status({"error": instance.error, "message": instance.error})
         except asyncio.CancelledError:
             logger.info(f"Bot {bot_profile_id}: Telegram task cancelled")
         except Exception as e:
@@ -204,18 +275,250 @@ class TelegramAdapter(PlatformAdapter):
             instance.error = str(e)
             await instance.notify_status({"error": str(e), "message": f"Telegram error: {e}"})
         finally:
-            # Shutdown
             try:
-                await app.updater.stop()
-                await app.stop()
-                await app.shutdown()
-            except Exception as e:
-                logger.warning(f"Bot {bot_profile_id}: Error during shutdown: {e}")
-
-            _active_apps.pop(bot_profile_id, None)
+                await client.disconnect()
+            except Exception:
+                pass
+            _active_clients.pop(bot_profile_id, None)
             instance.whatsapp_connected = False
             instance.is_running = False
             logger.info(f"Bot {bot_profile_id}: Telegram adapter stopped")
+
+    async def _request_credentials(self, instance, bot_profile_id: int, has_api_creds: bool = False) -> Optional[dict]:
+        """Ask user for Telegram credentials via the connection modal.
+
+        If has_api_creds=True, only ask for phone number (API ID/Hash already stored).
+        Otherwise ask for all three: API ID, API Hash, Phone.
+        """
+        step = "phone" if has_api_creds else "credentials"
+        instance.auth_pending = {"step": step, "value": None}
+
+        if has_api_creds:
+            await instance.notify_status({
+                "auth_step": "phone",
+                "message": "Enter your Telegram phone number (with country code)",
+            })
+        else:
+            await instance.notify_status({
+                "auth_step": "credentials",
+                "message": "Enter your Telegram credentials to connect",
+            })
+
+        result = await self._wait_for_auth_input(instance, step, bot_profile_id, timeout=180)
+        if not result:
+            await instance.notify_status({"error": "Authentication timed out", "message": "No credentials provided"})
+            return None
+
+        if has_api_creds:
+            return {"phone": result, "api_id": None, "api_hash": None}
+
+        # result is a dict with api_id, api_hash, phone
+        if isinstance(result, dict):
+            return result
+        return None
+
+    async def _authenticate_with_phone(self, client: TelegramClient, instance, bot_profile_id: int, phone: str) -> bool:
+        """Authenticate with phone number — send code, verify, handle 2FA."""
+        # Send code
+        try:
+            result = await client.send_code_request(phone)
+            phone_code_hash = result.phone_code_hash
+            logger.info(f"Bot {bot_profile_id}: Code sent to {phone}")
+        except FloodWaitError as e:
+            error_msg = f"Too many attempts. Please wait {e.seconds} seconds."
+            await instance.notify_status({"error": error_msg, "message": error_msg})
+            return False
+        except Exception as e:
+            error_msg = f"Failed to send code: {e}"
+            logger.error(f"Bot {bot_profile_id}: {error_msg}")
+            await instance.notify_status({"error": error_msg, "message": error_msg})
+            return False
+
+        # Ask for verification code
+        instance.auth_pending = {"step": "code", "value": None}
+        await instance.notify_status({
+            "auth_step": "code",
+            "message": "Enter the verification code sent to your Telegram app",
+        })
+
+        code = await self._wait_for_auth_input(instance, "code", bot_profile_id, timeout=120)
+        if not code:
+            await instance.notify_status({"error": "Authentication timed out", "message": "No code provided"})
+            return False
+
+        # Try to sign in
+        try:
+            await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+            return True
+        except SessionPasswordNeededError:
+            pass  # 2FA needed
+        except (PhoneCodeInvalidError, PhoneCodeExpiredError) as e:
+            await instance.notify_status({"error": f"Invalid or expired code", "message": f"Invalid or expired code: {e}"})
+            return False
+        except Exception as e:
+            await instance.notify_status({"error": str(e), "message": f"Sign in failed: {e}"})
+            return False
+
+        # 2FA password
+        instance.auth_pending = {"step": "password", "value": None}
+        await instance.notify_status({
+            "auth_step": "password",
+            "message": "Enter your two-factor authentication password",
+        })
+
+        password = await self._wait_for_auth_input(instance, "password", bot_profile_id, timeout=120)
+        if not password:
+            await instance.notify_status({"error": "Authentication timed out", "message": "No password provided"})
+            return False
+
+        try:
+            await client.sign_in(password=password)
+            return True
+        except PasswordHashInvalidError:
+            await instance.notify_status({"error": "Incorrect 2FA password", "message": "Incorrect 2FA password"})
+            return False
+        except Exception as e:
+            await instance.notify_status({"error": str(e), "message": f"2FA failed: {e}"})
+            return False
+
+    async def _wait_for_auth_input(self, instance, step: str, bot_profile_id: int, timeout: int = 120) -> Optional[str]:
+        """Wait for user to submit auth input via the API."""
+        elapsed = 0
+        while elapsed < timeout:
+            pending = getattr(instance, "auth_pending", None)
+            if pending and pending.get("step") == step and pending.get("value") is not None:
+                value = pending["value"]
+                instance.auth_pending = None
+                return value
+            await asyncio.sleep(1)
+            elapsed += 1
+        return None
+
+    def _save_credentials_to_db(self, bot_profile_id: int, api_id: int, api_hash: str):
+        """Save Telegram API credentials to platform_config for future reconnects."""
+        try:
+            import json
+            from app.database import SessionLocal, BotProfile
+            db = SessionLocal()
+            try:
+                bot = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+                if bot:
+                    platform_config = json.loads(bot.platform_config or "{}")
+                    platform_config["telegram_api_id"] = str(api_id)
+                    platform_config["telegram_api_hash"] = api_hash
+                    bot.platform_config = json.dumps(platform_config)
+                    db.commit()
+                    logger.info(f"Bot {bot_profile_id}: Saved Telegram API credentials to DB")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Bot {bot_profile_id}: Failed to save credentials: {e}")
+
+    async def _sync_history(self, client: TelegramClient, instance, bot_profile_id: int):
+        """Sync conversation history from Telegram using Telethon."""
+        from app.platforms.message_handler import (
+            get_db_session,
+            find_or_create_conversation,
+            save_user_message,
+            update_conversation_stats,
+        )
+        from telethon.tl.types import User as TgUser
+
+        sync_count = getattr(instance, 'history_sync_count', 50)
+        if sync_count == -1:
+            sync_count = 999  # "sync all" — cap at 999 dialogs
+
+        logger.info(f"Bot {bot_profile_id}: Starting Telegram history sync (count={sync_count})")
+
+        instance.history_sync_progress = {
+            "total": 0, "completed": 0, "current_chat": "", "status": "running"
+        }
+
+        try:
+            # Get recent dialogs (chats)
+            dialogs = await client.get_dialogs(limit=sync_count)
+            total = len(dialogs)
+            instance.history_sync_progress["total"] = total
+
+            for i, dialog in enumerate(dialogs):
+                if getattr(instance, 'history_sync_stop_requested', False):
+                    logger.info(f"Bot {bot_profile_id}: History sync stopped by user")
+                    break
+
+                chat_name = dialog.name or f"Chat {dialog.id}"
+                instance.history_sync_progress["current_chat"] = chat_name
+                instance.history_sync_progress["completed"] = i
+
+                entity = dialog.entity
+                is_group = not isinstance(entity, TgUser)
+                chat_id = str(dialog.id)
+
+                # Fetch recent messages for this chat
+                try:
+                    messages = await client.get_messages(dialog, limit=20)
+                except Exception as e:
+                    logger.warning(f"Bot {bot_profile_id}: Failed to get messages for {chat_name}: {e}")
+                    continue
+
+                if not messages:
+                    continue
+
+                with get_db_session() as db:
+                    conversation = find_or_create_conversation(
+                        db, bot_profile_id, chat_id, chat_name,
+                        is_group=is_group, display_name=chat_name,
+                    )
+
+                    for msg in reversed(messages):  # oldest first
+                        if not msg.text:
+                            continue
+                        sender = getattr(msg, 'sender', None)
+                        sender_name = _get_user_display_name(sender) if sender else "Unknown"
+                        sender_id = str(msg.sender_id) if msg.sender_id else ""
+
+                        # Skip messages from self (our account)
+                        is_outgoing = msg.out
+                        role_name = sender_name if not is_outgoing else "Me"
+
+                        save_user_message(
+                            db, conversation.id,
+                            msg.text,
+                            sender_name=role_name,
+                            sender_id=sender_id,
+                            platform_message_id=str(msg.id),
+                            timestamp=msg.date.replace(tzinfo=None) if msg.date else None,
+                        )
+
+                    update_conversation_stats(db, conversation.id)
+                    db.commit()
+
+            instance.history_sync_progress["completed"] = total
+            instance.history_sync_progress["status"] = "completed"
+            logger.info(f"Bot {bot_profile_id}: Telegram history sync completed ({total} chats)")
+
+        except Exception as e:
+            logger.error(f"Bot {bot_profile_id}: History sync failed: {e}", exc_info=True)
+            instance.history_sync_progress["status"] = "completed"
+
+    async def _save_account_info(self, bot_profile_id: int, me: TelegramUser):
+        """Save Telegram account info to the bot profile in DB."""
+        try:
+            from app.database import SessionLocal, BotProfile
+            db = SessionLocal()
+            try:
+                bot = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+                if bot:
+                    phone = getattr(me, "phone", "") or ""
+                    name = _get_user_display_name(me)
+                    # Reuse WhatsApp fields for account display
+                    bot.whatsapp_phone = phone
+                    bot.whatsapp_name = name
+                    bot.whatsapp_push_name = getattr(me, "username", "") or ""
+                    db.commit()
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Bot {bot_profile_id}: Failed to save account info: {e}")
 
     async def send_message(
         self,
@@ -225,16 +528,11 @@ class TelegramAdapter(PlatformAdapter):
         message: str,
     ) -> bool:
         """Send a text message via Telegram."""
-        app = _active_apps.get(bot_profile_id)
-        if not app:
-            logger.warning(f"Bot {bot_profile_id}: No active Telegram app for sending")
+        client = _active_clients.get(bot_profile_id)
+        if not client:
             return False
-
         try:
-            # Split long messages (Telegram limit: 4096 chars)
-            chunks = _split_message(message, 4096)
-            for chunk in chunks:
-                await app.bot.send_message(chat_id=int(chat_id), text=chunk)
+            await client.send_message(int(chat_id), message)
             return True
         except Exception as e:
             logger.error(f"Bot {bot_profile_id}: Failed to send message: {e}")
@@ -250,36 +548,14 @@ class TelegramAdapter(PlatformAdapter):
         chat_name: str = "",
     ) -> bool:
         """Send a file via Telegram."""
-        app = _active_apps.get(bot_profile_id)
-        if not app:
-            logger.warning(f"Bot {bot_profile_id}: No active Telegram app for sending")
+        client = _active_clients.get(bot_profile_id)
+        if not client:
             return False
-
         try:
             path = Path(file_path)
             if not path.exists():
-                logger.error(f"Bot {bot_profile_id}: File not found: {file_path}")
                 return False
-
-            cid = int(chat_id)
-
-            with open(path, "rb") as f:
-                if file_type.startswith("image/"):
-                    await app.bot.send_photo(
-                        chat_id=cid, photo=f, caption=caption or None,
-                    )
-                elif file_type.startswith("video/"):
-                    await app.bot.send_video(
-                        chat_id=cid, video=f, caption=caption or None,
-                    )
-                elif file_type.startswith("audio/"):
-                    await app.bot.send_audio(
-                        chat_id=cid, audio=f, caption=caption or None,
-                    )
-                else:
-                    await app.bot.send_document(
-                        chat_id=cid, document=f, caption=caption or None,
-                    )
+            await client.send_file(int(chat_id), path, caption=caption or None)
             return True
         except Exception as e:
             logger.error(f"Bot {bot_profile_id}: Failed to send file: {e}")
@@ -287,91 +563,116 @@ class TelegramAdapter(PlatformAdapter):
 
     def cleanup(self, bot_profile_id: int) -> None:
         """Clean up Telegram resources."""
-        app = _active_apps.pop(bot_profile_id, None)
-        if app:
+        client = _active_clients.pop(bot_profile_id, None)
+        if client:
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._async_cleanup(app, bot_profile_id))
+                loop.create_task(client.disconnect())
             except RuntimeError:
-                # No running loop — run synchronously in a new loop
-                try:
-                    asyncio.run(self._async_cleanup(app, bot_profile_id))
-                except Exception as e:
-                    logger.warning(f"Bot {bot_profile_id}: cleanup error: {e}")
+                pass
 
-    @staticmethod
-    async def _async_cleanup(app: Application, bot_profile_id: int) -> None:
-        """Perform async shutdown of the Telegram application."""
+    def get_contacts(self, bot_profile_id: int):
+        """Get contact list from Telegram using Telethon."""
+        client = _active_clients.get(bot_profile_id)
+        if not client:
+            return []
         try:
-            if app.updater and app.updater.running:
-                await app.updater.stop()
-            if app.running:
-                await app.stop()
-            await app.shutdown()
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We're in an async context — use run_coroutine_threadsafe from a thread
+                import concurrent.futures
+                future = asyncio.run_coroutine_threadsafe(
+                    self._async_get_contacts(client, bot_profile_id), loop
+                )
+                return future.result(timeout=30)
+            else:
+                return loop.run_until_complete(self._async_get_contacts(client, bot_profile_id))
         except Exception as e:
-            logger.warning(f"Bot {bot_profile_id}: error during async cleanup: {e}")
+            logger.error(f"Bot {bot_profile_id}: Failed to get contacts: {e}")
+            return []
 
+    async def _async_get_contacts(self, client, bot_profile_id):
+        """Async implementation of get_contacts."""
+        from telethon.tl.types import User as TgUser
+        contacts = []
+        try:
+            dialogs = await client.get_dialogs(limit=200)
+            for dialog in dialogs:
+                entity = dialog.entity
+                if isinstance(entity, TgUser) and not entity.bot:
+                    name = _get_user_display_name(entity)
+                    phone = getattr(entity, 'phone', '') or ''
+                    contacts.append({
+                        "chat_id": str(dialog.id),
+                        "name": name,
+                        "phone": phone,
+                        "profile_pic": "",
+                    })
+        except Exception as e:
+            logger.error(f"Bot {bot_profile_id}: Error fetching contacts: {e}")
+        return contacts
 
-def _split_message(text: str, max_length: int = 4096) -> list:
-    """Split a message into chunks that fit within Telegram's limit."""
-    if len(text) <= max_length:
-        return [text]
+    def get_groups(self, bot_profile_id: int):
+        """Get group list from Telegram using Telethon."""
+        client = _active_clients.get(bot_profile_id)
+        if not client:
+            return []
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                future = asyncio.run_coroutine_threadsafe(
+                    self._async_get_groups(client, bot_profile_id), loop
+                )
+                return future.result(timeout=30)
+            else:
+                return loop.run_until_complete(self._async_get_groups(client, bot_profile_id))
+        except Exception as e:
+            logger.error(f"Bot {bot_profile_id}: Failed to get groups: {e}")
+            return []
 
-    chunks = []
-    while text:
-        if len(text) <= max_length:
-            chunks.append(text)
-            break
-        # Try to split at last newline within limit
-        split_at = text.rfind("\n", 0, max_length)
-        if split_at == -1 or split_at < max_length // 2:
-            # Try space
-            split_at = text.rfind(" ", 0, max_length)
-        if split_at == -1 or split_at < max_length // 2:
-            split_at = max_length
-        chunks.append(text[:split_at])
-        text = text[split_at:]
-        if text.startswith("\n"):
-            text = text[1:]
-    return chunks
+    async def _async_get_groups(self, client, bot_profile_id):
+        """Async implementation of get_groups."""
+        from telethon.tl.types import User as TgUser
+        groups = []
+        try:
+            dialogs = await client.get_dialogs(limit=200)
+            for dialog in dialogs:
+                entity = dialog.entity
+                if not isinstance(entity, TgUser):
+                    name = getattr(entity, 'title', '') or f"Group {dialog.id}"
+                    member_count = getattr(entity, 'participants_count', 0) or 0
+                    groups.append({
+                        "chat_id": str(dialog.id),
+                        "name": name,
+                        "member_count": member_count,
+                    })
+        except Exception as e:
+            logger.error(f"Bot {bot_profile_id}: Error fetching groups: {e}")
+        return groups
 
 
 class _HandlerContext:
-    """Holds per-bot context for Telegram update handlers."""
+    """Holds per-bot context for processing Telegram messages."""
 
-    def __init__(
-        self,
-        bot_profile_id: int,
-        instance,
-        ai_api_key: str,
-        config: dict,
-    ):
+    def __init__(self, bot_profile_id, instance, ai_api_key, config, client, my_id):
         self.bot_profile_id = bot_profile_id
         self.instance = instance
         self.ai_api_key = ai_api_key
         self.config = config
+        self.client = client
+        self.my_id = my_id
 
     def _get_ai_provider(self):
-        """Create an AI provider instance from config."""
         from app.ai.factory import get_ai_provider
-
         return get_ai_provider(
             provider_name=self.config.get("ai_provider", "openai"),
             api_key=self.ai_api_key,
             model=self.config.get("model"),
         )
 
-    async def handle_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /start command."""
-        await update.message.reply_text(
-            "Hello! I'm an AI assistant. Send me a message and I'll respond."
-        )
-
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle incoming text messages."""
-        if not update.message or not update.message.text:
-            return
-
+    async def handle_message(self, event):
+        """Handle an incoming Telegram message."""
         from app.platforms.message_handler import (
             get_db_session,
             find_or_create_conversation,
@@ -387,336 +688,103 @@ class _HandlerContext:
             broadcast_typing,
         )
 
-        msg = update.message
-        chat_id = str(msg.chat_id)
-        is_group = msg.chat.type in ("group", "supergroup")
-
-        # Determine chat name and sender info
-        if is_group:
-            chat_name = msg.chat.title or f"Group {chat_id}"
-        else:
-            chat_name = _get_user_display_name(msg.from_user) or f"Chat {chat_id}"
-
-        sender_name = _get_user_display_name(msg.from_user)
-        sender_id = str(msg.from_user.id) if msg.from_user else ""
-
-        # Skip if group chats disabled
-        if is_group and not self.config.get("group_chat_enabled", False):
+        message = event.message
+        if not message:
             return
 
-        # In groups, only respond if bot is mentioned or replied to
-        if is_group and not self.config.get("respond_to_all_in_group", False):
-            bot_user = await context.bot.get_me()
-            mentioned = f"@{bot_user.username}" in (msg.text or "")
-            replied_to_bot = (
-                msg.reply_to_message
-                and msg.reply_to_message.from_user
-                and msg.reply_to_message.from_user.id == bot_user.id
-            )
-            if not mentioned and not replied_to_bot:
-                return
+        # Get sender info
+        sender = await event.get_sender()
+        if not sender:
+            return
 
-        text = msg.text.strip()
-        platform_message_id = str(msg.message_id)
+        # Skip messages from self
+        sender_id = getattr(sender, "id", 0)
+        if sender_id == self.my_id:
+            return
+
+        # Get chat info
+        chat = await event.get_chat()
+        chat_id = str(event.chat_id)
+        is_group = event.is_group or event.is_channel
+
+        if is_group:
+            chat_name = getattr(chat, "title", None) or f"Group {chat_id}"
+        else:
+            chat_name = _get_user_display_name(sender) or f"Chat {chat_id}"
+
+        sender_name = _get_user_display_name(sender)
+        text = message.text or message.message or ""
+        platform_message_id = str(message.id)
+
+        # Skip if group chats disabled
+        if is_group and not self.config.get("group_chat_enabled", True):
+            return
+
+        logger.info(f"Bot {self.bot_profile_id}: Message from {sender_name} ({chat_id}): {text[:80]}")
+
+        # Handle media
+        file_url = None
+        file_type_str = None
+        file_name = None
+        file_size = None
+        media_analysis = None
+
+        if message.media and not message.text:
+            # It's a media-only message — set text placeholder
+            if not text:
+                text = "[Media]"
 
         with get_db_session() as db:
-            # Find or create conversation
             conversation = find_or_create_conversation(
-                db,
-                self.bot_profile_id,
-                chat_id,
-                chat_name,
-                is_group=is_group,
-                display_name=chat_name,
+                db, self.bot_profile_id, chat_id, chat_name,
+                is_group=is_group, display_name=chat_name,
             )
 
-            # Dedup check
+            # Dedup
             is_dup, existing = is_duplicate_message(
-                db,
-                conversation.id,
-                platform_message_id=platform_message_id,
-                content=text,
+                db, conversation.id,
+                platform_message_id=platform_message_id, content=text,
             )
             if is_dup and existing:
                 if has_response_after(db, conversation.id, existing.id):
-                    # Already have a response for this message — skip entirely
                     db.commit()
                     return
-                # Duplicate message but no response yet — use existing msg
-                # for AI generation without saving again
                 db.commit()
                 user_msg = existing
             else:
-                # Save new user message
                 user_msg = save_user_message(
-                    db,
-                    conversation.id,
-                    text,
+                    db, conversation.id, text or "[Media]",
                     sender_name=sender_name,
-                    sender_id=sender_id,
+                    sender_id=str(sender_id),
                     platform_message_id=platform_message_id,
                 )
                 update_conversation_stats(db, conversation.id)
                 db.commit()
 
-            # Broadcast via WebSocket
-            broadcast_user_message(
-                conversation.id,
-                self.bot_profile_id,
-                user_msg,
-                conversation,
-            )
+            broadcast_user_message(conversation.id, self.bot_profile_id, user_msg, conversation)
 
             # Check if AI responses are enabled
             if not self.instance.ai_response_enabled:
                 return
 
-            # Check human takeover
             if is_human_takeover_active(db, conversation.id):
                 return
 
-            # Send typing indicator
             broadcast_typing(conversation.id, True, "Bot")
-            try:
-                await context.bot.send_chat_action(
-                    chat_id=int(chat_id), action="typing"
-                )
-            except Exception:
-                pass
 
             # Response delay
             delay_min = self.config.get("response_delay_min", 0) or 0
             delay_max = self.config.get("response_delay_max", 0) or 0
             if delay_min > 0 or delay_max > 0:
-                import random
                 delay = random.uniform(delay_min, max(delay_min, delay_max))
                 await asyncio.sleep(delay)
 
-            # Build AI messages and get response
             try:
                 system_prompt = self.config.get("system_prompt", "You are a helpful assistant.")
                 ai_messages = build_ai_messages(
-                    db,
-                    conversation.id,
-                    system_prompt,
+                    db, conversation.id, system_prompt,
                     max_history=self.config.get("max_history", 20) or 20,
-                    is_group=is_group,
-                    current_message=user_msg,
-                )
-
-                provider = self._get_ai_provider()
-                response = await asyncio.to_thread(
-                    provider.chat_completion,
-                    messages=ai_messages,
-                    max_tokens=self.config.get("max_tokens", 1000),
-                    temperature=self.config.get("temperature", 0.7),
-                )
-                ai_text = response.content
-
-                if not ai_text:
-                    return
-
-                # Save assistant message
-                assistant_msg = save_assistant_message(
-                    db,
-                    conversation.id,
-                    ai_text,
-                    sender_name="AI Agent",
-                )
-                update_conversation_stats(db, conversation.id)
-                db.commit()
-
-                # Broadcast assistant message via WebSocket
-                broadcast_assistant_message(conversation.id, assistant_msg)
-
-                # Send via Telegram (split if needed)
-                chunks = _split_message(ai_text, 4096)
-                for chunk in chunks:
-                    await msg.reply_text(chunk)
-
-            except Exception as e:
-                logger.error(
-                    f"Bot {self.bot_profile_id}: AI response error: {e}",
-                    exc_info=True,
-                )
-            finally:
-                broadcast_typing(conversation.id, False, "Bot")
-
-    async def handle_media(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle incoming media messages (photos, documents, audio, video)."""
-        if not update.message:
-            return
-
-        from app.platforms.message_handler import (
-            get_db_session,
-            find_or_create_conversation,
-            save_user_message,
-            save_assistant_message,
-            update_conversation_stats,
-            build_ai_messages,
-            is_human_takeover_active,
-            broadcast_user_message,
-            broadcast_assistant_message,
-            broadcast_typing,
-            save_media_file,
-            analyze_media_with_ai,
-        )
-
-        msg = update.message
-        chat_id = str(msg.chat_id)
-        is_group = msg.chat.type in ("group", "supergroup")
-
-        if is_group and not self.config.get("group_chat_enabled", False):
-            return
-
-        # In groups, check mention/reply
-        if is_group and not self.config.get("respond_to_all_in_group", False):
-            bot_user = await context.bot.get_me()
-            caption_text = msg.caption or ""
-            mentioned = f"@{bot_user.username}" in caption_text
-            replied_to_bot = (
-                msg.reply_to_message
-                and msg.reply_to_message.from_user
-                and msg.reply_to_message.from_user.id == bot_user.id
-            )
-            if not mentioned and not replied_to_bot:
-                return
-
-        chat_name = (
-            (msg.chat.title or f"Group {chat_id}")
-            if is_group
-            else (_get_user_display_name(msg.from_user) or f"Chat {chat_id}")
-        )
-        sender_name = _get_user_display_name(msg.from_user)
-        sender_id = str(msg.from_user.id) if msg.from_user else ""
-        caption = msg.caption or ""
-
-        # Determine file to download
-        file_obj = None
-        file_type = "application/octet-stream"
-        original_filename = None
-
-        if msg.photo:
-            # Get highest resolution photo
-            photo = msg.photo[-1]
-            file_obj = await context.bot.get_file(photo.file_id)
-            file_type = "image/jpeg"
-            original_filename = f"photo_{photo.file_unique_id}.jpg"
-        elif msg.document:
-            file_obj = await context.bot.get_file(msg.document.file_id)
-            file_type = msg.document.mime_type or "application/octet-stream"
-            original_filename = msg.document.file_name
-        elif msg.audio:
-            file_obj = await context.bot.get_file(msg.audio.file_id)
-            file_type = msg.audio.mime_type or "audio/mpeg"
-            original_filename = msg.audio.file_name or f"audio_{msg.audio.file_unique_id}.mp3"
-        elif msg.video:
-            file_obj = await context.bot.get_file(msg.video.file_id)
-            file_type = msg.video.mime_type or "video/mp4"
-            original_filename = msg.video.file_name or f"video_{msg.video.file_unique_id}.mp4"
-        elif msg.voice:
-            file_obj = await context.bot.get_file(msg.voice.file_id)
-            file_type = msg.voice.mime_type or "audio/ogg"
-            original_filename = f"voice_{msg.voice.file_unique_id}.ogg"
-
-        if not file_obj:
-            return
-
-        # Download file to temp location and then save via shared handler
-        try:
-            file_bytes = await file_obj.download_as_bytearray()
-            b64_data = base64.b64encode(file_bytes).decode("utf-8")
-
-            media_info = save_media_file(
-                base64_data=b64_data,
-                media_type=file_type,
-                bot_profile_id=self.bot_profile_id,
-                chat_name=chat_name,
-                direction="received",
-                original_filename=original_filename,
-            )
-        except Exception as e:
-            logger.error(f"Bot {self.bot_profile_id}: Failed to download media: {e}")
-            media_info = None
-
-        # Analyze media with AI if available
-        media_analysis = None
-        if media_info and self.instance.ai_response_enabled:
-            try:
-                provider = self._get_ai_provider()
-                media_analysis = analyze_media_with_ai(
-                    provider,
-                    media_info["local_file_path"],
-                    file_type,
-                    caption,
-                )
-            except Exception as e:
-                logger.error(f"Bot {self.bot_profile_id}: Media analysis error: {e}")
-
-        with get_db_session() as db:
-            conversation = find_or_create_conversation(
-                db,
-                self.bot_profile_id,
-                chat_id,
-                chat_name,
-                is_group=is_group,
-                display_name=chat_name,
-            )
-
-            # Build content text
-            content = caption
-            if not content and media_analysis:
-                content = f"[Media: {file_type}]"
-            elif not content:
-                content = f"[Media: {file_type}]"
-
-            user_msg = save_user_message(
-                db,
-                conversation.id,
-                content,
-                sender_name=sender_name,
-                sender_id=sender_id,
-                platform_message_id=str(msg.message_id),
-                file_url=media_info["file_url"] if media_info else None,
-                file_type=file_type,
-                file_name=original_filename,
-                file_size=media_info["file_size"] if media_info else None,
-                file_pages=media_info.get("file_pages") if media_info else None,
-                media_analysis=media_analysis,
-            )
-            update_conversation_stats(db, conversation.id)
-            db.commit()
-
-            broadcast_user_message(
-                conversation.id,
-                self.bot_profile_id,
-                user_msg,
-                conversation,
-            )
-
-            # Generate AI response if enabled
-            if not self.instance.ai_response_enabled:
-                return
-            if is_human_takeover_active(db, conversation.id):
-                return
-
-            broadcast_typing(conversation.id, True, "Bot")
-            try:
-                await context.bot.send_chat_action(
-                    chat_id=int(chat_id), action="typing"
-                )
-            except Exception:
-                pass
-
-            try:
-                system_prompt = self.config.get("system_prompt", "You are a helpful assistant.")
-                ai_messages = build_ai_messages(
-                    db,
-                    conversation.id,
-                    system_prompt,
-                    max_history=self.config.get("max_history", 20) or 20,
-                    is_group=is_group,
-                    current_message=user_msg,
+                    is_group=is_group, current_message=user_msg,
                 )
 
                 provider = self._get_ai_provider()
@@ -732,36 +800,17 @@ class _HandlerContext:
                     return
 
                 assistant_msg = save_assistant_message(
-                    db,
-                    conversation.id,
-                    ai_text,
-                    sender_name="AI Agent",
+                    db, conversation.id, ai_text, sender_name="AI Agent",
                 )
                 update_conversation_stats(db, conversation.id)
                 db.commit()
 
                 broadcast_assistant_message(conversation.id, assistant_msg)
 
-                chunks = _split_message(ai_text, 4096)
-                for chunk in chunks:
-                    await msg.reply_text(chunk)
+                # Send reply via Telegram
+                await event.reply(ai_text)
 
             except Exception as e:
-                logger.error(
-                    f"Bot {self.bot_profile_id}: AI response error (media): {e}",
-                    exc_info=True,
-                )
+                logger.error(f"Bot {self.bot_profile_id}: AI response error: {e}", exc_info=True)
             finally:
                 broadcast_typing(conversation.id, False, "Bot")
-
-
-def _get_user_display_name(user) -> str:
-    """Build a display name from a Telegram User object."""
-    if not user:
-        return ""
-    parts = []
-    if user.first_name:
-        parts.append(user.first_name)
-    if user.last_name:
-        parts.append(user.last_name)
-    return " ".join(parts) if parts else (user.username or "")

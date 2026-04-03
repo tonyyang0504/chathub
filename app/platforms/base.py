@@ -19,12 +19,14 @@ class PlatformType(str, Enum):
     TINDER = "tinder"
     BUMBLE = "bumble"
     DISCORD = "discord"
+    WECHAT = "wechat"
 
 
 class AuthMethod(str, Enum):
     """How the platform authenticates."""
     QR_CODE = "qr_code"          # WhatsApp, WeChat, Line
-    API_TOKEN = "api_token"       # Telegram, Messenger
+    API_TOKEN = "api_token"       # Messenger, Discord
+    PHONE_CODE = "phone_code"    # Telegram (phone + SMS code)
     OAUTH = "oauth"               # Instagram, LinkedIn
     CREDENTIALS = "credentials"   # Tinder, Bumble
 

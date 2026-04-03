@@ -33,13 +33,14 @@ logger = logging.getLogger(__name__)
 
 TINDER_API_BASE = "https://api.gotinder.com"
 
-# Default headers that Tinder expects
+# Default headers matching Tinder web app
 DEFAULT_HEADERS = {
     "Content-Type": "application/json",
-    "User-Agent": "Tinder/14.21.0 (iPhone; iOS 17.2; Scale/3.00)",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
     "Accept": "application/json",
-    "platform": "ios",
-    "app-version": "5530",
+    "platform": "web",
+    "tinder-version": "7.11.2",
+    "app-version": "1071102",
 }
 
 # Rate limit defaults
@@ -157,14 +158,27 @@ class TinderAdapter(PlatformAdapter):
     # HTTP client helpers
     # ------------------------------------------------------------------
 
-    def _get_client(self, bot_profile_id: int) -> httpx.AsyncClient:
-        """Get or create an httpx client for a bot."""
+    def _get_client(self, bot_profile_id: int, config: dict = None) -> httpx.AsyncClient:
+        """Get or create an httpx client for a bot, with optional proxy."""
         if bot_profile_id not in self._clients:
-            self._clients[bot_profile_id] = httpx.AsyncClient(
-                base_url=TINDER_API_BASE,
-                headers=DEFAULT_HEADERS.copy(),
-                timeout=30.0,
-            )
+            kwargs = {
+                "base_url": TINDER_API_BASE,
+                "headers": DEFAULT_HEADERS.copy(),
+                "timeout": 30.0,
+            }
+            # Add proxy if configured
+            if config and config.get("proxy_enabled") and config.get("proxy_url"):
+                proxy_url = config["proxy_url"]
+                # Add auth to proxy URL if provided
+                if config.get("proxy_username") and config.get("proxy_password"):
+                    from urllib.parse import urlparse, urlunparse
+                    parsed = urlparse(proxy_url)
+                    proxy_url = urlunparse(parsed._replace(
+                        netloc=f"{config['proxy_username']}:{config['proxy_password']}@{parsed.hostname}:{parsed.port or 80}"
+                    ))
+                kwargs["proxy"] = proxy_url
+                logger.info(f"Bot {bot_profile_id}: Using proxy for Tinder API")
+            self._clients[bot_profile_id] = httpx.AsyncClient(**kwargs)
         return self._clients[bot_profile_id]
 
     async def _close_client(self, bot_profile_id: int):
@@ -216,6 +230,8 @@ class TinderAdapter(PlatformAdapter):
             raise TinderRateLimitError(retry_after)
 
         if response.status_code == 401:
+            logger.error(f"Bot {bot_profile_id}: Tinder 401 response: {response.text[:500]}")
+            logger.error(f"Bot {bot_profile_id}: Request headers: {dict(response.request.headers)}")
             self._auth_tokens.pop(bot_profile_id, None)
             raise TinderAPIError(401, "Auth token expired or invalid")
 
@@ -514,6 +530,9 @@ class TinderAdapter(PlatformAdapter):
         poll_interval = float(instance.config.get("tinder_poll_interval", DEFAULT_POLL_INTERVAL))
         self._poll_intervals[bot_id] = max(MIN_POLL_INTERVAL, poll_interval)
         consecutive_errors = 0
+
+        # Initialize client with proxy config if available
+        self._get_client(bot_id, config=instance.config)
 
         try:
             # Step 1: Authenticate

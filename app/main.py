@@ -120,6 +120,19 @@ async def lifespan(app: FastAPI):
     # Clean up stale AI Workspace / ChatHub Agent sessions from previous crash
     await cleanup_stale_sessions()
 
+    # Register webhook routes for Messenger/Instagram so Meta can verify them
+    # (must be registered before any bot starts, and after app is created)
+    try:
+        from app.platforms.messenger.adapter import _ensure_webhook_routes as _messenger_webhooks
+        _messenger_webhooks()
+    except Exception as e:
+        logger.warning(f"Failed to pre-register Messenger webhooks: {e}")
+    try:
+        from app.platforms.instagram.adapter import InstagramAdapter as _IGAdapter
+        _IGAdapter()._ensure_webhook_routes()
+    except Exception as e:
+        logger.warning(f"Failed to pre-register Instagram webhooks: {e}")
+
     # Auto-recover bots that were marked as running
     await auto_recover_bots()
 
@@ -139,10 +152,17 @@ async def lifespan(app: FastAPI):
     from app.bots.message_scheduler import message_scheduler
     await message_scheduler.start()
 
+    # Start the tool event scheduler (cron tasks from custom tools)
+    from app.tools.tool_scheduler import start_scheduler as start_tool_scheduler, stop_scheduler as stop_tool_scheduler
+    await start_tool_scheduler()
+
     yield
 
     # Shutdown
     print("Shutting down ChatHub...")
+
+    # Stop the tool event scheduler
+    await stop_tool_scheduler()
 
     # Stop the message scheduler
     await message_scheduler.stop()
@@ -373,6 +393,9 @@ templates.env.globals['cache_bust'] = CACHE_BUST
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(bots_router, prefix="/api/bots", tags=["Bots"])
+from app.platforms.facebook.oauth import router as facebook_oauth_router, callback_router as facebook_callback_router
+app.include_router(facebook_oauth_router, prefix="/api/bots", tags=["Facebook OAuth"])
+app.include_router(facebook_callback_router, prefix="/auth", tags=["Facebook OAuth"])
 app.include_router(conversations_router, prefix="/api/conversations", tags=["Conversations"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
@@ -456,6 +479,18 @@ async def dashboard_settings(
     return templates.TemplateResponse(
         "dashboard/settings.html",
         {"request": request, "user": user, "active_page": "settings"}
+    )
+
+
+@app.get("/dashboard/guides")
+async def dashboard_guides(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Platform setup guides page"""
+    return templates.TemplateResponse(
+        "dashboard/guides.html",
+        {"request": request, "user": user, "active_page": "guides"}
     )
 
 

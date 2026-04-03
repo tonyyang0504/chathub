@@ -83,6 +83,12 @@ trigger: keyword or pattern that activates this tool
 widgets:
   - page: dashboard
     endpoint: /api/widget/dashboard
+events:
+  message.received: on_message_handler
+  contact.created: on_new_contact
+  bot.started: on_bot_start
+  scheduled: "0 9 * * *"
+  scheduled_handler: daily_report
 ---
 
 # Tool Name
@@ -91,6 +97,26 @@ Description of what the tool does, its features, and how it works.
 ```
 
 The `widgets` field is optional. If your tool provides a widget for the dashboard (or other pages), declare it here. The endpoint is relative to your tool's route prefix (`/tools/{tool-name}/`).
+
+The `events` field is optional. It lets your tool react to system events automatically. Available events:
+- **Message flow**: `message.received`, `message.sent`, `conversation.created`, `conversation.deleted`, `conversation.cleared`, `conversation.ai_resumed`, `conversation.human_takeover`
+- **Bot lifecycle**: `bot.created`, `bot.updated`, `bot.deleted`, `bot.started`, `bot.stopped`
+- **Hub**: `hub.created`, `hub.updated`, `hub.deleted`, `hub.toggled`, `hub.bot_added`, `hub.bot_removed`, `hub.message_routed`
+- **Contacts**: `contact.created`, `contact.updated`, `contact.deleted`, `contact.analyzed`, `contact.tag_added`, `contact.tag_removed`
+- **Agents**: `agent.created`, `agent.updated`, `agent.deleted`, `agent.tested`
+- **Content**: `content.created`, `content.updated`, `content.sent`, `content.cancelled`, `content.generated`
+- **Scripts**: `script.created`, `script.executed`, `script.completed`, `script.failed`, `script.cancelled`
+- **Follow-ups**: `followup.sent`
+- **Topics**: `topic.created`, `topic.updated`, `topic.deleted`
+- **Scheduled**: Use `scheduled: "cron_expression"` + `scheduled_handler: function_name` for periodic tasks
+
+Event handler functions go in `routes.py`:
+```python
+async def on_message_handler(db, **kwargs):
+    conversation_id = kwargs.get("conversation_id")
+    message = kwargs.get("message")
+    # React to incoming message
+```
 
 ## Plugin Structure (CRITICAL — follow exactly)
 

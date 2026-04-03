@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Platform Setup Guides - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .guide-card {
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        transition: box-shadow 0.2s;
+    }
+    .guide-card:hover {
+        box-shadow: var(--shadow);
+    }
+    .guide-card .card-header {
+        border-radius: 12px 12px 0 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .guide-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    .step-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: white;
+        flex-shrink: 0;
+    }
+    .step-item {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 10px 0;
+    }
+    .step-item + .step-item {
+        border-top: 1px solid var(--border-color);
+    }
+    .tip-box {
+        background: #f0f9ff;
+        border-left: 4px solid #0ea5e9;
+        border-radius: 0 8px 8px 0;
+        padding: 12px 16px;
+    }
+    .warning-box {
+        background: #fff7ed;
+        border-left: 4px solid #f97316;
+        border-radius: 0 8px 8px 0;
+        padding: 12px 16px;
+    }
+    code {
+        background: rgba(0,0,0,0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.85em;
+    }
+    .nav-pills .nav-link {
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .nav-pills .nav-link[href="#guide-whatsapp"]  { color: white; background: #25D366; }
+    .nav-pills .nav-link[href="#guide-telegram"]  { color: white; background: #26A5E4; }
+    .nav-pills .nav-link[href="#guide-discord"]   { color: white; background: #5865F2; }
+    .nav-pills .nav-link[href="#guide-messenger"] { color: white; background: #1877F2; }
+    .nav-pills .nav-link[href="#guide-instagram"] { color: white; background: #E4405F; }
+    .nav-pills .nav-link[href="#guide-line"]      { color: white; background: #00B900; }
+    .nav-pills .nav-link[href="#guide-tinder"]    { color: white; background: #FE3C72; }
+    .nav-pills .nav-link[href="#guide-bumble"]    { color: #333; background: #FFC629; }
+    .nav-pills .nav-link.active { box-shadow: 0 2px 8px rgba(0,0,0,0.25); transform: scale(1.05); }
+    .nav-pills .nav-link.active[href="#guide-whatsapp"]  { background: #1da851 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-telegram"]  { background: #1a8ac4 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-discord"]   { background: #4752c4 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-messenger"] { background: #0d6ebd !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-instagram"] { background: #c13050 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-line"]      { background: #009700 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-tinder"]    { background: #d9305f !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-bumble"]    { background: #d4a520 !important; color: white !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-book me-2"></i>Platform Setup Guides</h2>
+        <p class="text-muted">Step-by-step instructions for connecting each messaging platform</p>
+    </div>
+    <div class="col-auto">
+        <a href="/dashboard/bots" class="btn btn-outline-secondary rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i>Back to Bots
+        </a>
+    </div>
+</div>
+
+<!-- Platform Tabs -->
+<ul class="nav nav-pills mb-4 flex-wrap gap-2" id="guideTabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#guide-whatsapp"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-telegram"><i class="bi bi-telegram me-1"></i>Telegram</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-discord"><i class="bi bi-discord me-1"></i>Discord</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-messenger"><i class="bi bi-facebook me-1"></i>Facebook Page</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-instagram"><i class="bi bi-instagram me-1"></i>Instagram</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-line"><i class="bi bi-chat-dots-fill me-1"></i>LINE</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-tinder"><i class="bi bi-fire me-1"></i>Tinder</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-bumble"><i class="bi bi-heart-fill me-1"></i>Bumble</a></li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- WhatsApp -->
+    <div class="tab-pane fade show active" id="guide-whatsapp">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #25D366;"><i class="bi bi-whatsapp"></i></div>
+                <div>
+                    <h5 class="mb-0">WhatsApp</h5>
+                    <small class="text-muted">QR Code Authentication</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #25D366;">1</span><div>Create a new bot in ChatHub and select <b>WhatsApp</b> as the platform. Enter your AI API key.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #25D366;">2</span><div>Click <b>Start</b> — a QR code will appear in a modal.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #25D366;">3</span><div>Open <b>WhatsApp</b> on your phone → Settings → Linked Devices → <b>Link a Device</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #25D366;">4</span><div>Scan the QR code with your phone. The bot will connect and show your account info.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> The session persists after server restart — no need to re-scan. Use <b>Disconnect</b> to unlink and scan a different account.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram -->
+    <div class="tab-pane fade" id="guide-telegram">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #26A5E4;"><i class="bi bi-telegram"></i></div>
+                <div>
+                    <h5 class="mb-0">Telegram</h5>
+                    <small class="text-muted">Phone + Code Authentication (Real Account)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #26A5E4;">1</span><div>Go to <a href="https://my.telegram.org" target="_blank">my.telegram.org</a> and log in with your phone number.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #26A5E4;">2</span><div>Click <b>API development tools</b> → Create an application → Copy <b>API ID</b> and <b>API Hash</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #26A5E4;">3</span><div>Create a new bot in ChatHub, select <b>Telegram</b>, enter your AI API key.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #26A5E4;">4</span><div>Click <b>Start</b> → Enter API ID, API Hash, and your phone number → Click <b>Connect</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #26A5E4;">5</span><div>Enter the verification code sent to your Telegram app. If you have 2FA, enter your password.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> This connects your <b>real Telegram account</b> (not a bot). You'll see all messages. The session auto-reconnects on restart.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discord -->
+    <div class="tab-pane fade" id="guide-discord">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #5865F2;"><i class="bi bi-discord"></i></div>
+                <div>
+                    <h5 class="mb-0">Discord</h5>
+                    <small class="text-muted">Bot Token Authentication</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #5865F2;">1</span><div>Go to <a href="https://discord.com/developers/applications" target="_blank">Discord Developer Portal</a> → Click <b>New Application</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #5865F2;">2</span><div>Click <b>Bot</b> in the sidebar → Click <b>Reset Token</b> → Copy the bot token.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #5865F2;">3</span><div>Scroll down to <b>Privileged Gateway Intents</b> → Enable <b>Message Content Intent</b> and <b>Server Members Intent</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #5865F2;">4</span><div>Go to <b>OAuth2</b> → Check <code>bot</code> scope → Under Bot Permissions, check <b>Administrator</b> (or specific permissions) → Copy the invite URL → Open in browser → Select your server → Authorize.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #5865F2;">5</span><div>In ChatHub, create a Discord bot, click <b>Start</b>, paste the bot token.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> The bot responds to @mentions in server channels and all DMs. Enable <b>AI Response</b> toggle for auto-replies.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messenger -->
+    <div class="tab-pane fade" id="guide-messenger">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #1877F2;"><i class="bi bi-facebook"></i></div>
+                <div>
+                    <h5 class="mb-0">Facebook Page</h5>
+                    <small class="text-muted">Facebook OAuth (One-Click Connect)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #1877F2;">1</span><div>Create a new bot in ChatHub, select <b>Facebook Page</b>, enter your AI API key.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #1877F2;">2</span><div>Click <b>Start</b> → Click <b>Connect with Facebook</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #1877F2;">3</span><div>Authorize ChatHub in the Facebook Login popup. Select the Facebook Page you want to connect.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #1877F2;">4</span><div>Done! The bot auto-starts and receives messages sent to your Facebook Page via Messenger.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> Messages must be sent via the <b>Messenger app</b> or messenger.com (not the Facebook page chat on facebook.com). The token is permanent and survives server restarts.
+                </div>
+                <div class="warning-box mt-2">
+                    <b>Note:</b> This connects to a <b>Facebook Page</b> inbox only — not personal Facebook Messenger. The ChatHub administrator must have Messenger webhooks configured.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instagram -->
+    <div class="tab-pane fade" id="guide-instagram">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #E4405F;"><i class="bi bi-instagram"></i></div>
+                <div>
+                    <h5 class="mb-0">Instagram</h5>
+                    <small class="text-muted">Facebook OAuth (One-Click Connect)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #E4405F;">1</span><div>Switch your Instagram account to a <b>Professional account</b> (Business or Creator): Instagram app → Settings → Account → Switch to Professional Account.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #E4405F;">2</span><div>Link your Instagram to a <b>Facebook Page</b>: Instagram Settings → Account → Linked Accounts → Facebook.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #E4405F;">3</span><div>Create a new bot in ChatHub, select <b>Instagram</b>, enter your AI API key.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #E4405F;">4</span><div>Click <b>Start</b> → Click <b>Connect with Facebook</b> → Authorize.</div></div>
+                <div class="warning-box mt-3">
+                    <b>Requirement:</b> Instagram must be a <b>Professional account</b> (not personal) linked to a Facebook Page. The Instagram webhooks must be configured by the ChatHub administrator.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LINE -->
+    <div class="tab-pane fade" id="guide-line">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #00B900;"><i class="bi bi-chat-dots-fill"></i></div>
+                <div>
+                    <h5 class="mb-0">LINE</h5>
+                    <small class="text-muted">Channel Token Authentication</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #00B900;">1</span><div>Go to <a href="https://developers.line.biz" target="_blank">LINE Developers Console</a> → Create a Provider.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #00B900;">2</span><div>Create a <b>Messaging API Channel</b> (may require creating a LINE Official Account first).</div></div>
+                <div class="step-item"><span class="step-number" style="background: #00B900;">3</span><div>Go to <b>Basic Settings</b> → Copy <b>Channel Secret</b>. Go to <b>Messaging API</b> → Issue <b>Channel Access Token</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #00B900;">4</span><div>Set <b>Webhook URL</b> to your server URL + <code>/webhooks/line</code> → Enable <b>Use webhook</b> → Disable <b>Auto-reply messages</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #00B900;">5</span><div>In ChatHub, create a LINE bot, click <b>Start</b>, enter Channel Access Token and Channel Secret.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> Add the bot as a friend by scanning the QR code in the LINE Developers Console. Messages sent to the bot will appear in ChatHub.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tinder -->
+    <div class="tab-pane fade" id="guide-tinder">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #FE3C72;"><i class="bi bi-fire"></i></div>
+                <div>
+                    <h5 class="mb-0">Tinder</h5>
+                    <small class="text-muted">Auth Token (Unofficial API)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #FE3C72;">1</span><div>Open <a href="https://tinder.com" target="_blank">tinder.com</a> in Chrome and log in to your account.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FE3C72;">2</span><div>Open <b>Developer Tools</b> (F12) → Go to the <b>Network</b> tab.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FE3C72;">3</span><div>Use Tinder (swipe, open a match, send a message) → Look for requests to <code>api.gotinder.com</code>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FE3C72;">4</span><div>Click on any request → <b>Headers</b> tab → Find and copy the <b>X-Auth-Token</b> value.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FE3C72;">5</span><div>In ChatHub, create a Tinder bot, click <b>Start</b>, paste the auth token.</div></div>
+                <div class="warning-box mt-3">
+                    <b>Warning:</b> This uses an unofficial API. Tokens may expire. There's a risk of account restrictions. Use a proxy if the API is blocked in your region.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bumble -->
+    <div class="tab-pane fade" id="guide-bumble">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #FFC629;"><i class="bi bi-heart-fill"></i></div>
+                <div>
+                    <h5 class="mb-0">Bumble</h5>
+                    <small class="text-muted">Phone + SMS Authentication (Unofficial API)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #FFC629;">1</span><div>Create a new bot in ChatHub, select <b>Bumble</b>, enter your AI API key.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FFC629;">2</span><div>Click <b>Start</b> → Enter your <b>phone number</b> (the one registered with Bumble).</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FFC629;">3</span><div>Enter the <b>SMS verification code</b> sent to your phone.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #FFC629;">4</span><div>The bot connects and starts receiving messages from your matches.</div></div>
+                <div class="warning-box mt-3">
+                    <b>Warning:</b> This uses an unofficial API. There's a risk of account restrictions. In heterosexual matches, women must message first (Bumble's rule).
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-select tab based on URL hash
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+        const tab = document.querySelector(`a[href="#guide-${hash}"]`);
+        if (tab) {
+            new bootstrap.Tab(tab).show();
+        }
+    }
+</script>
+{% endblock %}

@@ -103,7 +103,7 @@ class InstagramAdapter(PlatformAdapter):
         """
         bot_id = instance.bot_profile_id
         config = instance.config
-        access_token = config.get("api_key", "")
+        access_token = config.get("api_key", "") or config.get("platform_token", "")
         page_id = config.get("instagram_page_id", "")
 
         if not access_token:
@@ -333,6 +333,11 @@ class InstagramAdapter(PlatformAdapter):
                 if mode == "subscribe" and token == bot_config["webhook_verify_token"]:
                     logger.info("Instagram webhook verified successfully")
                     return Response(content=challenge, media_type="text/plain")
+
+            # Fallback: accept default verify token even if no bots are running
+            if mode == "subscribe" and token == "chathub_verify" and challenge:
+                logger.info("Instagram webhook verified (default token)")
+                return Response(content=challenge, media_type="text/plain")
 
             logger.warning(f"Instagram webhook verification failed: mode={mode}")
             return Response(content="Verification failed", status_code=403)
@@ -595,7 +600,7 @@ class InstagramAdapter(PlatformAdapter):
             bot_profile = self._get_bot_profile(db, bot_id)
             if bot_profile:
                 log_activity(
-                    db, bot_profile.user_id,
+                    db, bot_id,
                     "instagram_message_received",
                     f"Message from {sender_name} to bot '{bot_profile.name}': {text[:80]}",
                 )
@@ -671,7 +676,7 @@ class InstagramAdapter(PlatformAdapter):
                     broadcast_assistant_message(conversation.id, assistant_msg)
 
                     log_activity(
-                        db, bot_profile.user_id,
+                        db, bot_id,
                         "instagram_message_sent",
                         f"AI reply to {sender_name} via bot '{bot_profile.name}': {ai_text[:80]}",
                     )

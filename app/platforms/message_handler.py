@@ -26,7 +26,30 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 from urllib.parse import quote
 
+from app.tools.event_bus import tool_event_bus
+
 logger = logging.getLogger(__name__)
+
+
+def emit_event_sync(event_name: str, **kwargs):
+    """Emit event from sync code (schedules on the event loop)."""
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(tool_event_bus.emit(event_name, **kwargs))
+        else:
+            loop.run_until_complete(tool_event_bus.emit(event_name, **kwargs))
+    except Exception:
+        pass
+
+
+async def emit_message_received(db, bot_profile_id, conversation, message):
+    """Emit message.received event to tool event bus."""
+    try:
+        await tool_event_bus.emit("message.received", db=db, bot_profile_id=bot_profile_id, conversation=conversation, message=message)
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +141,7 @@ def find_or_create_conversation(
     )
     db.add(conversation)
     db.flush()
+    emit_event_sync("conversation.created", db=db, bot_profile_id=bot_profile_id, conversation=conversation)
     logger.info(
         f"Bot {bot_profile_id}: Created conversation '{chat_name}' "
         f"(chat_id={chat_id}, group={is_group})"
@@ -167,6 +191,15 @@ def save_user_message(
     """
     from app.database import Message
 
+    # Dedup: skip if message with same platform_message_id already exists
+    if platform_message_id:
+        existing = db.query(Message).filter(
+            Message.conversation_id == conversation_id,
+            Message.whatsapp_message_id == platform_message_id,
+        ).first()
+        if existing:
+            return existing
+
     msg = Message(
         conversation_id=conversation_id,
         role="user",
@@ -186,6 +219,7 @@ def save_user_message(
     )
     db.add(msg)
     db.flush()
+    emit_event_sync("message.received", db=db, conversation_id=conversation_id, message=msg)
     return msg
 
 
@@ -839,7 +873,7 @@ def is_human_takeover_active(db, conversation_id: int) -> bool:
 
 def log_activity(
     db,
-    user_id: int,
+    bot_profile_id_or_user_id: int,
     action: str,
     details: str = "",
 ):
@@ -847,14 +881,14 @@ def log_activity(
 
     Args:
         db: SQLAlchemy session
-        user_id: User who triggered the action
+        bot_profile_id_or_user_id: Bot profile ID (ActivityLog uses bot_profile_id)
         action: Action type string
         details: Human-readable details
     """
     from app.database import ActivityLog
 
     log = ActivityLog(
-        user_id=user_id,
+        bot_profile_id=bot_profile_id_or_user_id,
         action=action,
         details=details,
     )

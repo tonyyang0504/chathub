@@ -17,6 +17,8 @@ from app.database import (
     ScriptExecution, HubBotMembership, Conversation
 )
 from app.auth.utils import get_current_user
+from app.tools.event_bus import tool_event_bus
+from app.platforms.message_handler import emit_event_sync
 from app.scripts.models import (
     ScriptCreate, ScriptUpdate, ScriptResponse, ScriptDetailResponse,
     ScriptMessageCreate, ScriptMessageUpdate, ScriptMessageResponse,
@@ -311,6 +313,7 @@ async def create_script(
     db.add(script)
     db.commit()
     db.refresh(script)
+    emit_event_sync("script.created", db=db, script_id=script.id)
 
     # Auto-sync bots for the target groups
     if data.group_ids:
@@ -674,6 +677,7 @@ async def execute_script(
 
     db.commit()
     db.refresh(execution)
+    emit_event_sync("script.executed", db=db, script_id=script_id)
 
     # If immediate execution, trigger the scheduler to run it now
     if is_immediate:
@@ -717,6 +721,7 @@ async def cancel_script(
     ).update({"status": "cancelled"})
 
     db.commit()
+    emit_event_sync("script.cancelled", db=db, script_id=script_id)
 
     # If it was running, try to stop the active task
     if previous_status == "running":

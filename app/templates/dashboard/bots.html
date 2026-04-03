@@ -290,6 +290,19 @@
                             <input type="text" class="form-control" name="name" required placeholder="e.g., Customer Support Bot">
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">Platform</label>
+                            <input type="hidden" name="platform_type" id="createPlatformValue" value="whatsapp">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="createPlatformDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-whatsapp me-2" style="color: #25D366;"></i>WhatsApp
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="createPlatformDropdown">
+                                    <div class="model-dropdown-menu-inner" id="createPlatformList">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">AI Provider</label>
                             <input type="hidden" name="ai_provider" id="createProviderValue" value="openai">
                             <div class="dropdown model-dropdown">
@@ -326,6 +339,7 @@
                             <input type="password" class="form-control" name="api_key" required placeholder="sk-...">
                             <small class="text-muted" id="createApiKeyHelp">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
                         </div>
+                        <!-- Platform credentials are entered in the connection modal (shown when clicking Start) -->
                         <div class="col-12">
                             <label class="form-label">System Prompt (AI Role)</label>
                             <textarea class="form-control" name="system_prompt" rows="4" placeholder="You are a helpful assistant...">You are a helpful assistant. Do not use markdown formatting like asterisks (*), underscores (_), or other special characters for emphasis. Write plain text only.</textarea>
@@ -464,11 +478,23 @@
             <form id="editBotForm">
                 <input type="hidden" name="bot_id" id="editBotId">
                 <div class="modal-body">
-                    <!-- Same fields as create, populated via JS -->
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Bot Name *</label>
                             <input type="text" class="form-control" name="name" id="editName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Platform</label>
+                            <input type="hidden" name="platform_type" id="editPlatformValue" value="whatsapp">
+                            <div class="dropdown model-dropdown">
+                                <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="editPlatformDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-whatsapp me-2" style="color: #25D366;"></i>WhatsApp
+                                </button>
+                                <div class="dropdown-menu model-dropdown-menu" aria-labelledby="editPlatformDropdown">
+                                    <div class="model-dropdown-menu-inner" id="editPlatformList">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">AI Provider</label>
@@ -506,6 +532,7 @@
                             <label class="form-label">API Key</label>
                             <input type="password" class="form-control" name="api_key" id="editApiKey" placeholder="Enter API key">
                         </div>
+                        <!-- Platform credentials are entered in the connection modal (shown when clicking Start) -->
                         <div class="col-12">
                             <label class="form-label">System Prompt</label>
                             <textarea class="form-control" name="system_prompt" id="editPrompt" rows="4"></textarea>
@@ -622,6 +649,146 @@
     let currentBotId = null;
     let qrWebSocket = null;
 
+    // Platform configuration
+    const PLATFORM_INFO = {
+        whatsapp:  { label: 'WhatsApp',  icon: 'bi-whatsapp',        color: '#25D366', auth: 'qr_code',     tokenLabel: null,
+            setupGuide: 'Scan the QR code with your WhatsApp mobile app to connect.' },
+        telegram:  { label: 'Telegram',  icon: 'bi-telegram',        color: '#26A5E4', auth: 'phone_code',  tokenLabel: null,
+            setupGuide: '1. Go to <a href="https://my.telegram.org" target="_blank">my.telegram.org</a> → API development tools<br>2. Copy API ID and API Hash<br>3. Enter them below with your phone number' },
+        instagram: { label: 'Instagram', icon: 'bi-instagram',       color: '#E4405F', auth: 'api_token',   tokenLabel: null,
+            setupGuide: 'Click Connect with Facebook below. Requires an <b>Instagram Professional account</b> (Business/Creator) linked to a Facebook Page.',
+            connectFields: [
+                {key: 'platform_token', label: 'Page Access Token', placeholder: 'Paste token from Meta Developer Portal', type: 'password'},
+                {key: 'app_secret', label: 'App Secret', placeholder: 'From App Settings → Basic', type: 'password'},
+            ]},
+        messenger: { label: 'Facebook Page', icon: 'bi-facebook',     color: '#1877F2', auth: 'api_token',   tokenLabel: null,
+            setupGuide: 'Click Connect with Facebook below to authorize your Facebook Page.',
+            connectFields: [
+                {key: 'platform_token', label: 'Page Access Token', placeholder: 'Paste token from Meta Developer Portal', type: 'password'},
+                {key: 'app_secret', label: 'App Secret', placeholder: 'From App Settings → Basic', type: 'password'},
+            ]},
+        discord:   { label: 'Discord',   icon: 'bi-discord',         color: '#5865F2', auth: 'api_token',   tokenLabel: null,
+            setupGuide: '1. Go to <a href="https://discord.com/developers/applications" target="_blank">Discord Developer Portal</a><br>2. Create Application → Bot → <b>Reset Token</b> → copy it<br>3. Enable <b>Message Content Intent</b> under Privileged Intents<br>4. Invite bot to your server via OAuth2 URL',
+            connectFields: [
+                {key: 'platform_token', label: 'Bot Token', placeholder: 'From Discord Developer Portal → Bot', type: 'password'},
+            ]},
+        line:      { label: 'LINE',      icon: 'bi-chat-dots-fill',  color: '#00B900', auth: 'api_token',   tokenLabel: null,
+            setupGuide: '1. Go to <a href="https://developers.line.biz" target="_blank">LINE Developers Console</a><br>2. Create Provider → Create Messaging API Channel<br>3. Copy <b>Channel Access Token</b> and <b>Channel Secret</b><br>4. Set Webhook URL to your server + <code>/webhooks/line</code>',
+            connectFields: [
+                {key: 'platform_token', label: 'Channel Access Token', placeholder: 'From LINE Developers Console', type: 'password'},
+                {key: 'channel_secret', label: 'Channel Secret', placeholder: 'From LINE Developers Console', type: 'password'},
+            ]},
+        linkedin:  { label: 'LinkedIn',  icon: 'bi-linkedin',        color: '#0A66C2', auth: 'api_token',   tokenLabel: null,
+            setupGuide: '1. Apply for <a href="https://www.linkedin.com/developers/" target="_blank">LinkedIn Partnership</a> (messaging API access required)<br>2. Create OAuth app → generate access token<br>3. Paste token below',
+            connectFields: [
+                {key: 'platform_token', label: 'Access Token', placeholder: 'OAuth 2.0 access token', type: 'password'},
+            ]},
+        tinder:    { label: 'Tinder',    icon: 'bi-fire',            color: '#FE3C72', auth: 'credentials', tokenLabel: null,
+            setupGuide: '1. Open <a href="https://tinder.com" target="_blank">tinder.com</a> in Chrome and log in<br>2. Open DevTools (F12) → <b>Network</b> tab<br>3. Use Tinder (swipe/chat) → find request to <code>api.gotinder.com</code><br>4. Copy the <b>X-Auth-Token</b> header value',
+            connectFields: [
+                {key: 'platform_token', label: 'Auth Token', placeholder: 'X-Auth-Token from browser DevTools', type: 'password'},
+            ]},
+        bumble:    { label: 'Bumble',    icon: 'bi-heart-fill',      color: '#FFC629', auth: 'credentials', tokenLabel: null,
+            setupGuide: 'Enter your phone number to receive an SMS verification code from Bumble.',
+            connectFields: [
+                {key: 'platform_token', label: 'Auth Token', placeholder: 'From phone/SMS verification', type: 'password'},
+            ]},
+        wechat:    { label: 'WeChat',    icon: 'bi-wechat',          color: '#07C160', auth: 'qr_code',     tokenLabel: null,
+            setupGuide: 'WeChat integration is not yet available.' },
+    };
+
+    // Update form fields visibility based on selected platform
+    function updatePlatformFields(prefix, platformName) {
+        const info = PLATFORM_INFO[platformName];
+        if (!info) return;
+
+
+        // Show/hide WhatsApp-specific fields (headless, proxy, ending detection)
+        const formId = prefix === 'create' ? 'createBotForm' : 'editBotForm';
+        const form = document.getElementById(formId);
+        if (!form) return;
+        const headlessSwitch = form.querySelector('[name="headless"]');
+        const endingSwitch = form.querySelector('[name="ending_detection_enabled"]');
+        const proxySection = form.querySelector('[name="proxy_enabled"]');
+        const isWhatsApp = platformName === 'whatsapp';
+
+        // Find headless, ending detection, and proxy container rows
+        // Use d-none class (not style.display) because Bootstrap's d-flex uses !important
+        if (headlessSwitch) {
+            const headlessRow = headlessSwitch.closest('.col-md-6');
+            if (headlessRow) headlessRow.classList.toggle('d-none', !isWhatsApp);
+        }
+        if (endingSwitch) {
+            const endingRow = endingSwitch.closest('.col-md-6');
+            if (endingRow) endingRow.classList.toggle('d-none', !isWhatsApp);
+        }
+        // Show proxy for WhatsApp, Tinder, Bumble (platforms that may need it)
+        const showProxy = isWhatsApp || platformName === 'tinder' || platformName === 'bumble';
+        if (proxySection) {
+            let node = proxySection.closest('.col-md-6');
+            if (node) {
+                let parent = node.parentElement;
+                let proxyElements = parent.querySelectorAll('[name="proxy_enabled"], [name="proxy_url"], [name="proxy_username"], [name="proxy_password"]');
+                proxyElements.forEach(el => {
+                    let container = el.closest('.col-md-6');
+                    if (container) container.classList.toggle('d-none', !showProxy);
+                });
+                let hrSections = parent.querySelectorAll('.col-12.mt-3');
+                hrSections.forEach(section => {
+                    if (section.querySelector('.bi-shield-lock')) {
+                        section.classList.toggle('d-none', !showProxy);
+                    }
+                });
+            }
+        }
+    }
+
+    // Populate platform dropdown
+    function setupPlatformDropdown(prefix) {
+        const listEl = document.getElementById(prefix + 'PlatformList');
+        if (!listEl) return;
+
+        let html = '';
+        for (const [key, info] of Object.entries(PLATFORM_INFO)) {
+            const selected = key === 'whatsapp' ? ' selected' : '';
+            html += `<a class="dropdown-item${selected}" href="#" data-value="${key}">
+                <i class="${info.icon} me-2" style="color: ${info.color};"></i>${info.label}
+            </a>`;
+        }
+        listEl.innerHTML = html;
+
+        // Bind click events
+        listEl.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = this.closest('.model-dropdown');
+                const btn = dropdown.querySelector('.model-dropdown-btn');
+                const hiddenInput = dropdown.previousElementSibling;
+                const value = this.getAttribute('data-value');
+                const info = PLATFORM_INFO[value];
+                btn.innerHTML = `<i class="${info.icon} me-2" style="color: ${info.color};"></i>${info.label}`;
+                hiddenInput.value = value;
+                dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                bootstrap.Dropdown.getInstance(btn)?.hide();
+                updatePlatformFields(prefix, value);
+            });
+        });
+    }
+
+    function setPlatformDropdownValue(dropdownId, value) {
+        const btn = document.getElementById(dropdownId);
+        if (!btn) return;
+        const dropdown = btn.closest('.model-dropdown');
+        const hiddenInput = dropdown.previousElementSibling;
+        const info = PLATFORM_INFO[value] || PLATFORM_INFO.whatsapp;
+        btn.innerHTML = `<i class="${info.icon} me-2" style="color: ${info.color};"></i>${info.label}`;
+        hiddenInput.value = value;
+        dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+        const item = dropdown.querySelector(`.dropdown-item[data-value="${value}"]`);
+        if (item) item.classList.add('selected');
+    }
+
     async function loadBots() {
         try {
             const res = await fetch('/api/bots');
@@ -644,7 +811,11 @@
                     </div>
                 `;
             } else {
-                grid.innerHTML = data.bots.map(bot => `
+                grid.innerHTML = data.bots.map(bot => {
+                    const pInfo = PLATFORM_INFO[bot.platform_type] || PLATFORM_INFO.whatsapp;
+                    const isWhatsApp = (bot.platform_type || 'whatsapp') === 'whatsapp';
+                    const isConnected = bot.platform_connected || bot.whatsapp_connected;
+                    return `
                     <div class="col-md-6 col-lg-4">
                         <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center">
@@ -654,22 +825,23 @@
                                              class="rounded-circle me-2"
                                              style="width: 40px; height: 40px; object-fit: cover;"
                                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div class="rounded-circle bg-secondary d-none justify-content-center align-items-center me-2"
-                                             style="width: 40px; height: 40px;">
-                                            <i class="bi bi-robot text-white"></i>
+                                        <div class="rounded-circle d-none justify-content-center align-items-center me-2"
+                                             style="width: 40px; height: 40px; background: ${pInfo.color};">
+                                            <i class="${pInfo.icon} text-white"></i>
                                         </div>
                                     ` : `
-                                        <div class="rounded-circle bg-success d-flex justify-content-center align-items-center me-2"
-                                             style="width: 40px; height: 40px;">
-                                            <i class="bi bi-robot text-white"></i>
+                                        <div class="rounded-circle d-flex justify-content-center align-items-center me-2"
+                                             style="width: 40px; height: 40px; background: ${pInfo.color};">
+                                            <i class="${pInfo.icon} text-white"></i>
                                         </div>
                                     `}
                                     <div>
                                         <h6 class="mb-0">${bot.name}</h6>
+                                        <small class="text-muted" style="font-size: 11px;">${pInfo.label}</small>
                                     </div>
                                 </div>
                                 <div>
-                                    ${bot.whatsapp_account_type === 'business'
+                                    ${isWhatsApp && bot.whatsapp_account_type === 'business'
                                         ? '<span class="badge bg-info me-1"><i class="bi bi-building me-1"></i>Business</span>'
                                         : ''
                                     }
@@ -680,13 +852,13 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                ${bot.whatsapp_phone || bot.whatsapp_name || bot.whatsapp_push_name ? `
-                                    <div class="mb-3 p-2 rounded" style="background-color: #dcf8c6;">
+                                ${(bot.whatsapp_phone || bot.whatsapp_name || bot.whatsapp_push_name) ? `
+                                    <div class="mb-3 p-2 rounded" style="background-color: ${pInfo.color}15;">
                                         <div class="d-flex justify-content-between align-items-start mb-1">
-                                            <p class="mb-0 small fw-bold" style="color: #25D366;">
-                                                <i class="bi bi-whatsapp me-1"></i>WhatsApp Account
+                                            <p class="mb-0 small fw-bold" style="color: ${pInfo.color};">
+                                                <i class="${pInfo.icon} me-1"></i>${pInfo.label} Account
                                             </p>
-                                            <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px;" onclick="event.stopPropagation(); disconnectWhatsAppFromCard(${bot.id})" title="Disconnect WhatsApp">
+                                            <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px;" onclick="event.stopPropagation(); disconnectWhatsAppFromCard(${bot.id})" title="Disconnect">
                                                 Disconnect
                                             </button>
                                         </div>
@@ -712,7 +884,7 @@
                                     <i class="bi bi-envelope me-1"></i> ${bot.message_count} messages
                                 </p>
                             </div>
-                            ${bot.is_running && bot.whatsapp_connected ? `
+                            ${bot.is_running && isConnected ? `
                             <div class="card-body bot-controls border-top pt-2 pb-2" id="botControls_${bot.id}">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                     <span class="text-muted small"><i class="bi bi-robot me-1"></i> AI Response</span>
@@ -724,6 +896,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                ${isWhatsApp || ['telegram', 'messenger', 'instagram', 'discord'].includes(bot.platform_type) ? `
                                 <div class="d-flex align-items-center justify-content-between mb-1">
                                     <span class="text-muted small"><i class="bi bi-clock-history me-1"></i> Sync History</span>
                                     <div class="d-flex align-items-center justify-content-end gap-1" id="syncControls_${bot.id}" style="min-width: 200px;">
@@ -750,6 +923,7 @@
                                     </div>
                                     <small class="text-muted" id="syncProgressText_${bot.id}" style="font-size: 11px;"></small>
                                 </div>
+                                ` : ''}
                             </div>
                             ` : ''}
                             <div class="card-footer">
@@ -770,11 +944,12 @@
                             </div>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
 
                 // Fetch toggle states for running bots
                 data.bots.forEach(bot => {
-                    if (bot.is_running && bot.whatsapp_connected) {
+                    const isConnected = bot.platform_connected || bot.whatsapp_connected;
+                    if (bot.is_running && isConnected) {
                         updateBotToggleState(bot.id);
                     }
                 });
@@ -790,6 +965,7 @@
         const form = e.target;
         const data = {
             name: form.name.value,
+            platform_type: form.platform_type.value,
             ai_provider: form.ai_provider.value,
             api_key: form.api_key.value,
             model: form.model.value,
@@ -822,7 +998,9 @@
             if (res.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('createBotModal')).hide();
                 form.reset();
-                // Reset provider and model dropdowns to default
+                // Reset platform, provider, and model dropdowns to default
+                setPlatformDropdownValue('createPlatformDropdown', 'whatsapp');
+                updatePlatformFields('create', 'whatsapp');
                 setProviderDropdownValue('createProviderDropdown', 'openai');
                 updateModelDropdown('create', 'openai');
                 loadBots();
@@ -855,32 +1033,36 @@
 
             if (res.ok) {
                 const data = await res.json();
-                console.log('Bot started successfully, needs_qr_scan:', data.needs_qr_scan);
+                const platformType = data.platform_type || 'whatsapp';
+                const authMethod = data.auth_method || 'qr_code';
+                const pInfo = PLATFORM_INFO[platformType] || PLATFORM_INFO.whatsapp;
+                console.log('Bot started successfully, platform:', platformType, 'auth:', authMethod, 'needs_qr:', data.needs_qr_scan);
 
-                if (data.needs_qr_scan) {
-                    // Fresh bot - needs QR code scan
-                    showToast('Bot starting - QR code scan required...', 'info');
-
-                    // Show modal with QR placeholder
-                    console.log('About to call showQRModal...');
+                if (authMethod === 'phone_code' && data.needs_qr_scan) {
+                    // Telegram: needs phone+code auth
+                    showToast(`Starting ${pInfo.label}...`, 'info');
+                    showTelegramAuthModal(botId);
+                    connectQRWebSocket(botId);
+                } else if (authMethod === 'qr_code' && data.needs_qr_scan) {
+                    // QR-based platform (WhatsApp/WeChat)
+                    showToast(`Bot starting - QR code scan required...`, 'info');
                     showQRModal(botId);
-                    console.log('showQRModal called');
-
-                    // Connect WebSocket to listen for QR code
-                    console.log('About to call connectQRWebSocket...');
                     connectQRWebSocket(botId);
-                    console.log('connectQRWebSocket called');
-
-                    // Don't refresh bot list while QR modal is open - it will refresh when connected
-                } else {
-                    // Existing session - just show toast, no modal needed
-                    showToast('Reconnecting to WhatsApp...', 'info');
-
-                    // No modal shown - just connect WebSocket for status updates
+                } else if (data.needs_qr_scan && pInfo.connectFields) {
+                    // Token-based platform needs credentials — show connection modal
+                    showTokenConnectModal(botId, platformType);
+                } else if (authMethod === 'qr_code' || authMethod === 'phone_code') {
+                    // Has existing session - reconnect
+                    showToast(`Reconnecting to ${pInfo.label}...`, 'info');
                     connectQRWebSocket(botId);
-
-                    // Refresh bot list after a delay for reconnecting bots
                     setTimeout(() => loadBots(), 3000);
+                } else {
+                    // Has stored credentials — just connect
+                    showToast(`Starting ${pInfo.label} bot...`, 'info');
+                    connectQRWebSocket(botId);
+                    setTimeout(() => loadBots(), 2000);
+                    setTimeout(() => loadBots(), 5000);
+                    setTimeout(() => loadBots(), 8000);
                 }
             } else {
                 const err = await res.json();
@@ -910,30 +1092,7 @@
         }
     }
 
-    // ============== AI Response Toggle & History Sync ==============
-
-    async function toggleAIResponse(botId, enabled) {
-        try {
-            const res = await fetch(`/api/bots/${botId}/toggle-ai`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({enabled})
-            });
-            if (res.ok) {
-                showToast(`AI Response ${enabled ? 'enabled' : 'disabled'}`, 'success');
-            } else {
-                const err = await res.json();
-                showToast(err.detail || 'Error toggling AI', 'danger');
-                // Revert checkbox
-                const toggle = document.getElementById(`aiToggle_${botId}`);
-                if (toggle) toggle.checked = !enabled;
-            }
-        } catch (e) {
-            showToast('Error toggling AI response', 'danger');
-            const toggle = document.getElementById(`aiToggle_${botId}`);
-            if (toggle) toggle.checked = !enabled;
-        }
-    }
+    // ============== History Sync ==============
 
     function toggleSyncAll(botId, checked) {
         const countInput = document.getElementById(`syncCount_${botId}`);
@@ -1080,6 +1239,29 @@
     }
 
     // Fetch and set AI toggle state for a bot card after render
+    let _skipToggleEvent = {};
+    async function toggleAIResponse(botId, enabled) {
+        if (_skipToggleEvent[botId]) return;
+        try {
+            const res = await fetch(`/api/bots/${botId}/toggle-ai`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enabled})
+            });
+            if (res.ok) {
+                showToast(`AI Response ${enabled ? 'enabled' : 'disabled'}`, 'success');
+            } else {
+                const err = await res.json();
+                showToast(err.detail || 'Error toggling AI', 'danger');
+                const toggle = document.getElementById(`aiToggle_${botId}`);
+                if (toggle) { _skipToggleEvent[botId] = true; toggle.checked = !enabled; _skipToggleEvent[botId] = false; }
+            }
+        } catch (e) {
+            showToast('Error toggling AI response', 'danger');
+            const toggle = document.getElementById(`aiToggle_${botId}`);
+            if (toggle) { _skipToggleEvent[botId] = true; toggle.checked = !enabled; _skipToggleEvent[botId] = false; }
+        }
+    }
     async function updateBotToggleState(botId) {
         try {
             const res = await fetch(`/api/bots/${botId}/status`);
@@ -1087,7 +1269,9 @@
             const data = await res.json();
             const toggle = document.getElementById(`aiToggle_${botId}`);
             if (toggle) {
+                _skipToggleEvent[botId] = true;
                 toggle.checked = data.ai_response_enabled || false;
+                _skipToggleEvent[botId] = false;
             }
             // If sync is active, show progress and update button states
             if (data.history_sync_active) {
@@ -1227,6 +1411,12 @@
                     var modalElement = document.getElementById('qrModal');
                     var modal = modalElement ? bootstrap.Modal.getInstance(modalElement) : null;
                     var isModalOpen = modal && modalElement.classList.contains('show');
+
+                    // Handle Telegram multi-step auth
+                    if (data.status.auth_step) {
+                        updateTelegramAuthStep(data.status.auth_step, data.status.message || '');
+                        return;
+                    }
 
                     // If connected successfully, show success and close modal
                     if (data.status.connected || data.status.whatsapp_connected) {
@@ -1504,6 +1694,11 @@
         body.appendChild(container);
         body.appendChild(status);
 
+        var helpLink = document.createElement('div');
+        helpLink.className = 'text-center mt-2';
+        helpLink.innerHTML = '<a href="/dashboard/guides#whatsapp" target="_blank" class="text-muted small"><i class="bi bi-question-circle me-1"></i>Need help? View full setup guide</a>';
+        body.appendChild(helpLink);
+
         content.appendChild(header);
         content.appendChild(body);
 
@@ -1520,6 +1715,10 @@
 
             document.getElementById('editBotId').value = bot.id;
             document.getElementById('editName').value = bot.name;
+            // Set platform
+            const platform = bot.platform_type || 'whatsapp';
+            setPlatformDropdownValue('editPlatformDropdown', platform);
+            updatePlatformFields('edit', platform);
             // Set provider first, then populate models, then set model
             const provider = bot.ai_provider || 'openai';
             setProviderDropdownValue('editProviderDropdown', provider);
@@ -1531,6 +1730,12 @@
                 apiKeyInput.placeholder = bot.api_key_masked;
             } else {
                 apiKeyInput.placeholder = 'Enter API key';
+            }
+            // Show masked platform token in input placeholder
+            const ptInput = document.getElementById('editPlatformToken');
+            if (ptInput) {
+                ptInput.value = '';
+                ptInput.placeholder = bot.platform_token_masked || 'Enter platform token';
             }
             document.getElementById('editPrompt').value = bot.system_prompt;
             document.getElementById('editTemperature').value = bot.temperature ?? 0.7;
@@ -1564,6 +1769,7 @@
 
         const data = {
             name: form.name.value,
+            platform_type: form.platform_type.value,
             ai_provider: form.ai_provider.value,
             model: form.model.value,
             system_prompt: form.system_prompt.value,
@@ -1594,7 +1800,6 @@
         if (form.proxy_password.value) {
             data.proxy_password = form.proxy_password.value;
         }
-
         try {
             const res = await fetch(`/api/bots/${botId}`, {
                 method: 'PUT',
@@ -1949,13 +2154,384 @@
     }
 
     // Initialize page
+    // ============== Telegram Auth Modal ==============
+
+    // ============== Token Connection Modal (Messenger, Discord, LINE, etc.) ==============
+
+    function showTokenConnectModal(botId, platformType) {
+        const pInfo = PLATFORM_INFO[platformType];
+        if (!pInfo || !pInfo.connectFields) return;
+
+        ensureQRModalExists();
+        var modalElement = document.getElementById('qrModal');
+        var container = document.getElementById('qrCodeContainer');
+        var status = document.getElementById('qrStatus');
+        var modalTitle = modalElement.querySelector('.modal-title');
+        var instructionText = modalElement.querySelector('.modal-body > p');
+
+        if (modalTitle) modalTitle.textContent = `Connect ${pInfo.label}`;
+        if (status) { status.textContent = ''; status.className = 'alert alert-info d-none'; }
+
+        // Messenger and Instagram use Facebook OAuth (one-click connect)
+        if (platformType === 'messenger' || platformType === 'instagram') {
+            if (instructionText) instructionText.textContent = `Connect your Facebook Page to ${pInfo.label}`;
+            container.innerHTML = `
+                <div style="max-width: 340px; margin: 0 auto; text-align: center;">
+                    <div style="margin-bottom: 20px;">
+                        <i class="${pInfo.icon}" style="font-size: 4rem; color: ${pInfo.color}; opacity: 0.3;"></i>
+                    </div>
+                    ${pInfo.setupGuide ? `<div class="alert alert-light border small mb-3" style="border-radius: 12px; line-height: 1.8;">${pInfo.setupGuide}</div>` : `<p class="text-muted mb-3">Click the button below to connect your Facebook Page.</p>`}
+                    <a href="/api/bots/${botId}/facebook-oauth-start"
+                       class="btn rounded-pill px-4"
+                       style="background: #1877F2; color: white; width: 100%; padding: 12px;">
+                        <i class="bi bi-facebook me-2"></i>Connect with Facebook
+                    </a>
+                    <div id="facebookOAuthStatus" class="mt-3" style="display: none;">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                        <span class="text-muted">Waiting for authorization...</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <a href="/dashboard/guides#${platformType}" target="_blank" class="text-muted small"><i class="bi bi-question-circle me-1"></i>Need help? View full setup guide</a>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Other platforms: show token input fields with setup guide
+            if (instructionText) instructionText.textContent = `Enter your ${pInfo.label} credentials`;
+
+            let guideHtml = pInfo.setupGuide ? `<div class="alert alert-light border small mb-3" style="border-radius: 12px; line-height: 1.8;">${pInfo.setupGuide}</div>` : '';
+
+            let fieldsHtml = '';
+            pInfo.connectFields.forEach(field => {
+                fieldsHtml += `
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">${field.label}</label>
+                        <input type="${field.type || 'text'}" class="form-control token-connect-field"
+                               data-key="${field.key}"
+                               placeholder="${field.placeholder || ''}"
+                               style="border-radius: 20px; padding: 10px 18px;">
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="token-connect-form" style="max-width: 380px; margin: 0 auto; text-align: left;">
+                    ${guideHtml}
+                    ${fieldsHtml}
+                    <button class="btn btn-sm rounded-pill px-4" id="tokenConnectSubmit"
+                            style="background: linear-gradient(135deg, ${pInfo.color}, ${pInfo.color}cc); color: white; width: 100%;"
+                            onclick="submitTokenConnect(${botId}, '${platformType}')">
+                        <i class="${pInfo.icon} me-1"></i>Connect
+                    </button>
+                    <div class="text-center mt-2">
+                        <a href="/dashboard/guides#${platformType}" target="_blank" class="text-muted small"><i class="bi bi-question-circle me-1"></i>Need help? View full setup guide</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        qrModalShown = true;
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
+
+    async function submitTokenConnect(botId, platformType) {
+        var btn = document.getElementById('tokenConnectSubmit');
+        var fields = document.querySelectorAll('.token-connect-field');
+        var data = {};
+        var allFilled = true;
+
+        fields.forEach(f => {
+            var key = f.getAttribute('data-key');
+            var val = f.value.trim();
+            if (!val) allFilled = false;
+            data[key] = val;
+        });
+
+        if (!allFilled) {
+            showToast('All fields are required', 'danger');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Connecting...';
+
+        try {
+            // Save credentials via bot update
+            var res = await fetch(`/api/bots/${botId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            if (!res.ok) {
+                var err = await res.json();
+                showToast(err.detail || 'Error saving credentials', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = 'Connect';
+                return;
+            }
+
+            // Stop the bot (it was started without credentials)
+            await fetch(`/api/bots/${botId}/stop`, {method: 'POST'});
+
+            // Close modal
+            var modalElement = document.getElementById('qrModal');
+            var modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+
+            // Wait a moment then restart with credentials
+            await new Promise(r => setTimeout(r, 500));
+
+            // Restart the bot
+            var startRes = await fetch(`/api/bots/${botId}/start`, {method: 'POST'});
+            if (startRes.ok) {
+                showToast(`${PLATFORM_INFO[platformType]?.label || 'Bot'} connecting...`, 'info');
+                connectQRWebSocket(botId);
+                setTimeout(() => loadBots(), 3000);
+            } else {
+                var startErr = await startRes.json();
+                showToast(startErr.detail || 'Error starting bot', 'danger');
+            }
+        } catch (e) {
+            showToast('Error connecting', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = 'Connect';
+        }
+    }
+
+    function startFacebookOAuthPolling(botId) {
+        var statusDiv = document.getElementById('facebookOAuthStatus');
+        if (statusDiv) statusDiv.style.display = 'block';
+
+        // Listen for popup message
+        window.addEventListener('message', function handler(event) {
+            if (event.data && event.data.type === 'facebook-oauth-complete') {
+                window.removeEventListener('message', handler);
+                if (statusDiv) statusDiv.style.display = 'none';
+                var modalElement = document.getElementById('qrModal');
+                var modal = bootstrap.Modal.getInstance(modalElement);
+
+                if (event.data.success) {
+                    if (modal) modal.hide();
+                    fetch(`/api/bots/${botId}/stop`, {method: 'POST'}).then(() => {
+                        return fetch(`/api/bots/${botId}/start`, {method: 'POST'});
+                    }).then(() => {
+                        showToast('Facebook Page connected! Bot starting...', 'success');
+                        connectQRWebSocket(botId);
+                        setTimeout(() => loadBots(), 3000);
+                    });
+                } else {
+                    showToast('Facebook authorization failed', 'danger');
+                }
+            }
+        });
+
+        // Fallback: poll bot's platform_config every 3s to detect OAuth completion
+        var pollCount = 0;
+        var pollInterval = setInterval(async () => {
+            pollCount++;
+            if (pollCount > 60) { clearInterval(pollInterval); if (statusDiv) statusDiv.style.display = 'none'; return; }
+            try {
+                var res = await fetch(`/api/bots/${botId}`);
+                var bot = await res.json();
+                if (bot.whatsapp_name) {
+                    clearInterval(pollInterval);
+                    if (statusDiv) statusDiv.style.display = 'none';
+                    var modalElement = document.getElementById('qrModal');
+                    var modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                    await fetch(`/api/bots/${botId}/stop`, {method: 'POST'});
+                    await new Promise(r => setTimeout(r, 500));
+                    await fetch(`/api/bots/${botId}/start`, {method: 'POST'});
+                    showToast('Facebook Page connected! Bot starting...', 'success');
+                    connectQRWebSocket(botId);
+                    setTimeout(() => loadBots(), 3000);
+                }
+            } catch (e) { /* ignore */ }
+        }, 3000);
+    }
+
+    // ============== Telegram Auth Modal ==============
+
+    function showTelegramAuthModal(botId) {
+        ensureQRModalExists();
+        var modalElement = document.getElementById('qrModal');
+        var container = document.getElementById('qrCodeContainer');
+        var status = document.getElementById('qrStatus');
+        var modalTitle = modalElement.querySelector('.modal-title');
+        var instructionText = modalElement.querySelector('.modal-body > p');
+
+        if (modalTitle) modalTitle.textContent = 'Connect Telegram Account';
+        if (instructionText) instructionText.textContent = 'Enter your Telegram credentials to connect your account';
+        if (status) { status.textContent = ''; status.className = 'alert alert-info d-none'; }
+
+        var tgGuide = PLATFORM_INFO.telegram.setupGuide || '';
+        container.innerHTML = `
+            <div class="telegram-auth-form" style="max-width: 380px; margin: 0 auto; text-align: left;">
+                ${tgGuide ? `<div class="alert alert-light border small mb-3" style="border-radius: 12px; line-height: 1.8;">${tgGuide}</div>` : ''}
+                <div id="telegramAuthStep" data-step="credentials">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">API ID</label>
+                        <input type="text" class="form-control" id="telegramApiId"
+                               placeholder="e.g. 12345678" style="border-radius: 20px; padding: 10px 18px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">API Hash</label>
+                        <input type="password" class="form-control" id="telegramApiHash"
+                               placeholder="e.g. abcdef1234567890..." style="border-radius: 20px; padding: 10px 18px;">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold">Phone Number</label>
+                        <input type="tel" class="form-control" id="telegramPhone"
+                               placeholder="+1234567890" style="border-radius: 20px; padding: 10px 18px;">
+                    </div>
+                    <button class="btn btn-sm rounded-pill px-4" id="telegramAuthSubmit"
+                            style="background: linear-gradient(135deg, #26A5E4, #0088cc); color: white; width: 100%;"
+                            onclick="submitTelegramAuth(${botId})">
+                        <i class="bi bi-telegram me-1"></i>Connect
+                    </button>
+                    <div class="text-center mt-2">
+                        <a href="/dashboard/guides#telegram" target="_blank" class="text-muted small"><i class="bi bi-question-circle me-1"></i>Need help? View full setup guide</a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        qrModalShown = true;
+        var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+    }
+
+    async function submitTelegramAuth(botId) {
+        var stepDiv = document.getElementById('telegramAuthStep');
+        var btn = document.getElementById('telegramAuthSubmit');
+        var step = stepDiv.getAttribute('data-step');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Connecting...';
+
+        var payload = {step: step};
+
+        if (step === 'credentials') {
+            var apiId = document.getElementById('telegramApiId')?.value?.trim();
+            var apiHash = document.getElementById('telegramApiHash')?.value?.trim();
+            var phone = document.getElementById('telegramPhone')?.value?.trim();
+            if (!apiId || !apiHash || !phone) {
+                showToast('All fields are required', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-telegram me-1"></i>Connect';
+                return;
+            }
+            payload.api_id = apiId;
+            payload.api_hash = apiHash;
+            payload.phone = phone;
+        } else {
+            // code or password step — single input
+            var input = document.getElementById('telegramAuthInput');
+            if (!input || !input.value.trim()) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-right me-1"></i>Submit';
+                return;
+            }
+            payload.value = input.value.trim();
+        }
+
+        try {
+            var res = await fetch('/api/bots/' + botId + '/auth-step', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                var err = await res.json();
+                showToast(err.detail || 'Error', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = step === 'credentials'
+                    ? '<i class="bi bi-telegram me-1"></i>Connect'
+                    : '<i class="bi bi-arrow-right me-1"></i>Submit';
+            }
+            // WebSocket will send the next auth_step or connected status
+        } catch (e) {
+            showToast('Error submitting', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-right me-1"></i>Submit';
+        }
+    }
+
+    function updateTelegramAuthStep(authStep, message) {
+        var container = document.getElementById('qrCodeContainer');
+        if (!container) return;
+
+        // For credentials step, show the 3-field form (handled by showTelegramAuthModal)
+        if (authStep === 'credentials') {
+            showTelegramAuthModal(currentBotId);
+            return;
+        }
+
+        var inputType = authStep === 'password' ? 'password' : 'text';
+        var placeholder = authStep === 'code' ? 'Enter verification code'
+                        : authStep === 'password' ? 'Enter 2FA password'
+                        : '';
+        var btnText = authStep === 'code' ? 'Verify Code'
+                    : authStep === 'password' ? 'Submit Password'
+                    : 'Submit';
+
+        var instructionText = document.querySelector('#qrModal .modal-body > p');
+        if (instructionText) instructionText.textContent = message;
+
+        container.innerHTML = `
+            <div class="telegram-auth-form" style="max-width: 340px; margin: 0 auto; text-align: left;">
+                <div id="telegramAuthStep" data-step="${authStep}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-telegram me-2" style="color: #26A5E4;"></i>${message}</label>
+                        <input type="${inputType}" class="form-control" id="telegramAuthInput"
+                               placeholder="${placeholder}" style="border-radius: 20px; padding: 10px 18px;"
+                               onkeydown="if(event.key==='Enter'){submitTelegramAuth(${currentBotId});}">
+                        ${authStep === 'code' ? '<small class="text-muted">Check your Telegram app for the login code</small>' : ''}
+                    </div>
+                    <button class="btn btn-sm rounded-pill px-4" id="telegramAuthSubmit"
+                            style="background: linear-gradient(135deg, #26A5E4, #0088cc); color: white; width: 100%;"
+                            onclick="submitTelegramAuth(${currentBotId})">
+                        <i class="bi bi-arrow-right me-1"></i>${btnText}
+                    </button>
+                </div>
+            </div>
+        `;
+
+        setTimeout(() => { var inp = document.getElementById('telegramAuthInput'); if (inp) inp.focus(); }, 100);
+    }
+
     async function initializePage() {
         // Ensure QR modal exists (create dynamically if needed)
         ensureQRModalExists();
+        // Setup platform dropdowns
+        setupPlatformDropdown('create');
+        setupPlatformDropdown('edit');
         // Setup custom model dropdowns
         setupModelDropdowns();
         await checkAndRecoverBots();
         await loadBots();
+        // Refresh multiple times to pick up recovered bot status updates
+        // Bots may take a few seconds to fully reconnect after recovery
+        setTimeout(() => loadBots(), 2000);
+        setTimeout(() => loadBots(), 5000);
+        setTimeout(() => loadBots(), 10000);
+
+        // Auto-start bot if redirected from OAuth (e.g. Facebook OAuth callback)
+        const urlParams = new URLSearchParams(window.location.search);
+        const autostartId = urlParams.get('autostart');
+        if (autostartId) {
+            window.history.replaceState({}, '', '/dashboard/bots');
+            setTimeout(async () => {
+                showToast('Facebook connected! Starting bot...', 'success');
+                await startBot(parseInt(autostartId));
+                // Refresh multiple times to pick up connected status
+                setTimeout(() => loadBots(), 2000);
+                setTimeout(() => loadBots(), 5000);
+                setTimeout(() => loadBots(), 8000);
+            }, 1000);
+        }
     }
 
     // Ensure DOM is fully loaded before interacting with elements

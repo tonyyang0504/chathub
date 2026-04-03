@@ -1,0 +1,286 @@
+2026-03-30 10:42:23,546 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-30 10:42:23,554 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-30 10:42:23,555 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-30 10:42:23,556 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-30 10:42:23,559 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-30 10:42:23,581 - app.ai_workspace.manager - INFO - Stopped session 135
+2026-03-30 10:42:23,584 - app.ai_workspace.manager - INFO - Stopped session 136
+2026-03-30 10:42:23,587 - app.ai_workspace.manager - INFO - Stopped session 137
+2026-03-30 10:42:23,597 - app.chathub_agent.manager - INFO - Stopped session 12 for user 1
+2026-03-30 10:42:23,601 - app.bots.manager - INFO - All bots stopped
+2026-03-30 10:42:26,295 - root - INFO - Cleaned up 9 old log files
+2026-03-30 10:42:26,295 - root - INFO - Enhanced logging system initialized
+2026-03-30 10:42:26,295 - root - INFO - === Server Starting ===
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 10:42:27,708 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 10:42:27,801 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-30 10:42:27,803 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 10:42:27,804 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 10:42:27,805 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 10:42:27,826 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 10:42:27,828 - root - INFO - Enhanced logging system initialized
+2026-03-30 10:42:27,832 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 10:42:27,832 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 10:42:27,832 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 10:42:27,832 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 10:42:27,832 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 10:44:01,780 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-03-30 10:45:03,218 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-d6e9cdb4 on branch tool-builder/1/1774853102
+2026-03-30 10:45:03,218 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session d6e9cdb4 for user 1
+2026-03-30 10:45:03,222 - app.tools.builder_manager - INFO - Created tool builder session d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f for user 1 (preview deferred)
+2026-03-30 10:45:03,316 - app.tools.builder_manager - INFO - Tool builder turn started, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f, PID=76096, cwd=/Users/tony/chathub/.worktrees/tb-d6e9cdb4
+2026-03-30 10:45:10,121 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 10:45:10,121 - app.tools.builder_manager - INFO - Tool builder turn completed, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f
+2026-03-30 10:45:27,668 - app.tools.builder_manager - INFO - Tool builder turn started, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f, PID=76302, cwd=/Users/tony/chathub/.worktrees/tb-d6e9cdb4
+2026-03-30 10:46:53,630 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 10:46:53,631 - app.tools.builder_manager - INFO - Tool builder turn completed, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f
+2026-03-30 10:47:11,123 - app.tools.builder_manager - INFO - Tool builder turn started, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f, PID=77103, cwd=/Users/tony/chathub/.worktrees/tb-d6e9cdb4
+2026-03-30 10:48:52,035 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 10:48:52,037 - app.tools.builder_manager - INFO - Tool builder turn completed, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f
+2026-03-30 10:49:22,597 - app.tools.builder_manager - INFO - Tool builder turn started, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f, PID=77749, cwd=/Users/tony/chathub/.worktrees/tb-d6e9cdb4
+2026-03-30 10:54:02,379 - app.tools.builder_manager - INFO - TOOL.md already exists in changed files, skipping auto-generation
+2026-03-30 10:54:02,380 - app.tools.builder_manager - INFO - Tool builder turn completed, session=d6e9cdb4-88ee-41d9-85c7-a0aaef1b9b7f
+2026-03-30 11:07:58,880 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-30 11:07:59,019 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-d6e9cdb4 on port 9001
+2026-03-30 11:07:59,019 - app.tools.sandbox_manager - INFO - Container tb-sandbox-d6e9cdb4 started, waiting for HTTP /health on port 9001...
+2026-03-30 11:08:00,561 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-30 11:09:55,625 - root - INFO - Enhanced logging system initialized
+2026-03-30 11:09:55,626 - root - INFO - === Server Starting ===
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 11:09:56,339 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 11:09:56,431 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-30 11:09:56,435 - app.tools - INFO - Registered custom tool: cost-tracker
+2026-03-30 11:09:56,436 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 11:09:56,437 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 11:09:56,438 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 11:09:56,459 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 11:09:56,461 - root - INFO - Enhanced logging system initialized
+2026-03-30 11:09:56,464 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 11:09:56,464 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 11:09:56,464 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 11:09:56,464 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 11:09:56,465 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 11:13:56,482 - app.tools - INFO - Unregistered custom tool: cost-tracker
+2026-03-30 11:14:03,090 - app.tools - INFO - Unregistered custom tool: dashboard-message-trends
+2026-03-30 11:14:03,991 - app.tools - INFO - Unregistered custom tool: dashboard-hub-health
+2026-03-30 11:14:04,857 - app.tools - INFO - Unregistered custom tool: dashboard-conversation-snapshot
+2026-03-30 11:14:05,790 - app.tools - INFO - Unregistered custom tool: contacts-attention
+2026-03-30 11:14:21,194 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-30 11:14:21,206 - app.tools - INFO - Registered custom tool: cost-tracker
+2026-03-30 11:14:21,206 - app.tools - INFO - Skipping inactive custom tool: dashboard-conversation-snapshot
+2026-03-30 11:14:21,206 - app.tools - INFO - Skipping inactive custom tool: dashboard-hub-health
+2026-03-30 11:14:21,206 - app.tools - INFO - Skipping inactive custom tool: dashboard-message-trends
+2026-03-30 11:14:22,283 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-30 11:14:22,283 - app.tools - INFO - Skipping inactive custom tool: dashboard-conversation-snapshot
+2026-03-30 11:14:22,283 - app.tools - INFO - Skipping inactive custom tool: dashboard-hub-health
+2026-03-30 11:14:22,285 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 11:14:23,055 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-30 11:14:23,056 - app.tools - INFO - Skipping inactive custom tool: dashboard-conversation-snapshot
+2026-03-30 11:14:23,059 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 11:14:23,957 - app.tools - INFO - Skipping inactive custom tool: contacts-attention
+2026-03-30 11:14:23,962 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 11:14:24,961 - app.tools - INFO - Registered custom tool: contacts-attention
+2026-03-30 11:19:49,215 - app.tools - INFO - Unregistered custom tool: contacts-attention
+2026-03-30 11:20:20,427 - app.tools - INFO - Unregistered custom tool: cost-tracker
+2026-03-30 11:21:22,907 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-eeb1ae12 on branch tool-builder/1/1774855282
+2026-03-30 11:21:22,907 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session eeb1ae12 for user 1
+2026-03-30 11:21:22,911 - app.tools.builder_manager - INFO - Created tool builder session eeb1ae12-61cf-499c-b80e-5097b12cc3f9 for user 1 (preview deferred)
+2026-03-30 11:21:23,007 - app.tools.builder_manager - INFO - Tool builder turn started, session=eeb1ae12-61cf-499c-b80e-5097b12cc3f9, PID=81513, cwd=/Users/tony/chathub/.worktrees/tb-eeb1ae12
+2026-03-30 11:24:34,854 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 11:24:34,855 - app.tools.builder_manager - INFO - Tool builder turn completed, session=eeb1ae12-61cf-499c-b80e-5097b12cc3f9
+2026-03-30 11:27:37,255 - app.tools.builder_manager - INFO - Tool builder turn started, session=eeb1ae12-61cf-499c-b80e-5097b12cc3f9, PID=82879, cwd=/Users/tony/chathub/.worktrees/tb-eeb1ae12
+2026-03-30 11:31:29,302 - app.tools.builder_manager - INFO - TOOL.md already exists in changed files, skipping auto-generation
+2026-03-30 11:31:29,302 - app.tools.builder_manager - INFO - Tool builder turn completed, session=eeb1ae12-61cf-499c-b80e-5097b12cc3f9
+2026-03-30 11:32:40,136 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-30 11:32:40,249 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-eeb1ae12 on port 9001
+2026-03-30 11:32:40,249 - app.tools.sandbox_manager - INFO - Container tb-sandbox-eeb1ae12 started, waiting for HTTP /health on port 9001...
+2026-03-30 11:32:41,804 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-30 11:35:16,786 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-4e39e670 on branch tool-builder/1/1774856116
+2026-03-30 11:35:16,786 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 4e39e670 for user 1
+2026-03-30 11:35:16,788 - app.tools.builder_manager - INFO - Resumed tool builder session db_id=139 as 4e39e670-54d7-4673-b3bc-d27fa5d99c8d for user 1
+2026-03-30 11:35:22,429 - root - INFO - Enhanced logging system initialized
+2026-03-30 11:35:22,429 - root - INFO - === Server Starting ===
+2026-03-30 11:35:23,118 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 11:35:23,119 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 11:35:23,213 - app.tools - INFO - Registered custom tool: dashboard-contacts-attention
+2026-03-30 11:35:23,215 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 11:35:23,216 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 11:35:23,217 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 11:35:23,238 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 11:35:23,240 - root - INFO - Enhanced logging system initialized
+2026-03-30 11:35:23,245 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 11:35:23,245 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 11:35:23,245 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 11:35:23,245 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 11:35:23,245 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 11:36:02,047 - app.tools - INFO - Unregistered custom tool: dashboard-contacts-attention
+2026-03-30 12:02:05,417 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-30 12:02:05,419 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-30 12:02:05,419 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-30 12:02:05,419 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-30 12:02:05,419 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-30 12:02:05,420 - app.bots.manager - INFO - All bots stopped
+2026-03-30 12:02:07,615 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:02:07,615 - root - INFO - === Server Starting ===
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 12:02:08,381 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 12:02:08,478 - app.tools - INFO - Skipping inactive custom tool: dashboard-contacts-attention
+2026-03-30 12:02:08,480 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 12:02:08,481 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 12:02:08,482 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 12:02:08,502 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 12:02:08,504 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:02:08,507 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 12:02:08,507 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 12:02:08,508 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 12:02:08,508 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 12:02:08,508 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 12:03:27,927 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-eb7f87cc on branch tool-builder/1/1774857807
+2026-03-30 12:03:27,927 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session eb7f87cc for user 1
+2026-03-30 12:03:27,931 - app.tools.builder_manager - INFO - Created tool builder session eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d for user 1 (preview deferred)
+2026-03-30 12:03:28,024 - app.tools.builder_manager - INFO - Tool builder turn started, session=eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d, PID=88290, cwd=/Users/tony/chathub/.worktrees/tb-eb7f87cc
+2026-03-30 12:04:51,425 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 12:04:51,427 - app.tools.builder_manager - INFO - Tool builder turn completed, session=eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d
+2026-03-30 12:05:02,278 - app.tools.builder_manager - INFO - Tool builder turn started, session=eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d, PID=89114, cwd=/Users/tony/chathub/.worktrees/tb-eb7f87cc
+2026-03-30 12:05:39,271 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 12:05:39,273 - app.tools.builder_manager - INFO - Tool builder turn completed, session=eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d
+2026-03-30 12:05:49,828 - app.tools.builder_manager - INFO - Tool builder turn started, session=eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d, PID=89345, cwd=/Users/tony/chathub/.worktrees/tb-eb7f87cc
+2026-03-30 12:10:10,813 - app.tools.builder_manager - INFO - TOOL.md already exists in changed files, skipping auto-generation
+2026-03-30 12:10:10,814 - app.tools.builder_manager - INFO - Tool builder turn completed, session=eb7f87cc-f2e4-4ba6-9356-ef471c2fa61d
+2026-03-30 12:10:37,274 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-30 12:10:37,405 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-eb7f87cc on port 9001
+2026-03-30 12:10:37,405 - app.tools.sandbox_manager - INFO - Container tb-sandbox-eb7f87cc started, waiting for HTTP /health on port 9001...
+2026-03-30 12:10:38,960 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-30 12:14:41,886 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:14:41,887 - root - INFO - === Server Starting ===
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 12:14:42,620 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 12:14:42,720 - app.tools - INFO - Skipping inactive custom tool: dashboard-contacts-attention
+2026-03-30 12:14:42,722 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 12:14:42,723 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 12:14:42,724 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 12:14:42,727 - app.tools - INFO - Registered custom tool: response-time-tracker
+2026-03-30 12:14:42,749 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 12:14:42,751 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:14:42,755 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 12:14:42,755 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 12:14:42,755 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 12:14:42,755 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 12:14:42,755 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 12:15:04,923 - app.tools - INFO - Registered custom tool: dashboard-contacts-attention
+2026-03-30 12:17:00,379 - app.tools - INFO - Unregistered custom tool: dashboard-contacts-attention
+2026-03-30 12:19:06,873 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-b1fc857b on branch tool-builder/1/1774858746
+2026-03-30 12:19:06,874 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session b1fc857b for user 1
+2026-03-30 12:19:06,877 - app.tools.builder_manager - INFO - Resumed tool builder session db_id=140 as b1fc857b-e30f-4036-b6c8-0630de1d8612 for user 1
+2026-03-30 12:19:06,987 - app.tools.builder_manager - INFO - Tool builder turn started, session=b1fc857b-e30f-4036-b6c8-0630de1d8612, PID=91659, cwd=/Users/tony/chathub/.worktrees/tb-b1fc857b
+2026-03-30 12:21:57,236 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 12:21:57,238 - app.tools.builder_manager - INFO - Tool builder turn completed, session=b1fc857b-e30f-4036-b6c8-0630de1d8612
+2026-03-30 12:25:07,186 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-30 12:25:07,347 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-b1fc857b on port 9001
+2026-03-30 12:25:07,347 - app.tools.sandbox_manager - INFO - Container tb-sandbox-b1fc857b started, waiting for HTTP /health on port 9001...
+2026-03-30 12:25:08,892 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-30 12:34:21,516 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-03-30 12:34:21,518 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-03-30 12:34:21,518 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-03-30 12:34:21,518 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-03-30 12:34:21,518 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-03-30 12:34:21,519 - app.bots.manager - INFO - All bots stopped
+2026-03-30 12:34:23,844 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:34:23,844 - root - INFO - === Server Starting ===
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 12:34:24,931 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 12:34:25,024 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 12:34:25,025 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 12:34:25,026 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 12:34:25,027 - app.tools - INFO - Registered custom tool: response-time-tracker
+2026-03-30 12:34:25,047 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 12:34:25,049 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:34:25,053 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 12:34:25,053 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 12:34:25,053 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 12:34:25,053 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 12:34:25,053 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 12:35:10,318 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-9cbe10d6 on branch tool-builder/1/1774859710
+2026-03-30 12:35:10,318 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 9cbe10d6 for user 1
+2026-03-30 12:35:10,322 - app.tools.builder_manager - INFO - Created tool builder session 9cbe10d6-476e-4b02-969c-99c1347b48d6 for user 1 (preview deferred)
+2026-03-30 12:35:10,415 - app.tools.builder_manager - INFO - Tool builder turn started, session=9cbe10d6-476e-4b02-969c-99c1347b48d6, PID=97050, cwd=/Users/tony/chathub/.worktrees/tb-9cbe10d6
+2026-03-30 12:36:02,539 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 12:36:02,540 - app.tools.builder_manager - INFO - Tool builder turn completed, session=9cbe10d6-476e-4b02-969c-99c1347b48d6
+2026-03-30 12:37:39,119 - app.tools.builder_manager - INFO - Tool builder turn started, session=9cbe10d6-476e-4b02-969c-99c1347b48d6, PID=97599, cwd=/Users/tony/chathub/.worktrees/tb-9cbe10d6
+2026-03-30 12:39:14,149 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-03-30 12:39:14,150 - app.tools.builder_manager - INFO - Tool builder turn completed, session=9cbe10d6-476e-4b02-969c-99c1347b48d6
+2026-03-30 12:39:21,474 - app.tools.builder_manager - INFO - Tool builder turn started, session=9cbe10d6-476e-4b02-969c-99c1347b48d6, PID=98315, cwd=/Users/tony/chathub/.worktrees/tb-9cbe10d6
+2026-03-30 12:43:52,255 - app.tools.builder_manager - INFO - TOOL.md already exists in changed files, skipping auto-generation
+2026-03-30 12:43:52,257 - app.tools.builder_manager - INFO - Tool builder turn completed, session=9cbe10d6-476e-4b02-969c-99c1347b48d6
+2026-03-30 12:44:44,842 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-03-30 12:44:44,976 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-9cbe10d6 on port 9001
+2026-03-30 12:44:44,976 - app.tools.sandbox_manager - INFO - Container tb-sandbox-9cbe10d6 started, waiting for HTTP /health on port 9001...
+2026-03-30 12:44:46,515 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-03-30 12:49:41,276 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:49:41,276 - root - INFO - === Server Starting ===
+2026-03-30 12:49:42,074 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-03-30 12:49:42,075 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-03-30 12:49:42,177 - app.tools - INFO - Registered custom tool: contact-insights
+2026-03-30 12:49:42,178 - app.tools - INFO - Registered custom tool: dashboard-conversation-snapshot
+2026-03-30 12:49:42,179 - app.tools - INFO - Registered custom tool: dashboard-hub-health
+2026-03-30 12:49:42,180 - app.tools - INFO - Registered custom tool: dashboard-message-trends
+2026-03-30 12:49:42,181 - app.tools - INFO - Registered custom tool: response-time-tracker
+2026-03-30 12:49:42,204 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-03-30 12:49:42,207 - root - INFO - Enhanced logging system initialized
+2026-03-30 12:49:42,211 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-03-30 12:49:42,211 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-03-30 12:49:42,211 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-03-30 12:49:42,212 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-03-30 12:49:42,212 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-03-30 19:31:49,109 - app.ai_workspace.manager - INFO - Drain thread exiting, total bytes drained: 24
+2026-03-30 19:33:52,532 - app.ai_workspace.manager - INFO - Turn started for session 142, PID=37146, first=True
+2026-03-30 19:35:50,218 - app.ai_workspace.manager - INFO - Session 142 ended with exit code 1

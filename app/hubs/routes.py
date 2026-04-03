@@ -25,6 +25,8 @@ from app.database import (
 )
 from app.auth.utils import get_current_user, encrypt_string, decrypt_string
 from app.tools.monitoring import ToolMonitor
+from app.tools.event_bus import tool_event_bus
+from app.platforms.message_handler import emit_event_sync
 from app.hubs.models import (
     HubCreate, HubUpdate, HubResponse, HubDetailResponse, HubBotInfo, HubAgentInfo,
     BotMembershipCreate, BotMembershipUpdate, BotMembershipResponse,
@@ -38,6 +40,106 @@ from app.hubs.models import (
 )
 
 router = APIRouter(tags=["Hubs"])
+
+
+async def _fetch_platform_contacts(bot_profile_id: int, platform_type: str) -> list:
+    """Fetch contacts from a live platform adapter (async-safe)."""
+    if platform_type == "telegram":
+        from app.platforms.telegram.adapter import _active_clients, TelegramAdapter
+        client = _active_clients.get(bot_profile_id)
+        if not client:
+            logger.warning(f"Bot {bot_profile_id}: No active Telegram client for contact sync")
+            return []
+        adapter = TelegramAdapter()
+        result = await adapter._async_get_contacts(client, bot_profile_id)
+        logger.info(f"Bot {bot_profile_id}: Telegram returned {len(result)} contacts")
+        return result
+    if platform_type in ("messenger", "instagram"):
+        return await _fetch_messenger_contacts(bot_profile_id)
+    # For other platforms, try the sync get_contacts
+    from app.platforms.registry import platform_registry
+    from app.platforms.base import PlatformType
+    adapter = platform_registry.get_adapter(PlatformType(platform_type))
+    return adapter.get_contacts(bot_profile_id)
+
+
+async def _fetch_messenger_contacts(bot_profile_id: int) -> list:
+    """Fetch contacts from Messenger/Instagram via Graph API."""
+    import httpx
+    from app.database import BotProfile as BPModel, SessionLocal
+    from app.auth.utils import decrypt_string
+
+    db = SessionLocal()
+    try:
+        bot = db.query(BPModel).filter(BPModel.id == bot_profile_id).first()
+        if not bot:
+            return []
+        platform_config = json.loads(bot.platform_config or "{}")
+        token_encrypted = platform_config.get("platform_token_encrypted")
+        if not token_encrypted:
+            return []
+        page_token = decrypt_string(token_encrypted)
+        page_id = platform_config.get("page_id", "")
+    finally:
+        db.close()
+
+    contacts = []
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(
+                "https://graph.facebook.com/v21.0/me/conversations",
+                params={"access_token": page_token, "fields": "id,participants", "limit": "100"},
+            )
+            if resp.status_code != 200:
+                logger.warning(f"Bot {bot_profile_id}: Failed to fetch Messenger conversations: {resp.text[:200]}")
+                return []
+
+            # Detect page participant IDs
+            conversations = resp.json().get("data", [])
+            page_ids = {page_id}
+            me_resp = await client.get(
+                "https://graph.facebook.com/v21.0/me",
+                params={"access_token": page_token, "fields": "id"},
+            )
+            if me_resp.status_code == 200:
+                page_ids.add(me_resp.json().get("id", ""))
+            if len(conversations) >= 2:
+                from collections import Counter
+                all_pids = []
+                for c in conversations:
+                    for p in c.get("participants", {}).get("data", []):
+                        all_pids.append(p.get("id", ""))
+                for pid, count in Counter(all_pids).items():
+                    if count == len(conversations):
+                        page_ids.add(pid)
+
+            for conv in conversations:
+                for p in conv.get("participants", {}).get("data", []):
+                    if p.get("id") not in page_ids:
+                        contacts.append({
+                            "chat_id": p.get("id", ""),
+                            "name": p.get("name", "Unknown"),
+                            "phone": "",
+                        })
+        logger.info(f"Bot {bot_profile_id}: Messenger returned {len(contacts)} contacts")
+    except Exception as e:
+        logger.error(f"Bot {bot_profile_id}: Error fetching Messenger contacts: {e}")
+    return contacts
+
+
+async def _fetch_platform_groups(bot_profile_id: int, platform_type: str) -> list:
+    """Fetch groups from a live platform adapter (async-safe)."""
+    if platform_type == "telegram":
+        from app.platforms.telegram.adapter import _active_clients, TelegramAdapter
+        client = _active_clients.get(bot_profile_id)
+        if not client:
+            return []
+        adapter = TelegramAdapter()
+        return await adapter._async_get_groups(client, bot_profile_id)
+    from app.platforms.registry import platform_registry
+    from app.platforms.base import PlatformType
+    adapter = platform_registry.get_adapter(PlatformType(platform_type))
+    return adapter.get_groups(bot_profile_id)
 
 
 def mask_api_key(encrypted_key: str) -> Optional[str]:
@@ -207,6 +309,7 @@ async def create_hub(
     db.add(hub)
     db.commit()
     db.refresh(hub)
+    emit_event_sync("hub.created", db=db, hub_id=hub.id, user_id=current_user.id)
 
     return HubResponse(
         id=hub.id,
@@ -417,6 +520,7 @@ async def update_hub(
     hub.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(hub)
+    emit_event_sync("hub.updated", db=db, hub_id=hub_id)
 
     # Get counts
     bot_count = db.query(func.count(HubBotMembership.id)).filter(
@@ -521,6 +625,7 @@ async def delete_hub(
 
     db.delete(hub)
     db.commit()
+    emit_event_sync("hub.deleted", db=db, hub_id=hub_id)
 
     return {"message": "Hub deleted successfully"}
 
@@ -543,6 +648,7 @@ async def toggle_hub_active(
     hub.is_active = not hub.is_active
     db.commit()
     db.refresh(hub)
+    emit_event_sync("hub.toggled", db=db, hub_id=hub_id)
 
     return {
         "id": hub.id,
@@ -654,6 +760,7 @@ async def add_bot_to_hub(
     db.add(membership)
     db.commit()
     db.refresh(membership)
+    emit_event_sync("hub.bot_added", db=db, hub_id=hub_id, bot_profile_id=data.bot_profile_id)
 
     return BotMembershipResponse(
         id=membership.id,
@@ -791,6 +898,7 @@ async def remove_bot_from_hub(
 
     db.delete(membership)
     db.commit()
+    emit_event_sync("hub.bot_removed", db=db, hub_id=hub_id, bot_profile_id=bot_id)
 
     return {"message": "Bot removed from hub successfully"}
 
@@ -877,6 +985,7 @@ async def create_agent(
     db.add(agent)
     db.commit()
     db.refresh(agent)
+    emit_event_sync("agent.created", db=db, agent_id=agent.id)
 
     return AgentResponse(
         id=agent.id,
@@ -970,6 +1079,7 @@ async def update_agent(
 
     db.commit()
     db.refresh(agent)
+    emit_event_sync("agent.updated", db=db, agent_id=agent_id)
 
     return AgentResponse(
         id=agent.id,
@@ -1003,6 +1113,7 @@ async def delete_agent(
 
     db.delete(agent)
     db.commit()
+    emit_event_sync("agent.deleted", db=db, agent_id=agent_id)
 
     return {"message": "Agent deleted successfully"}
 
@@ -1059,29 +1170,41 @@ async def list_contacts(
             # Also add with + prefix variations
             bot_phone_set.add(f"+{normalized}")
 
-    # Get phone numbers and all their associated bots from conversations
+    # Get phone numbers and chat_ids from all private conversations for these bots
     phone_to_bots = {}
     convs = db.query(Conversation).filter(
         Conversation.bot_profile_id.in_(bot_profile_ids),
         Conversation.is_group == False,
-        Conversation.phone.isnot(None),
-        Conversation.phone != ""
     ).all()
     for conv in convs:
+        # Use phone if available, otherwise use chat_id as identifier
+        identifier = (conv.phone or "").strip()
+        if not identifier:
+            identifier = conv.chat_id  # Messenger/Instagram use chat_id
+
+        if not identifier:
+            continue
+
         # Skip if this phone belongs to a bot
-        normalized_phone = ''.join(c for c in conv.phone if c.isdigit())
+        normalized_phone = ''.join(c for c in identifier if c.isdigit())
         if normalized_phone in bot_phone_set:
             continue
-        # Skip invalid phone numbers (less than 5 digits)
+        # Skip invalid identifiers (less than 5 digits)
         if len(normalized_phone) < 5:
             continue
-        if conv.phone not in phone_to_bots:
-            phone_to_bots[conv.phone] = set()
-        phone_to_bots[conv.phone].add(conv.bot_profile_id)
+
+        if identifier not in phone_to_bots:
+            phone_to_bots[identifier] = set()
+        phone_to_bots[identifier].add(conv.bot_profile_id)
+        # Also add chat_id as a valid identifier (contacts may be stored with chat_id as phone)
+        if conv.chat_id and conv.chat_id != identifier:
+            if conv.chat_id not in phone_to_bots:
+                phone_to_bots[conv.chat_id] = set()
+            phone_to_bots[conv.chat_id].add(conv.bot_profile_id)
 
     valid_phone_set = set(phone_to_bots.keys())
 
-    # Filter contacts by hub and valid phones
+    # Filter contacts by hub and valid phones/chat_ids
     query = db.query(Contact).filter(
         Contact.hub_id == hub_id,
         Contact.phone.in_(valid_phone_set)
@@ -1350,10 +1473,14 @@ async def get_contact_messages(
             "recent_messages": []
         }
 
-    # Find conversations with this contact (private chats)
+    # Find conversations with this contact (match by phone OR chat_id)
+    from sqlalchemy import or_
     private_conversations = db.query(Conversation).filter(
         Conversation.bot_profile_id.in_(hub_bot_ids),
-        Conversation.phone == contact.phone,
+        or_(
+            Conversation.phone == contact.phone,
+            Conversation.chat_id == contact.phone,
+        ),
         Conversation.is_group == False
     ).all()
 
@@ -1481,6 +1608,7 @@ async def create_contact(
     db.add(contact)
     db.commit()
     db.refresh(contact)
+    emit_event_sync("contact.created", db=db, contact_id=contact.id, hub_id=hub_id)
 
     return ContactResponse(
         id=contact.id,
@@ -1536,6 +1664,7 @@ async def update_contact(
     contact.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(contact)
+    emit_event_sync("contact.updated", db=db, contact_id=contact_id)
 
     tags = db.query(ContactTag).filter(ContactTag.contact_id == contact_id).all()
 
@@ -1588,6 +1717,7 @@ async def delete_contact(
 
     db.delete(contact)
     db.commit()
+    emit_event_sync("contact.deleted", db=db, contact_id=contact_id)
 
     return {"message": "Contact deleted successfully"}
 
@@ -1983,6 +2113,7 @@ Provide a comprehensive analysis in JSON format."""
 
     db.commit()
     db.refresh(contact)
+    emit_event_sync("contact.analyzed", db=db, contact_id=contact_id)
 
     # Log the execution to ToolMonitor
     execution_time_ms = int((time.time() - start_time) * 1000)
@@ -2396,22 +2527,62 @@ async def sync_contacts_from_conversations(
             "total_found": 0
         }
 
+    # Pre-sync: fetch contacts from live platform adapters (Telegram, etc.)
+    # This creates Conversation records for contacts not yet in the DB
+    try:
+        from app.database import BotProfile as BotProfileModel
+        for bot_id in bot_profile_ids:
+            bot_profile = db.query(BotProfileModel).filter(BotProfileModel.id == bot_id).first()
+            if not bot_profile or not bot_profile.is_running:
+                logger.info(f"Hub {hub_id}: Skipping bot {bot_id} (not found or not running)")
+                continue
+            platform_type = bot_profile.platform_type or "whatsapp"
+            if platform_type == "whatsapp":
+                continue
+            logger.info(f"Hub {hub_id}: Pre-syncing contacts from bot {bot_id} ({platform_type})")
+            try:
+                contacts_from_platform = await _fetch_platform_contacts(bot_id, platform_type)
+                logger.info(f"Hub {hub_id}: Got {len(contacts_from_platform)} contacts from bot {bot_id}")
+                for contact in contacts_from_platform:
+                    existing = db.query(Conversation).filter(
+                        Conversation.bot_profile_id == bot_id,
+                        Conversation.chat_id == contact["chat_id"]
+                    ).first()
+                    if not existing:
+                        new_conv = Conversation(
+                            bot_profile_id=bot_id,
+                            chat_id=contact["chat_id"],
+                            chat_name=contact["name"],
+                            display_name=contact["name"],
+                            phone=contact.get("phone", ""),
+                            is_group=False,
+                            profile_pic=contact.get("profile_pic", ""),
+                        )
+                        db.add(new_conv)
+                    elif not existing.phone and contact.get("phone"):
+                        existing.phone = contact["phone"]
+                db.commit()
+            except Exception as e:
+                logger.warning(f"Hub {hub_id}: Failed to pre-sync contacts from bot {bot_id}: {e}")
+    except Exception as e:
+        logger.warning(f"Hub {hub_id}: Platform contact pre-sync error: {e}")
+
     unique_contacts = {}
 
     # 1. Get contacts from private (non-group) conversations
     private_conversations = db.query(Conversation).filter(
         Conversation.bot_profile_id.in_(bot_profile_ids),
         Conversation.is_group == False,
-        Conversation.phone.isnot(None),
-        Conversation.phone != ""
     ).all()
 
     for conv in private_conversations:
-        phone = conv.phone.strip()
-        if phone and phone not in unique_contacts:
-            unique_contacts[phone] = {
-                "phone": phone,
-                "display_name": conv.chat_name,
+        # Use phone as key if available, otherwise use chat_id
+        phone = (conv.phone or "").strip()
+        identifier = phone if phone else conv.chat_id
+        if identifier and identifier not in unique_contacts:
+            unique_contacts[identifier] = {
+                "phone": identifier,
+                "display_name": conv.chat_name or conv.display_name or identifier,
                 "profile_pic": conv.profile_pic,
                 "source": "private_chat"
             }
@@ -2527,6 +2698,7 @@ async def add_tag(
     db.add(tag)
     db.commit()
     db.refresh(tag)
+    emit_event_sync("contact.tag_added", db=db, contact_id=contact_id, tag=data.tag)
 
     return ContactTagInfo(
         id=tag.id,
@@ -2564,6 +2736,7 @@ async def remove_tag(
 
     db.delete(tag)
     db.commit()
+    emit_event_sync("contact.tag_removed", db=db, contact_id=contact_id, tag_id=tag_id)
 
     return {"message": "Tag removed successfully"}
 
@@ -2730,6 +2903,7 @@ async def create_scheduled_content(
     db.add(content)
     db.commit()
     db.refresh(content)
+    emit_event_sync("content.created", db=db, content_id=content.id, hub_id=hub_id)
 
     # Build recipient summary
     recipient_summary = build_recipient_summary(
@@ -2828,6 +3002,7 @@ async def update_scheduled_content(
 
     db.commit()
     db.refresh(content)
+    emit_event_sync("content.updated", db=db, content_id=content_id)
 
     # Parse bot_profile_ids from JSON
     bot_profile_ids_list = None
@@ -2927,6 +3102,7 @@ async def cancel_scheduled_content(
     previous_status = content.status
     content.status = "cancelled"
     db.commit()
+    emit_event_sync("content.cancelled", db=db, content_id=content_id)
 
     # If it was sending, try to stop the active task
     if previous_status == "sending":
@@ -3662,6 +3838,37 @@ async def sync_hub_groups(
     if not bot_ids:
         return {"synced": 0, "total": 0, "message": "No bots available"}
 
+    # Pre-sync: fetch groups from live platform adapters
+    try:
+        for bot_id in bot_ids:
+            bot_prof = db.query(BotProfile).filter(BotProfile.id == bot_id).first()
+            if not bot_prof or not bot_prof.is_running:
+                continue
+            platform_type = bot_prof.platform_type or "whatsapp"
+            if platform_type == "whatsapp":
+                continue
+            try:
+                groups_from_platform = await _fetch_platform_groups(bot_id, platform_type)
+                for grp in groups_from_platform:
+                    existing = db.query(Conversation).filter(
+                        Conversation.bot_profile_id == bot_id,
+                        Conversation.chat_id == grp["chat_id"]
+                    ).first()
+                    if not existing:
+                        new_conv = Conversation(
+                            bot_profile_id=bot_id,
+                            chat_id=grp["chat_id"],
+                            chat_name=grp["name"],
+                            display_name=grp["name"],
+                            is_group=True,
+                        )
+                        db.add(new_conv)
+                db.commit()
+            except Exception as e:
+                logger.warning(f"Hub {hub_id}: Failed to pre-sync groups from bot {bot_id}: {e}")
+    except Exception as e:
+        logger.warning(f"Hub {hub_id}: Platform group pre-sync error: {e}")
+
     # Get all groups from bot conversations
     groups = db.query(Conversation).filter(
         Conversation.bot_profile_id.in_(bot_ids),
@@ -3758,6 +3965,7 @@ async def create_hub_topic(
     db.add(topic)
     db.commit()
     db.refresh(topic)
+    emit_event_sync("topic.created", db=db, hub_id=hub_id, topic_id=topic.id)
 
     return MessageTopicResponse(
         id=topic.id,
@@ -3806,6 +4014,7 @@ async def update_hub_topic(
 
     db.commit()
     db.refresh(topic)
+    emit_event_sync("topic.updated", db=db, topic_id=topic_id)
 
     return MessageTopicResponse(
         id=topic.id,
@@ -3839,6 +4048,7 @@ async def delete_hub_topic(
 
     db.delete(topic)
     db.commit()
+    emit_event_sync("topic.deleted", db=db, topic_id=topic_id)
 
     return {"status": "success", "message": "Topic deleted"}
 
@@ -4097,6 +4307,8 @@ Example format: ["First message here", "Second message here", "Third message her
         # Ensure we have at least one option
         if not options:
             options = [content]
+
+        emit_event_sync("content.generated", db=db, hub_id=hub_id)
 
         return {
             "options": options,

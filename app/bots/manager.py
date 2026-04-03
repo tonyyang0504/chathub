@@ -9,7 +9,21 @@ from typing import Dict, Optional, Callable
 from datetime import datetime
 import threading
 
+from app.tools.event_bus import tool_event_bus
+
 logger = logging.getLogger(__name__)
+
+
+def _emit_event_sync(event_name: str, **kwargs):
+    """Emit event from sync code (schedules on the event loop)."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(tool_event_bus.emit(event_name, **kwargs))
+        else:
+            loop.run_until_complete(tool_event_bus.emit(event_name, **kwargs))
+    except Exception:
+        pass
 
 
 class BotInstance:
@@ -226,6 +240,7 @@ class BotManager:
         instance.is_running = True
         instance.stopped_by_user = False  # Reset the flag when starting
         instance.error = None  # Clear any previous error
+        _emit_event_sync("bot.started", bot_profile_id=bot_profile_id, platform_type=instance.platform_type)
 
         async def run_bot_with_error_handling():
             try:
@@ -260,6 +275,7 @@ class BotManager:
 
         instance.is_running = False
         instance.whatsapp_connected = False
+        _emit_event_sync("bot.stopped", bot_profile_id=bot_profile_id)
 
         logger.info(f"Stopped bot instance for profile {bot_profile_id}")
         return True

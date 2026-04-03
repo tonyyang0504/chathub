@@ -116,7 +116,7 @@ class MessengerAdapter(PlatformAdapter):
         config = instance.config
 
         # Extract credentials from config
-        page_access_token = config.get("page_access_token") or config.get("api_key")
+        page_access_token = config.get("page_access_token") or config.get("api_key") or config.get("platform_token")
         app_secret = config.get("app_secret", "")
         webhook_verify_token = config.get("webhook_verify_token", "")
 
@@ -167,6 +167,19 @@ class MessengerAdapter(PlatformAdapter):
                         "message": "Failed to verify Messenger credentials.",
                     })
                     instance.is_running = False
+                    # Update DB so recovery doesn't keep retrying
+                    try:
+                        from app.database import SessionLocal, BotProfile as BPModel
+                        _db = SessionLocal()
+                        try:
+                            _bot = _db.query(BPModel).filter(BPModel.id == bot_id).first()
+                            if _bot:
+                                _bot.is_running = False
+                                _db.commit()
+                        finally:
+                            _db.close()
+                    except Exception:
+                        pass
                     return
                 page_info = resp.json()
                 page_name = page_info.get("name", "Unknown Page")
@@ -179,19 +192,43 @@ class MessengerAdapter(PlatformAdapter):
             instance.is_running = False
             return
 
-        # Connected successfully
+        # Connected successfully — save account info to DB
         instance.whatsapp_connected = True  # reuse field as "platform connected"
+        try:
+            from app.database import SessionLocal, BotProfile as BPModel
+            _db = SessionLocal()
+            try:
+                _bot = _db.query(BPModel).filter(BPModel.id == bot_id).first()
+                if _bot:
+                    _bot.whatsapp_name = page_name
+                    _db.commit()
+            finally:
+                _db.close()
+        except Exception as e:
+            logger.warning(f"Bot {bot_id}: Failed to save Messenger account info: {e}")
+
         await instance.notify_status({
             "message": f"Connected to Messenger as '{page_name}'",
             "connected": True,
-            "page_name": page_name,
+            "account_info": {"name": page_name},
         })
 
         logger.info(f"Bot {bot_id}: Messenger connected as '{page_name}'")
 
-        # Main loop: process outbound queue and stay alive
+        # Main loop: process outbound queue, sync history, stay alive
         try:
             while instance.is_running and not instance.stopped_by_user:
+                # Check for history sync request
+                if getattr(instance, 'history_sync_requested', False):
+                    instance.history_sync_requested = False
+                    instance.history_sync_active = True
+                    try:
+                        await self._sync_history(bot_id, page_access_token, instance, page_id=state.get("page_id", ""))
+                    except Exception as e:
+                        logger.error(f"Bot {bot_id}: History sync error: {e}", exc_info=True)
+                    finally:
+                        instance.history_sync_active = False
+
                 # Process outbound messages from the queue
                 if instance.has_outbound_messages():
                     outbound = instance.get_outbound_messages()
@@ -335,6 +372,204 @@ class MessengerAdapter(PlatformAdapter):
             logger.error(f"Bot {bot_profile_id}: Send file error: {e}")
             return False
 
+    async def _sync_history(self, bot_id: int, page_access_token: str, instance, page_id: str = ""):
+        """Sync conversation history from Messenger via Graph API."""
+        from app.platforms.message_handler import (
+            get_db_session,
+            find_or_create_conversation,
+            save_user_message,
+            update_conversation_stats,
+        )
+
+        sync_count = getattr(instance, 'history_sync_count', 50)
+        logger.info(f"Bot {bot_id}: Starting Messenger history sync (count={sync_count}, page_id={page_id})")
+
+        instance.history_sync_progress = {
+            "total": 0, "completed": 0, "current_chat": "", "status": "running"
+        }
+
+        try:
+            client = httpx.AsyncClient(timeout=30.0)
+
+            # Fetch conversations from Graph API
+            resp = await client.get(
+                f"{GRAPH_API_BASE}/me/conversations",
+                params={
+                    "access_token": page_access_token,
+                    "limit": str(min(sync_count, 100)),
+                    "fields": "id,participants,updated_time",
+                },
+            )
+            if resp.status_code != 200:
+                logger.error(f"Bot {bot_id}: Failed to fetch conversations: {resp.text[:200]}")
+                instance.history_sync_progress["status"] = "completed"
+                return
+
+            data = resp.json()
+            conversations = data.get("data", [])
+            total = len(conversations)
+            instance.history_sync_progress["total"] = total
+
+            # Detect the page's participant ID by finding the ID that appears in ALL conversations.
+            # The page is a participant in every conversation; external users only appear in one.
+            page_participant_ids = set()
+            page_participant_ids.add(page_id)  # Graph API page ID
+            # Also get /me ID
+            try:
+                me_resp = await client.get(
+                    f"{GRAPH_API_BASE}/me",
+                    params={"access_token": page_access_token, "fields": "id,name"},
+                )
+                if me_resp.status_code == 200:
+                    page_participant_ids.add(me_resp.json().get("id", ""))
+            except Exception:
+                pass
+            # Find participant appearing in ALL conversations (that's the page)
+            if len(conversations) >= 2:
+                from collections import Counter
+                all_pids = []
+                for c in conversations:
+                    for p in c.get("participants", {}).get("data", []):
+                        all_pids.append(p.get("id", ""))
+                for pid, count in Counter(all_pids).items():
+                    if count == len(conversations):
+                        page_participant_ids.add(pid)
+            logger.info(f"Bot {bot_id}: Page participant IDs: {page_participant_ids}")
+
+            for i, conv in enumerate(conversations):
+                if getattr(instance, 'history_sync_stop_requested', False):
+                    break
+
+                conv_id = conv.get("id", "")
+                participants = conv.get("participants", {}).get("data", [])
+                # Find the non-page participant
+                chat_name = ""
+                sender_id = ""
+                for p in participants:
+                    if p.get("id") not in page_participant_ids:
+                        chat_name = p.get("name", "")
+                        sender_id = p.get("id", "")
+                        break
+
+                # Skip conversations where no external participant was found
+                if not sender_id:
+                    logger.info(f"Bot {bot_id}: Skipping conv {conv_id} — no external participant (all are page IDs)")
+                    continue
+                logger.info(f"Bot {bot_id}: Processing conv {conv_id} — contact: {chat_name} (id: {sender_id})")
+
+                # Use sender_id as chat_id (consistent with real-time messages)
+                effective_chat_id = sender_id or conv_id
+
+                instance.history_sync_progress["current_chat"] = chat_name or "Unknown"
+                instance.history_sync_progress["completed"] = i
+
+                # Fetch messages for this conversation
+                try:
+                    msg_resp = await client.get(
+                        f"{GRAPH_API_BASE}/{conv_id}/messages",
+                        params={"access_token": page_access_token, "limit": "20", "fields": "message,from,created_time"},
+                    )
+                    if msg_resp.status_code != 200:
+                        continue
+
+                    messages = msg_resp.json().get("data", [])
+                    if not messages:
+                        continue
+
+                    # Try to get name from first message if participants didn't have it
+                    if not chat_name:
+                        for msg in messages:
+                            msg_from = msg.get("from", {})
+                            if msg_from.get("id") != str(bot_id) and msg_from.get("name"):
+                                chat_name = msg_from["name"]
+                                break
+
+                    # Also try to find existing conversation by conv_id (fallback lookup)
+                    with get_db_session() as db:
+                        from app.database import Conversation
+                        # First try sender_id, then conv_id
+                        conversation = db.query(Conversation).filter(
+                            Conversation.bot_profile_id == bot_id,
+                            Conversation.chat_id == effective_chat_id,
+                        ).first()
+
+                        # If not found by sender_id, try conv_id as chat_id
+                        if not conversation and sender_id and sender_id != conv_id:
+                            conversation = db.query(Conversation).filter(
+                                Conversation.bot_profile_id == bot_id,
+                                Conversation.chat_id == conv_id,
+                            ).first()
+
+                        if not conversation:
+                            conversation = find_or_create_conversation(
+                                db, bot_id, effective_chat_id, chat_name or "Unknown",
+                                is_group=False, display_name=chat_name or "Unknown",
+                            )
+                        elif chat_name and conversation.chat_name in ("Unknown", ""):
+                            # Update name if we now have a better one
+                            conversation.chat_name = chat_name
+                            conversation.display_name = chat_name
+                            db.flush()
+
+                        for msg in reversed(messages):
+                            text = msg.get("message", "")
+                            if not text:
+                                continue
+                            msg_from = msg.get("from", {})
+                            msg_sender_id = msg_from.get("id", "")
+                            platform_msg_id = msg.get("id", "")
+
+                            # Parse actual message timestamp
+                            msg_timestamp = None
+                            created_time = msg.get("created_time")
+                            if created_time:
+                                try:
+                                    msg_timestamp = datetime.fromisoformat(created_time.replace("Z", "+00:00")).replace(tzinfo=None)
+                                except (ValueError, AttributeError):
+                                    pass
+
+                            if msg_sender_id in page_participant_ids:
+                                # Outgoing message (sent by the page/bot)
+                                from app.database import Message
+                                if platform_msg_id:
+                                    existing = db.query(Message).filter(
+                                        Message.conversation_id == conversation.id,
+                                        Message.whatsapp_message_id == platform_msg_id,
+                                    ).first()
+                                    if existing:
+                                        continue
+                                bot_msg = Message(
+                                    conversation_id=conversation.id,
+                                    role="assistant",
+                                    content=text,
+                                    whatsapp_message_id=platform_msg_id,
+                                    timestamp=msg_timestamp or datetime.utcnow(),
+                                )
+                                db.add(bot_msg)
+                            else:
+                                # Incoming message (from the contact)
+                                save_user_message(
+                                    db, conversation.id, text,
+                                    sender_name=msg_from.get("name", chat_name or "Unknown"),
+                                    sender_id=msg_sender_id,
+                                    platform_message_id=platform_msg_id,
+                                    timestamp=msg_timestamp,
+                                )
+
+                        update_conversation_stats(db, conversation.id)
+                        db.commit()
+
+                except Exception as e:
+                    logger.warning(f"Bot {bot_id}: Failed to sync conversation {conv_id}: {e}")
+
+            instance.history_sync_progress["completed"] = total
+            instance.history_sync_progress["status"] = "completed"
+            logger.info(f"Bot {bot_id}: Messenger history sync completed ({total} conversations)")
+
+        except Exception as e:
+            logger.error(f"Bot {bot_id}: History sync failed: {e}", exc_info=True)
+            instance.history_sync_progress["status"] = "completed"
+
     def cleanup(self, bot_profile_id: int) -> None:
         cleanup_bot_state(bot_profile_id)
 
@@ -379,6 +614,11 @@ def _ensure_webhook_routes():
                 if state.get("webhook_verify_token") == token:
                     logger.info("Messenger webhook verified")
                     return Response(content=challenge, media_type="text/plain")
+
+            # Fallback: accept default verify token even if no bots are running
+            if token == "chathub_verify":
+                logger.info("Messenger webhook verified (default token)")
+                return Response(content=challenge, media_type="text/plain")
 
             logger.warning(f"Messenger webhook verify token mismatch: {token}")
             return Response(content="Forbidden", status_code=403)

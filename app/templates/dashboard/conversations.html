@@ -2163,12 +2163,25 @@
             bots = data.bots;
 
             const container = document.getElementById('botFilterOptions');
+            const CONV_PLATFORM_ICONS = {
+                whatsapp: 'bi-whatsapp', telegram: 'bi-telegram', instagram: 'bi-instagram',
+                messenger: 'bi-facebook', discord: 'bi-discord', line: 'bi-chat-dots-fill',
+                linkedin: 'bi-linkedin', tinder: 'bi-fire', bumble: 'bi-heart-fill', wechat: 'bi-wechat'
+            };
+            const CONV_PLATFORM_COLORS = {
+                whatsapp: '#25D366', telegram: '#26A5E4', instagram: '#E4405F',
+                messenger: '#1877F2', discord: '#5865F2', line: '#00B900',
+                linkedin: '#0A66C2', tinder: '#FE3C72', bumble: '#FFC629', wechat: '#07C160'
+            };
             bots.forEach(bot => {
                 const item = document.createElement('a');
                 item.className = 'dropdown-item bot-filter-item';
                 item.href = '#';
                 item.setAttribute('data-value', bot.id);
-                item.textContent = bot.name;
+                const pType = bot.platform_type || 'whatsapp';
+                const pIcon = CONV_PLATFORM_ICONS[pType] || 'bi-robot';
+                const pColor = CONV_PLATFORM_COLORS[pType] || '#25D366';
+                item.innerHTML = `<i class="bi ${pIcon} me-2" style="color: ${pColor};"></i>${bot.name}`;
                 container.appendChild(item);
             });
 
@@ -2272,7 +2285,8 @@
                     ...c,
                     bot_id: botId,
                     bot_name: bot?.name,
-                    bot_profile_pic: bot?.whatsapp_profile_pic
+                    bot_profile_pic: bot?.whatsapp_profile_pic,
+                    bot_platform_type: bot?.platform_type || 'whatsapp'
                 }));
             } else {
                 for (const bot of bots) {
@@ -4644,7 +4658,7 @@
                 return;
             }
             const data = await res.json();
-            if (data.is_running && data.whatsapp_connected) {
+            if (data.is_running && (data.whatsapp_connected || data.platform_connected)) {
                 wrapper.style.cssText = showStyle;
                 toggle.checked = data.ai_response_enabled || false;
             } else {

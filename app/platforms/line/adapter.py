@@ -90,8 +90,8 @@ class LineAdapter(PlatformAdapter):
         bot_profile_id = instance.bot_profile_id
         config = instance.config
 
-        # Extract LINE credentials from config
-        channel_access_token = self._get_credential(config, "channel_access_token")
+        # Extract LINE credentials from config (fallback to platform_token)
+        channel_access_token = self._get_credential(config, "channel_access_token") or config.get("platform_token")
         channel_secret = self._get_credential(config, "channel_secret")
 
         if not channel_access_token or not channel_secret:

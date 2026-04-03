@@ -17,6 +17,8 @@ from app.database import get_db, AIAgent, AgentTemplate, Hub, ToolExecution
 from app.auth.utils import get_current_user_optional, decrypt_string
 from app.auth.ownership import get_user_hub_ids, verify_hub_ownership
 from app.tools.monitoring import ToolMonitor
+from app.tools.event_bus import tool_event_bus
+from app.platforms.message_handler import emit_event_sync
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -273,6 +275,7 @@ async def create_agent(
     db.add(agent)
     db.commit()
     db.refresh(agent)
+    emit_event_sync("agent.created", db=db, agent_id=agent.id)
 
     # Log the creation
     ToolMonitor.log_execution(
@@ -344,6 +347,7 @@ async def update_agent(
         agent.config = json.dumps(existing_config)
 
     db.commit()
+    emit_event_sync("agent.updated", db=db, agent_id=agent_id)
 
     # Log the update
     ToolMonitor.log_execution(
@@ -388,6 +392,7 @@ async def delete_agent(
 
     db.delete(agent)
     db.commit()
+    emit_event_sync("agent.deleted", db=db, agent_id=agent_id)
 
     # Log the deletion
     ToolMonitor.log_execution(
@@ -658,6 +663,7 @@ async def test_agent(
     agent.total_tokens_used = (agent.total_tokens_used or 0) + tokens_used
     agent.last_run_at = datetime.utcnow()
     db.commit()
+    emit_event_sync("agent.tested", db=db, agent_id=test_data.agent_id)
 
     # Log the test execution
     ToolMonitor.log_execution(

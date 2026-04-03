@@ -22,6 +22,7 @@ from app.database import (
 )
 from app.auth.utils import decrypt_string
 from app.tools.monitoring import ToolMonitor
+from app.tools.event_bus import tool_event_bus
 
 
 # =============================================================================
@@ -988,6 +989,14 @@ class HubMessageProcessor:
                         related_entity_id=first_responding_bot_id or requesting_bot_id,
                         tokens_used=routing_result.get('tokens_used', 0) if routing_result else 0
                     )
+
+                    try:
+                        import asyncio
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.ensure_future(tool_event_bus.emit("hub.message_routed", db=db, hub_id=hub_id, classification=classification))
+                    except Exception:
+                        pass
 
                     # Add execution_id to bot decisions for response tracking
                     execution_id = execution.id if execution else None

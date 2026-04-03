@@ -24,6 +24,8 @@ from app.database import get_db, User, BotProfile, Conversation, Message
 from app.auth.utils import get_current_user, decrypt_string, get_websocket_user
 from app.auth.ownership import verify_conversation_ownership, verify_bot_ownership
 from app.bots.whatsapp_bot import _analyze_image_with_ai, _analyze_document_with_ai, _media_url_to_path
+from app.tools.event_bus import tool_event_bus
+from app.platforms.message_handler import emit_event_sync
 
 logger = logging.getLogger(__name__)
 
@@ -502,6 +504,7 @@ async def delete_conversation(
 
     db.delete(conversation)
     db.commit()
+    emit_event_sync("conversation.deleted", db=db, conversation_id=conversation_id)
 
     return {"message": "Conversation deleted"}
 
@@ -519,6 +522,7 @@ async def clear_messages(
     conversation.message_count = 0
     conversation.last_message_at = None
     db.commit()
+    emit_event_sync("conversation.cleared", db=db, conversation_id=conversation_id)
 
     return {"message": "Messages cleared"}
 
@@ -652,8 +656,8 @@ async def send_manual_message(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Send a manual message via WhatsApp and mark as human takeover."""
-    from app.bots.whatsapp_bot import send_whatsapp_message
+    """Send a manual message and mark as human takeover."""
+    from app.platforms.send import send_message as platform_send_message
 
     # Verify conversation ownership
     conversation = verify_conversation_ownership(conversation_id, current_user, db)
@@ -662,25 +666,26 @@ async def send_manual_message(
     if not bot_profile:
         raise HTTPException(status_code=404, detail="Bot profile not found")
 
-    # Check if bot is running
+    # Check if bot is running and connected
     from app.bots.manager import bot_manager
     bot_instance = bot_manager.get_instance(bot_profile.id)
     if not bot_instance or not bot_instance.is_running:
         raise HTTPException(status_code=400, detail="Bot is not running. Please start the bot first.")
     if not bot_instance.whatsapp_connected:
-        raise HTTPException(status_code=400, detail="WhatsApp is not connected. Please scan QR code first.")
+        raise HTTPException(status_code=400, detail="Bot is not connected. Please connect the bot first.")
 
-    # Send the message via WhatsApp
+    # Send the message via the correct platform adapter
     try:
-        success = await send_whatsapp_message(
+        success = await platform_send_message(
             bot_profile_id=bot_profile.id,
             chat_id=conversation.chat_id,
             chat_name=conversation.chat_name,
-            message=request.message
+            message=request.message,
+            platform_type=bot_profile.platform_type or "whatsapp",
         )
 
         if not success:
-            raise HTTPException(status_code=500, detail="Failed to send message via WhatsApp. Check server logs.")
+            raise HTTPException(status_code=500, detail="Failed to send message. Check server logs.")
 
     except Exception as e:
         logger.error(f"Error sending manual message: {e}")
@@ -709,6 +714,7 @@ async def send_manual_message(
 
     db.commit()
     db.refresh(new_msg)
+    emit_event_sync("message.sent", db=db, bot_profile_id=conversation.bot_profile_id, conversation_id=conversation_id, content=request.message)
 
     # Build message data for response
     message_data = {
@@ -738,6 +744,7 @@ async def resume_ai_bot(
     conversation.human_takeover = False
     conversation.human_takeover_at = None
     db.commit()
+    emit_event_sync("conversation.ai_resumed", db=db, conversation_id=conversation_id)
 
     return {"success": True, "message": "AI bot resumed"}
 
@@ -890,23 +897,24 @@ async def send_file_message(
             logger.error("Failed to save outgoing file")
             raise HTTPException(status_code=500, detail="Failed to save file")
 
-        # Import and send via WhatsApp
-        from app.bots.whatsapp_bot import send_whatsapp_file
+        # Send via the correct platform adapter
+        from app.platforms.send import send_file as platform_send_file
 
-        logger.info(f"Calling send_whatsapp_file: bot={bot_profile.id}, chat={conversation.chat_name} ({conversation.chat_id})")
+        logger.info(f"Sending file: bot={bot_profile.id}, chat={conversation.chat_name} ({conversation.chat_id})")
 
         try:
-            success = await send_whatsapp_file(
+            success = await platform_send_file(
                 bot_profile_id=bot_profile.id,
                 chat_id=conversation.chat_id,
                 file_path=str(saved_path),
                 caption=caption,
                 file_type=content_type or '',
-                chat_name=conversation.chat_name or ''
+                chat_name=conversation.chat_name or '',
+                platform_type=bot_profile.platform_type or "whatsapp",
             )
-            logger.info(f"send_whatsapp_file returned: {success}")
+            logger.info(f"Platform send_file returned: {success}")
         except Exception as send_err:
-            logger.error(f"Exception in send_whatsapp_file: {send_err}", exc_info=True)
+            logger.error(f"Exception in platform send_file: {send_err}", exc_info=True)
             success = False
 
         if not success:
@@ -1059,25 +1067,26 @@ async def forward_file_message(
 
     logger.info(f"Source file path: {file_path}")
 
-    # Send the file via WhatsApp
-    from app.bots.whatsapp_bot import send_whatsapp_file
+    # Send the file via the correct platform adapter
+    from app.platforms.send import send_file as platform_send_file
 
     try:
-        success = await send_whatsapp_file(
+        success = await platform_send_file(
             bot_profile_id=bot_profile.id,
             chat_id=conversation.chat_id,
             file_path=str(file_path),
             caption=request.caption,
             file_type=request.file_type,
-            chat_name=conversation.chat_name or ''
+            chat_name=conversation.chat_name or '',
+            platform_type=bot_profile.platform_type or "whatsapp",
         )
-        logger.info(f"send_whatsapp_file returned: {success}")
+        logger.info(f"Platform send_file returned: {success}")
     except Exception as send_err:
-        logger.error(f"Exception in send_whatsapp_file: {send_err}", exc_info=True)
+        logger.error(f"Exception in platform send_file: {send_err}", exc_info=True)
         success = False
 
     if not success:
-        raise HTTPException(status_code=500, detail="Failed to forward file via WhatsApp.")
+        raise HTTPException(status_code=500, detail="Failed to forward file.")
 
     # Get file size
     file_size = file_path.stat().st_size

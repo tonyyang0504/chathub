@@ -14,6 +14,12 @@ from .monitoring import ToolMonitor
 from .builder_routes import router as builder_router
 from .marketplace_routes import router as marketplace_router
 from .coder_routes import router as coder_router
+try:
+    from app.tools.event_bus import tool_event_bus
+    from app.tools.tool_scheduler import register_scheduled_task
+except ImportError:
+    tool_event_bus = None
+    register_scheduled_task = None
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +80,12 @@ def register_custom_tools(parent_router):
                 parent_router.include_router(module.router, prefix=f"/{tool_dir.name}")
                 _registered_tools.add(tool_dir.name)
                 logger.info(f"Registered custom tool: {tool_dir.name}")
+
+                # Parse TOOL.md events and subscribe to event bus
+                try:
+                    _register_tool_events(tool_dir, module)
+                except Exception as e:
+                    logger.warning(f"Failed to register events for tool '{tool_dir.name}': {e}")
         except Exception as e:
             logger.error(f"Failed to register custom tool '{tool_dir.name}': {e}")
             # Mark the tool as inactive in DB so it doesn't retry on every startup
@@ -164,6 +176,83 @@ def get_active_widgets(page: str, db) -> list[dict]:
                     "endpoint": f"/tools/{tool.name}{endpoint}"
                 })
     return widgets
+
+
+def _parse_tool_events(tool_dir, tool_name):
+    """Parse event subscriptions from TOOL.md frontmatter."""
+    import re
+
+    # Try TOOL.md in tool directory
+    tool_md = tool_dir / "TOOL.md"
+    if not tool_md.exists():
+        # Try from DB
+        try:
+            from app.database import SessionLocal, BuiltTool
+            db = SessionLocal()
+            tool_record = db.query(BuiltTool).filter(BuiltTool.name == tool_name).first()
+            if tool_record and tool_record.tool_md_content:
+                content = tool_record.tool_md_content
+                db.close()
+            else:
+                db.close()
+                return {}
+        except Exception:
+            return {}
+    else:
+        content = tool_md.read_text(encoding="utf-8", errors="ignore")
+
+    # Parse frontmatter
+    match = re.match(r'^---\s*\n([\s\S]*?)\n---', content.strip())
+    if not match:
+        return {}
+
+    # Extract events section
+    events = {}
+    in_events = False
+    for line in match.group(1).split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('events:'):
+            in_events = True
+            continue
+        if in_events:
+            if not line.startswith('  ') and not line.startswith('\t'):
+                break  # End of events section
+            m = re.match(r'\s+(\S+)\s*:\s*(.+)', line)
+            if m:
+                events[m.group(1).strip()] = m.group(2).strip().strip('"\'')
+
+    return events
+
+
+def _register_tool_events(tool_dir, module):
+    """Register a tool's event subscriptions from TOOL.md."""
+    if not tool_event_bus and not register_scheduled_task:
+        return  # Event bus not available (e.g., sandbox)
+
+    tool_name = tool_dir.name
+    events = _parse_tool_events(tool_dir, tool_name)
+
+    if not events:
+        return
+
+    # Handle scheduled tasks separately
+    cron_expr = events.pop("scheduled", None)
+    cron_handler_name = events.pop("scheduled_handler", None)
+    if cron_expr and cron_handler_name and register_scheduled_task:
+        handler = getattr(module, cron_handler_name, None)
+        if handler:
+            register_scheduled_task(tool_name, cron_expr, handler)
+        else:
+            logger.warning(f"Tool '{tool_name}': scheduled handler '{cron_handler_name}' not found in routes.py")
+
+    # Subscribe to events
+    if tool_event_bus:
+        for event_name, handler_name in events.items():
+            handler = getattr(module, handler_name, None)
+            if handler:
+                tool_event_bus.subscribe(event_name, tool_name, handler, str(tool_dir / "routes.py"))
+            else:
+                logger.warning(f"Tool '{tool_name}': handler '{handler_name}' for event '{event_name}' not found in routes.py")
 
 
 __all__ = ['tools_router', 'ToolMonitor', 'builder_router', 'marketplace_router', 'coder_router',

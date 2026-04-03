@@ -147,8 +147,7 @@
                 <h5><i class="bi bi-lightning me-2"></i>Actions</h5>
                 <div class="d-grid gap-2">
                     <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, {{ gradient_start }}, {{ gradient_end }}); color: white;" onclick="toggleTool()">
-                        <i class="bi {{ 'bi-pause-circle' if tool.is_active else 'bi-play-circle' }} me-1"></i>
-                        {{ 'Deactivate' if tool.is_active else 'Activate' }}
+                        <i class="bi bi-{{ 'pause-circle' if tool.is_active else 'play-circle' }} me-1"></i>{{ 'Deactivate' if tool.is_active else 'Activate' }}
                     </button>
                     <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="uninstallTool()">
                         <i class="bi bi-trash me-1"></i>Uninstall

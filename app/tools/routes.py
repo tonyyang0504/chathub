@@ -2338,11 +2338,18 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
     ).first()
 
     if not tool:
-        # Check if this is a preview tool (filesystem-only, no DB record yet)
+        # Preview tool (filesystem-only, no DB record yet) — call its handler directly
+        # to avoid redirect loop (catch-all /{tool_name} vs tool's own route)
         from app.tools import CUSTOM_TOOLS_DIR, _registered_tools, register_custom_tools_on_app
-        if tool_name in _registered_tools or (CUSTOM_TOOLS_DIR / tool_name / "routes.py").exists():
+        tool_dir = CUSTOM_TOOLS_DIR / tool_name
+        if tool_name not in _registered_tools and (tool_dir / "routes.py").exists():
             register_custom_tools_on_app(request.app)
-            return RedirectResponse(url=f"/tools/{tool_name}/", status_code=307)
+        if tool_name in _registered_tools:
+            mod = sys.modules.get(f"app.tools.custom.{tool_name}.routes")
+            if mod and hasattr(mod, "router"):
+                for route in mod.router.routes:
+                    if hasattr(route, "path") and route.path in ("", "/") and "GET" in getattr(route, "methods", set()):
+                        return await route.endpoint(request=request, db=db)
         raise HTTPException(status_code=404, detail="Tool not found")
 
     # Parse files list

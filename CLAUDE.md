@@ -27,7 +27,7 @@ python build_windows.py --clean --skip-playwright
 
 ## Architecture Overview
 
-ChatHub is a multi-tenant platform for AI-powered WhatsApp bots with coordinated multi-bot orchestration.
+ChatHub is a multi-tenant platform for AI-powered messaging bots across 10 platforms (WhatsApp, Telegram, Instagram, Messenger, Discord, LINE, LinkedIn, Tinder, Bumble, WeChat) with coordinated multi-bot orchestration.
 
 ### Project File Structure
 
@@ -520,6 +520,124 @@ All three AI tools share the same 3-panel layout and must stay visually aligned.
 **Intent Routing**: The AI agent CLI detects code-change or tool-building intent and includes `[SUGGEST:AI_CODER]` or `[SUGGEST:TOOL_BUILDER]` markers in its response (instruction added to system context in `manager.py` and `agent_loop.py`). The frontend strips these markers and renders an inline suggestion card with a link to the appropriate tool. No regex pre-filtering — the AI itself determines intent. AI Coder and Tool Builder pick up pending prompts via `sessionStorage`.
 
 **Google AI Provider**: Uses `google-genai` SDK (not deprecated `google-generativeai`). Default model: `gemini-2.0-flash`.
+
+**Tool Event Bus** (`app/tools/event_bus.py`): Pub/sub system connecting system events to custom tool hook functions. Core code emits events via `tool_event_bus.emit("event.name", db=db, ...)` (one line). Custom tools subscribe via TOOL.md `events` field. ~55 emit points across message flow, bot lifecycle, hubs, contacts, agents, content, scripts, follow-ups, topics. Sync callers use `emit_event_sync()` helper from `message_handler.py`. Tool scheduled tasks use `app/tools/tool_scheduler.py` with APScheduler cron. All hook errors are caught and logged — never break core flow.
+
+## Multi-Platform Architecture
+
+### Platform Adapter Pattern
+All platforms implement `PlatformAdapter` base class (`app/platforms/base.py`). Each adapter provides `run()`, `send_message()`, `send_file()`, `cleanup()`, `get_contacts()`, `get_groups()`. Adapters are registered in `app/main.py` and accessed via `platform_registry.get_adapter(PlatformType)`.
+
+### Platform Auth Methods (`app/platforms/base.py:AuthMethod`)
+| Auth Method | Platforms | UI Flow |
+|-------------|-----------|---------|
+| `QR_CODE` | WhatsApp, WeChat | QR modal, scan with app |
+| `PHONE_CODE` | Telegram | Connection modal: API ID + Hash + Phone → SMS code → optional 2FA |
+| `API_TOKEN` | Discord, LINE | Connection modal: token fields on Start click |
+| `OAUTH` (Facebook) | Messenger, Instagram | "Connect with Facebook" button → OAuth popup → auto-setup |
+| `CREDENTIALS` | Tinder, Bumble, LinkedIn | Connection modal: auth token field |
+
+### Bot Creation UX — Consistent Across All Platforms
+Creating a bot for ANY platform requires only: **name + AI provider + AI API key**. Platform-specific credentials (tokens, OAuth, phone) are collected when the user clicks **Start** via a connection modal. No platform fields in create/edit modals.
+
+### Facebook OAuth (`app/platforms/facebook/oauth.py`)
+- Messenger and Instagram use **Facebook Login OAuth** — user clicks "Connect with Facebook", authorizes, done
+- Requires `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` in `.env` (one-time setup by app owner)
+- OAuth start: `GET /api/bots/{bot_id}/facebook-oauth-start` → redirects to Facebook
+- OAuth callback: `GET /auth/facebook-oauth-callback` → exchanges code for token → stores in `platform_config`
+- Callback is on `/auth` prefix (not `/api/bots`) to avoid route conflict with `/{bot_id}` pattern
+- Auto-subscribes page to webhooks via `POST /{page_id}/subscribed_apps`
+- After success, redirects to `/dashboard/bots?autostart={bot_id}` — bot auto-starts
+- For Instagram: also saves `instagram_page_id` and `instagram_app_secret` in `platform_config`
+- Page Access Tokens from OAuth are **permanent** (never expire) — unlike manual developer portal tokens
+
+### Platform Token Storage
+- **WhatsApp**: No token — uses Playwright browser session in `data/sessions/bot_{id}/`
+- **Telegram**: Telethon session string in `data/sessions/bot_{id}/telegram.session`, API credentials in `platform_config`
+- **Messenger/Instagram**: Page Access Token + App Secret in `platform_config` (via Facebook OAuth)
+- **Discord/LINE/others**: Token encrypted as `platform_token_encrypted` in `platform_config`
+- **AI API key**: Always in `api_key_encrypted` column (separate from platform token)
+
+### Telegram-Specific (Telethon Client API)
+- Uses **real user account** login (not @BotFather bot) — sees ALL messages like WhatsApp
+- Auth: `api_id` + `api_hash` (from my.telegram.org, per-bot in `platform_config`) + phone number + SMS code
+- Session persists as `StringSession` text file — auto-reconnects on restart
+- Contact/group sync via `client.get_dialogs()` — async methods `_async_get_contacts()`, `_async_get_groups()`
+- History sync via `client.get_messages()` — triggered by `instance.history_sync_requested` flag
+
+### Critical Patterns — Multi-Platform
+
+**Platform-agnostic message sending** (`app/platforms/send.py`):
+```python
+from app.platforms.send import send_message, send_file
+await send_message(bot_profile_id, chat_id, chat_name, message, platform_type="telegram")
+```
+Always use this in `conversations/routes.py` — never import `send_whatsapp_message()` directly.
+
+**Bot card display** (`bots.html`): Account info uses `pInfo.label`/`pInfo.color` from `PLATFORM_INFO`. Account name stored in `whatsapp_name` DB column (reused for all platforms). Don't show phone field for platforms without real phone numbers (Discord, Messenger).
+
+**Connection check**: `bot_instance.whatsapp_connected` is the "platform connected" field for ALL platforms. The `_is_platform_connected()` helper checks both DB field and runtime instance.
+
+**Recovery on restart** (`routes.py:check_and_recover`):
+- Must include ALL `platform_config` fields in recovery config: `platform_type`, `telegram_api_id`, `telegram_api_hash`, `app_secret`, `instagram_page_id`, `webhook_verify_token`, `page_id`
+- Token-based platforms without stored credentials → mark as stopped (don't attempt recovery)
+- Adapters that fail to connect → update `bot.is_running = False` in DB to prevent infinite retry
+
+**Hub contact/group pre-sync** (`hubs/routes.py`):
+- Before reading Conversation table, call `_fetch_platform_contacts()` / `_fetch_platform_groups()`
+- Telegram: uses `await adapter._async_get_contacts(client, bot_id)` — MUST be called from async context (sync `get_contacts()` deadlocks in FastAPI)
+- Messenger/Instagram: uses `_fetch_messenger_contacts()` which calls Graph API `GET /me/conversations`
+- Contact dedup key: use raw identifier (phone or chat_id) — NOT `f"chat_{id}"` prefix (causes key mismatch with Contact.phone)
+
+**Hub contact list** (`hubs/routes.py:list_contacts`):
+- Must match conversations by BOTH `Conversation.phone` AND `Conversation.chat_id` — Messenger/Instagram contacts have empty `phone` field, use `chat_id` instead
+- Contact messages endpoint: use `or_(Conversation.phone == contact.phone, Conversation.chat_id == contact.phone)` to find conversations
+
+**Scheduled Content contacts** (`bots/routes.py:get_all_bots_contacts`):
+- Same pattern: use `chat_id` as fallback when `phone` is empty
+
+**ActivityLog model**: Uses `bot_profile_id` (NOT `user_id`). The `log_activity()` function in `message_handler.py` takes `bot_profile_id` as first arg.
+
+**Hide WhatsApp-only UI fields**: Use `classList.toggle('d-none', !isWhatsApp)` — NOT `style.display` (Bootstrap's `d-flex` uses `!important`). Fields: Headless Mode, AI Ending Detection, Proxy Settings.
+
+**Sync History visibility**: Only show for WhatsApp, Telegram, Messenger, Instagram, Discord — check `isWhatsApp || ['telegram', 'messenger', 'instagram', 'discord'].includes(bot.platform_type)`.
+
+**Sync History timestamps**: When syncing via Graph API or Telethon, always pass the original `created_time`/`msg.date` to `save_user_message(timestamp=...)` — not `datetime.utcnow()`.
+
+**AI toggle double-fire fix**: Use `_skipToggleEvent[botId]` flag. Set to `true` before programmatically changing `toggle.checked`, set to `false` after. The `toggleAIResponse()` function checks this flag and returns early if set.
+
+**AI error handling**: When AI fails, all adapters silently fail — NO error message sent to end user. WhatsApp sets `reply = None` and returns early.
+
+**Disconnect clears everything**: The disconnect endpoint clears `platform_config = "{}"` in addition to WhatsApp fields — ensures re-authentication on next Start.
+
+**Auto-refresh after connect**: Bot card refreshes at 2s, 5s, 8s after starting to catch connection status. Also after OAuth redirect via `?autostart=bot_id` query param.
+
+### Platform Setup Guides (`app/templates/dashboard/guides.html`)
+- Full setup guide page at `/dashboard/guides` with tabs for each platform
+- Each tab uses the platform's brand color (solid for inactive, darker + shadow for active)
+- Step-by-step numbered instructions with links to developer portals
+- Tips and warnings (e.g., unofficial API risks for Tinder/Bumble)
+- Auto-selects tab from URL hash: `/dashboard/guides#discord`
+
+**Connection modal quick guides**: Each platform's connection modal (`showTokenConnectModal`, `showTelegramAuthModal`, WhatsApp QR modal) includes:
+- `setupGuide` text from `PLATFORM_INFO` — shown as an alert box above input fields
+- "Need help? View full setup guide" link to `/dashboard/guides#platform`
+
+**Guide tab CSS**: Each tab has platform-specific colors via `nav-link[href="#guide-platform"]` selectors. Active tabs use darker shade + `box-shadow` + `transform: scale(1.05)`. No opacity — solid colors only.
+
+### Platform Status
+| Platform | Adapter | Auth | Contact Sync | History Sync | Status |
+|----------|---------|------|-------------|-------------|--------|
+| WhatsApp | Playwright browser | QR Code | From conversations | Browser scroll | Production |
+| Telegram | Telethon client | Phone+Code | `get_dialogs()` | `get_messages()` | Production |
+| Discord | discord.py | Bot Token | From conversations | No | Production |
+| Messenger | httpx (Graph API) | Facebook OAuth | Graph API `/me/conversations` | Graph API | Production |
+| Instagram | httpx (Graph API) | Facebook OAuth | Graph API `/me/conversations` | No | Production |
+| LINE | httpx (Messaging API) | Channel Token | From conversations | No | Ready |
+| LinkedIn | httpx (REST API) | OAuth | From conversations | No | Ready (rate-limited) |
+| Tinder | httpx (unofficial) | Phone OTP | From conversations | No | Beta |
+| Bumble | httpx (unofficial) | Phone SMS | From conversations | No | Beta |
+| WeChat | Not implemented | QR Code | — | — | Planned |
 
 ## Testing
 

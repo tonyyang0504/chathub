@@ -151,9 +151,31 @@ class DiscordAdapter(PlatformAdapter):
         async def on_ready():
             logger.info(f"Bot {bot_profile_id}: Discord connected as {client.user}")
             instance.platform_connected = True
+
+            # Save account info to DB for bot card display
+            try:
+                from app.database import SessionLocal, BotProfile as BPModel
+                _db = SessionLocal()
+                try:
+                    _bot = _db.query(BPModel).filter(BPModel.id == bot_profile_id).first()
+                    if _bot:
+                        _bot.whatsapp_name = client.user.name
+                        _bot.whatsapp_push_name = f"#{client.user.discriminator}"
+                        _db.commit()
+                finally:
+                    _db.close()
+            except Exception as e:
+                logger.warning(f"Bot {bot_profile_id}: Failed to save Discord account info: {e}")
+
             await instance.notify_status({
                 "status": "connected",
                 "message": f"Connected as {client.user.name}#{client.user.discriminator}",
+                "connected": True,
+                "account_info": {
+                    "name": client.user.name,
+                    "phone": str(client.user.id),
+                    "username": f"#{client.user.discriminator}",
+                },
             })
 
         @client.event
@@ -323,15 +345,12 @@ class DiscordAdapter(PlatformAdapter):
                 update_conversation_stats(db, conversation.id)
 
                 # Log activity for analytics feed
-                from app.database import BotProfile as BotProfileModel
-                bot = db.query(BotProfileModel).filter_by(id=bot_profile_id).first()
-                if bot:
-                    log_activity(
-                        db,
-                        bot.user_id,
-                        "discord_message_received",
-                        f"Message from {sender_name} in {chat_name}",
-                    )
+                log_activity(
+                    db,
+                    bot_profile_id,
+                    "discord_message_received",
+                    f"Message from {sender_name} in {chat_name}",
+                )
 
                 db.commit()
 
@@ -422,15 +441,12 @@ class DiscordAdapter(PlatformAdapter):
                 )
                 update_conversation_stats(db, conv.id)
 
-                from app.database import BotProfile as BotProfileModel
-                bot = db.query(BotProfileModel).filter_by(id=bot_profile_id).first()
-                if bot:
-                    log_activity(
-                        db,
-                        bot.user_id,
-                        "discord_message_sent",
-                        f"AI response sent in {chat_name}",
-                    )
+                log_activity(
+                    db,
+                    bot_profile_id,
+                    "discord_message_sent",
+                    f"AI response sent in {chat_name}",
+                )
 
                 db.commit()
 

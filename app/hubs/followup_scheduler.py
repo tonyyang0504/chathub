@@ -15,6 +15,7 @@ from typing import Optional, Set
 
 from app.database import SessionLocal, Contact, Hub, AIAgent, Conversation, BotProfile, HubBotMembership
 from app.tools.monitoring import ToolMonitor
+from app.tools.event_bus import tool_event_bus
 
 logger = logging.getLogger(__name__)
 
@@ -362,6 +363,10 @@ Return only the message text, no explanations or quotes."""
                         contact.followup_attempts = (contact.followup_attempts or 0) + 1
                         contact.followup_last_attempt_at = datetime.utcnow()
                         db.commit()
+                        try:
+                            asyncio.ensure_future(tool_event_bus.emit("followup.sent", db=db, contact_id=contact.id, hub_id=hub_id))
+                        except Exception:
+                            pass
 
                         ToolMonitor.log_execution(
                             db=db,

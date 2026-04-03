@@ -47,6 +47,14 @@ class Settings:
     DEFAULT_RESPONSE_DELAY_MIN: int = 3
     DEFAULT_RESPONSE_DELAY_MAX: int = 8
 
+    # Telegram Client API (from https://my.telegram.org)
+    TELEGRAM_API_ID: int = int(os.getenv("TELEGRAM_API_ID", "0"))
+    TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "")
+
+    # Facebook/Meta OAuth (for Messenger + Instagram)
+    FACEBOOK_APP_ID: str = os.getenv("FACEBOOK_APP_ID", "")
+    FACEBOOK_APP_SECRET: str = os.getenv("FACEBOOK_APP_SECRET", "")
+
     # CORS Settings (comma-separated origins, or "*" for all)
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
 

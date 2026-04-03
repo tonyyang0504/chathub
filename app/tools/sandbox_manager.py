@@ -377,7 +377,7 @@ class SandboxManager:
             "-e", "COOKIE_NAME=sandbox_access_token",
             "-e", "SANDBOX_MODE=true",
             "-e", "PORT=8000",
-            "-e", "DEBUG=true",
+            "-e", "DEBUG=false",
             "--memory=512m", "--cpus=1",
             "--label", f"tb-session={info.session_id}",
             "--label", f"tb-user={info.user_id}",
