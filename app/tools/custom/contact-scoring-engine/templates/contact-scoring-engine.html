@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Scoring Engine - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.scoring-hero {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.scoring-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.scoring-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.scoring-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* Tier badges */
+.tier-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+.tier-hot { background: #ef4444; }
+.tier-warm { background: #f59e0b; }
+.tier-cool { background: #3b82f6; }
+.tier-cold { background: #6b7280; }
+
+/* Score bar in table */
+.score-bar-sm {
+    height: 8px; border-radius: 4px; background: var(--hover-bg); width: 80px;
+    display: inline-block; vertical-align: middle;
+}
+.score-bar-sm-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+/* Distribution chart */
+.dist-bar {
+    height: 32px; border-radius: 8px; display: flex; overflow: hidden; background: var(--hover-bg);
+}
+.dist-bar > div { transition: width 0.4s ease; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; color: white; }
+
+/* Contact table */
+.contact-row {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: var(--card-bg);
+    transition: background 0.15s;
+    cursor: pointer;
+}
+.contact-row:hover { background: var(--hover-bg); }
+
+.contact-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 0.85rem; color: white; flex-shrink: 0;
+}
+.contact-avatar.avatar-color-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+.contact-avatar.avatar-color-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.contact-avatar.avatar-color-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.contact-avatar.avatar-color-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.contact-avatar.avatar-color-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
+.contact-avatar.avatar-color-6 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+.contact-avatar.avatar-color-7 { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+.contact-avatar.avatar-color-8 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+
+/* Factor breakdown panel */
+.factor-panel {
+    background: var(--hover-bg);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+.factor-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem;
+}
+.factor-label { width: 90px; font-size: 0.8rem; color: var(--text-secondary); }
+.factor-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--border-color); }
+.factor-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #f59e0b, #d97706); }
+.factor-value { width: 36px; font-size: 0.8rem; font-weight: 600; text-align: right; }
+
+/* Tag chip */
+.tag-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+/* Scrollable contact list */
+.contact-list-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.contact-list-scroll::-webkit-scrollbar { width: 6px; }
+.contact-list-scroll::-webkit-scrollbar-track { background: transparent; }
+.contact-list-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.contact-list-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.contact-list-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+#hubFilter:focus, #searchInput:focus {
+    border-color: #f59e0b;
+    box-shadow: none;
+}
+
+/* Weight label */
+.weight-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="scoring-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-speedometer2 me-3"></i>Contact Scoring Engine</h1>
+                <p>Prioritize your contacts with a composite score combining sentiment, urgency, engagement, recency, message frequency, and follow-up status.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-graph-up-arrow" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card scoring-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4 col-md-5">
+                    <label class="form-label">Hub</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="Search contacts...">
+                </div>
+                <div class="col-lg-2 col-md-3">
+                    <label class="form-label">Tier</label>
+                    <select id="tierFilter" class="form-select rounded-pill">
+                        <option value="">All tiers</option>
+                        <option value="Hot">Hot</option>
+                        <option value="Warm">Warm</option>
+                        <option value="Cool">Cool</option>
+                        <option value="Cold">Cold</option>
+                    </select>
+                </div>
+                <div class="col-lg-1 col-md-3 d-grid">
+                    <button id="refreshBtn" class="btn rounded-pill" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+                <div class="col-lg-2 col-md-3 text-lg-end">
+                    <span id="updatedAt" class="small text-muted">Last updated: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card scoring-card h-100">
+                <div class="card-body text-center">
+                    <div id="totalScored" class="stat-value" style="color: #f59e0b;">0</div>
+                    <div class="stat-label">Contacts Scored</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card scoring-card h-100">
+                <div class="card-body text-center">
+                    <div id="hotCount" class="stat-value" style="color: #ef4444;">0</div>
+                    <div class="stat-label"><i class="bi bi-fire me-1"></i>Hot Contacts</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card scoring-card h-100">
+                <div class="card-body text-center">
+                    <div id="warmCount" class="stat-value" style="color: #f59e0b;">0</div>
+                    <div class="stat-label"><i class="bi bi-sun me-1"></i>Warm Contacts</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card scoring-card h-100">
+                <div class="card-body text-center">
+                    <div id="avgScore" class="stat-value" style="color: #d97706;">0</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribution chart + Weight breakdown -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <div class="card scoring-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Score Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div id="distChart" class="dist-bar mb-2"></div>
+                    <div class="d-flex justify-content-between small">
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px;"></span>Hot (75-100): <strong id="distHot">0</strong></span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:4px;"></span>Warm (50-74): <strong id="distWarm">0</strong></span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3b82f6;margin-right:4px;"></span>Cool (25-49): <strong id="distCool">0</strong></span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6b7280;margin-right:4px;"></span>Cold (0-24): <strong id="distCold">0</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card scoring-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-sliders me-2"></i>Scoring Weights</h6>
+                </div>
+                <div class="card-body" id="weightsPanel">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact list -->
+    <div class="card scoring-card">
+        <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-people me-2"></i>All Contacts — Ranked</h6>
+            <span id="listCount" class="badge rounded-pill" style="background: #f59e0b; color: white;">0</span>
+        </div>
+        <div class="card-body pt-2">
+            <div id="contactList" class="contact-list-scroll">
+                <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-muted" role="status"></div>
+                    <div class="small text-muted mt-2">Loading scores...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const searchInput = document.getElementById('searchInput');
+const tierFilter = document.getElementById('tierFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+const updatedAt = document.getElementById('updatedAt');
+
+let allContacts = [];
+let weights = {};
+
+function getAvatarColorClass(name) {
+    if (!name) return 'avatar-color-1';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name[0].toUpperCase();
+}
+
+function tierBadge(tier) {
+    const cls = tier.toLowerCase();
+    return `<span class="tier-badge tier-${cls}">${tier}</span>`;
+}
+
+function scoreColor(score) {
+    if (score >= 75) return '#ef4444';
+    if (score >= 50) return '#f59e0b';
+    if (score >= 25) return '#3b82f6';
+    return '#6b7280';
+}
+
+function renderWeights(w) {
+    const panel = document.getElementById('weightsPanel');
+    const names = {
+        sentiment: { label: 'Sentiment', icon: 'bi-emoji-smile' },
+        urgency: { label: 'Urgency', icon: 'bi-exclamation-triangle' },
+        engagement: { label: 'Engagement', icon: 'bi-graph-up' },
+        recency: { label: 'Recency', icon: 'bi-clock' },
+        frequency: { label: 'Frequency', icon: 'bi-chat-dots' },
+        followup: { label: 'Follow-up', icon: 'bi-reply' },
+    };
+    panel.innerHTML = Object.entries(w).map(([key, val]) => {
+        const n = names[key] || { label: key, icon: 'bi-circle' };
+        const pct = Math.round(val * 100);
+        return `
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi ${n.icon}" style="color: #d97706; width: 16px;"></i>
+                <span class="small flex-grow-1">${n.label}</span>
+                <div style="width:80px;height:6px;border-radius:3px;background:var(--hover-bg);">
+                    <div style="width:${pct}%;height:100%;border-radius:3px;background:linear-gradient(90deg,#f59e0b,#d97706);"></div>
+                </div>
+                <span class="weight-label">${pct}%</span>
+            </div>`;
+    }).join('');
+}
+
+function renderDistribution(tiers) {
+    const total = tiers.Hot + tiers.Warm + tiers.Cool + tiers.Cold;
+    const chart = document.getElementById('distChart');
+
+    document.getElementById('distHot').textContent = tiers.Hot;
+    document.getElementById('distWarm').textContent = tiers.Warm;
+    document.getElementById('distCool').textContent = tiers.Cool;
+    document.getElementById('distCold').textContent = tiers.Cold;
+
+    if (total === 0) {
+        chart.innerHTML = '<div style="width:100%;background:var(--hover-bg);border-radius:8px;height:32px;display:flex;align-items:center;justify-content:center;" class="small text-muted">No data</div>';
+        return;
+    }
+
+    const segments = [
+        { count: tiers.Hot, color: '#ef4444', label: 'Hot' },
+        { count: tiers.Warm, color: '#f59e0b', label: 'Warm' },
+        { count: tiers.Cool, color: '#3b82f6', label: 'Cool' },
+        { count: tiers.Cold, color: '#6b7280', label: 'Cold' },
+    ];
+
+    chart.innerHTML = segments.map(s => {
+        const pct = (s.count / total * 100);
+        if (pct === 0) return '';
+        return `<div style="width:${pct}%;background:${s.color};" title="${s.label}: ${s.count}">${pct >= 10 ? s.count : ''}</div>`;
+    }).join('');
+}
+
+function renderFactors(factors) {
+    const names = {
+        sentiment: 'Sentiment',
+        urgency: 'Urgency',
+        engagement: 'Engagement',
+        recency: 'Recency',
+        frequency: 'Frequency',
+        followup: 'Follow-up',
+    };
+    return Object.entries(factors).map(([key, val]) => `
+        <div class="factor-row">
+            <span class="factor-label">${names[key] || key}</span>
+            <div class="factor-bar"><div class="factor-bar-fill" style="width:${val}%;"></div></div>
+            <span class="factor-value">${val}</span>
+        </div>
+    `).join('');
+}
+
+function renderContacts(contacts) {
+    const el = document.getElementById('contactList');
+    const badge = document.getElementById('listCount');
+    badge.textContent = contacts.length;
+
+    if (!contacts.length) {
+        el.innerHTML = '<div class="text-center py-4"><i class="bi bi-speedometer2" style="font-size:2.5rem;opacity:0.3;color:#d97706;"></i><div class="small text-muted mt-2">No contacts found</div></div>';
+        return;
+    }
+
+    el.innerHTML = contacts.map((c, i) => {
+        const color = scoreColor(c.score);
+        const tags = (c.tags || []).slice(0, 3).map(t => `<span class="tag-chip">${t}</span>`).join('');
+        const extraTags = (c.tags || []).length > 3 ? `<span class="tag-chip">+${c.tags.length - 3}</span>` : '';
+
+        return `
+        <div class="contact-row" onclick="toggleFactors(${i})">
+            <div class="d-flex align-items-center gap-3">
+                <span class="small text-muted fw-bold" style="width:24px;text-align:right;">#${i + 1}</span>
+                <div class="contact-avatar ${getAvatarColorClass(c.name)}">${getInitials(c.name)}</div>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-semibold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="${c.name}">${c.name}</span>
+                        ${tierBadge(c.tier)}
+                        <span class="small text-muted d-none d-md-inline">${c.hub_name}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        ${tags}${extraTags}
+                        ${c.predicted_intent ? `<span class="small text-muted fst-italic d-none d-lg-inline">${c.predicted_intent}</span>` : ''}
+                    </div>
+                </div>
+                <div class="text-end" style="min-width:120px;">
+                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                        <div class="score-bar-sm">
+                            <div class="score-bar-sm-fill" style="width:${c.score}%;background:${color};"></div>
+                        </div>
+                        <span class="fw-bold" style="color:${color};font-size:1.1rem;">${c.score}</span>
+                    </div>
+                    <div class="small text-muted">${c.message_count || 0} msgs</div>
+                </div>
+                <i class="bi bi-chevron-down small text-muted" id="chevron-${i}" style="transition:transform 0.2s;"></i>
+            </div>
+            <div id="factors-${i}" class="factor-panel" style="display:none;">
+                <div class="small fw-semibold mb-2">Score Breakdown</div>
+                ${renderFactors(c.factors)}
+                <div class="d-flex gap-3 mt-2 small text-muted">
+                    ${c.sentiment ? `<span>Sentiment: <strong>${c.sentiment}</strong></span>` : ''}
+                    ${c.urgency ? `<span>Urgency: <strong>${c.urgency}</strong></span>` : ''}
+                    ${c.follow_up_needed ? '<span class="text-danger"><i class="bi bi-flag-fill me-1"></i>Follow-up needed</span>' : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function toggleFactors(idx) {
+    const panel = document.getElementById(`factors-${idx}`);
+    const chevron = document.getElementById(`chevron-${idx}`);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function applyFilters() {
+    const search = searchInput.value.toLowerCase().trim();
+    const tier = tierFilter.value;
+
+    let filtered = allContacts;
+    if (search) {
+        filtered = filtered.filter(c =>
+            (c.name || '').toLowerCase().includes(search) ||
+            (c.phone || '').includes(search) ||
+            (c.hub_name || '').toLowerCase().includes(search)
+        );
+    }
+    if (tier) {
+        filtered = filtered.filter(c => c.tier === tier);
+    }
+    renderContacts(filtered);
+}
+
+async function loadScores() {
+    refreshBtn.disabled = true;
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+
+    try {
+        const resp = await fetch(`./api/scores?${params.toString()}`);
+        if (!resp.ok) throw new Error('Failed to load');
+        const data = await resp.json();
+
+        allContacts = data.contacts;
+        weights = data.weights;
+
+        // Stats
+        document.getElementById('totalScored').textContent = data.summary.total;
+        document.getElementById('hotCount').textContent = data.summary.tier_counts.Hot || 0;
+        document.getElementById('warmCount').textContent = data.summary.tier_counts.Warm || 0;
+        document.getElementById('avgScore').textContent = data.summary.avg_score;
+
+        // Charts
+        renderDistribution(data.summary.tier_counts);
+        renderWeights(data.weights);
+
+        // Contact list
+        applyFilters();
+
+        updatedAt.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+        console.error('Scoring error:', err);
+        document.getElementById('contactList').innerHTML = '<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load scores</div>';
+    } finally {
+        refreshBtn.disabled = false;
+    }
+}
+
+hubFilter.addEventListener('change', loadScores);
+refreshBtn.addEventListener('click', loadScores);
+searchInput.addEventListener('input', applyFilters);
+tierFilter.addEventListener('change', applyFilters);
+
+loadScores();
+setInterval(loadScores, 60000);
+</script>
+{% endblock %}
