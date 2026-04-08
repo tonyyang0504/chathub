@@ -1,0 +1,36 @@
+<div class="card" style="border-radius: 12px; border: 1px solid var(--border-color);">
+    <div class="card-body" style="padding: 1.1rem;">
+        <h6 style="font-weight: 600; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="bi bi-chat-square-text" style="color: #6366f1;"></i>
+            Trending Keywords
+            <span style="margin-left: auto; font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">7 days</span>
+        </h6>
+
+        {% if top_keywords %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for word, count in top_keywords %}
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary); min-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ word }}">{{ word }}</span>
+                <div style="flex: 1; height: 18px; background: var(--hover-bg); border-radius: 9px; overflow: hidden;">
+                    {% if top_keywords[0][1] > 0 %}
+                    <div style="height: 100%; width: {{ (count / top_keywords[0][1] * 100)|int }}%; background: linear-gradient(135deg, #6366f1, #ec4899); border-radius: 9px; min-width: 4px;"></div>
+                    {% endif %}
+                </div>
+                <span style="font-size: 0.78rem; color: var(--text-muted); min-width: 28px; text-align: right;">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 0.85rem; text-align: center;">
+            <a href="/tools/message-content-analytics/" class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #6366f1, #ec4899); color: white; font-size: 0.78rem; padding: 0.3rem 0.85rem;">
+                <i class="bi bi-bar-chart me-1"></i>View Full Analytics
+            </a>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 1rem 0; color: var(--text-muted);">
+            <i class="bi bi-chat-square-text d-block" style="font-size: 1.5rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
+            <span style="font-size: 0.8rem;">{{ 'No messages in the last 7 days' if total_messages == 0 else 'No keywords detected' }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>

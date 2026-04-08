@@ -1,0 +1,834 @@
+{% extends "base.html" %}
+
+{% block title %}Message Content Analytics - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mca-hero {
+        background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+        border-radius: 16px;
+        padding: 2rem 2.5rem;
+        color: #fff;
+        margin-bottom: 1.5rem;
+    }
+    .mca-hero h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .mca-hero p { opacity: 0.9; margin-bottom: 0; font-size: 0.95rem; }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+        transition: transform 0.15s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-card .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); }
+    .stat-card .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .stat-icon { font-size: 1.5rem; opacity: 0.6; }
+
+    .analytics-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+        height: 100%;
+    }
+    .analytics-card h6 {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-bar select, .filter-bar input {
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.75rem;
+    }
+    .filter-bar select:focus, .filter-bar input:focus {
+        border-color: #6366f1;
+        box-shadow: none;
+        outline: none;
+    }
+
+    /* Keyword bars */
+    .keyword-bar-container { margin-bottom: 0.5rem; }
+    .keyword-bar-label {
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        font-weight: 500;
+        min-width: 100px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .keyword-bar {
+        height: 24px;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        border-radius: 12px;
+        transition: width 0.5s ease;
+        min-width: 4px;
+    }
+    .keyword-bar-count {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        min-width: 35px;
+        text-align: right;
+    }
+
+    /* Sentiment chart */
+    .sentiment-legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .sentiment-legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); }
+    .sentiment-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* Word cloud */
+    .word-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        padding: 1rem;
+    }
+    .cloud-word {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        background: var(--hover-bg);
+        color: var(--text-primary);
+        font-weight: 500;
+        transition: transform 0.15s ease, background 0.15s ease;
+        cursor: default;
+    }
+    .cloud-word:hover { transform: scale(1.1); background: linear-gradient(135deg, #6366f1, #ec4899); color: #fff; }
+
+    /* Message type donut */
+    .donut-container { position: relative; width: 180px; height: 180px; margin: 0 auto; }
+    .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    .donut-center .donut-total { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+    .donut-center .donut-label { font-size: 0.75rem; color: var(--text-muted); }
+    .type-legend { margin-top: 1rem; }
+    .type-legend-item { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.85rem; }
+    .type-legend-color { width: 12px; height: 12px; border-radius: 3px; }
+
+    /* Keyword table */
+    .keyword-table { width: 100%; }
+    .keyword-table th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.5rem 0.75rem;
+    }
+    .keyword-table td {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .keyword-table tr:last-child td { border-bottom: none; }
+    .keyword-search {
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        width: 100%;
+        max-width: 250px;
+    }
+    .keyword-search:focus { border-color: #6366f1; box-shadow: none; outline: none; }
+    .trend-up { color: #10b981; }
+    .trend-down { color: #ef4444; }
+    .trend-flat { color: var(--text-muted); }
+
+    /* Canvas charts */
+    .chart-canvas { width: 100%; max-height: 280px; }
+
+    /* Scrollable containers */
+    .scroll-container { max-height: 400px; overflow-y: auto; }
+    .scroll-container::-webkit-scrollbar { width: 6px; }
+    .scroll-container::-webkit-scrollbar-track { background: transparent; }
+    .scroll-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+    .scroll-container::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+    .scroll-container { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+    /* Topic cluster cards */
+    .topic-cluster {
+        background: var(--hover-bg);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 0.75rem;
+    }
+    .topic-cluster-title { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem; }
+    .topic-tag {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 20px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        margin: 0.15rem;
+    }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty-state i { font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* Loading */
+    .loading-spinner { text-align: center; padding: 2rem; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Hero -->
+    <div class="mca-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-chat-square-text me-3"></i>Message Content Analytics</h1>
+                <p>Discover what's being said across your conversations — trending keywords, sentiment patterns, topic clusters, and message breakdowns.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-body-text" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <div class="row g-2 align-items-center">
+            <div class="col-auto">
+                <i class="bi bi-funnel text-muted"></i>
+            </div>
+            <div class="col-auto">
+                <select id="hubFilter" class="form-select form-select-sm">
+                    <option value="">All Hubs</option>
+                    {% for hub in hubs %}
+                    <option value="{{ hub.id }}">{{ hub.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <select id="directionFilter" class="form-select form-select-sm">
+                    <option value="all">All Messages</option>
+                    <option value="incoming">Incoming Only</option>
+                    <option value="outgoing">Outgoing Only</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select id="daysFilter" class="form-select form-select-sm">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+            </div>
+            <div class="col-auto ms-auto">
+                <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #6366f1, #ec4899); color: white;" onclick="loadData()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4" id="kpiCards">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value" id="kpiTotal">—</div>
+                        <div class="stat-label">Messages Analyzed</div>
+                    </div>
+                    <i class="bi bi-chat-dots stat-icon" style="color: #6366f1;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value" id="kpiKeywords">—</div>
+                        <div class="stat-label">Unique Keywords</div>
+                    </div>
+                    <i class="bi bi-key stat-icon" style="color: #ec4899;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value" id="kpiTopWord">—</div>
+                        <div class="stat-label">Top Keyword</div>
+                    </div>
+                    <i class="bi bi-trophy stat-icon" style="color: #f59e0b;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value" id="kpiAvgLength">—</div>
+                        <div class="stat-label">Avg Message Length</div>
+                    </div>
+                    <i class="bi bi-text-paragraph stat-icon" style="color: #10b981;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row g-3">
+        <!-- Left Column -->
+        <div class="col-lg-6">
+            <!-- Top Keywords Bar Chart -->
+            <div class="analytics-card mb-3">
+                <h6><i class="bi bi-bar-chart-fill" style="color: #6366f1;"></i> Top Keywords</h6>
+                <div id="keywordBars" class="scroll-container" style="max-height: 420px;">
+                    <div class="loading-spinner"><i class="bi bi-arrow-repeat"></i> Loading...</div>
+                </div>
+            </div>
+
+            <!-- Topic Clusters -->
+            <div class="analytics-card mb-3">
+                <h6><i class="bi bi-diagram-3-fill" style="color: #8b5cf6;"></i> Topic Clusters</h6>
+                <div id="topicClusters" class="scroll-container" style="max-height: 350px;">
+                    <div class="loading-spinner"><i class="bi bi-arrow-repeat"></i> Loading...</div>
+                </div>
+            </div>
+
+            <!-- Word Cloud -->
+            <div class="analytics-card">
+                <h6><i class="bi bi-cloud-fill" style="color: #ec4899;"></i> Word Cloud</h6>
+                <div id="wordCloud" class="word-cloud">
+                    <div class="loading-spinner"><i class="bi bi-arrow-repeat"></i> Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-6">
+            <!-- Sentiment Trend -->
+            <div class="analytics-card mb-3">
+                <h6><i class="bi bi-emoji-smile" style="color: #10b981;"></i> Sentiment Trend</h6>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="sentimentChart" class="chart-canvas"></canvas>
+                </div>
+                <div class="sentiment-legend">
+                    <div class="sentiment-legend-item">
+                        <div class="sentiment-dot" style="background: #10b981;"></div> Positive
+                    </div>
+                    <div class="sentiment-legend-item">
+                        <div class="sentiment-dot" style="background: #ef4444;"></div> Negative
+                    </div>
+                    <div class="sentiment-legend-item">
+                        <div class="sentiment-dot" style="background: #6b7280;"></div> Neutral
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Types -->
+            <div class="analytics-card mb-3">
+                <h6><i class="bi bi-pie-chart-fill" style="color: #f59e0b;"></i> Message Types</h6>
+                <div class="d-flex align-items-center justify-content-center flex-wrap">
+                    <div class="donut-container">
+                        <canvas id="typeChart"></canvas>
+                        <div class="donut-center">
+                            <div class="donut-total" id="typeTotal">0</div>
+                            <div class="donut-label">messages</div>
+                        </div>
+                    </div>
+                    <div class="type-legend" id="typeLegend"></div>
+                </div>
+            </div>
+
+            <!-- Keyword Table -->
+            <div class="analytics-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="bi bi-table" style="color: #6366f1;"></i> Keyword Activity</h6>
+                    <input type="text" class="keyword-search" id="keywordSearch" placeholder="Search keywords...">
+                </div>
+                <div class="scroll-container" style="max-height: 350px;">
+                    <table class="keyword-table">
+                        <thead>
+                            <tr>
+                                <th>Keyword</th>
+                                <th>Count</th>
+                                <th>Trend</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keywordTableBody">
+                            <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ========== STOPWORDS ==========
+const STOPWORDS = new Set([
+    "the","be","to","of","and","a","in","that","have","i","it","for","not","on","with",
+    "he","as","you","do","at","this","but","his","by","from","they","we","say","her",
+    "she","or","an","will","my","one","all","would","there","their","what","so","up",
+    "out","if","about","who","get","which","go","me","when","make","can","like","time",
+    "no","just","him","know","take","people","into","year","your","good","some","could",
+    "them","see","other","than","then","now","look","only","come","its","over","think",
+    "also","back","after","use","two","how","our","work","first","well","way","even",
+    "new","want","because","any","these","give","day","most","us","are","was","were",
+    "been","has","had","did","got","may","am","is","yes","yeah","ok","okay","hi","hello",
+    "hey","thanks","thank","please","sorry","sure","right","oh","um","uh","hm","hmm",
+    "dont","doesnt","didnt","cant","wont","im","ive","ill","its","thats","whats","hes",
+    "shes","were","theyre","youre","youve","very","much","more","been","being","still",
+    "here","too","own","same","should","such","before","need","those","while","each",
+    "both","few","many","through","does","done","doing","during","might","must","shall",
+    "let","thing","things","going","really","already","again","lot","still","gonna","gotta",
+    "was","que","de","el","la","en","los","las","un","una","por","con","para","del","se","es"
+]);
+
+// ========== SENTIMENT DICTIONARIES ==========
+const POSITIVE_WORDS = new Set([
+    "good","great","love","happy","amazing","awesome","excellent","wonderful","fantastic",
+    "perfect","beautiful","best","nice","lovely","brilliant","superb","glad","pleased",
+    "enjoy","grateful","excited","thrilled","delighted","joy","blessed","outstanding",
+    "impressive","incredible","magnificent","remarkable","splendid","terrific","positive",
+    "helpful","kind","sweet","cool","wow","yay","bravo","congrats","congratulations",
+    "appreciate","appreciated","helpful","thanks","thankful","fun","exciting","hope"
+]);
+const NEGATIVE_WORDS = new Set([
+    "bad","terrible","awful","horrible","hate","angry","sad","disappointing","worst",
+    "poor","ugly","annoying","frustrated","upset","unhappy","fail","failure","wrong",
+    "broken","useless","stupid","dumb","boring","disgusting","pathetic","miserable",
+    "nasty","rude","unfair","complaint","complain","problem","issue","error","bug",
+    "crash","slow","delay","missing","lost","stuck","confused","worried","afraid",
+    "unfortunately","never","worse","sucks","pain","painful","difficult","hard","trouble"
+]);
+
+// ========== STATE ==========
+let rawMessages = [];
+let sentimentChart = null;
+let typeChart = null;
+
+// ========== DATA LOADING ==========
+async function loadData() {
+    const hubId = document.getElementById('hubFilter').value;
+    const direction = document.getElementById('directionFilter').value;
+    const days = document.getElementById('daysFilter').value;
+
+    const params = new URLSearchParams({ direction, days });
+    if (hubId) params.set('hub_id', hubId);
+
+    try {
+        const resp = await fetch(`/tools/message-content-analytics/api/messages?${params}`);
+        if (!resp.ok) throw new Error('Failed to load');
+        const data = await resp.json();
+        rawMessages = data.messages || [];
+        processAndRender();
+    } catch (err) {
+        console.error('Load failed:', err);
+        showEmpty();
+    }
+}
+
+function showEmpty() {
+    document.getElementById('kpiTotal').textContent = '0';
+    document.getElementById('kpiKeywords').textContent = '0';
+    document.getElementById('kpiTopWord').textContent = '—';
+    document.getElementById('kpiAvgLength').textContent = '0';
+    document.getElementById('keywordBars').innerHTML = '<div class="empty-state"><i class="bi bi-chat-square-text d-block"></i><p>No messages found for this period</p></div>';
+    document.getElementById('topicClusters').innerHTML = '<div class="empty-state"><i class="bi bi-diagram-3 d-block"></i><p>No topics detected</p></div>';
+    document.getElementById('wordCloud').innerHTML = '<div class="empty-state"><i class="bi bi-cloud d-block"></i><p>No data for word cloud</p></div>';
+    document.getElementById('keywordTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data</td></tr>';
+}
+
+// ========== PROCESSING ==========
+function extractWords(text) {
+    return text.match(/[a-zA-Z\u0600-\u06FF\u0400-\u04FF\u4e00-\u9fff]+/g) || [];
+}
+
+function processAndRender() {
+    if (!rawMessages.length) { showEmpty(); return; }
+
+    // Extract all words
+    const wordCounts = {};
+    const wordLastSeen = {};
+    const wordFirstHalf = {};
+    const wordSecondHalf = {};
+    let totalLength = 0;
+
+    const midpoint = rawMessages.length > 1
+        ? new Date((new Date(rawMessages[0].timestamp).getTime() + new Date(rawMessages[rawMessages.length - 1].timestamp).getTime()) / 2)
+        : new Date();
+
+    rawMessages.forEach(msg => {
+        if (!msg.content) return;
+        totalLength += msg.content.length;
+        const words = extractWords(msg.content);
+        const msgDate = new Date(msg.timestamp);
+        const isFirstHalf = msgDate < midpoint;
+
+        words.forEach(w => {
+            w = w.toLowerCase();
+            if (w.length < 3 || STOPWORDS.has(w)) return;
+            wordCounts[w] = (wordCounts[w] || 0) + 1;
+            wordLastSeen[w] = msg.timestamp;
+            if (isFirstHalf) wordFirstHalf[w] = (wordFirstHalf[w] || 0) + 1;
+            else wordSecondHalf[w] = (wordSecondHalf[w] || 0) + 1;
+        });
+    });
+
+    const sortedWords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]);
+    const uniqueCount = sortedWords.length;
+    const topWord = sortedWords.length ? sortedWords[0][0] : '—';
+    const topWordCount = sortedWords.length ? sortedWords[0][1] : 0;
+    const avgLength = Math.round(totalLength / rawMessages.length);
+
+    // KPIs
+    document.getElementById('kpiTotal').textContent = rawMessages.length.toLocaleString();
+    document.getElementById('kpiKeywords').textContent = uniqueCount.toLocaleString();
+    document.getElementById('kpiTopWord').textContent = topWord !== '—' ? `"${topWord}" (${topWordCount})` : '—';
+    document.getElementById('kpiAvgLength').textContent = avgLength + ' chars';
+
+    // Keyword bars (top 15)
+    renderKeywordBars(sortedWords.slice(0, 15));
+
+    // Word cloud (top 60)
+    renderWordCloud(sortedWords.slice(0, 60));
+
+    // Topic clusters
+    renderTopicClusters(sortedWords, rawMessages);
+
+    // Sentiment trend
+    renderSentimentTrend(rawMessages);
+
+    // Message types
+    renderMessageTypes(rawMessages);
+
+    // Keyword table
+    renderKeywordTable(sortedWords, wordLastSeen, wordFirstHalf, wordSecondHalf);
+}
+
+// ========== RENDERERS ==========
+
+function renderKeywordBars(top15) {
+    if (!top15.length) {
+        document.getElementById('keywordBars').innerHTML = '<div class="empty-state"><i class="bi bi-bar-chart d-block"></i><p>No keywords found</p></div>';
+        return;
+    }
+    const maxCount = top15[0][1];
+    let html = '';
+    top15.forEach(([word, count]) => {
+        const pct = Math.max(4, (count / maxCount) * 100);
+        html += `
+        <div class="keyword-bar-container d-flex align-items-center gap-2">
+            <span class="keyword-bar-label" title="${word}">${word}</span>
+            <div class="flex-grow-1">
+                <div class="keyword-bar" style="width: ${pct}%;"></div>
+            </div>
+            <span class="keyword-bar-count">${count}</span>
+        </div>`;
+    });
+    document.getElementById('keywordBars').innerHTML = html;
+}
+
+function renderWordCloud(words) {
+    if (!words.length) {
+        document.getElementById('wordCloud').innerHTML = '<div class="empty-state"><i class="bi bi-cloud d-block"></i><p>No data</p></div>';
+        return;
+    }
+    const maxCount = words[0][1];
+    const minSize = 0.7;
+    const maxSize = 2.2;
+    // Shuffle for visual variety
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+    let html = '';
+    shuffled.forEach(([word, count]) => {
+        const ratio = Math.log(count + 1) / Math.log(maxCount + 1);
+        const size = minSize + ratio * (maxSize - minSize);
+        const hue = (word.charCodeAt(0) * 47 + word.length * 31) % 360;
+        html += `<span class="cloud-word" style="font-size: ${size}rem;" title="${word}: ${count}">${word}</span>`;
+    });
+    document.getElementById('wordCloud').innerHTML = html;
+}
+
+function renderTopicClusters(sortedWords, messages) {
+    if (sortedWords.length < 5) {
+        document.getElementById('topicClusters').innerHTML = '<div class="empty-state"><i class="bi bi-diagram-3 d-block"></i><p>Not enough data for topic detection</p></div>';
+        return;
+    }
+
+    // Co-occurrence clustering: find words that appear together in the same messages
+    const topWords = sortedWords.slice(0, 40).map(w => w[0]);
+    const cooccurrence = {};
+
+    messages.forEach(msg => {
+        if (!msg.content) return;
+        const words = new Set(extractWords(msg.content).map(w => w.toLowerCase()).filter(w => topWords.includes(w)));
+        const arr = [...words];
+        for (let i = 0; i < arr.length; i++) {
+            for (let j = i + 1; j < arr.length; j++) {
+                const key = [arr[i], arr[j]].sort().join('|');
+                cooccurrence[key] = (cooccurrence[key] || 0) + 1;
+            }
+        }
+    });
+
+    // Greedy clustering: group words by strongest co-occurrence
+    const assigned = new Set();
+    const clusters = [];
+    const threshold = 2;
+
+    topWords.forEach(word => {
+        if (assigned.has(word)) return;
+        const cluster = [word];
+        assigned.add(word);
+
+        topWords.forEach(other => {
+            if (assigned.has(other)) return;
+            const key = [word, other].sort().join('|');
+            if ((cooccurrence[key] || 0) >= threshold) {
+                cluster.push(other);
+                assigned.add(other);
+            }
+        });
+
+        if (cluster.length >= 2) clusters.push(cluster);
+    });
+
+    if (!clusters.length) {
+        document.getElementById('topicClusters').innerHTML = '<div class="empty-state"><i class="bi bi-diagram-3 d-block"></i><p>No strong topic clusters found</p></div>';
+        return;
+    }
+
+    const icons = ['bi-chat-left-text', 'bi-lightning', 'bi-star', 'bi-heart', 'bi-globe', 'bi-gear', 'bi-people', 'bi-megaphone'];
+    let html = '';
+    clusters.slice(0, 8).forEach((cluster, idx) => {
+        const icon = icons[idx % icons.length];
+        const title = cluster.slice(0, 2).join(' & ');
+        html += `
+        <div class="topic-cluster">
+            <div class="topic-cluster-title"><i class="bi ${icon} me-2" style="color: #6366f1;"></i>${title}</div>
+            <div>${cluster.map(w => `<span class="topic-tag">${w}</span>`).join('')}</div>
+        </div>`;
+    });
+    document.getElementById('topicClusters').innerHTML = html;
+}
+
+function renderSentimentTrend(messages) {
+    // Group by date, compute daily sentiment ratio
+    const dailyData = {};
+    messages.forEach(msg => {
+        if (!msg.content || !msg.timestamp) return;
+        const date = msg.timestamp.split('T')[0];
+        if (!dailyData[date]) dailyData[date] = { positive: 0, negative: 0, neutral: 0, total: 0 };
+
+        const words = extractWords(msg.content).map(w => w.toLowerCase());
+        let pos = 0, neg = 0;
+        words.forEach(w => {
+            if (POSITIVE_WORDS.has(w)) pos++;
+            if (NEGATIVE_WORDS.has(w)) neg++;
+        });
+
+        if (pos > neg) dailyData[date].positive++;
+        else if (neg > pos) dailyData[date].negative++;
+        else dailyData[date].neutral++;
+        dailyData[date].total++;
+    });
+
+    const dates = Object.keys(dailyData).sort();
+    const posData = dates.map(d => dailyData[d].total ? Math.round((dailyData[d].positive / dailyData[d].total) * 100) : 0);
+    const negData = dates.map(d => dailyData[d].total ? Math.round((dailyData[d].negative / dailyData[d].total) * 100) : 0);
+    const neuData = dates.map(d => dailyData[d].total ? Math.round((dailyData[d].neutral / dailyData[d].total) * 100) : 0);
+
+    const labels = dates.map(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    if (sentimentChart) sentimentChart.destroy();
+
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    sentimentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Positive %',
+                    data: posData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'Negative %',
+                    data: negData,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                },
+                {
+                    label: 'Neutral %',
+                    data: neuData,
+                    borderColor: '#6b7280',
+                    backgroundColor: 'rgba(107,114,128,0.05)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, maxTicksLimit: 10 } },
+                y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+            },
+        },
+    });
+}
+
+function renderMessageTypes(messages) {
+    let questions = 0, links = 0, media = 0, statements = 0;
+
+    messages.forEach(msg => {
+        if (!msg.content) return;
+        const c = msg.content.trim();
+        if (/\?/.test(c)) questions++;
+        else if (/https?:\/\/|www\./i.test(c)) links++;
+        else if (/\[media\]|\[image\]|\[video\]|\[audio\]|\[document\]|\[sticker\]|\[gif\]/i.test(c)) media++;
+        else statements++;
+    });
+
+    const total = questions + links + media + statements;
+    document.getElementById('typeTotal').textContent = total.toLocaleString();
+
+    const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899'];
+    const labels = ['Questions', 'Statements', 'Links', 'Media'];
+    const values = [questions, statements, links, media];
+
+    // Legend
+    let legendHtml = '';
+    labels.forEach((label, i) => {
+        const pct = total ? Math.round((values[i] / total) * 100) : 0;
+        legendHtml += `
+        <div class="type-legend-item">
+            <div class="type-legend-color" style="background: ${colors[i]};"></div>
+            <span style="color: var(--text-secondary); font-size: 0.85rem;">${label}: ${values[i]} (${pct}%)</span>
+        </div>`;
+    });
+    document.getElementById('typeLegend').innerHTML = legendHtml;
+
+    if (typeChart) typeChart.destroy();
+
+    const ctx = document.getElementById('typeChart').getContext('2d');
+    typeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderWidth: 0,
+                cutout: '70%',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+        },
+    });
+}
+
+function renderKeywordTable(sortedWords, wordLastSeen, wordFirstHalf, wordSecondHalf) {
+    const top50 = sortedWords.slice(0, 50);
+    if (!top50.length) {
+        document.getElementById('keywordTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No keywords found</td></tr>';
+        return;
+    }
+
+    window._keywordData = top50.map(([word, count]) => {
+        const firstCount = wordFirstHalf[word] || 0;
+        const secondCount = wordSecondHalf[word] || 0;
+        let trend = 'flat';
+        if (secondCount > firstCount * 1.2) trend = 'up';
+        else if (secondCount < firstCount * 0.8) trend = 'down';
+
+        const lastSeen = wordLastSeen[word];
+        const lastSeenStr = lastSeen ? new Date(lastSeen).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+
+        return { word, count, trend, lastSeenStr };
+    });
+
+    renderFilteredTable('');
+}
+
+function renderFilteredTable(filter) {
+    const data = window._keywordData || [];
+    const filtered = filter ? data.filter(d => d.word.includes(filter.toLowerCase())) : data;
+
+    if (!filtered.length) {
+        document.getElementById('keywordTableBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">No matches</td></tr>';
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(d => {
+        const trendIcon = d.trend === 'up' ? '<i class="bi bi-arrow-up-short trend-up"></i>'
+            : d.trend === 'down' ? '<i class="bi bi-arrow-down-short trend-down"></i>'
+            : '<i class="bi bi-dash trend-flat"></i>';
+        html += `
+        <tr>
+            <td style="font-weight: 500;">${d.word}</td>
+            <td>${d.count}</td>
+            <td>${trendIcon}</td>
+            <td>${d.lastSeenStr}</td>
+        </tr>`;
+    });
+    document.getElementById('keywordTableBody').innerHTML = html;
+}
+
+// ========== EVENT LISTENERS ==========
+document.getElementById('hubFilter').addEventListener('change', loadData);
+document.getElementById('directionFilter').addEventListener('change', loadData);
+document.getElementById('daysFilter').addEventListener('change', loadData);
+document.getElementById('keywordSearch').addEventListener('input', e => renderFilteredTable(e.target.value));
+
+// ========== INIT ==========
+loadData();
+</script>
+{% endblock %}
