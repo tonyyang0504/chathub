@@ -1,0 +1,22 @@
+<div class="card" style="border-radius: 12px; border: 1px solid var(--border-color);">
+    <div class="card-body">
+        <h6 class="mb-3"><i class="bi bi-question-circle me-2" style="color: #06b6d4;"></i>FAQ Builder</h6>
+        <div class="d-flex justify-content-around text-center">
+            <div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #06b6d4;">{{ total_faqs }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">Total FAQs</div>
+            </div>
+            <div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #0891b2;">{{ matches_today }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">Matches Today</div>
+            </div>
+        </div>
+        {% if total_faqs == 0 %}
+        <div class="text-center mt-3">
+            <a href="/tools/faq-builder/" class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;">
+                <i class="bi bi-plus-lg me-1"></i>Create FAQs
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,718 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ Builder - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.faq-hero {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.faq-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.faq-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.faq-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* FAQ item */
+.faq-item {
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.faq-item:hover {
+    background: var(--hover-bg);
+    border-color: #06b6d4;
+}
+.faq-item .faq-question {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+.faq-item .faq-answer {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.faq-item .faq-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0.4rem;
+}
+
+/* Category badge */
+.cat-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: white;
+}
+
+/* Scrollable list */
+.faq-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.faq-scroll::-webkit-scrollbar { width: 6px; }
+.faq-scroll::-webkit-scrollbar-track { background: transparent; }
+.faq-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.faq-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.faq-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+/* Form */
+.faq-form-card {
+    border: 2px dashed var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+    transition: border-color 0.2s;
+}
+.faq-form-card.editing {
+    border-color: #06b6d4;
+    border-style: solid;
+}
+
+#hubFilter:focus, #searchInput:focus, .faq-form-card input:focus,
+.faq-form-card textarea:focus, .faq-form-card select:focus {
+    border-color: #06b6d4;
+    box-shadow: none;
+}
+
+/* Activity */
+.activity-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.88rem;
+}
+.activity-item:last-child { border-bottom: none; }
+
+/* Action buttons on faq item */
+.faq-actions {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.faq-item:hover .faq-actions { opacity: 1; }
+
+.btn-faq-action {
+    border: none;
+    background: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.btn-faq-action:hover { background: var(--hover-bg); color: var(--text-primary); }
+.btn-faq-action.delete:hover { color: #ef4444; }
+
+/* Loading */
+.loading-spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border-color);
+    border-top-color: #06b6d4;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Import modal */
+.import-dropzone {
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.import-dropzone:hover { border-color: #06b6d4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="faq-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-question-circle me-3"></i>FAQ Builder</h1>
+                <p>Build a knowledge base of Q&A pairs per hub. Auto-match incoming messages and reply instantly, saving API costs on repetitive questions.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-patch-question" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card faq-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4 col-md-5">
+                    <label class="form-label">Hub</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">Select a hub...</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="Search FAQs...">
+                </div>
+                <div class="col-lg-2 col-md-3">
+                    <label class="form-label">Category</label>
+                    <select id="categoryFilter" class="form-select rounded-pill">
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;" onclick="generateFaqs()" id="generateBtn">
+                        <i class="bi bi-stars me-1"></i>Generate
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="exportFaqs(); return false;"><i class="bi bi-download me-2"></i>Export JSON</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="showImportModal(); return false;"><i class="bi bi-upload me-2"></i>Import JSON</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-3" id="statsRow" style="display: none;">
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card faq-card h-100">
+                <div class="card-body text-center">
+                    <div id="statTotalFaqs" class="stat-value" style="color: #06b6d4;">0</div>
+                    <div class="stat-label">Total FAQs</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card faq-card h-100">
+                <div class="card-body text-center">
+                    <div id="statCategories" class="stat-value" style="color: #0891b2;">0</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card faq-card h-100">
+                <div class="card-body text-center">
+                    <div id="statMatchesToday" class="stat-value" style="color: #06b6d4;">0</div>
+                    <div class="stat-label">Matches Today</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card faq-card h-100">
+                <div class="card-body text-center">
+                    <div id="statTotalMatches" class="stat-value" style="color: #0891b2;">0</div>
+                    <div class="stat-label">Total Matches</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content: FAQ list + Form -->
+    <div class="row g-3 mb-3" id="mainContent" style="display: none;">
+        <!-- FAQ List -->
+        <div class="col-lg-7">
+            <div class="card faq-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>FAQ Entries</h6>
+                    <span id="faqCount" class="badge rounded-pill" style="background: #06b6d4;">0</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="faqList" class="faq-scroll d-grid gap-2">
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-question-circle" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <div class="mt-2">Select a hub to view FAQs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Form -->
+        <div class="col-lg-5">
+            <div class="faq-form-card p-3" id="faqFormCard">
+                <h6 class="mb-3" id="formTitle"><i class="bi bi-plus-circle me-2"></i>Add New FAQ</h6>
+                <input type="hidden" id="editingFaqId" value="">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Question</label>
+                    <input type="text" id="faqQuestion" class="form-control rounded-pill" placeholder="e.g. What are your business hours?">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Answer</label>
+                    <textarea id="faqAnswer" class="form-control" rows="4" placeholder="The answer that will be sent to matching messages..." style="border-radius: 12px;"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Category</label>
+                    <input type="text" id="faqCategory" class="form-control rounded-pill" placeholder="General" value="General">
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm rounded-pill flex-grow-1" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;" onclick="saveFaq()">
+                        <i class="bi bi-check-lg me-1"></i><span id="saveLabel">Add FAQ</span>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="resetForm()" id="cancelBtn" style="display: none;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card faq-card mt-3">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h6>
+                </div>
+                <div class="card-body pt-1">
+                    <div id="activityList" class="faq-scroll" style="max-height: 300px;">
+                        <div class="text-center text-muted py-3 small">No activity yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="text-center py-5">
+        <i class="bi bi-arrow-up-circle" style="font-size: 2.5rem; opacity: 0.3; color: #06b6d4;"></i>
+        <div class="mt-2 text-muted">Select a hub above to get started</div>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Import FAQs</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">Upload a JSON file with an array of FAQ objects. Each object should have <code>question</code>, <code>answer</code>, and optionally <code>category</code> fields.</p>
+                <div class="import-dropzone" onclick="document.getElementById('importFile').click()">
+                    <i class="bi bi-cloud-arrow-up" style="font-size: 2rem; color: #06b6d4;"></i>
+                    <div class="mt-2 small text-muted">Click to select JSON file</div>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                </div>
+                <div id="importPreview" class="mt-3" style="display: none;">
+                    <div class="small fw-semibold mb-1">Preview (<span id="importCount">0</span> FAQs):</div>
+                    <div id="importPreviewList" class="faq-scroll" style="max-height: 200px; font-size: 0.85rem;"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-sm rounded-pill px-3" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;" onclick="doImport()" id="importBtn" disabled>
+                    <i class="bi bi-upload me-1"></i>Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const searchInput = document.getElementById('searchInput');
+const categoryFilter = document.getElementById('categoryFilter');
+let allFaqs = [];
+let importData = null;
+
+function getHubId() {
+    return hubFilter.value ? parseInt(hubFilter.value) : null;
+}
+
+function showToast(msg, type='success') {
+    if (window.showToast) window.showToast(msg, type);
+    else alert(msg);
+}
+
+// Load FAQs
+async function loadFaqs() {
+    const hubId = getHubId();
+    if (!hubId) return;
+
+    const search = searchInput.value.trim();
+    const category = categoryFilter.value;
+    let url = `./api/faqs?hub_id=${hubId}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (category) url += `&category=${encodeURIComponent(category)}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        allFaqs = data.faqs || [];
+        renderFaqList(allFaqs);
+
+        // Update category filter
+        const cats = data.categories || [];
+        const currentCat = categoryFilter.value;
+        categoryFilter.innerHTML = '<option value="">All</option>';
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            if (c === currentCat) opt.selected = true;
+            categoryFilter.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Failed to load FAQs:', e);
+    }
+}
+
+// Load stats
+async function loadStats() {
+    const hubId = getHubId();
+    if (!hubId) return;
+
+    try {
+        const res = await fetch(`./api/stats?hub_id=${hubId}`);
+        const data = await res.json();
+        document.getElementById('statTotalFaqs').textContent = data.total_faqs || 0;
+        document.getElementById('statCategories').textContent = data.categories || 0;
+        document.getElementById('statMatchesToday').textContent = data.matches_today || 0;
+        document.getElementById('statTotalMatches').textContent = data.total_matches || 0;
+    } catch (e) {
+        console.error('Failed to load stats:', e);
+    }
+}
+
+// Load activity
+async function loadActivity() {
+    const hubId = getHubId();
+    if (!hubId) return;
+
+    try {
+        const res = await fetch(`./api/activity?hub_id=${hubId}`);
+        const data = await res.json();
+        const list = document.getElementById('activityList');
+        const items = data.activity || [];
+
+        if (!items.length) {
+            list.innerHTML = '<div class="text-center text-muted py-3 small">No activity yet</div>';
+            return;
+        }
+
+        list.innerHTML = items.map(a => {
+            const dt = a.created_at ? new Date(a.created_at).toLocaleString() : '';
+            if (a.operation === 'faq_match') {
+                const q = a.output.answer_preview || '';
+                const conf = a.input.confidence ? `${Math.round(a.input.confidence * 100)}%` : '';
+                return `<div class="activity-item">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="bi bi-check-circle text-success me-1"></i><strong>Auto-reply sent</strong></span>
+                        <small class="text-muted">${dt}</small>
+                    </div>
+                    <div class="small text-muted mt-1">
+                        Matched: "<em>${escHtml(a.input.matched_question || '')}</em>"
+                        ${conf ? `<span class="badge rounded-pill" style="background: #06b6d4; font-size: 0.7rem;">${conf}</span>` : ''}
+                    </div>
+                </div>`;
+            } else if (a.operation === 'faq_generate') {
+                return `<div class="activity-item">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="bi bi-stars text-warning me-1"></i><strong>AI Generated</strong></span>
+                        <small class="text-muted">${dt}</small>
+                    </div>
+                    <div class="small text-muted mt-1">${a.output.faqs_generated || 0} FAQs from ${a.input.messages_analyzed || 0} messages</div>
+                </div>`;
+            }
+            return '';
+        }).join('');
+    } catch (e) {
+        console.error('Failed to load activity:', e);
+    }
+}
+
+// Render FAQ list
+function renderFaqList(faqs) {
+    const list = document.getElementById('faqList');
+    document.getElementById('faqCount').textContent = faqs.length;
+
+    if (!faqs.length) {
+        list.innerHTML = `<div class="text-center text-muted py-4">
+            <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+            <div class="mt-2">No FAQs yet. Add one or click Generate!</div>
+        </div>`;
+        return;
+    }
+
+    list.innerHTML = faqs.map(f => `
+        <div class="faq-item" data-id="${f.id}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="faq-question">${escHtml(f.question)}</div>
+                    <div class="faq-answer">${escHtml(f.answer)}</div>
+                    <div class="faq-meta">
+                        <span class="cat-badge">${escHtml(f.category)}</span>
+                        <small class="text-muted">${f.created_at ? new Date(f.created_at).toLocaleDateString() : ''}</small>
+                    </div>
+                </div>
+                <div class="faq-actions d-flex gap-1 ms-2">
+                    <button class="btn-faq-action" onclick="editFaq(${f.id})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn-faq-action delete" onclick="deleteFaq(${f.id})" title="Delete">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Save FAQ (create or update)
+async function saveFaq() {
+    const hubId = getHubId();
+    if (!hubId) { showToast('Select a hub first', 'error'); return; }
+
+    const question = document.getElementById('faqQuestion').value.trim();
+    const answer = document.getElementById('faqAnswer').value.trim();
+    const category = document.getElementById('faqCategory').value.trim() || 'General';
+    const editId = document.getElementById('editingFaqId').value;
+
+    if (!question || !answer) { showToast('Question and answer are required', 'error'); return; }
+
+    try {
+        let res;
+        if (editId) {
+            res = await fetch(`./api/faqs/${editId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question, answer, category}),
+            });
+        } else {
+            res = await fetch('./api/faqs', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({hub_id: hubId, question, answer, category}),
+            });
+        }
+
+        if (!res.ok) throw new Error(await res.text());
+        showToast(editId ? 'FAQ updated' : 'FAQ added');
+        resetForm();
+        loadFaqs();
+        loadStats();
+    } catch (e) {
+        showToast('Failed to save FAQ: ' + e.message, 'error');
+    }
+}
+
+// Edit FAQ
+function editFaq(id) {
+    const faq = allFaqs.find(f => f.id === id);
+    if (!faq) return;
+
+    document.getElementById('editingFaqId').value = id;
+    document.getElementById('faqQuestion').value = faq.question;
+    document.getElementById('faqAnswer').value = faq.answer;
+    document.getElementById('faqCategory').value = faq.category;
+    document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit FAQ';
+    document.getElementById('saveLabel').textContent = 'Update FAQ';
+    document.getElementById('cancelBtn').style.display = '';
+    document.getElementById('faqFormCard').classList.add('editing');
+    document.getElementById('faqQuestion').focus();
+}
+
+// Delete FAQ
+async function deleteFaq(id) {
+    if (!confirm('Delete this FAQ entry?')) return;
+
+    try {
+        const res = await fetch(`./api/faqs/${id}`, {method: 'DELETE'});
+        if (!res.ok) throw new Error(await res.text());
+        showToast('FAQ deleted');
+        loadFaqs();
+        loadStats();
+    } catch (e) {
+        showToast('Failed to delete: ' + e.message, 'error');
+    }
+}
+
+// Reset form
+function resetForm() {
+    document.getElementById('editingFaqId').value = '';
+    document.getElementById('faqQuestion').value = '';
+    document.getElementById('faqAnswer').value = '';
+    document.getElementById('faqCategory').value = 'General';
+    document.getElementById('formTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add New FAQ';
+    document.getElementById('saveLabel').textContent = 'Add FAQ';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('faqFormCard').classList.remove('editing');
+}
+
+// Generate FAQs from conversations
+async function generateFaqs() {
+    const hubId = getHubId();
+    if (!hubId) { showToast('Select a hub first', 'error'); return; }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner me-1"></span>Generating...';
+
+    try {
+        const res = await fetch('./api/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({hub_id: hubId}),
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Generation failed');
+        }
+        const data = await res.json();
+        showToast(`Generated ${data.count} FAQs from conversations`);
+        loadFaqs();
+        loadStats();
+        loadActivity();
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stars me-1"></i>Generate';
+    }
+}
+
+// Export
+async function exportFaqs() {
+    const hubId = getHubId();
+    if (!hubId) { showToast('Select a hub first', 'error'); return; }
+
+    try {
+        const res = await fetch('./api/export', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({hub_id: hubId}),
+        });
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'faqs.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('FAQs exported');
+    } catch (e) {
+        showToast('Export failed', 'error');
+    }
+}
+
+// Import
+function showImportModal() {
+    if (!getHubId()) { showToast('Select a hub first', 'error'); return; }
+    importData = null;
+    document.getElementById('importFile').value = '';
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('importBtn').disabled = true;
+    new bootstrap.Modal(document.getElementById('importModal')).show();
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!Array.isArray(data)) throw new Error('Expected JSON array');
+            importData = data;
+            document.getElementById('importCount').textContent = data.length;
+            document.getElementById('importPreviewList').innerHTML = data.slice(0, 5).map(f =>
+                `<div class="py-1 border-bottom" style="border-color: var(--border-color) !important;">
+                    <strong>Q:</strong> ${escHtml((f.question || '').substring(0, 80))}
+                </div>`
+            ).join('') + (data.length > 5 ? `<div class="py-1 text-muted">...and ${data.length - 5} more</div>` : '');
+            document.getElementById('importPreview').style.display = 'block';
+            document.getElementById('importBtn').disabled = false;
+        } catch (err) {
+            showToast('Invalid JSON file: ' + err.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function doImport() {
+    if (!importData || !getHubId()) return;
+
+    try {
+        const res = await fetch('./api/import', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({hub_id: getHubId(), faqs: importData}),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        showToast(`Imported ${data.imported} FAQs`);
+        bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+        loadFaqs();
+        loadStats();
+    } catch (e) {
+        showToast('Import failed: ' + e.message, 'error');
+    }
+}
+
+function escHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Hub change handler
+hubFilter.addEventListener('change', () => {
+    const hubId = getHubId();
+    if (hubId) {
+        document.getElementById('statsRow').style.display = '';
+        document.getElementById('mainContent').style.display = '';
+        document.getElementById('emptyState').style.display = 'none';
+        resetForm();
+        loadFaqs();
+        loadStats();
+        loadActivity();
+    } else {
+        document.getElementById('statsRow').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('emptyState').style.display = '';
+    }
+});
+
+searchInput.addEventListener('input', debounce(loadFaqs, 300));
+categoryFilter.addEventListener('change', loadFaqs);
+
+function debounce(fn, ms) {
+    let t;
+    return function(...args) { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+// Auto-select first hub if only one
+{% if hubs|length == 1 %}
+hubFilter.value = '{{ hubs[0].id }}';
+hubFilter.dispatchEvent(new Event('change'));
+{% endif %}
+</script>
+{% endblock %}
