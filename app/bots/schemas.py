@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
-VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok"]
+VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok", "ollama"]
 VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "wechat"]
 
 # Platform auth method descriptions for the frontend

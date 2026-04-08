@@ -2371,6 +2371,7 @@ function renderStreamEvent(data) {
             if (Array.isArray(text)) text = text.filter(b => b.type === 'text').map(b => b.text).join('\n');
             if (text) { flushAssistantBuffer(); appendAssistantMessage(text); }
         } else { flushAssistantBuffer(); }
+        turnHasStreamedText = false;
         return;
     }
 

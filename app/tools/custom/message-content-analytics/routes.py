@@ -71,7 +71,7 @@ async def get_messages(
     start = now - timedelta(days=days)
 
     query = (
-        db.query(Message.content, Message.timestamp, Message.direction)
+        db.query(Message.content, Message.timestamp, Message.role)
         .join(Conversation, Conversation.id == Message.conversation_id)
         .join(HubBotMembership, HubBotMembership.bot_profile_id == Conversation.bot_profile_id)
         .filter(
@@ -84,9 +84,9 @@ async def get_messages(
     )
 
     if direction == "incoming":
-        query = query.filter(Message.direction == "incoming")
+        query = query.filter(Message.role == "user")
     elif direction == "outgoing":
-        query = query.filter(Message.direction == "outgoing")
+        query = query.filter(Message.role == "assistant")
 
     messages = query.order_by(Message.timestamp.asc()).all()
 
@@ -94,7 +94,7 @@ async def get_messages(
         {
             "content": m.content,
             "timestamp": m.timestamp.isoformat() if m.timestamp else None,
-            "direction": m.direction,
+            "direction": "incoming" if m.role == "user" else "outgoing",
         }
         for m in messages
     ]
@@ -139,7 +139,7 @@ async def dashboard_widget(request: Request, db: Session = Depends(get_db)):
             Message.timestamp >= start,
             Message.content.isnot(None),
             Message.content != "",
-            Message.direction == "incoming",
+            Message.role == "user",
         )
         .all()
     )

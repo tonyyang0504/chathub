@@ -1,0 +1,1148 @@
+2026-04-06 01:12:53,813 - discord.gateway - INFO - Shard ID None has successfully RESUMED session ff6c32015b172d127c848afcb00c6aa3.
+2026-04-06 02:00:35,385 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-06 02:15:42,734 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-06 03:48:22,294 - app.bots.whatsapp_bot - INFO - Bot 2: Auto-restarting browser after 12.3 hours for memory management
+2026-04-06 03:48:22,295 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'restarting', 'message': 'Auto-restarting browser for memory management (12.3h uptime)...'}
+2026-04-06 03:48:22,295 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Auto-restarting browser for memory management (12.3h uptime)...
+2026-04-06 03:48:22,295 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 03:48:22,368 - app.bots.whatsapp_bot - INFO - Bot 2: Browser closed for auto-restart
+2026-04-06 04:22:28,186 - app.bots.whatsapp_bot - INFO - Bot 2: Browser auto-restart successful!
+2026-04-06 04:22:28,221 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser restarted successfully. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-06 04:22:28,221 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser restarted successfully. Bot is running.
+2026-04-06 04:22:28,222 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 04:22:28,222 - app.bots.whatsapp_bot - INFO - Bot 2: Cleared all memory tracking dicts after browser restart
+2026-04-06 05:12:34,526 - discord.client - ERROR - Attempting a reconnect in 0.39s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-06 07:56:54,979 - discord.client - ERROR - Attempting a reconnect in 3.92s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-06 09:43:45,448 - discord.client - ERROR - Attempting a reconnect in 3.02s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-06 09:50:58,329 - discord.client - ERROR - Attempting a reconnect in 11.58s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 09:52:13,163 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-06 09:53:39,181 - discord.gateway - WARNING - Can't keep up, shard ID None websocket is 14.0s behind.
+2026-04-06 09:53:39,186 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-06 09:53:49,866 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 7558da1b6649692f910f594c646d4931).
+2026-04-06 09:53:56,204 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-06 09:53:56,209 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-06 09:56:45,755 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-04-06 09:58:10,721 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 7558da1b6649692f910f594c646d4931.
+2026-04-06 10:00:55,437 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-06 10:00:55,437 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-06 10:00:55,437 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-06 10:00:55,437 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 10:01:01,674 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-06 10:01:01,674 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-06 10:01:01,674 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-06 10:01:01,674 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 10:24:27,030 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-04-06 13:01:24,637 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 7558da1b6649692f910f594c646d4931.
+2026-04-06 14:39:10,563 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-04-06 14:39:10,563 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-04-06 14:39:10,563 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-04-06 14:39:10,563 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-04-06 14:39:10,563 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-04-06 14:39:10,568 - app.ai_workspace.manager - INFO - Stopped session 157
+2026-04-06 14:39:10,568 - app.bots.manager - INFO - Stopped bot instance for profile 2
+2026-04-06 14:39:10,568 - app.platforms.discord.adapter - INFO - Bot 5: Discord task cancelled, closing client
+2026-04-06 14:39:10,570 - app.bots.manager - INFO - Stopped bot instance for profile 5
+2026-04-06 14:39:10,570 - app.platforms.messenger.adapter - INFO - Bot 11: Messenger adapter cancelled
+2026-04-06 14:39:10,570 - app.platforms.messenger.adapter - INFO - Bot 11: Messenger adapter stopped
+2026-04-06 14:39:10,570 - app.bots.manager - INFO - Stopped bot instance for profile 11
+2026-04-06 14:39:10,570 - app.platforms.messenger.adapter - INFO - Bot 12: Messenger adapter cancelled
+2026-04-06 14:39:10,570 - app.platforms.messenger.adapter - INFO - Bot 12: Messenger adapter stopped
+2026-04-06 14:39:10,570 - app.bots.manager - INFO - Stopped bot instance for profile 12
+2026-04-06 14:39:10,570 - app.bots.manager - INFO - Stopped bot instance for profile 3
+2026-04-06 14:39:10,570 - app.bots.manager - INFO - All bots stopped
+2026-04-06 14:39:13,370 - root - INFO - Enhanced logging system initialized
+2026-04-06 14:39:13,370 - root - INFO - === Server Starting ===
+2026-04-06 14:39:14,155 - telethon.crypto.aes - INFO - libssl detected, it will be used for encryption
+2026-04-06 14:39:14,323 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-04-06 14:39:14,323 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-04-06 14:39:14,323 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-04-06 14:39:14,323 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-04-06 14:39:14,323 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-04-06 14:39:14,323 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-04-06 14:39:14,324 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-04-06 14:39:14,324 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-04-06 14:39:14,324 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-04-06 14:39:14,444 - app.tools - INFO - Skipping inactive custom tool: contact-insights
+2026-04-06 14:39:14,444 - app.tools - INFO - Skipping inactive custom tool: dashboard-message-trends
+2026-04-06 14:39:14,444 - app.tools - INFO - Skipping inactive custom tool: response-time-tracker
+2026-04-06 14:39:14,476 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-04-06 14:39:14,479 - root - INFO - Enhanced logging system initialized
+2026-04-06 14:39:14,481 - app.platforms.messenger.adapter - INFO - Messenger webhook routes registered at /webhooks/messenger
+2026-04-06 14:39:14,481 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-04-06 14:39:14,485 - app.bots.manager - INFO - start_bot called for profile 2
+2026-04-06 14:39:14,485 - app.bots.manager - INFO - Creating task for bot 2 (platform: whatsapp)
+2026-04-06 14:39:14,485 - app.bots.manager - INFO - Started bot instance for profile 2
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - start_bot called for profile 5
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - Creating task for bot 5 (platform: discord)
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - Started bot instance for profile 5
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - start_bot called for profile 11
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - Creating task for bot 11 (platform: messenger)
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - Started bot instance for profile 11
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - start_bot called for profile 12
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - Creating task for bot 12 (platform: messenger)
+2026-04-06 14:39:14,486 - app.bots.manager - INFO - Started bot instance for profile 12
+2026-04-06 14:39:14,486 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-04-06 14:39:14,486 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-04-06 14:39:14,486 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-04-06 14:39:14,486 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-04-06 14:39:14,487 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-04-06 14:39:14,487 - app.tools.tool_scheduler - INFO - No scheduled tool tasks registered
+2026-04-06 14:39:14,487 - app.bots.whatsapp_bot - INFO - Bot 2: Thread started
+2026-04-06 14:39:14,488 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Initializing Discord bot...
+2026-04-06 14:39:14,488 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: No Discord bot token configured. Set platform_token in bot config.
+2026-04-06 14:39:14,488 - app.bots.manager - INFO - Bot 11: Notifying 0 status callbacks: Messenger requires an App Secret for webhook signature verification.
+2026-04-06 14:39:14,488 - app.bots.manager - INFO - Bot 12: Notifying 0 status callbacks: Messenger requires an App Secret for webhook signature verification.
+2026-04-06 14:39:15,562 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'starting', 'message': 'Initializing bot...'}
+2026-04-06 14:39:15,563 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Initializing bot...
+2026-04-06 14:39:15,563 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:15,563 - app.bots.whatsapp_bot - INFO - Bot 2: Starting...
+2026-04-06 14:39:15,643 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'launching', 'message': 'Launching browser...'}
+2026-04-06 14:39:15,643 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Launching browser...
+2026-04-06 14:39:15,643 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:15,862 - app.bots.whatsapp_bot - INFO - Bot 2: Launching browser with headless=False
+2026-04-06 14:39:15,862 - app.bots.whatsapp_bot - INFO - Bot 2: Using ABSOLUTE session path: /Users/tony/chathub/data/sessions/bot_2
+2026-04-06 14:39:15,862 - app.bots.whatsapp_bot - INFO - Bot 2: Found EXISTING browser session at: /Users/tony/chathub/data/sessions/bot_2 - will attempt auto-login
+2026-04-06 14:39:15,862 - app.bots.whatsapp_bot - INFO - Bot 2: No proxy configured, detecting system timezone...
+2026-04-06 14:39:15,862 - app.bots.whatsapp_bot - INFO - Detected system timezone: Asia/Dubai (UTC+4)
+2026-04-06 14:39:15,862 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected timezone: Asia/Dubai (UTC+4)
+2026-04-06 14:39:16,549 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'loading', 'message': 'Loading WhatsApp Web...'}
+2026-04-06 14:39:16,550 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading WhatsApp Web...
+2026-04-06 14:39:16,550 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:18,522 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'waiting_qr', 'message': 'Waiting for QR code...'}
+2026-04-06 14:39:18,523 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Waiting for QR code...
+2026-04-06 14:39:18,523 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:18,523 - app.bots.whatsapp_bot - INFO - Bot 2: Entering QR detection loop...
+2026-04-06 14:39:18,523 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp Web loaded, waiting for QR code...
+2026-04-06 14:39:18,558 - app.bots.whatsapp_bot - INFO - Bot 2: Waiting for QR... canvas=False, qr_len=0
+2026-04-06 14:39:21,606 - app.bots.whatsapp_bot - INFO - Bot 2: Authentication detected via selector: [aria-label="Chat list"]
+2026-04-06 14:39:21,606 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'connected': True, 'whatsapp_connected': True, 'message': 'WhatsApp connected successfully!'}
+2026-04-06 14:39:21,607 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: WhatsApp connected successfully!
+2026-04-06 14:39:21,607 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:21,607 - app.bots.whatsapp_bot - INFO - Bot 2: Authenticated! Session persisted automatically.
+2026-04-06 14:39:21,607 - app.bots.whatsapp_bot - INFO - Bot 2: Stored page reference for manual messaging
+2026-04-06 14:39:21,618 - app.bots.whatsapp_bot - INFO - Bot 2: Account type: Business
+2026-04-06 14:39:22,156 - app.bots.whatsapp_bot - INFO - Bot 2: Profile click result: navbar_profile
+2026-04-06 14:39:23,667 - app.bots.whatsapp_bot - INFO - Bot 2: Profile extraction debug: panelOpen=True, isBusiness=True, hasProfileText=True, hasNameText=False
+2026-04-06 14:39:23,667 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data extracted: name=Tony, phone_display=None, has_pic=True, is_business=True
+2026-04-06 14:39:24,301 - app.bots.whatsapp_bot - INFO - Bot 2: Extracted account info: {'account_type': 'business', 'phone': '96599328119', 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-mct1-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4QGj_N-fVO63zxZXUptD0xcvEcpITrs9reqPY5Ojz3-q_w&oe=69E0B494&_nc_sid=5e03e0&_nc_cat=106'}
+2026-04-06 14:39:24,312 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected offset from proxy: UTC+4
+2026-04-06 14:39:24,312 - app.bots.whatsapp_bot - INFO - Bot 2: Saved profile pic to database
+2026-04-06 14:39:24,318 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data committed to database
+2026-04-06 14:39:24,319 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp connected, starting message listener
+2026-04-06 14:39:24,319 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Bot is running and listening for messages...', 'account_info': {'phone': '96599328119', 'phone_display': None, 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-mct1-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4QGj_N-fVO63zxZXUptD0xcvEcpITrs9reqPY5Ojz3-q_w&oe=69E0B494&_nc_sid=5e03e0&_nc_cat=106', 'about': None, 'account_type': 'business'}, 'ai_response_enabled': False, 'history_sync_active': False, 'history_sync_progress': {'total': 0, 'completed': 0, 'current_chat': '', 'status': 'idle'}}
+2026-04-06 14:39:24,319 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Bot is running and listening for messages...
+2026-04-06 14:39:24,319 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:24,319 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync - extracting conversations from WhatsApp sidebar...
+2026-04-06 14:39:24,319 - app.bots.whatsapp_bot - INFO - Bot 2: Starting quick conversation sync (unread only)...
+2026-04-06 14:39:24,320 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'syncing', 'message': 'Loading conversations with unread messages...'}
+2026-04-06 14:39:24,320 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading conversations with unread messages...
+2026-04-06 14:39:24,320 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:27,846 - app.bots.whatsapp_bot - INFO - Bot 2: Found 4 conversations with unread messages
+2026-04-06 14:39:27,846 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 0: name='Al Mulla Exchange', fullDataId='None', isGroup=False
+2026-04-06 14:39:27,846 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 1: name='Max Fashion', fullDataId='None', isGroup=False
+2026-04-06 14:39:27,846 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 2: name='Test', fullDataId='None', isGroup=True
+2026-04-06 14:39:27,846 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 3: name='+60 16-260 9676', fullDataId='None', isGroup=False
+2026-04-06 14:39:27,852 - app.bots.whatsapp_bot - WARNING - Bot 2: Skipping conversation '+60 16-260 9676' - no valid WhatsApp ID (got: None)
+2026-04-06 14:39:27,853 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync complete - 3 unread conversations
+2026-04-06 14:39:27,853 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Loaded 3 conversations with unread messages. Ready!'}
+2026-04-06 14:39:27,853 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loaded 3 conversations with unread messages. Ready!
+2026-04-06 14:39:27,853 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 14:39:27,854 - app.bots.whatsapp_bot - INFO - Bot 2: Entering main message loop
+2026-04-06 14:39:27,854 - app.bots.whatsapp_bot - INFO - Bot 2: Closing any open chat windows before starting...
+2026-04-06 14:39:28,779 - app.bots.whatsapp_bot - INFO - Bot 2: Chat windows closed, ready to detect unread messages
+2026-04-06 15:03:39,329 - app.bots.routes - INFO - Bot 5 (discord) needs recovery
+2026-04-06 15:03:39,329 - app.bots.manager - INFO - Recovering bot 5
+2026-04-06 15:03:39,329 - app.bots.manager - INFO - start_bot called for profile 5
+2026-04-06 15:03:39,329 - app.bots.manager - INFO - Creating task for bot 5 (platform: discord)
+2026-04-06 15:03:39,329 - app.bots.manager - INFO - Started bot instance for profile 5
+2026-04-06 15:03:39,329 - app.bots.routes - INFO - Bot 11 (messenger) needs recovery
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - Recovering bot 11
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - start_bot called for profile 11
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - Creating task for bot 11 (platform: messenger)
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - Started bot instance for profile 11
+2026-04-06 15:03:39,330 - app.bots.routes - INFO - Bot 12 (messenger) needs recovery
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - Recovering bot 12
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - start_bot called for profile 12
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - Creating task for bot 12 (platform: messenger)
+2026-04-06 15:03:39,330 - app.bots.manager - INFO - Started bot instance for profile 12
+2026-04-06 15:03:39,331 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Initializing Discord bot...
+2026-04-06 15:03:39,356 - discord.client - WARNING - davey is not installed, voice will NOT be supported
+2026-04-06 15:03:39,357 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connecting to Discord...
+2026-04-06 15:03:39,357 - discord.client - INFO - logging in using static token
+2026-04-06 15:03:40,457 - httpx - INFO - HTTP Request: GET https://graph.facebook.com/v21.0/me?access_token=EAAXiLD1VEVoBRAyC8YlertQFrq5tKxrPRFisqYyZAxIST2ykweSBuJkRNTOZBbpGRHCq3chOaKd4uFuFQO9nGrnVAZBrG3i5mxBPKsLsRdu2orQx6siO2e8tYj0TmPXk9jlTSdmwLbuAKMkFeEC7eDTQKZCD73AjDXfHZA5k0YEgwlfHDmkrj5NvtgXOaaZBqaMzKGwnfObsC2wRkDZBcsxZCbkZD "HTTP/1.1 200 OK"
+2026-04-06 15:03:40,459 - httpx - INFO - HTTP Request: GET https://graph.facebook.com/v21.0/me?access_token=EAAXiLD1VEVoBRBMeAtINKgQC4awzJAImcZALPQ85ZCuj3wm2j3iXgXgSozeuG2qG2ZBdEPcaQVnRZBZA3LmsRLaulytOuIeRx5vgu2ryBgbSSJpo5c7tsu963yuFvAM4a1hf2LGD8nqnxfA65fZBK6HHAfCZABcxtqy84rskopgW9ozuR6bQZB3PfZAnOSghjAU3fbZCXSL6Trg5EYlseuCt0ZD "HTTP/1.1 200 OK"
+2026-04-06 15:03:40,462 - app.bots.manager - INFO - Bot 12: Notifying 0 status callbacks: Connected to Messenger as 'Chatgpt'
+2026-04-06 15:03:40,462 - app.platforms.messenger.adapter - INFO - Bot 12: Messenger connected as 'Chatgpt'
+2026-04-06 15:03:40,465 - app.bots.manager - INFO - Bot 11: Notifying 0 status callbacks: Connected to Messenger as 'Develop test app'
+2026-04-06 15:03:40,465 - app.platforms.messenger.adapter - INFO - Bot 11: Messenger connected as 'Develop test app'
+2026-04-06 15:03:41,309 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 89fc73fea3ed07b539760c1aba99d5b8).
+2026-04-06 15:03:43,367 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-06 15:03:43,373 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-06 15:03:55,315 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-cbe5ca75 on branch tool-builder/1/1775473435
+2026-04-06 15:03:55,315 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session cbe5ca75 for user 1
+2026-04-06 15:03:55,318 - app.tools.builder_manager - INFO - Created tool builder session cbe5ca75-8139-4ddc-9159-6d92235ac0f6 for user 1 (preview deferred)
+2026-04-06 15:03:55,418 - app.tools.builder_manager - INFO - Tool builder turn started, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6, PID=58751, cwd=/Users/tony/chathub/.worktrees/tb-cbe5ca75
+2026-04-06 15:04:05,951 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 15:04:05,952 - app.tools.builder_manager - INFO - Tool builder turn completed, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6
+2026-04-06 15:04:15,648 - app.tools.builder_manager - INFO - Tool builder turn started, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6, PID=59061, cwd=/Users/tony/chathub/.worktrees/tb-cbe5ca75
+2026-04-06 15:07:13,057 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 15:07:13,058 - app.tools.builder_manager - INFO - Tool builder turn completed, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6
+2026-04-06 15:08:13,910 - app.tools.builder_manager - INFO - Tool builder turn started, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6, PID=60556, cwd=/Users/tony/chathub/.worktrees/tb-cbe5ca75
+2026-04-06 15:10:58,385 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 15:10:58,386 - app.tools.builder_manager - INFO - Tool builder turn completed, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6
+2026-04-06 15:13:44,321 - app.tools.builder_manager - INFO - Tool builder turn started, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6, PID=61107, cwd=/Users/tony/chathub/.worktrees/tb-cbe5ca75
+2026-04-06 15:18:39,889 - app.tools.builder_manager - INFO - TOOL.md already exists in changed files, skipping auto-generation
+2026-04-06 15:18:39,890 - app.tools.builder_manager - INFO - Tool builder turn completed, session=cbe5ca75-8139-4ddc-9159-6d92235ac0f6
+2026-04-06 15:20:10,535 - app.tools.sandbox_manager - INFO - Docker not found — attempting auto-install...
+2026-04-06 15:20:28,322 - app.tools.sandbox_manager - INFO - Docker is ready
+2026-04-06 15:20:28,366 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-04-06 15:20:28,519 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-cbe5ca75 on port 9001
+2026-04-06 15:20:28,519 - app.tools.sandbox_manager - INFO - Container tb-sandbox-cbe5ca75 started, waiting for HTTP /health on port 9001...
+2026-04-06 15:42:49,806 - root - INFO - Enhanced logging system initialized
+2026-04-06 15:42:49,806 - root - INFO - === Server Starting ===
+2026-04-06 15:42:50,412 - telethon.crypto.aes - INFO - libssl detected, it will be used for encryption
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-04-06 15:42:50,556 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-04-06 15:42:50,675 - app.tools - INFO - Skipping inactive custom tool: contact-insights
+2026-04-06 15:42:50,675 - app.tools - INFO - Skipping inactive custom tool: dashboard-message-trends
+2026-04-06 15:42:50,675 - app.tools - INFO - Skipping inactive custom tool: response-time-tracker
+2026-04-06 15:42:50,710 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-04-06 15:42:50,714 - root - INFO - Enhanced logging system initialized
+2026-04-06 15:42:50,717 - app.platforms.messenger.adapter - INFO - Messenger webhook routes registered at /webhooks/messenger
+2026-04-06 15:42:50,717 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-04-06 15:42:50,720 - app.bots.manager - INFO - start_bot called for profile 2
+2026-04-06 15:42:50,720 - app.bots.manager - INFO - Creating task for bot 2 (platform: whatsapp)
+2026-04-06 15:42:50,720 - app.bots.manager - INFO - Started bot instance for profile 2
+2026-04-06 15:42:50,720 - app.bots.manager - INFO - start_bot called for profile 5
+2026-04-06 15:42:50,720 - app.bots.manager - INFO - Creating task for bot 5 (platform: discord)
+2026-04-06 15:42:50,720 - app.bots.manager - INFO - Started bot instance for profile 5
+2026-04-06 15:42:50,721 - app.bots.manager - INFO - start_bot called for profile 11
+2026-04-06 15:42:50,721 - app.bots.manager - INFO - Creating task for bot 11 (platform: messenger)
+2026-04-06 15:42:50,721 - app.bots.manager - INFO - Started bot instance for profile 11
+2026-04-06 15:42:50,722 - app.bots.manager - INFO - start_bot called for profile 12
+2026-04-06 15:42:50,722 - app.bots.manager - INFO - Creating task for bot 12 (platform: messenger)
+2026-04-06 15:42:50,722 - app.bots.manager - INFO - Started bot instance for profile 12
+2026-04-06 15:42:50,722 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-04-06 15:42:50,722 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-04-06 15:42:50,722 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-04-06 15:42:50,722 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-04-06 15:42:50,723 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-04-06 15:42:50,723 - app.tools.tool_scheduler - INFO - No scheduled tool tasks registered
+2026-04-06 15:42:50,724 - app.bots.whatsapp_bot - INFO - Bot 2: Thread started
+2026-04-06 15:42:50,724 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Initializing Discord bot...
+2026-04-06 15:42:50,725 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: No Discord bot token configured. Set platform_token in bot config.
+2026-04-06 15:42:50,725 - app.bots.manager - INFO - Bot 11: Notifying 0 status callbacks: Messenger requires an App Secret for webhook signature verification.
+2026-04-06 15:42:50,725 - app.bots.manager - INFO - Bot 12: Notifying 0 status callbacks: Messenger requires an App Secret for webhook signature verification.
+2026-04-06 15:42:51,810 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'starting', 'message': 'Initializing bot...'}
+2026-04-06 15:42:51,811 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Initializing bot...
+2026-04-06 15:42:51,811 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:42:51,811 - app.bots.whatsapp_bot - INFO - Bot 2: Starting...
+2026-04-06 15:42:51,892 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'launching', 'message': 'Launching browser...'}
+2026-04-06 15:42:51,892 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Launching browser...
+2026-04-06 15:42:51,892 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:42:52,133 - app.bots.whatsapp_bot - INFO - Bot 2: Launching browser with headless=False
+2026-04-06 15:42:52,133 - app.bots.whatsapp_bot - INFO - Bot 2: Using ABSOLUTE session path: /Users/tony/chathub/data/sessions/bot_2
+2026-04-06 15:42:52,133 - app.bots.whatsapp_bot - INFO - Bot 2: Found EXISTING browser session at: /Users/tony/chathub/data/sessions/bot_2 - will attempt auto-login
+2026-04-06 15:42:52,133 - app.bots.whatsapp_bot - INFO - Bot 2: No proxy configured, detecting system timezone...
+2026-04-06 15:42:52,134 - app.bots.whatsapp_bot - INFO - Detected system timezone: Asia/Dubai (UTC+4)
+2026-04-06 15:42:52,134 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected timezone: Asia/Dubai (UTC+4)
+2026-04-06 15:42:53,216 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'loading', 'message': 'Loading WhatsApp Web...'}
+2026-04-06 15:42:53,217 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading WhatsApp Web...
+2026-04-06 15:42:53,217 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:42:55,188 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'waiting_qr', 'message': 'Waiting for QR code...'}
+2026-04-06 15:42:55,189 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Waiting for QR code...
+2026-04-06 15:42:55,189 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:42:55,189 - app.bots.whatsapp_bot - INFO - Bot 2: Entering QR detection loop...
+2026-04-06 15:42:55,189 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp Web loaded, waiting for QR code...
+2026-04-06 15:42:55,220 - app.bots.whatsapp_bot - INFO - Bot 2: Waiting for QR... canvas=False, qr_len=0
+2026-04-06 15:42:58,263 - app.bots.whatsapp_bot - INFO - Bot 2: Authentication detected via selector: [aria-label="Chat list"]
+2026-04-06 15:42:58,263 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'connected': True, 'whatsapp_connected': True, 'message': 'WhatsApp connected successfully!'}
+2026-04-06 15:42:58,263 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: WhatsApp connected successfully!
+2026-04-06 15:42:58,263 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:42:58,263 - app.bots.whatsapp_bot - INFO - Bot 2: Authenticated! Session persisted automatically.
+2026-04-06 15:42:58,263 - app.bots.whatsapp_bot - INFO - Bot 2: Stored page reference for manual messaging
+2026-04-06 15:42:58,270 - app.bots.whatsapp_bot - INFO - Bot 2: Account type: Business
+2026-04-06 15:42:58,824 - app.bots.whatsapp_bot - INFO - Bot 2: Profile click result: navbar_profile
+2026-04-06 15:43:00,333 - app.bots.whatsapp_bot - INFO - Bot 2: Profile extraction debug: panelOpen=True, isBusiness=True, hasProfileText=True, hasNameText=False
+2026-04-06 15:43:00,334 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data extracted: name=Tony, phone_display=None, has_pic=True, is_business=True
+2026-04-06 15:43:00,965 - app.bots.whatsapp_bot - INFO - Bot 2: Extracted account info: {'account_type': 'business', 'phone': '96599328119', 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-mct1-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4QGj_N-fVO63zxZXUptD0xcvEcpITrs9reqPY5Ojz3-q_w&oe=69E0B494&_nc_sid=5e03e0&_nc_cat=106'}
+2026-04-06 15:43:00,970 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected offset from proxy: UTC+4
+2026-04-06 15:43:00,970 - app.bots.whatsapp_bot - INFO - Bot 2: Saved profile pic to database
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data committed to database
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp connected, starting message listener
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Bot is running and listening for messages...', 'account_info': {'phone': '96599328119', 'phone_display': None, 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-mct1-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4QGj_N-fVO63zxZXUptD0xcvEcpITrs9reqPY5Ojz3-q_w&oe=69E0B494&_nc_sid=5e03e0&_nc_cat=106', 'about': None, 'account_type': 'business'}, 'ai_response_enabled': False, 'history_sync_active': False, 'history_sync_progress': {'total': 0, 'completed': 0, 'current_chat': '', 'status': 'idle'}}
+2026-04-06 15:43:00,975 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Bot is running and listening for messages...
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync - extracting conversations from WhatsApp sidebar...
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: Starting quick conversation sync (unread only)...
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'syncing', 'message': 'Loading conversations with unread messages...'}
+2026-04-06 15:43:00,975 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading conversations with unread messages...
+2026-04-06 15:43:00,975 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:43:01,709 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-fcc3aa03 on branch tool-builder/1/1775475781
+2026-04-06 15:43:01,709 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session fcc3aa03 for user 1
+2026-04-06 15:43:01,713 - app.tools.builder_manager - INFO - Created tool builder session fcc3aa03-c777-4241-8ecd-d81a15f1b92f for user 1 (preview deferred)
+2026-04-06 15:43:01,813 - app.tools.builder_manager - INFO - Tool builder turn started, session=fcc3aa03-c777-4241-8ecd-d81a15f1b92f, PID=67641, cwd=/Users/tony/chathub/.worktrees/tb-fcc3aa03
+2026-04-06 15:43:04,499 - app.bots.whatsapp_bot - INFO - Bot 2: Found 4 conversations with unread messages
+2026-04-06 15:43:04,499 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 0: name='Al Mulla Exchange', fullDataId='None', isGroup=False
+2026-04-06 15:43:04,499 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 1: name='Max Fashion', fullDataId='None', isGroup=False
+2026-04-06 15:43:04,499 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 2: name='Test', fullDataId='None', isGroup=True
+2026-04-06 15:43:04,499 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 3: name='+60 16-260 9676', fullDataId='None', isGroup=False
+2026-04-06 15:43:04,506 - app.bots.whatsapp_bot - WARNING - Bot 2: Skipping conversation '+60 16-260 9676' - no valid WhatsApp ID (got: None)
+2026-04-06 15:43:04,506 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync complete - 3 unread conversations
+2026-04-06 15:43:04,506 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Loaded 3 conversations with unread messages. Ready!'}
+2026-04-06 15:43:04,507 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loaded 3 conversations with unread messages. Ready!
+2026-04-06 15:43:04,507 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 15:43:04,507 - app.bots.whatsapp_bot - INFO - Bot 2: Entering main message loop
+2026-04-06 15:43:04,507 - app.bots.whatsapp_bot - INFO - Bot 2: Closing any open chat windows before starting...
+2026-04-06 15:43:05,427 - app.bots.whatsapp_bot - INFO - Bot 2: Chat windows closed, ready to detect unread messages
+2026-04-06 15:43:13,326 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 15:43:13,326 - app.tools.builder_manager - INFO - Tool builder turn completed, session=fcc3aa03-c777-4241-8ecd-d81a15f1b92f
+2026-04-06 15:49:50,721 - app.tools.builder_manager - INFO - Tool builder turn started, session=fcc3aa03-c777-4241-8ecd-d81a15f1b92f, PID=68613, cwd=/Users/tony/chathub/.worktrees/tb-fcc3aa03
+2026-04-06 15:51:12,416 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 15:51:12,417 - app.tools.builder_manager - INFO - Tool builder turn completed, session=fcc3aa03-c777-4241-8ecd-d81a15f1b92f
+2026-04-06 15:53:38,923 - app.tools.builder_manager - INFO - Tool builder turn started, session=fcc3aa03-c777-4241-8ecd-d81a15f1b92f, PID=69482, cwd=/Users/tony/chathub/.worktrees/tb-fcc3aa03
+2026-04-06 16:20:12,223 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-06 16:20:12,224 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-06 16:20:12,225 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-06 16:20:12,225 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:20:18,359 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-06 16:20:18,359 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-06 16:20:18,360 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-06 16:20:18,360 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:45,120 - app.bots.message_scheduler - INFO - Message scheduler stopped
+2026-04-06 16:48:45,121 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler stopped.
+2026-04-06 16:48:45,121 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler stopped.
+2026-04-06 16:48:45,121 - app.scripts.scheduler - INFO - Script scheduler stopped.
+2026-04-06 16:48:45,121 - app.hubs.scheduler - INFO - Content scheduler stopped.
+2026-04-06 16:48:45,121 - app.bots.manager - INFO - Stopped bot instance for profile 2
+2026-04-06 16:48:45,121 - app.bots.manager - INFO - Stopped bot instance for profile 5
+2026-04-06 16:48:45,121 - app.bots.manager - INFO - Stopped bot instance for profile 11
+2026-04-06 16:48:45,121 - app.bots.manager - INFO - Stopped bot instance for profile 12
+2026-04-06 16:48:45,121 - app.bots.manager - INFO - All bots stopped
+2026-04-06 16:48:47,257 - root - INFO - Enhanced logging system initialized
+2026-04-06 16:48:47,257 - root - INFO - === Server Starting ===
+2026-04-06 16:48:48,017 - telethon.crypto.aes - INFO - libssl detected, it will be used for encryption
+2026-04-06 16:48:48,182 - app.platforms.registry - INFO - Registered platform adapter: whatsapp
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: discord
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: linkedin
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: telegram
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: line
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: instagram
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: messenger
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: tinder
+2026-04-06 16:48:48,185 - app.platforms.registry - INFO - Registered platform adapter: bumble
+2026-04-06 16:48:48,287 - app.tools - INFO - Skipping inactive custom tool: contact-insights
+2026-04-06 16:48:48,287 - app.tools - INFO - Skipping inactive custom tool: dashboard-message-trends
+2026-04-06 16:48:48,287 - app.tools - INFO - Skipping inactive custom tool: response-time-tracker
+2026-04-06 16:48:48,325 - app.conversations.routes - INFO - Main event loop stored for WebSocket manager
+2026-04-06 16:48:48,327 - root - INFO - Enhanced logging system initialized
+2026-04-06 16:48:48,330 - app.platforms.messenger.adapter - INFO - Messenger webhook routes registered at /webhooks/messenger
+2026-04-06 16:48:48,330 - app.platforms.instagram.adapter - INFO - Instagram webhook routes registered: /webhooks/instagram
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - start_bot called for profile 2
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - Creating task for bot 2 (platform: whatsapp)
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - Started bot instance for profile 2
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - start_bot called for profile 5
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - Creating task for bot 5 (platform: discord)
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - Started bot instance for profile 5
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - start_bot called for profile 11
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - Creating task for bot 11 (platform: messenger)
+2026-04-06 16:48:48,332 - app.bots.manager - INFO - Started bot instance for profile 11
+2026-04-06 16:48:48,334 - app.bots.manager - INFO - start_bot called for profile 12
+2026-04-06 16:48:48,334 - app.bots.manager - INFO - Creating task for bot 12 (platform: messenger)
+2026-04-06 16:48:48,334 - app.bots.manager - INFO - Started bot instance for profile 12
+2026-04-06 16:48:48,334 - app.hubs.scheduler - INFO - Content scheduler started.
+2026-04-06 16:48:48,335 - app.scripts.scheduler - INFO - Script scheduler started.
+2026-04-06 16:48:48,335 - app.hubs.analysis_scheduler - INFO - Contact analysis scheduler started.
+2026-04-06 16:48:48,335 - app.hubs.followup_scheduler - INFO - Follow-up send scheduler started.
+2026-04-06 16:48:48,335 - app.bots.message_scheduler - INFO - Message scheduler started
+2026-04-06 16:48:48,335 - app.tools.tool_scheduler - INFO - No scheduled tool tasks registered
+2026-04-06 16:48:48,335 - app.bots.whatsapp_bot - INFO - Bot 2: Thread started
+2026-04-06 16:48:48,336 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Initializing Discord bot...
+2026-04-06 16:48:48,336 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: No Discord bot token configured. Set platform_token in bot config.
+2026-04-06 16:48:48,336 - app.bots.manager - INFO - Bot 11: Notifying 0 status callbacks: Messenger requires an App Secret for webhook signature verification.
+2026-04-06 16:48:48,336 - app.bots.manager - INFO - Bot 12: Notifying 0 status callbacks: Messenger requires an App Secret for webhook signature verification.
+2026-04-06 16:48:49,416 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'starting', 'message': 'Initializing bot...'}
+2026-04-06 16:48:49,416 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Initializing bot...
+2026-04-06 16:48:49,417 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:49,417 - app.bots.whatsapp_bot - INFO - Bot 2: Starting...
+2026-04-06 16:48:49,497 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'launching', 'message': 'Launching browser...'}
+2026-04-06 16:48:49,497 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Launching browser...
+2026-04-06 16:48:49,497 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:49,710 - app.bots.whatsapp_bot - INFO - Bot 2: Launching browser with headless=False
+2026-04-06 16:48:49,710 - app.bots.whatsapp_bot - INFO - Bot 2: Using ABSOLUTE session path: /Users/tony/chathub/data/sessions/bot_2
+2026-04-06 16:48:49,710 - app.bots.whatsapp_bot - INFO - Bot 2: Found EXISTING browser session at: /Users/tony/chathub/data/sessions/bot_2 - will attempt auto-login
+2026-04-06 16:48:49,710 - app.bots.whatsapp_bot - INFO - Bot 2: No proxy configured, detecting system timezone...
+2026-04-06 16:48:49,711 - app.bots.whatsapp_bot - INFO - Detected system timezone: Asia/Dubai (UTC+4)
+2026-04-06 16:48:49,711 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected timezone: Asia/Dubai (UTC+4)
+2026-04-06 16:48:50,166 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'loading', 'message': 'Loading WhatsApp Web...'}
+2026-04-06 16:48:50,166 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading WhatsApp Web...
+2026-04-06 16:48:50,166 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:52,022 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'waiting_qr', 'message': 'Waiting for QR code...'}
+2026-04-06 16:48:52,023 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Waiting for QR code...
+2026-04-06 16:48:52,023 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:52,023 - app.bots.whatsapp_bot - INFO - Bot 2: Entering QR detection loop...
+2026-04-06 16:48:52,023 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp Web loaded, waiting for QR code...
+2026-04-06 16:48:52,064 - app.bots.whatsapp_bot - INFO - Bot 2: Waiting for QR... canvas=False, qr_len=0
+2026-04-06 16:48:55,135 - app.bots.whatsapp_bot - INFO - Bot 2: Authentication detected via selector: [aria-label="Chat list"]
+2026-04-06 16:48:55,135 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'connected': True, 'whatsapp_connected': True, 'message': 'WhatsApp connected successfully!'}
+2026-04-06 16:48:55,135 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: WhatsApp connected successfully!
+2026-04-06 16:48:55,135 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:55,135 - app.bots.whatsapp_bot - INFO - Bot 2: Authenticated! Session persisted automatically.
+2026-04-06 16:48:55,135 - app.bots.whatsapp_bot - INFO - Bot 2: Stored page reference for manual messaging
+2026-04-06 16:48:55,144 - app.bots.whatsapp_bot - INFO - Bot 2: Account type: Business
+2026-04-06 16:48:55,672 - app.bots.whatsapp_bot - INFO - Bot 2: Profile click result: navbar_profile
+2026-04-06 16:48:57,182 - app.bots.whatsapp_bot - INFO - Bot 2: Profile extraction debug: panelOpen=True, isBusiness=True, hasProfileText=True, hasNameText=False
+2026-04-06 16:48:57,182 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data extracted: name=Tony, phone_display=None, has_pic=True, is_business=True
+2026-04-06 16:48:57,814 - app.bots.whatsapp_bot - INFO - Bot 2: Extracted account info: {'account_type': 'business', 'phone': '96599328119', 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-mct1-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4QGj_N-fVO63zxZXUptD0xcvEcpITrs9reqPY5Ojz3-q_w&oe=69E0B494&_nc_sid=5e03e0&_nc_cat=106'}
+2026-04-06 16:48:57,826 - app.bots.whatsapp_bot - INFO - Bot 2: Using auto-detected offset from proxy: UTC+4
+2026-04-06 16:48:57,826 - app.bots.whatsapp_bot - INFO - Bot 2: Saved profile pic to database
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: Profile data committed to database
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: WhatsApp connected, starting message listener
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Bot is running and listening for messages...', 'account_info': {'phone': '96599328119', 'phone_display': None, 'name': 'Tony', 'push_name': 'Tony', 'profile_pic': 'https://media-mct1-1.cdn.whatsapp.net/v/t61.24694-24/563884619_1188426556816929_3322465832166233846_n.jpg?ccb=11-4&oh=01_Q5Aa4QGj_N-fVO63zxZXUptD0xcvEcpITrs9reqPY5Ojz3-q_w&oe=69E0B494&_nc_sid=5e03e0&_nc_cat=106', 'about': None, 'account_type': 'business'}, 'ai_response_enabled': False, 'history_sync_active': False, 'history_sync_progress': {'total': 0, 'completed': 0, 'current_chat': '', 'status': 'idle'}}
+2026-04-06 16:48:57,832 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Bot is running and listening for messages...
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync - extracting conversations from WhatsApp sidebar...
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: Starting quick conversation sync (unread only)...
+2026-04-06 16:48:57,832 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'syncing', 'message': 'Loading conversations with unread messages...'}
+2026-04-06 16:48:57,832 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loading conversations with unread messages...
+2026-04-06 16:48:57,833 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:49:01,354 - app.bots.whatsapp_bot - INFO - Bot 2: Found 4 conversations with unread messages
+2026-04-06 16:49:01,354 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 0: name='Al Mulla Exchange', fullDataId='None', isGroup=False
+2026-04-06 16:49:01,354 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 1: name='Max Fashion', fullDataId='None', isGroup=False
+2026-04-06 16:49:01,354 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 2: name='Test', fullDataId='None', isGroup=True
+2026-04-06 16:49:01,354 - app.bots.whatsapp_bot - INFO - Bot 2: Unread conv 3: name='+60 16-260 9676', fullDataId='None', isGroup=False
+2026-04-06 16:49:01,360 - app.bots.whatsapp_bot - WARNING - Bot 2: Skipping conversation '+60 16-260 9676' - no valid WhatsApp ID (got: None)
+2026-04-06 16:49:01,361 - app.bots.whatsapp_bot - INFO - Bot 2: Quick sync complete - 3 unread conversations
+2026-04-06 16:49:01,361 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Loaded 3 conversations with unread messages. Ready!'}
+2026-04-06 16:49:01,361 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Loaded 3 conversations with unread messages. Ready!
+2026-04-06 16:49:01,362 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 16:49:01,362 - app.bots.whatsapp_bot - INFO - Bot 2: Entering main message loop
+2026-04-06 16:49:01,362 - app.bots.whatsapp_bot - INFO - Bot 2: Closing any open chat windows before starting...
+2026-04-06 16:49:02,289 - app.bots.whatsapp_bot - INFO - Bot 2: Chat windows closed, ready to detect unread messages
+2026-04-06 16:49:06,480 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-de23072f on branch tool-builder/1/1775479746
+2026-04-06 16:49:06,480 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session de23072f for user 1
+2026-04-06 16:49:06,483 - app.tools.builder_manager - INFO - Created tool builder session de23072f-3d31-4c67-a873-0a6181b73a30 for user 1 (preview deferred)
+2026-04-06 16:49:06,580 - app.tools.builder_manager - INFO - Tool builder turn started, session=de23072f-3d31-4c67-a873-0a6181b73a30, PID=75292, cwd=/Users/tony/chathub/.worktrees/tb-de23072f
+2026-04-06 16:49:28,279 - app.tools.worktree_manager - INFO - Discarded worktree for session de23072f-3d31-4c67-a873-0a6181b73a30
+2026-04-06 16:49:28,279 - app.tools.sandbox_manager - INFO - Discarded sandbox for session de23072f-3d31-4c67-a873-0a6181b73a30
+2026-04-06 16:49:28,385 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-641d1c32 on branch tool-builder/1/1775479768
+2026-04-06 16:49:28,385 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 641d1c32 for user 1
+2026-04-06 16:49:28,387 - app.tools.builder_manager - INFO - Created tool builder session 641d1c32-6e3e-4c0e-8505-28ed3992bf37 for user 1 (preview deferred)
+2026-04-06 16:49:28,482 - app.tools.builder_manager - INFO - Tool builder turn started, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37, PID=75503, cwd=/Users/tony/chathub/.worktrees/tb-641d1c32
+2026-04-06 16:50:11,347 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 16:50:11,347 - app.tools.builder_manager - INFO - Tool builder turn completed, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:50:24,695 - app.tools.builder_manager - INFO - Tool builder turn started, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37, PID=75833, cwd=/Users/tony/chathub/.worktrees/tb-641d1c32
+2026-04-06 16:51:20,193 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 16:51:20,194 - app.tools.builder_manager - INFO - Tool builder turn completed, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:51:55,108 - app.tools.builder_manager - INFO - Tool builder turn started, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37, PID=76237, cwd=/Users/tony/chathub/.worktrees/tb-641d1c32
+2026-04-06 16:52:28,182 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 16:52:28,183 - app.tools.builder_manager - INFO - Tool builder turn completed, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:52:59,687 - app.tools.builder_manager - INFO - Tool builder turn started, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37, PID=76537, cwd=/Users/tony/chathub/.worktrees/tb-641d1c32
+2026-04-06 16:53:40,306 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 16:53:40,307 - app.tools.builder_manager - INFO - Tool builder turn completed, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:53:50,159 - app.tools.builder_manager - INFO - Tool builder turn started, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37, PID=76812, cwd=/Users/tony/chathub/.worktrees/tb-641d1c32
+2026-04-06 16:53:54,778 - app.tools.builder_manager - INFO - TOOL.md already exists in worktree root, skipping auto-generation
+2026-04-06 16:53:54,778 - app.tools.builder_manager - INFO - Tool builder turn completed, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:54:16,039 - app.tools.builder_manager - INFO - Tool builder turn started, session=641d1c32-6e3e-4c0e-8505-28ed3992bf37, PID=76947, cwd=/Users/tony/chathub/.worktrees/tb-641d1c32
+2026-04-06 16:54:17,775 - app.tools.builder_manager - ERROR - Failed to persist message: slice(None, 10000, None)
+2026-04-06 16:54:32,410 - app.tools.worktree_manager - INFO - Discarded worktree for session 641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:54:32,410 - app.tools.sandbox_manager - INFO - Discarded sandbox for session 641d1c32-6e3e-4c0e-8505-28ed3992bf37
+2026-04-06 16:54:32,585 - app.tools.worktree_manager - INFO - Created worktree at /Users/tony/chathub/.worktrees/tb-9c932c7b on branch tool-builder/1/1775480072
+2026-04-06 16:54:32,586 - app.tools.sandbox_manager - INFO - Created lightweight sandbox session 9c932c7b for user 1
+2026-04-06 16:54:32,587 - app.tools.builder_manager - INFO - Created tool builder session 9c932c7b-2645-4cf9-bce0-d09027a76f51 for user 1 (preview deferred)
+2026-04-06 16:54:32,679 - app.tools.builder_manager - INFO - Tool builder turn started, session=9c932c7b-2645-4cf9-bce0-d09027a76f51, PID=77052, cwd=/Users/tony/chathub/.worktrees/tb-9c932c7b
+2026-04-06 16:54:34,504 - app.tools.builder_manager - ERROR - Failed to persist message: slice(None, 10000, None)
+2026-04-06 16:55:16,453 - app.tools.sandbox_manager - INFO - Marked all bots as stopped in sandbox DB snapshot
+2026-04-06 16:55:16,568 - app.tools.sandbox_manager - INFO - Launched Docker container tb-sandbox-9c932c7b on port 9001
+2026-04-06 16:55:16,568 - app.tools.sandbox_manager - INFO - Container tb-sandbox-9c932c7b started, waiting for HTTP /health on port 9001...
+2026-04-06 16:55:18,117 - app.tools.sandbox_manager - INFO - Sandbox app ready on port 9001
+2026-04-06 16:57:14,099 - app.chathub_agent.manager - INFO - Started ChatHub Agent session 15 for user 1
+2026-04-06 16:57:14,105 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 2 messages
+2026-04-06 16:57:17,494 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 16:57:17,502 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=341
+2026-04-06 16:57:19,039 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 16:57:42,172 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 4 messages
+2026-04-06 16:57:45,004 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 16:57:45,010 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=306
+2026-04-06 16:57:56,560 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 6 messages
+2026-04-06 16:57:59,801 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 16:57:59,804 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=358
+2026-04-06 16:58:23,379 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 8 messages
+2026-04-06 16:58:24,916 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 16:58:24,919 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=177
+2026-04-06 17:00:33,649 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 10 messages
+2026-04-06 17:00:42,481 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:00:42,483 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=2737
+2026-04-06 17:01:24,999 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 12 messages
+2026-04-06 17:01:35,699 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:01:35,701 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=2722
+2026-04-06 17:02:10,131 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 14 messages
+2026-04-06 17:02:16,537 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:02:16,539 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=1488
+2026-04-06 17:02:49,143 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 16 messages
+2026-04-06 17:02:52,135 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:02:52,139 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:02:53,603 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 20 messages
+2026-04-06 17:02:56,622 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:02:56,624 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:02:56,683 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 24 messages
+2026-04-06 17:02:59,435 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:02:59,437 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:02:59,506 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 28 messages
+2026-04-06 17:03:01,345 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:03:01,347 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:03:01,386 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 32 messages
+2026-04-06 17:03:04,308 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:03:04,311 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:03:04,363 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 36 messages
+2026-04-06 17:03:07,078 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:03:07,080 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:03:07,115 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 40 messages
+2026-04-06 17:03:09,403 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:03:09,405 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:03:09,432 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 42 messages
+2026-04-06 17:03:13,182 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:03:13,185 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:03:13,467 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 44 messages
+2026-04-06 17:03:16,001 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:03:16,004 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:03:16,039 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 46 messages
+2026-04-06 17:04:16,765 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:04:16,771 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:04:19,615 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 48 messages
+2026-04-06 17:04:21,922 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:04:21,924 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:04:21,958 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 50 messages
+2026-04-06 17:04:24,483 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:04:24,485 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:04:25,230 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 52 messages
+2026-04-06 17:04:31,036 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:04:31,038 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:04:31,065 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 54 messages
+2026-04-06 17:04:38,252 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:04:38,255 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=1573
+2026-04-06 17:05:32,274 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 56 messages
+2026-04-06 17:05:34,491 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:34,495 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:34,558 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 58 messages
+2026-04-06 17:05:36,707 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:36,710 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=3, content_len=0
+2026-04-06 17:05:36,771 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 62 messages
+2026-04-06 17:05:38,610 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:38,612 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:38,639 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 64 messages
+2026-04-06 17:05:40,445 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:40,447 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:40,474 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 66 messages
+2026-04-06 17:05:43,515 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:43,518 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:43,550 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 68 messages
+2026-04-06 17:05:45,809 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:45,812 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:45,840 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 70 messages
+2026-04-06 17:05:48,537 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:48,539 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:48,593 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 72 messages
+2026-04-06 17:05:50,568 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:50,571 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:50,600 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 74 messages
+2026-04-06 17:05:52,947 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:52,950 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:52,999 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 76 messages
+2026-04-06 17:05:55,626 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:55,629 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:55,679 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 78 messages
+2026-04-06 17:05:58,304 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:05:58,306 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=tool_calls, tool_calls=1, content_len=0
+2026-04-06 17:05:58,354 - app.chathub_agent.agent_loop - INFO - Calling provider with 9 tools, 80 messages
+2026-04-06 17:06:05,040 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-06 17:06:05,043 - app.chathub_agent.agent_loop - INFO - Provider response: finish_reason=stop, tool_calls=0, content_len=1652
+2026-04-06 19:15:32,196 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-06 19:15:32,196 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-06 19:15:32,197 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-06 19:15:32,197 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 19:15:37,373 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-06 19:15:37,374 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-06 19:15:37,374 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-06 19:15:37,374 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-06 19:15:41,061 - app.bots.routes - INFO - Bot 5 (discord) needs recovery
+2026-04-06 19:15:41,063 - app.bots.manager - INFO - Recovering bot 5
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - start_bot called for profile 5
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Creating task for bot 5 (platform: discord)
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Started bot instance for profile 5
+2026-04-06 19:15:41,064 - app.bots.routes - INFO - Bot 11 (messenger) needs recovery
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Recovering bot 11
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - start_bot called for profile 11
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Creating task for bot 11 (platform: messenger)
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Started bot instance for profile 11
+2026-04-06 19:15:41,064 - app.bots.routes - INFO - Bot 12 (messenger) needs recovery
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Recovering bot 12
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - start_bot called for profile 12
+2026-04-06 19:15:41,064 - app.bots.manager - INFO - Creating task for bot 12 (platform: messenger)
+2026-04-06 19:15:41,065 - app.bots.manager - INFO - Started bot instance for profile 12
+2026-04-06 19:15:41,065 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Initializing Discord bot...
+2026-04-06 19:15:41,091 - discord.client - WARNING - davey is not installed, voice will NOT be supported
+2026-04-06 19:15:41,091 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connecting to Discord...
+2026-04-06 19:15:41,091 - discord.client - INFO - logging in using static token
+2026-04-06 19:15:41,549 - httpx - INFO - HTTP Request: GET https://graph.facebook.com/v21.0/me?access_token=EAAXiLD1VEVoBRBMeAtINKgQC4awzJAImcZALPQ85ZCuj3wm2j3iXgXgSozeuG2qG2ZBdEPcaQVnRZBZA3LmsRLaulytOuIeRx5vgu2ryBgbSSJpo5c7tsu963yuFvAM4a1hf2LGD8nqnxfA65fZBK6HHAfCZABcxtqy84rskopgW9ozuR6bQZB3PfZAnOSghjAU3fbZCXSL6Trg5EYlseuCt0ZD "HTTP/1.1 200 OK"
+2026-04-06 19:15:41,554 - app.bots.manager - INFO - Bot 11: Notifying 0 status callbacks: Connected to Messenger as 'Develop test app'
+2026-04-06 19:15:41,554 - app.platforms.messenger.adapter - INFO - Bot 11: Messenger connected as 'Develop test app'
+2026-04-06 19:15:41,579 - httpx - INFO - HTTP Request: GET https://graph.facebook.com/v21.0/me?access_token=EAAXiLD1VEVoBRAyC8YlertQFrq5tKxrPRFisqYyZAxIST2ykweSBuJkRNTOZBbpGRHCq3chOaKd4uFuFQO9nGrnVAZBrG3i5mxBPKsLsRdu2orQx6siO2e8tYj0TmPXk9jlTSdmwLbuAKMkFeEC7eDTQKZCD73AjDXfHZA5k0YEgwlfHDmkrj5NvtgXOaaZBqaMzKGwnfObsC2wRkDZBcsxZCbkZD "HTTP/1.1 200 OK"
+2026-04-06 19:15:41,583 - app.bots.manager - INFO - Bot 12: Notifying 0 status callbacks: Connected to Messenger as 'Chatgpt'
+2026-04-06 19:15:41,583 - app.platforms.messenger.adapter - INFO - Bot 12: Messenger connected as 'Chatgpt'
+2026-04-06 19:15:43,047 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a071b6d96fe85f7fb5fc981f7b84a41d).
+2026-04-06 19:15:45,139 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-06 19:15:45,145 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-06 19:19:10,346 - discord.gateway - INFO - Shard ID None has successfully RESUMED session a071b6d96fe85f7fb5fc981f7b84a41d.
+2026-04-06 20:06:37,370 - discord.gateway - INFO - Shard ID None has successfully RESUMED session a071b6d96fe85f7fb5fc981f7b84a41d.
+2026-04-06 20:38:28,233 - discord.gateway - INFO - Shard ID None has successfully RESUMED session a071b6d96fe85f7fb5fc981f7b84a41d.
+2026-04-06 21:41:47,281 - discord.client - ERROR - Attempting a reconnect in 1.08s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 21:41:48,385 - discord.client - ERROR - Attempting a reconnect in 0.54s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 21:41:48,933 - discord.client - ERROR - Attempting a reconnect in 5.38s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 21:57:13,107 - discord.client - ERROR - Attempting a reconnect in 12.35s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 22:30:32,039 - discord.client - ERROR - Attempting a reconnect in 4.42s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 22:46:13,260 - discord.client - ERROR - Attempting a reconnect in 12.10s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 23:12:26,883 - discord.client - ERROR - Attempting a reconnect in 16.34s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-d.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-06 23:46:02,822 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-06 23:56:45,501 - discord.gateway - INFO - Shard ID None session has been invalidated.

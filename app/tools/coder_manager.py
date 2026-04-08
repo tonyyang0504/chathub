@@ -79,29 +79,6 @@ This file is metadata only — it will NOT be copied to the main project. It pro
 This is a FastAPI + SQLAlchemy project with Jinja2 templates and Bootstrap 5 frontend.
 Read CLAUDE.md at the project root for full architecture documentation.
 
-## KEY ROUTING PREFIXES
-
-- Dashboard pages: /dashboard/ (index, bots, conversations, analytics, settings, hubs, agents)
-- Tool pages: /tools/ (scheduled-content, contact-analyzer, group-management, ai-workspace, tool-builder, ai-coder, etc.)
-- Tool API endpoints: /tools/api/ (tool-specific REST APIs)
-- Bot API: /api/bots/ (CRUD, start/stop, contacts, groups)
-- Hub API: /api/hubs/ (CRUD, agents, contacts, content, groups)
-- Conversation API: /api/conversations/ (list, messages, send)
-- Analytics API: /api/analytics/ (overview, daily, activity)
-- Auth: /auth/ (login, register, logout)
-- Scripts: /scripts/ (script CRUD, execution)
-
-IMPORTANT: Do NOT mix these prefixes. /dashboard/tools/ does NOT exist.
-Template path ≠ URL path (e.g., app/templates/dashboard/tools/X.html → /tools/X, NOT /dashboard/tools/X).
-
-## KEY FILE LOCATIONS
-
-- Routes: app/tools/routes.py, app/bots/routes.py, app/hubs/routes.py, etc.
-- Templates: app/templates/dashboard/ (pages), app/templates/dashboard/tools/ (tool pages)
-- Models: app/database.py (all 23+ SQLAlchemy models)
-- Static: static/css/style.css, static/css/tools.css, static/js/app.js
-- Custom tools: app/tools/custom/{name}/ (isolated plugins — do NOT modify these)
-
 ## EXISTING PATTERNS TO FOLLOW
 
 - Check existing links in the file you're modifying for URL pattern reference

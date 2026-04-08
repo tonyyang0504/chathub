@@ -907,7 +907,7 @@
         <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color);">
             <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
                 <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Publish Tool</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
@@ -938,8 +938,8 @@
                 </div>
             </div>
             <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="confirmPublishBtn" onclick="confirmPublish()">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm rounded-pill px-3" id="confirmPublishBtn" onclick="confirmPublish()" style="background: var(--provider-gradient); color: white;">
                     <i class="bi bi-check-circle me-1"></i> Publish
                 </button>
             </div>
@@ -1269,9 +1269,15 @@ let isRunning = false;
 let wsRetryCount = 0;
 let isWaiting = false;
 let currentProvider = 'claude';
+let currentSessionEngine = 'cli';
 let assistantBuffer = '';
 let currentAssistantEl = null;
 let turnHasStreamedText = false;
+
+function isChathubEngine() {
+    if (sessionId) return currentSessionEngine === 'agent';
+    return currentProvider === 'chathub';
+}
 let statusPollInterval = null;
 let publishedSkillId = null;
 let previewUrl = null;
@@ -1926,6 +1932,7 @@ async function geminiLogout() {
 
 async function createSession() {
     try {
+        currentSessionEngine = currentProvider === 'chathub' ? 'agent' : 'cli';
         const resp = await fetch('/tools/api/tool-builder/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1966,6 +1973,46 @@ async function createSession() {
     }
 }
 
+async function createChathubSession(prompt) {
+    try {
+        currentSessionEngine = 'agent';
+        showThinking();
+        setRunningState(true);
+
+        const filePaths = getFilePaths();
+        clearPendingFiles();
+        const body = { prompt };
+        if (filePaths.length) body.file_paths = filePaths;
+
+        const resp = await fetch('/tools/api/chathub-agent/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body)
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            removeThinking();
+            setRunningState(false);
+            showToast(err.detail || 'Failed to create ChatHub session', 'error');
+            return;
+        }
+        const data = await resp.json();
+        if (ws) { ws.onclose = null; ws.onerror = null; ws.close(); ws = null; }
+        sessionId = data.session_id;
+        document.querySelectorAll('.provider-pill').forEach(pill => {
+            pill.classList.toggle('disabled', pill.dataset.provider !== currentProvider);
+        });
+        setStatus('running');
+        connectWebSocket();
+        setTimeout(loadSessions, 500);
+    } catch(e) {
+        removeThinking();
+        setRunningState(false);
+        showToast('Connection error: ' + e.message, 'error');
+    }
+}
+
 async function handleSend() {
     const input = document.getElementById('promptInput');
     const text = input.value.trim();
@@ -1989,6 +2036,11 @@ async function handleSend() {
         input.style.height = 'auto';
         document.getElementById('emptyState').style.display = 'none';
 
+        if (currentProvider === 'chathub') {
+            // ChatHub agent: create session with prompt in one call
+            await createChathubSession(text);
+            return;
+        }
         const created = await createSession();
         if (!created) return;
         sendMessage(text);
@@ -2039,9 +2091,16 @@ async function sendMessage(text) {
     setRunningState(true);
 
     try {
-        const body = { message: text };
+        let apiUrl, body;
+        if (isChathubEngine()) {
+            apiUrl = `/tools/api/chathub-agent/sessions/${sessionId}/message`;
+            body = { content: text };
+        } else {
+            apiUrl = `/tools/api/tool-builder/sessions/${sessionId}/message`;
+            body = { message: text };
+        }
         if (filePaths.length) body.file_paths = filePaths;
-        const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/message`, {
+        const resp = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -2074,7 +2133,8 @@ function connectWebSocket() {
     turnHasStreamedText = false;
 
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${proto}//${location.host}/tools/api/tool-builder/stream/${sessionId}?no_replay=1`;
+    const wsBase = isChathubEngine() ? '/tools/api/chathub-agent/stream' : '/tools/api/tool-builder/stream';
+    const wsUrl = `${proto}//${location.host}${wsBase}/${sessionId}?no_replay=1`;
     const newWs = new WebSocket(wsUrl);
     ws = newWs;
 
@@ -2120,6 +2180,43 @@ function connectWebSocket() {
 function renderStreamEvent(data) {
     const type = data.type;
     console.log('[TB stream]', type, data);
+
+    // ChatHub Agent event types
+    if (type === 'assistant_text') {
+        removeThinking();
+        flushAssistantBuffer();
+        appendAssistantMessage(data.content || '');
+        return;
+    }
+    if (type === 'tool_call' && data.tool_name) {
+        removeThinking();
+        flushAssistantBuffer();
+        currentAssistantEl = null;
+        const toolInput = data.arguments || {};
+        appendToolUse(data.tool_name, toolInput);
+        return;
+    }
+    if (type === 'tool_result' && !data.content_block) {
+        removeThinking();
+        currentAssistantEl = null;
+        const content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content || '');
+        appendToolResult(content);
+        return;
+    }
+    if (type === 'approval_request') {
+        removeThinking();
+        setRunningState(false);
+        isWaiting = true;
+        return;
+    }
+    if (type === 'turn_complete') {
+        removeThinking();
+        flushAssistantBuffer();
+        setRunningState(false);
+        isWaiting = true;
+        setStatus('connected');
+        return;
+    }
 
     // Tool use — render as pill
     if (type === 'tool_use' || (type === 'content_block_start' && data.content_block?.type === 'tool_use')) {
@@ -2251,6 +2348,7 @@ function renderStreamEvent(data) {
             if (Array.isArray(text)) text = text.filter(b => b.type === 'text').map(b => b.text).join('\n');
             if (text) { flushAssistantBuffer(); appendAssistantMessage(text); }
         } else { flushAssistantBuffer(); }
+        turnHasStreamedText = false;
         return;
     }
 
@@ -2899,16 +2997,21 @@ async function refreshStatus() {
         if (status.error) return;
 
         document.getElementById('buildStatusSection').style.display = '';
-        document.getElementById('panelActions').style.display = '';
 
-        // Update preview URL if container has started; always keep button visible
+        // Update preview URL if container has started
         if (status.preview_url) {
             previewUrl = status.preview_url;
             document.getElementById('sandboxStatus').style.display = '';
             document.getElementById('sandboxStatusText').textContent =
                 `Sandbox ${status.container_status || 'running'} on port ${status.preview_port || ''}`;
         }
-        document.getElementById('previewBtn').style.display = '';
+
+        // Show action buttons when there are changed files or a preview container exists
+        const files = status.changed_files || [];
+        if (files.length > 0 || status.preview_url) {
+            document.getElementById('panelActions').style.display = '';
+            document.getElementById('previewBtn').style.display = '';
+        }
 
         // Branch
         document.getElementById('branchSection').style.display = '';
@@ -2919,7 +3022,6 @@ async function refreshStatus() {
         // Changed files
         const filesSection = document.getElementById('filesSection');
         const filesList = document.getElementById('changedFilesList');
-        const files = status.changed_files || [];
         if (files.length > 0) {
             filesSection.style.display = '';
             filesList.innerHTML = files.map(f => `<div class="changed-file"><i class="bi bi-file-earmark-code"></i><span>${escapeHtml(f)}</span></div>`).join('');
@@ -3085,8 +3187,17 @@ function schedulePublishReadinessRefresh() {
 // Build Actions
 // ============================================================
 
+async function ensureSession() {
+    if (sessionId) return true;
+    if (currentDbSessionId) {
+        return await resumeHistoricalSession(currentDbSessionId);
+    }
+    showToast('Start a session first.', 'warning');
+    return false;
+}
+
 async function publishBuild() {
-    if (!sessionId) return;
+    if (!await ensureSession()) return;
     if (isRunning) { showToast('Wait for the agent to finish', 'warning'); return; }
 
     // Reset fields to defaults before populating
@@ -3214,7 +3325,7 @@ async function confirmPublish() {
 }
 
 async function discardBuild() {
-    if (!sessionId) return;
+    if (!await ensureSession()) return;
     if (!confirm('Discard this build? All changes will be lost.')) return;
     try {
         const resp = await fetch(`/tools/api/tool-builder/sessions/${sessionId}/discard`, { method: 'POST', credentials: 'include' });
@@ -3237,7 +3348,8 @@ async function discardBuild() {
 async function stopAgent() {
     if (!sessionId) return;
     try {
-        await fetch(`/tools/api/tool-builder/sessions/${sessionId}/stop`, { method: 'POST', credentials: 'include' });
+        const apiBase = isChathubEngine() ? '/tools/api/chathub-agent' : '/tools/api/tool-builder';
+        await fetch(`${apiBase}/sessions/${sessionId}/stop`, { method: 'POST', credentials: 'include' });
         setRunningState(false);
     } catch(e) {
         console.error('Stop failed:', e);
@@ -3246,19 +3358,25 @@ async function stopAgent() {
 
 async function openPreview() {
     if (previewUrl) {
-        // Hot-reload custom tools in case agent built new ones since container started
+        // Verify container is still running before reusing cached URL
         try {
-            await fetch(`${previewUrl}/tools/api/reload-custom-tools`, {
-                method: 'POST', credentials: 'include'
-            });
-        } catch (_) {}
-        previewWindow = window.open(previewUrl, '_blank');
-        return;
+            const check = await fetch(`${previewUrl}/health`, { signal: AbortSignal.timeout(3000) });
+            if (check.ok || check.status < 500) {
+                // Hot-reload custom tools in case agent built new ones since container started
+                try {
+                    await fetch(`${previewUrl}/tools/api/reload-custom-tools`, {
+                        method: 'POST', credentials: 'include'
+                    });
+                } catch (_) {}
+                previewWindow = window.open(previewUrl, '_blank');
+                return;
+            }
+        } catch (_) {
+            // Container is gone — clear cached URL and fall through to create a new one
+            previewUrl = null;
+        }
     }
-    if (!sessionId) {
-        showToast('Start a session first.', 'warning');
-        return;
-    }
+    if (!await ensureSession()) return;
     // First click: trigger Docker install + container creation
     const btn = document.getElementById('previewBtn');
     btn.disabled = true;
@@ -3416,6 +3534,7 @@ async function viewSession(dbId) {
 
         // Lock provider pills to session's provider
         if (data.provider) selectProvider(data.provider);
+        currentSessionEngine = data.provider === 'chathub' ? 'agent' : 'cli';
         document.querySelectorAll('.provider-pill').forEach(pill => {
             pill.classList.toggle('disabled', pill.dataset.provider !== currentProvider);
         });
@@ -3436,17 +3555,29 @@ async function viewSession(dbId) {
             connectWebSocket();
             startStatusPolling();
             setStatus('connected');
+            // Uncollapse right panel for active sessions
+            document.getElementById('buildPanel').classList.remove('collapsed');
             return;
         }
 
-        // Otherwise just display the historical messages (view-only)
+        // Display the historical messages
         clearChat();
         replayMessages(data.messages);
         document.getElementById('emptyState').style.display = 'none';
 
-        // Show resume prompt if session can be resumed
-        if (data.status !== 'published' && data.status !== 'stopped') {
-            // Offer to resume
+        // For completed/stopped sessions, show action buttons and auto-resume
+        // so build status, changed files, and TOOL.md detection work
+        if (data.messages && data.messages.length > 0 && data.status !== 'published') {
+            document.getElementById('panelActions').style.display = '';
+            document.getElementById('previewBtn').style.display = '';
+            document.getElementById('buildStatusSection').style.display = '';
+            // Uncollapse the right panel so buttons are visible
+            document.getElementById('buildPanel').classList.remove('collapsed');
+            // Auto-resume to restore in-memory session (needed for status polling, publish, preview)
+            const resumed = await resumeHistoricalSession(dbId);
+            if (resumed) {
+                startStatusPolling();
+            }
         }
     } catch(e) {
         showToast('Error loading session: ' + e.message, 'error');
@@ -3495,6 +3626,7 @@ function newSession() {
         setStatus('idle');
     }
     currentDbSessionId = null;
+    currentSessionEngine = 'cli';
     // Unlock provider pills for new session
     document.querySelectorAll('.provider-pill').forEach(pill => {
         pill.classList.remove('disabled');

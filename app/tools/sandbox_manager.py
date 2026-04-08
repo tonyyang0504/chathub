@@ -235,7 +235,22 @@ class SandboxManager:
         if not info:
             raise RuntimeError("Session not found")
         if info.preview_url:
-            return info  # already running
+            # Verify container is still alive before returning cached URL
+            if info.container_name:
+                bin_ = _docker_bin()
+                if bin_:
+                    result = subprocess.run(
+                        [bin_, "inspect", "--format", "{{.State.Running}}", info.container_name],
+                        capture_output=True, text=True, env=self._docker_env()
+                    )
+                    if result.returncode == 0 and "true" in result.stdout.lower():
+                        return info  # container is alive
+            # Container is dead — reset state and relaunch
+            logger.info(f"Container {info.container_name} is gone, relaunching...")
+            info.preview_url = ""
+            info.preview_port = 0
+            info.container_id = ""
+            info.container_name = ""
         self._ensure_docker_available()
         self._launch_container(info)
         return info
@@ -414,6 +429,19 @@ class SandboxManager:
         try:
             self._wait_for_http("127.0.0.1", preview_port, timeout=60)
         except RuntimeError as e:
+            # Reset stale state so start_preview() retries next time
+            info.preview_url = ""
+            info.preview_port = 0
+            info.container_id = ""
+            info.container_name = ""
+            # Clean up the failed container
+            try:
+                subprocess.run(
+                    [bin_, "rm", "-f", container_name],
+                    capture_output=True, text=True, env=self._docker_env()
+                )
+            except Exception:
+                pass
             logs = self._get_container_logs(container_name)
             raise RuntimeError(
                 f"{e}\n\nContainer logs (last 60 lines):\n{logs}"
@@ -572,6 +600,12 @@ class SandboxManager:
         if not bin_:
             return
         env = self._docker_env()
+        # Collect container names belonging to active sessions (don't kill those)
+        active_containers = set()
+        for info in self._active.values():
+            if info.container_name:
+                active_containers.add(info.container_name)
+
         result = subprocess.run(
             [bin_, "ps", "-a", "--filter", f"name={CONTAINER_PREFIX}",
              "--format", "{{.Names}}"],
@@ -580,7 +614,7 @@ class SandboxManager:
         if result.returncode != 0 or not result.stdout.strip():
             return
         for name in result.stdout.strip().split("\n"):
-            if name:
+            if name and name not in active_containers:
                 subprocess.run([bin_, "stop", name], capture_output=True, text=True, env=env)
                 subprocess.run([bin_, "rm", "-f", name], capture_output=True, text=True, env=env)
 

@@ -1,0 +1,489 @@
+2026-04-05 00:13:03,304 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 00:13:34,683 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 675c3038f8c255edded7b1a73a0a60c8).
+2026-04-05 00:13:36,718 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 00:13:36,725 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-05 00:15:50,828 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 675c3038f8c255edded7b1a73a0a60c8.
+2026-04-05 00:36:02,048 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 01:07:41,162 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 01:08:12,101 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 861684c341d05c6f3d40be9a5bdb9853).
+2026-04-05 01:08:14,121 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 01:08:14,125 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-05 01:17:35,446 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 01:17:41,877 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c2a829a5df849b6257457ba359685e54).
+2026-04-05 01:17:43,882 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 01:17:43,905 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-05 01:54:27,646 - discord.client - ERROR - Attempting a reconnect in 1.49s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-05 02:12:06,979 - discord.client - ERROR - Attempting a reconnect in 0.85s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-05 02:12:07,837 - discord.client - ERROR - Attempting a reconnect in 0.30s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-05 02:12:08,142 - discord.client - ERROR - Attempting a reconnect in 11.67s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-05 02:44:54,387 - discord.client - ERROR - Attempting a reconnect in 2.20s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-05 02:59:52,520 - discord.client - ERROR - Attempting a reconnect in 33.76s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-05 03:07:47,499 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 03:07:54,334 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4068fad04865a9112f1a7f28f79562b7).
+2026-04-05 03:07:56,394 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 03:07:56,402 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-05 03:21:16,483 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-05 03:21:16,484 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-05 03:21:16,484 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-05 03:21:16,484 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-05 03:21:22,871 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-05 03:21:22,871 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-05 03:21:22,871 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-05 03:21:22,871 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-05 07:17:56,565 - discord.client - ERROR - Attempting a reconnect in 41.83s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-05 09:07:27,551 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 09:23:06,881 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 09:35:03,301 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 09:51:18,504 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 14:27:41,937 - discord.client - ERROR - Attempting a reconnect in 125.21s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-05 15:30:27,017 - app.bots.whatsapp_bot - INFO - Bot 2: Auto-restarting browser after 12.2 hours for memory management
+2026-04-05 15:30:27,018 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'restarting', 'message': 'Auto-restarting browser for memory management (12.2h uptime)...'}
+2026-04-05 15:30:27,019 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Auto-restarting browser for memory management (12.2h uptime)...
+2026-04-05 15:30:27,019 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-05 15:30:27,140 - app.bots.whatsapp_bot - INFO - Bot 2: Browser closed for auto-restart
+2026-04-05 15:30:58,026 - app.bots.whatsapp_bot - INFO - Bot 2: Browser auto-restart successful!
+2026-04-05 15:30:58,027 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser restarted successfully. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-05 15:30:58,027 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser restarted successfully. Bot is running.
+2026-04-05 15:30:58,027 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-05 15:30:58,027 - app.bots.whatsapp_bot - INFO - Bot 2: Cleared all memory tracking dicts after browser restart
+2026-04-05 18:50:57,761 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 18:51:05,355 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 7275479d318151059a8ac59bac8bd88d).
+2026-04-05 18:51:07,730 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 18:51:07,736 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-05 19:45:18,622 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 20:01:38,039 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 21:49:42,031 - discord.client - ERROR - Attempting a reconnect in 26.66s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-05 21:50:09,610 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 21:50:18,596 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 12c8b946de957b8c06e95e921528ad6f).
+2026-04-05 21:50:20,601 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 21:50:20,608 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-05 23:48:31,242 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-05 23:48:37,719 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: ff6c32015b172d127c848afcb00c6aa3).
+2026-04-05 23:48:39,724 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-05 23:48:39,731 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052

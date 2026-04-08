@@ -1183,6 +1183,7 @@
                             <option value="deepseek">DeepSeek</option>
                             <option value="qwen">Qwen</option>
                             <option value="grok">xAI (Grok)</option>
+                            <option value="ollama">Ollama (Local)</option>
                         </select>
                     </div>
                     <div class="col-md-6">
@@ -1394,6 +1395,15 @@ const PROVIDER_MODELS = {
             { header: 'Grok 3 Series', models: [
                 { value: 'grok-3', label: 'Grok 3' },
                 { value: 'grok-3-fast', label: 'Grok 3 Fast' },
+            ]},
+        ]
+    },
+    ollama: {
+        defaultModel: 'llama3.2',
+        groups: [
+            { header: 'Local Models', models: [
+                { value: 'llama3.2', label: 'Llama 3.2' },
+                { value: 'qwen2.5:0.5b', label: 'Qwen 2.5 (0.5B)' },
             ]},
         ]
     },

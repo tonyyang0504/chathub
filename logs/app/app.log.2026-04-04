@@ -1,0 +1,1616 @@
+2026-04-04 00:11:10,614 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=10416, first=False
+2026-04-04 00:11:10,615 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:11:23,596 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:12:27,354 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=10645, first=False
+2026-04-04 00:12:27,355 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:13:04,451 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:13:22,062 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=10984, first=False
+2026-04-04 00:13:22,062 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:13:39,942 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:17:48,495 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=11256, first=False
+2026-04-04 00:17:48,496 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:18:36,643 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:23:41,704 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=11611, first=False
+2026-04-04 00:23:41,704 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:24:20,417 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:25:26,838 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=11967, first=False
+2026-04-04 00:25:26,838 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:26:02,197 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:27:47,162 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=12311, first=False
+2026-04-04 00:27:47,163 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:28:01,476 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:28:12,332 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=12547, first=False
+2026-04-04 00:28:12,332 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:28:22,996 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:29:11,413 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=12774, first=False
+2026-04-04 00:29:11,413 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:29:49,209 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:38:51,745 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=13140, first=False
+2026-04-04 00:38:51,746 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:39:09,786 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:43:18,770 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=13506, first=False
+2026-04-04 00:43:18,771 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:43:32,217 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:45:42,353 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=13759, first=False
+2026-04-04 00:45:42,354 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:46:36,152 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:48:04,647 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=14002, first=False
+2026-04-04 00:48:04,647 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:49:02,369 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:53:02,504 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=14367, first=False
+2026-04-04 00:53:02,504 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:53:41,874 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 00:57:49,347 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=14713, first=False
+2026-04-04 00:57:49,348 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 00:58:42,041 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:00:18,970 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=15026, first=False
+2026-04-04 01:00:18,970 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:03:03,007 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:04:36,331 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 5f6ea8f5c1f781bc8ba718714d3d0ab2.
+2026-04-04 01:04:40,545 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=15400, first=False
+2026-04-04 01:04:40,546 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:06:12,779 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:07:19,169 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=15716, first=False
+2026-04-04 01:07:19,170 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:07:42,511 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:10:05,850 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=16035, first=False
+2026-04-04 01:10:05,851 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:10:19,446 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:12:37,530 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=16276, first=False
+2026-04-04 01:12:37,531 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:12:54,931 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:15:20,729 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=16521, first=False
+2026-04-04 01:15:20,729 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:16:08,050 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:19:51,385 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-04 01:19:51,385 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-04 01:19:51,386 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-04 01:19:51,386 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 01:19:56,889 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-04 01:19:56,890 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-04 01:19:56,890 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-04 01:19:56,890 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 01:20:29,017 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-04 01:20:29,018 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-04 01:20:29,018 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-04 01:20:29,018 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 01:20:33,700 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-04 01:20:33,700 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-04 01:20:33,700 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-04 01:20:33,700 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 01:23:18,781 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=16866, first=False
+2026-04-04 01:23:18,781 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:23:36,535 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:29:44,990 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=17181, first=False
+2026-04-04 01:29:44,990 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:30:33,059 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:33:44,863 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=17453, first=False
+2026-04-04 01:33:44,864 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:34:27,921 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:35:13,268 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=17739, first=False
+2026-04-04 01:35:13,268 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:35:35,063 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:36:53,729 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=17971, first=False
+2026-04-04 01:36:53,730 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:37:28,089 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:39:07,554 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=18237, first=False
+2026-04-04 01:39:07,554 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:39:28,893 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:42:22,946 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=18508, first=False
+2026-04-04 01:42:22,947 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:42:51,660 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:47:14,189 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=18777, first=False
+2026-04-04 01:47:14,189 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:47:33,363 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:49:20,264 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=19021, first=False
+2026-04-04 01:49:20,265 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:50:01,482 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:51:23,680 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=19303, first=False
+2026-04-04 01:51:23,680 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:51:48,465 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:52:36,216 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=19556, first=False
+2026-04-04 01:52:36,217 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:53:19,792 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:54:28,704 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=19818, first=False
+2026-04-04 01:54:28,704 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:55:24,553 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 01:59:05,408 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=20145, first=False
+2026-04-04 01:59:05,408 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 01:59:38,678 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:02:00,623 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=20479, first=False
+2026-04-04 02:02:00,623 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:02:24,928 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:07:18,362 - telethon.client.updates - INFO - Got difference for account updates
+2026-04-04 02:08:04,250 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=20741, first=False
+2026-04-04 02:08:04,251 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:08:31,243 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:10:21,103 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=21017, first=False
+2026-04-04 02:10:21,104 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:10:45,589 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:16:08,998 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=21298, first=False
+2026-04-04 02:16:08,998 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:16:40,187 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:16:48,962 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=21539, first=False
+2026-04-04 02:16:48,962 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:17:14,829 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:19:04,630 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=21794, first=False
+2026-04-04 02:19:04,630 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:20:03,762 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:22:32,548 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=22174, first=False
+2026-04-04 02:22:32,548 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:22:55,486 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:25:06,072 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=22427, first=False
+2026-04-04 02:25:06,072 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:26:03,852 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 02:26:08,645 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=22756, first=False
+2026-04-04 02:26:08,646 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 02:26:26,297 - app.ai_workspace.manager - INFO - Session 157 ended with exit code 1
+2026-04-04 02:35:01,836 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 02:35:08,068 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: eb0c9848196811496d14703be62c0016).
+2026-04-04 02:35:10,074 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 02:35:10,082 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 02:40:24,197 - telethon.client.updates - INFO - Got difference for account updates
+2026-04-04 02:45:17,985 - discord.gateway - INFO - Shard ID None has successfully RESUMED session eb0c9848196811496d14703be62c0016.
+2026-04-04 03:50:39,011 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 03:50:45,322 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 9864006d132f1cce6f07e6f20d390427).
+2026-04-04 03:50:47,344 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 03:50:47,349 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 03:50:53,560 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 54] Connection reset by peer
+2026-04-04 03:50:53,562 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 54] Connection reset by peer
+2026-04-04 03:50:53,562 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 03:50:53,563 - telethon.network.connection.connection - INFO - <class 'ConnectionResetError'> during disconnect: [Errno 54] Connection reset by peer
+2026-04-04 03:50:53,563 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 03:50:53,715 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 04:50:25,166 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 04:50:31,438 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 7e62e587d41e35cd1833a98f86fe533e).
+2026-04-04 04:50:33,508 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 04:50:33,513 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 04:50:56,718 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 54] Connection reset by peer
+2026-04-04 04:50:56,720 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 54] Connection reset by peer
+2026-04-04 04:50:56,720 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 04:50:56,720 - telethon.network.connection.connection - INFO - <class 'ConnectionResetError'> during disconnect: [Errno 54] Connection reset by peer
+2026-04-04 04:50:56,720 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 04:50:56,848 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 05:51:46,747 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 05:51:53,160 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5ebdc8814495d4fc4d225176416ad9e8).
+2026-04-04 05:51:53,765 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 54] Connection reset by peer
+2026-04-04 05:51:53,765 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 54] Connection reset by peer
+2026-04-04 05:51:53,765 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 05:51:53,766 - telethon.network.connection.connection - INFO - <class 'ConnectionResetError'> during disconnect: [Errno 54] Connection reset by peer
+2026-04-04 05:51:53,766 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 05:51:53,906 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 05:51:55,390 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 05:51:55,394 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 06:38:59,093 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 06:39:05,588 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: dfaf67f104404517c6800d91f9a3654c).
+2026-04-04 06:39:07,635 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 06:39:07,640 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 06:39:23,179 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 54] Connection reset by peer
+2026-04-04 06:39:23,180 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 54] Connection reset by peer
+2026-04-04 06:39:23,180 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 06:39:23,180 - telethon.network.connection.connection - INFO - <class 'ConnectionResetError'> during disconnect: [Errno 54] Connection reset by peer
+2026-04-04 06:39:23,180 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 06:39:23,308 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 06:52:28,181 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 06:52:34,555 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 513bd9685b50a8138586716684526649).
+2026-04-04 06:52:36,749 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 06:52:36,754 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 07:10:05,142 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 07:25:55,531 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 07:41:59,895 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 07:54:06,241 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 54] Connection reset by peer
+2026-04-04 07:54:06,241 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 54] Connection reset by peer
+2026-04-04 07:54:06,242 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 07:54:06,242 - telethon.network.connection.connection - INFO - <class 'ConnectionResetError'> during disconnect: [Errno 54] Connection reset by peer
+2026-04-04 07:54:06,242 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 07:54:06,372 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 07:54:08,355 - telethon.client.updates - INFO - Got difference for account updates
+2026-04-04 08:40:46,255 - discord.client - ERROR - Attempting a reconnect in 1.44s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-04 08:40:48,563 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 08:54:28,048 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 08:54:34,350 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: e53df5a04669b7825eb4998c7dfaea65).
+2026-04-04 08:54:36,378 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 08:54:36,383 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 08:55:03,354 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 54] Connection reset by peer
+2026-04-04 08:55:03,355 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 54] Connection reset by peer
+2026-04-04 08:55:03,356 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 08:55:03,356 - telethon.network.connection.connection - INFO - <class 'ConnectionResetError'> during disconnect: [Errno 54] Connection reset by peer
+2026-04-04 08:55:03,356 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 08:55:03,482 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 09:10:37,796 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 09:10:38,118 - discord.client - ERROR - Attempting a reconnect in 1.81s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1073, in _wrap_create_connection
+    sock = await aiohappyeyeballs.start_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohappyeyeballs/impl.py", line 104, in start_connection
+    raise first_exception
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohappyeyeballs/impl.py", line 81, in start_connection
+    sock = await _connect_sock(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohappyeyeballs/impl.py", line 166, in _connect_sock
+    await loop.sock_connect(sock, address)
+  File "/opt/anaconda3/lib/python3.12/asyncio/selector_events.py", line 651, in sock_connect
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/selector_events.py", line 659, in _sock_connect
+    sock.connect(address)
+OSError: [Errno 51] Network is unreachable
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1350, in _create_direct_connection
+    raise last_exc
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1319, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1088, in _wrap_create_connection
+    raise client_error(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [Network is unreachable]
+2026-04-04 09:10:40,974 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 09:10:47,242 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 8be3c4e365b928c9427449fea6fe22d9).
+2026-04-04 09:10:49,392 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 09:10:49,396 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 09:27:51,371 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 09:28:58,039 - discord.client - ERROR - Attempting a reconnect in 2.10s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-c.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 09:29:00,152 - discord.client - ERROR - Attempting a reconnect in 11.91s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-c.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 09:45:31,601 - discord.client - ERROR - Attempting a reconnect in 2.68s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-c.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 09:45:34,291 - discord.client - ERROR - Attempting a reconnect in 34.61s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-c.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 09:45:34,601 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 60] Operation timed out
+2026-04-04 09:45:34,602 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 60] Operation timed out
+2026-04-04 09:45:34,602 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 09:45:34,603 - telethon.network.connection.connection - WARNING - Graceful disconnection timed out, forcibly ignoring cleanup
+2026-04-04 09:45:34,603 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 09:45:34,603 - telethon.network.mtprotosender - WARNING - Attempt 1 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:45:35,605 - telethon.network.mtprotosender - WARNING - Attempt 2 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:47:46,429 - telethon.network.mtprotosender - WARNING - Attempt 3 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:47:47,432 - telethon.network.mtprotosender - WARNING - Attempt 4 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:47:48,433 - telethon.network.mtprotosender - WARNING - Attempt 5 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:47:49,436 - telethon.network.mtprotosender - WARNING - Attempt 6 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:47:50,438 - telethon.network.mtprotosender - INFO - Failed reconnection attempt 1 with ConnectionError
+2026-04-04 09:47:51,439 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 09:47:51,440 - telethon.network.mtprotosender - WARNING - Attempt 1 at connecting failed: OSError: [Errno 51] Network is unreachable
+2026-04-04 09:47:52,571 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 09:47:55,775 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 09:47:55,776 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 09:48:00,899 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 09:48:21,539 - discord.client - ERROR - Attempting a reconnect in 15.65s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-c.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 09:49:02,728 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 09:49:08,761 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 34eff22df45eb145e4fb94a4359990bf).
+2026-04-04 09:49:10,877 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 09:49:10,882 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 09:51:00,764 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 09:51:00,767 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 09:51:00,983 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 09:51:00,984 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=23565, first=False
+2026-04-04 09:52:35,366 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 09:52:35,652 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 401 Unauthorized"
+2026-04-04 09:52:35,654 - app.ai_workspace.manager - ERROR - Failed to generate session title: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CZiDAmpNuYawKk6TtC3nQ'}
+2026-04-04 10:01:03,153 - telethon.client.updates - INFO - Got difference for account updates
+2026-04-04 10:01:17,613 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=23981, first=False
+2026-04-04 10:01:17,613 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:01:34,945 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:03:03,103 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=24223, first=False
+2026-04-04 10:03:03,103 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:04:00,295 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:09:55,176 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=24535, first=False
+2026-04-04 10:09:55,176 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:10:24,440 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:15:11,811 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=24854, first=False
+2026-04-04 10:15:11,812 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:15:24,462 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:16:03,292 - telethon.client.updates - INFO - Got difference for account updates
+2026-04-04 10:22:38,573 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=25191, first=False
+2026-04-04 10:22:38,574 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:23:21,772 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:24:33,924 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=25473, first=False
+2026-04-04 10:24:33,924 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:24:57,297 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:26:47,719 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=25717, first=False
+2026-04-04 10:26:47,720 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:27:13,457 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:28:35,539 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=25973, first=False
+2026-04-04 10:28:35,540 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:29:04,494 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:34:28,618 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=26383, first=False
+2026-04-04 10:34:28,619 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:34:50,801 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:35:50,366 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=26615, first=False
+2026-04-04 10:35:50,367 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:36:10,420 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:38:10,295 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=26929, first=False
+2026-04-04 10:38:10,295 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:38:35,589 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:40:11,079 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=27245, first=False
+2026-04-04 10:40:11,080 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:41:03,252 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:43:29,040 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=27596, first=False
+2026-04-04 10:43:29,041 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:44:01,451 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:45:26,421 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=27910, first=False
+2026-04-04 10:45:26,421 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:45:57,462 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:48:10,915 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 34eff22df45eb145e4fb94a4359990bf.
+2026-04-04 10:49:41,622 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-04 10:49:41,623 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-04 10:49:41,623 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-04 10:49:41,623 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 10:49:48,121 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-04 10:49:48,121 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-04 10:49:48,122 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-04 10:49:48,122 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 10:55:26,934 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=28329, first=False
+2026-04-04 10:55:26,935 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:55:58,079 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 10:57:27,413 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=28670, first=False
+2026-04-04 10:57:27,414 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 10:57:57,542 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:05:30,654 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=29008, first=False
+2026-04-04 11:05:30,655 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:05:55,772 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:10:59,431 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=29272, first=False
+2026-04-04 11:10:59,431 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:11:16,504 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:14:44,383 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=29533, first=False
+2026-04-04 11:14:44,384 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:15:04,890 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:21:09,533 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=29836, first=False
+2026-04-04 11:21:09,533 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:21:37,588 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:22:55,620 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=30071, first=False
+2026-04-04 11:22:55,621 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:23:19,556 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:33:28,075 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=30373, first=False
+2026-04-04 11:33:28,076 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:34:20,032 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:41:40,464 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=30813, first=False
+2026-04-04 11:41:40,464 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:42:20,175 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:45:50,660 - app.platforms.telegram.adapter - INFO - Bot 3: Message from dubail0 (-1001578185967): 出售：衣柜 小桌子 电视柜
+物品介绍：正常使用，功能一切正常，自提或者可以介绍搬运工送上门
+价格：衣柜300迪 小桌子20迪 电视柜50迪
+位置： 迪拜市区
+交
+2026-04-04 11:45:52,686 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 11:45:52,690 - app.platforms.telegram.adapter - INFO - Bot 3: Message from dubail0 (-1001578185967): 
+2026-04-04 11:45:54,701 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 11:45:54,703 - app.platforms.telegram.adapter - INFO - Bot 3: Message from dubail0 (-1001578185967): 
+2026-04-04 11:45:56,713 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 11:51:31,260 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=31115, first=False
+2026-04-04 11:51:31,260 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:51:45,242 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 11:57:34,003 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=31397, first=False
+2026-04-04 11:57:34,003 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 11:57:58,198 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 12:01:40,082 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=31673, first=False
+2026-04-04 12:01:40,083 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 12:02:45,694 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 12:09:51,466 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=32102, first=False
+2026-04-04 12:09:51,467 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 12:10:08,598 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 12:11:32,426 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=32345, first=False
+2026-04-04 12:11:32,426 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 12:11:45,229 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 12:13:34,011 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=32574, first=False
+2026-04-04 12:13:34,011 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 12:13:48,060 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 12:16:04,261 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=32802, first=False
+2026-04-04 12:16:04,262 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 12:16:04,457 - telethon.client.updates - INFO - Got difference for account updates
+2026-04-04 12:16:23,914 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 12:18:42,858 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=33103, first=False
+2026-04-04 12:18:42,858 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 12:19:05,350 - app.ai_workspace.manager - INFO - Session 157 ended with exit code 1
+2026-04-04 12:54:35,981 - telethon.network.connection.connection - WARNING - Server closed the connection: [Errno 60] Operation timed out
+2026-04-04 12:54:35,983 - telethon.network.mtprotosender - INFO - Connection closed while receiving data: [Errno 60] Operation timed out
+2026-04-04 12:54:35,984 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 12:54:35,984 - telethon.network.connection.connection - WARNING - Graceful disconnection timed out, forcibly ignoring cleanup
+2026-04-04 12:54:35,984 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 12:54:37,652 - discord.client - ERROR - Attempting a reconnect in 0.27s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1319, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1073, in _wrap_create_connection
+    sock = await aiohappyeyeballs.start_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohappyeyeballs/impl.py", line 88, in start_connection
+    sock, _, _ = await staggered.staggered_race(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/staggered.py", line 126, in staggered_race
+    done, _ = await tasks.wait(running_tasks)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 464, in wait
+    return await _wait(fs, timeout, return_when, loop)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 550, in _wait
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 519, in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/timeouts.py", line 115, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-04-04 12:54:45,986 - telethon.network.mtprotosender - WARNING - Attempt 1 at connecting failed: TimeoutError: 
+2026-04-04 12:54:47,116 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 12:55:08,683 - discord.gateway - WARNING - Can't keep up, shard ID None websocket is 26.7s behind.
+2026-04-04 12:55:08,684 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 12:55:50,588 - discord.client - ERROR - Attempting a reconnect in 2.90s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/asyncio/selector_events.py", line 988, in _read_ready__get_buffer
+    nbytes = self._sock.recv_into(buf)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: [Errno 60] Operation timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 684, in _request
+    await resp.start(conn)
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 999, in start
+    message, payload = await protocol.read()  # type: ignore[union-attr]
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/streams.py", line 640, in read
+    await self._waiter
+aiohttp.client_exceptions.ClientOSError: [Errno 60] Operation timed out
+2026-04-04 12:56:00,946 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 12:56:00,947 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 12:56:09,029 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 12:56:10,949 - telethon.network.mtprotosender - WARNING - Attempt 1 at connecting failed: TimeoutError: 
+2026-04-04 12:56:21,951 - telethon.network.mtprotosender - WARNING - Attempt 2 at connecting failed: TimeoutError: 
+2026-04-04 12:56:26,080 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 12:58:00,949 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 12:58:00,950 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 12:58:03,078 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 12:59:00,266 - discord.gateway - WARNING - Can't keep up, shard ID None websocket is 11.0s behind.
+2026-04-04 12:59:00,267 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 12:59:00,950 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 12:59:00,951 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 12:59:10,953 - telethon.network.mtprotosender - WARNING - Attempt 1 at connecting failed: TimeoutError: 
+2026-04-04 12:59:12,074 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 13:00:00,951 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 13:00:00,952 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 13:00:10,954 - telethon.network.mtprotosender - WARNING - Attempt 1 at connecting failed: TimeoutError: 
+2026-04-04 13:00:21,956 - telethon.network.mtprotosender - WARNING - Attempt 2 at connecting failed: TimeoutError: 
+2026-04-04 13:00:28,240 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 91cf9675ab90aedd7c767e475daa152c).
+2026-04-04 13:00:32,958 - telethon.network.mtprotosender - WARNING - Attempt 3 at connecting failed: TimeoutError: 
+2026-04-04 13:00:35,245 - discord.state - WARNING - Shard ID 0 timed out waiting for chunks for guild_id 1488633073095413800.
+2026-04-04 13:00:35,245 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 13:00:35,252 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 13:00:43,961 - telethon.network.mtprotosender - WARNING - Attempt 4 at connecting failed: TimeoutError: 
+2026-04-04 13:00:47,100 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 13:01:00,952 - telethon.network.mtprotosender - INFO - Closing current connection to begin reconnect...
+2026-04-04 13:01:00,954 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 13:01:01,253 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 13:01:01,433 - telethon.client.updates - INFO - Got difference for channel 1765224839 updates
+2026-04-04 13:01:01,434 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): **出售 ：自用**小丰田出售
+**物品介绍 ：**
+**2021**
+**丰田CHR美版**
+**十三万七千公里，大小保养都做了**
+车况nice，买来直接开
+2026-04-04 13:01:03,454 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:03,456 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:05,478 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:05,479 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:07,491 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:07,492 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:09,504 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:09,505 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:11,514 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:11,516 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:13,533 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:13,534 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 物品介绍，出一辆电瓶车，一辆带座椅滑板车，小米九号，发票配件都在，买回来一共骑了就两三次，可以链接手机，开锁和设置，经济模式，和竞赛等三种模式设置，
+价格：九号
+2026-04-04 13:01:15,548 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:15,549 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:16,606 - discord.gateway - WARNING - Shard ID None heartbeat blocked for more than 10 seconds.
+Loop thread traceback (most recent call last):
+  File "/Users/tony/chathub/run.py", line 130, in <module>
+    main()
+  File "/Users/tony/chathub/run.py", line 120, in main
+    uvicorn.run(
+  File "/opt/anaconda3/lib/python3.12/site-packages/uvicorn/main.py", line 594, in run
+    server.run()
+  File "/opt/anaconda3/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/opt/anaconda3/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+  File "/opt/anaconda3/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 674, in run_until_complete
+    self.run_forever()
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 641, in run_forever
+    self._run_once()
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 1986, in _run_once
+    handle._run()
+  File "/opt/anaconda3/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/opt/anaconda3/lib/python3.12/site-packages/telethon/client/updates.py", line 574, in _dispatch_update
+    await callback(event)
+  File "/Users/tony/chathub/app/platforms/telegram/adapter.py", line 240, in on_new_message
+    await handler_ctx.handle_message(event)
+  File "/Users/tony/chathub/app/platforms/telegram/adapter.py", line 764, in handle_message
+    broadcast_user_message(conversation.id, self.bot_profile_id, user_msg, conversation)
+  File "/Users/tony/chathub/app/platforms/message_handler.py", line 766, in broadcast_user_message
+    future.result(timeout=2)
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 451, in result
+    self._condition.wait(timeout)
+  File "/opt/anaconda3/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+
+2026-04-04 13:01:17,562 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:17,563 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:19,577 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:19,578 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:21,590 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:21,592 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:23,601 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:23,602 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:25,612 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:25,613 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 标题： 低价转让 D-Link AX1800 5G 路由器，插卡即用，5G CPE，Wi-Fi 6 速度极快。支持全网通，无拆无修，功能完好。原装电源线，
+价格
+2026-04-04 13:01:26,612 - discord.gateway - WARNING - Shard ID None heartbeat blocked for more than 20 seconds.
+Loop thread traceback (most recent call last):
+  File "/Users/tony/chathub/run.py", line 130, in <module>
+    main()
+  File "/Users/tony/chathub/run.py", line 120, in main
+    uvicorn.run(
+  File "/opt/anaconda3/lib/python3.12/site-packages/uvicorn/main.py", line 594, in run
+    server.run()
+  File "/opt/anaconda3/lib/python3.12/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/opt/anaconda3/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+  File "/opt/anaconda3/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 674, in run_until_complete
+    self.run_forever()
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 641, in run_forever
+    self._run_once()
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 1986, in _run_once
+    handle._run()
+  File "/opt/anaconda3/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/opt/anaconda3/lib/python3.12/site-packages/telethon/client/updates.py", line 574, in _dispatch_update
+    await callback(event)
+  File "/Users/tony/chathub/app/platforms/telegram/adapter.py", line 240, in on_new_message
+    await handler_ctx.handle_message(event)
+  File "/Users/tony/chathub/app/platforms/telegram/adapter.py", line 764, in handle_message
+    broadcast_user_message(conversation.id, self.bot_profile_id, user_msg, conversation)
+  File "/Users/tony/chathub/app/platforms/message_handler.py", line 766, in broadcast_user_message
+    future.result(timeout=2)
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/_base.py", line 451, in result
+    self._condition.wait(timeout)
+  File "/opt/anaconda3/lib/python3.12/threading.py", line 359, in wait
+    gotit = waiter.acquire(True, timeout)
+
+2026-04-04 13:01:27,630 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:27,632 - app.platforms.telegram.adapter - INFO - Bot 3: Message from Ais_dubai1818 (-1001765224839): 
+2026-04-04 13:01:29,645 - app.platforms.message_handler - ERROR - WebSocket broadcast error (user msg): 
+2026-04-04 13:01:36,859 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 91cf9675ab90aedd7c767e475daa152c.
+2026-04-04 14:14:56,283 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=34475, first=False
+2026-04-04 14:15:11,902 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:15:12,175 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 401 Unauthorized"
+2026-04-04 14:15:12,176 - app.ai_workspace.manager - ERROR - Failed to generate session title: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CZiZCFkW3s9UrNWtpozGR'}
+2026-04-04 14:18:04,312 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=34751, first=False
+2026-04-04 14:18:04,312 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:18:42,460 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:22:39,161 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=35115, first=False
+2026-04-04 14:22:39,161 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:23:03,564 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:26:33,579 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=35447, first=False
+2026-04-04 14:26:33,580 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:27:16,382 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:28:46,218 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=35808, first=False
+2026-04-04 14:28:46,219 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:31:48,454 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:32:15,744 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=36232, first=False
+2026-04-04 14:32:15,745 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:33:04,029 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:38:58,622 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=36673, first=False
+2026-04-04 14:38:58,623 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:40:24,841 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:44:18,563 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=37274, first=False
+2026-04-04 14:44:18,563 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:44:54,206 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:48:51,166 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=37642, first=False
+2026-04-04 14:48:51,167 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:50:40,294 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:56:13,519 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=38172, first=False
+2026-04-04 14:56:13,519 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:56:28,595 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 14:58:43,777 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=38416, first=False
+2026-04-04 14:58:43,778 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 14:59:05,509 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:00:59,916 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=38761, first=False
+2026-04-04 15:00:59,917 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:01:06,963 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:02:54,748 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=38991, first=False
+2026-04-04 15:02:54,749 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:03:21,585 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:08:25,760 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=39336, first=False
+2026-04-04 15:08:25,761 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:08:57,304 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:10:34,257 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=39677, first=False
+2026-04-04 15:10:34,258 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:10:48,281 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:12:22,171 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=39917, first=False
+2026-04-04 15:12:22,171 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:12:41,314 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:13:23,369 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=40203, first=False
+2026-04-04 15:13:23,369 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:13:40,670 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:16:27,260 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=40518, first=False
+2026-04-04 15:16:27,260 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:16:35,822 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:19:27,789 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=40752, first=False
+2026-04-04 15:19:27,789 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:19:39,691 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:20:03,189 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=41049, first=False
+2026-04-04 15:20:03,189 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:20:10,450 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:20:17,573 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=41228, first=False
+2026-04-04 15:20:17,574 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:20:33,764 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:25:02,656 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=41584, first=False
+2026-04-04 15:25:02,656 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:25:27,092 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:29:48,639 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=41942, first=False
+2026-04-04 15:29:48,639 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:30:08,275 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:33:54,606 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=42269, first=False
+2026-04-04 15:33:54,607 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:34:04,018 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:34:31,243 - app.bots.whatsapp_bot - WARNING - Bot 2: Browser disconnected! Recovery attempt 1/3
+2026-04-04 15:34:31,243 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'reconnecting', 'message': 'Browser disconnected. Attempting recovery (1/3)...', 'browser_connected': False}
+2026-04-04 15:34:31,243 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser disconnected. Attempting recovery (1/3)...
+2026-04-04 15:34:31,243 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 15:34:35,888 - app.bots.whatsapp_bot - INFO - Bot 2: Browser recovered successfully!
+2026-04-04 15:34:35,889 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync called with: {'status': 'running', 'message': 'Browser recovered. Bot is running.', 'browser_connected': True, 'whatsapp_connected': True}
+2026-04-04 15:34:35,890 - app.bots.manager - INFO - Bot 2: Notifying 0 status callbacks: Browser recovered. Bot is running.
+2026-04-04 15:34:35,890 - app.bots.whatsapp_bot - INFO - Bot 2: notify_status_sync completed
+2026-04-04 15:35:36,752 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram task cancelled
+2026-04-04 15:35:36,753 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
+2026-04-04 15:35:36,753 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:35:36,754 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram adapter stopped
+2026-04-04 15:35:36,754 - app.bots.manager - INFO - Stopped bot instance for profile 3
+2026-04-04 15:36:06,945 - app.bots.routes - INFO - Bot 3 (telegram) needs recovery
+2026-04-04 15:36:06,945 - app.bots.manager - INFO - Recovering bot 3
+2026-04-04 15:36:06,946 - app.bots.manager - INFO - start_bot called for profile 3
+2026-04-04 15:36:06,946 - app.bots.manager - INFO - Creating task for bot 3 (platform: telegram)
+2026-04-04 15:36:06,946 - app.bots.manager - INFO - Started bot instance for profile 3
+2026-04-04 15:36:06,947 - app.platforms.telegram.adapter - INFO - Bot 3: Loading existing Telegram session
+2026-04-04 15:36:06,948 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 15:36:07,071 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:36:07,799 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram session saved
+2026-04-04 15:36:07,981 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram connected as Tony (+971524906816)
+2026-04-04 15:36:07,985 - app.bots.manager - INFO - Bot 3: Notifying 0 status callbacks: Telegram connected: Tony
+2026-04-04 15:36:07,986 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram listening for messages
+2026-04-04 15:36:14,791 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram task cancelled
+2026-04-04 15:36:14,791 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
+2026-04-04 15:36:14,803 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:36:14,804 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram adapter stopped
+2026-04-04 15:36:14,804 - app.bots.manager - INFO - Stopped bot instance for profile 3
+2026-04-04 15:37:12,983 - app.tools - INFO - Unregistered custom tool: response-time-tracker
+2026-04-04 15:37:13,976 - app.tools - INFO - Unregistered custom tool: dashboard-message-trends
+2026-04-04 15:37:15,226 - app.tools - INFO - Unregistered custom tool: contact-insights
+2026-04-04 15:37:16,853 - app.bots.routes - INFO - Bot 3 (telegram) needs recovery
+2026-04-04 15:37:16,853 - app.bots.manager - INFO - Recovering bot 3
+2026-04-04 15:37:16,853 - app.bots.manager - INFO - start_bot called for profile 3
+2026-04-04 15:37:16,853 - app.bots.manager - INFO - Creating task for bot 3 (platform: telegram)
+2026-04-04 15:37:16,853 - app.bots.manager - INFO - Started bot instance for profile 3
+2026-04-04 15:37:16,855 - app.platforms.telegram.adapter - INFO - Bot 3: Loading existing Telegram session
+2026-04-04 15:37:16,855 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 15:37:16,990 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:37:17,843 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram session saved
+2026-04-04 15:37:18,021 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram connected as Tony (+971524906816)
+2026-04-04 15:37:18,025 - app.bots.manager - INFO - Bot 3: Notifying 0 status callbacks: Telegram connected: Tony
+2026-04-04 15:37:18,026 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram listening for messages
+2026-04-04 15:37:24,007 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram task cancelled
+2026-04-04 15:37:24,007 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
+2026-04-04 15:37:24,008 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:37:24,008 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram adapter stopped
+2026-04-04 15:37:24,008 - app.bots.manager - INFO - Stopped bot instance for profile 3
+2026-04-04 15:37:37,438 - app.conversations.routes - INFO - WebSocket connected for bot 17 chat list
+2026-04-04 15:37:37,453 - app.conversations.routes - INFO - WebSocket connected for bot 16 chat list
+2026-04-04 15:37:37,467 - app.conversations.routes - INFO - WebSocket connected for bot 15 chat list
+2026-04-04 15:37:37,486 - app.conversations.routes - INFO - WebSocket connected for bot 13 chat list
+2026-04-04 15:37:37,500 - app.conversations.routes - INFO - WebSocket connected for bot 12 chat list
+2026-04-04 15:37:37,512 - app.conversations.routes - INFO - WebSocket connected for bot 11 chat list
+2026-04-04 15:37:37,526 - app.conversations.routes - INFO - WebSocket connected for bot 5 chat list
+2026-04-04 15:37:37,539 - app.conversations.routes - INFO - WebSocket connected for bot 4 chat list
+2026-04-04 15:37:37,553 - app.conversations.routes - INFO - WebSocket connected for bot 3 chat list
+2026-04-04 15:37:37,565 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-04-04 15:37:37,582 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-04-04 15:37:45,014 - app.conversations.routes - INFO - WebSocket disconnected for bot 17 chat list
+2026-04-04 15:37:45,015 - app.conversations.routes - INFO - WebSocket disconnected for bot 16 chat list
+2026-04-04 15:37:45,016 - app.conversations.routes - INFO - WebSocket disconnected for bot 15 chat list
+2026-04-04 15:37:45,016 - app.conversations.routes - INFO - WebSocket disconnected for bot 13 chat list
+2026-04-04 15:37:45,016 - app.conversations.routes - INFO - WebSocket disconnected for bot 12 chat list
+2026-04-04 15:37:45,017 - app.conversations.routes - INFO - WebSocket disconnected for bot 11 chat list
+2026-04-04 15:37:45,017 - app.conversations.routes - INFO - WebSocket disconnected for bot 5 chat list
+2026-04-04 15:37:45,018 - app.conversations.routes - INFO - WebSocket disconnected for bot 4 chat list
+2026-04-04 15:37:45,018 - app.conversations.routes - INFO - WebSocket disconnected for bot 3 chat list
+2026-04-04 15:37:45,019 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-04-04 15:37:45,019 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-04-04 15:37:45,027 - app.bots.routes - INFO - Bot 3 (telegram) needs recovery
+2026-04-04 15:37:45,028 - app.bots.manager - INFO - Recovering bot 3
+2026-04-04 15:37:45,028 - app.bots.manager - INFO - start_bot called for profile 3
+2026-04-04 15:37:45,028 - app.bots.manager - INFO - Creating task for bot 3 (platform: telegram)
+2026-04-04 15:37:45,028 - app.bots.manager - INFO - Started bot instance for profile 3
+2026-04-04 15:37:45,029 - app.platforms.telegram.adapter - INFO - Bot 3: Loading existing Telegram session
+2026-04-04 15:37:45,029 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-04-04 15:37:45,168 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:37:45,964 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram session saved
+2026-04-04 15:37:46,094 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram connected as Tony (+971524906816)
+2026-04-04 15:37:46,100 - app.bots.manager - INFO - Bot 3: Notifying 0 status callbacks: Telegram connected: Tony
+2026-04-04 15:37:46,100 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram listening for messages
+2026-04-04 15:38:10,255 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram task cancelled
+2026-04-04 15:38:10,256 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
+2026-04-04 15:38:10,256 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
+2026-04-04 15:38:10,256 - app.platforms.telegram.adapter - INFO - Bot 3: Telegram adapter stopped
+2026-04-04 15:38:10,257 - app.bots.manager - INFO - Stopped bot instance for profile 3
+2026-04-04 15:38:21,581 - app.bots.routes - INFO - Cleared 53 conversations and 2464 messages for bot 3
+2026-04-04 15:38:21,643 - app.bots.routes - INFO - Cleared session directory for bot 3: /Users/tony/chathub/data/sessions/bot_3
+2026-04-04 15:38:31,191 - app.conversations.routes - INFO - WebSocket connected for bot 17 chat list
+2026-04-04 15:38:31,204 - app.conversations.routes - INFO - WebSocket connected for bot 16 chat list
+2026-04-04 15:38:31,219 - app.conversations.routes - INFO - WebSocket connected for bot 15 chat list
+2026-04-04 15:38:31,233 - app.conversations.routes - INFO - WebSocket connected for bot 13 chat list
+2026-04-04 15:38:31,246 - app.conversations.routes - INFO - WebSocket connected for bot 12 chat list
+2026-04-04 15:38:31,259 - app.conversations.routes - INFO - WebSocket connected for bot 5 chat list
+2026-04-04 15:38:31,274 - app.conversations.routes - INFO - WebSocket connected for bot 11 chat list
+2026-04-04 15:38:31,286 - app.conversations.routes - INFO - WebSocket connected for bot 4 chat list
+2026-04-04 15:38:31,302 - app.conversations.routes - INFO - WebSocket connected for bot 3 chat list
+2026-04-04 15:38:31,316 - app.conversations.routes - INFO - WebSocket connected for bot 1 chat list
+2026-04-04 15:38:31,330 - app.conversations.routes - INFO - WebSocket connected for bot 2 chat list
+2026-04-04 15:38:32,656 - app.conversations.routes - INFO - WebSocket disconnected for bot 17 chat list
+2026-04-04 15:38:32,657 - app.conversations.routes - INFO - WebSocket disconnected for bot 16 chat list
+2026-04-04 15:38:32,657 - app.conversations.routes - INFO - WebSocket disconnected for bot 15 chat list
+2026-04-04 15:38:32,659 - app.conversations.routes - INFO - WebSocket disconnected for bot 13 chat list
+2026-04-04 15:38:32,659 - app.conversations.routes - INFO - WebSocket disconnected for bot 12 chat list
+2026-04-04 15:38:32,660 - app.conversations.routes - INFO - WebSocket disconnected for bot 11 chat list
+2026-04-04 15:38:32,660 - app.conversations.routes - INFO - WebSocket disconnected for bot 5 chat list
+2026-04-04 15:38:32,660 - app.conversations.routes - INFO - WebSocket disconnected for bot 4 chat list
+2026-04-04 15:38:32,660 - app.conversations.routes - INFO - WebSocket disconnected for bot 3 chat list
+2026-04-04 15:38:32,661 - app.conversations.routes - INFO - WebSocket disconnected for bot 2 chat list
+2026-04-04 15:38:32,661 - app.conversations.routes - INFO - WebSocket disconnected for bot 1 chat list
+2026-04-04 15:43:09,261 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=42710, first=False
+2026-04-04 15:43:09,262 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:43:21,118 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:44:40,065 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=42956, first=False
+2026-04-04 15:44:40,066 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:47:41,664 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:49:29,233 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=43571, first=False
+2026-04-04 15:49:29,234 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:50:43,208 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:53:40,461 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=44044, first=False
+2026-04-04 15:53:40,461 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:54:02,451 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:55:25,242 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=44319, first=False
+2026-04-04 15:55:25,243 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:55:42,742 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:56:41,307 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=44560, first=False
+2026-04-04 15:56:41,307 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:56:52,892 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 15:58:31,447 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=44799, first=False
+2026-04-04 15:58:31,447 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 15:58:53,504 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:00:57,130 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=45134, first=False
+2026-04-04 16:00:57,130 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:01:08,300 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:06:43,916 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=45400, first=False
+2026-04-04 16:06:43,917 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:06:55,160 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:09:59,394 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=45645, first=False
+2026-04-04 16:09:59,394 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:10:20,466 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:12:11,316 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=45944, first=False
+2026-04-04 16:12:11,316 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:13:11,173 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:30:52,362 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=46599, first=False
+2026-04-04 16:30:52,362 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:31:28,898 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:35:45,166 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=47038, first=False
+2026-04-04 16:35:45,167 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:37:06,797 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:42:50,398 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=47707, first=False
+2026-04-04 16:42:50,398 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 16:45:30,005 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 16:58:56,843 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 91cf9675ab90aedd7c767e475daa152c.
+2026-04-04 17:04:18,211 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=48263, first=False
+2026-04-04 17:04:18,211 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 17:04:42,980 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 17:09:09,469 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=48635, first=False
+2026-04-04 17:09:09,469 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 17:10:32,628 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 17:17:06,655 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=49063, first=False
+2026-04-04 17:17:06,655 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 17:17:56,637 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 17:24:51,498 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=49481, first=False
+2026-04-04 17:24:51,499 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 17:25:43,989 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 17:31:30,580 - app.auth.routes - INFO - User logged in: test@test.com (id=1)
+2026-04-04 17:32:17,094 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=49939, first=False
+2026-04-04 17:32:17,094 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 17:32:51,967 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 17:35:42,321 - app.ai_workspace.manager - INFO - Turn started for session 157, PID=50282, first=False
+2026-04-04 17:35:42,322 - app.ai_workspace.manager - INFO - Sent follow-up to session 157
+2026-04-04 17:35:51,878 - app.ai_workspace.manager - INFO - Turn completed for session 157, waiting for follow-up
+2026-04-04 18:22:48,548 - discord.client - ERROR - Attempting a reconnect in 1.33s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 18:22:49,893 - discord.client - ERROR - Attempting a reconnect in 0.11s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 18:22:50,007 - discord.client - ERROR - Attempting a reconnect in 6.53s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 18:40:09,319 - discord.client - ERROR - Attempting a reconnect in 9.09s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 19:14:21,999 - discord.client - ERROR - Attempting a reconnect in 3.66s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 19:30:53,452 - discord.client - ERROR - Attempting a reconnect in 12.90s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 20:03:55,974 - discord.client - ERROR - Attempting a reconnect in 68.70s
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1301, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 911, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 948, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/resolver.py", line 37, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 901, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/socket.py", line 976, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 8] nodename nor servname provided, or not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/client.py", line 728, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/gateway.py", line 392, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/discord/http.py", line 571, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 931, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/client.py", line 657, in _request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 564, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 975, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/aiohttp/connector.py", line 1307, in _create_direct_connection
+    raise ClientConnectorError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [nodename nor servname provided, or not known]
+2026-04-04 20:44:15,180 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 20:44:22,487 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5b22b7d85e1c9462b8363b8535e384a7).
+2026-04-04 20:44:24,695 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 20:44:24,701 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 20:50:01,495 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 5b22b7d85e1c9462b8363b8535e384a7.
+2026-04-04 22:04:05,490 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 22:04:42,354 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: e37a45da4db622f9274534548cf63531).
+2026-04-04 22:21:24,449 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 22:21:24,456 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 22:42:00,339 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 22:42:31,222 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: b7673d1b7f1b49b749aaccd673234495).
+2026-04-04 22:42:33,384 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 22:42:33,391 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 22:48:45,343 - discord.gateway - INFO - Shard ID None session has been invalidated.
+2026-04-04 22:48:51,655 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c5c40f861b1a153071b196b734b823e5).
+2026-04-04 22:48:53,659 - app.platforms.discord.adapter - INFO - Bot 5: Discord connected as bot1488628627158339705#0052
+2026-04-04 22:48:53,667 - app.bots.manager - INFO - Bot 5: Notifying 0 status callbacks: Connected as bot1488628627158339705#0052
+2026-04-04 23:18:12,995 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c5c40f861b1a153071b196b734b823e5.
+2026-04-04 23:27:58,162 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c5c40f861b1a153071b196b734b823e5.

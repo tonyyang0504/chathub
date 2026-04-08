@@ -2278,16 +2278,17 @@ async def tool_builder_page(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/reload-custom-tools")
 async def reload_custom_tools(request: Request, db: Session = Depends(get_db)):
-    """Hot-reload newly created custom tools without restarting the server."""
+    """Force-reload all custom tools — clears cached modules and re-registers routes."""
     user = await get_current_user_optional(request, None, db)
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
-    from . import register_custom_tools, _registered_tools
-    before = len(_registered_tools)
+    from . import register_custom_tools, _registered_tools, unregister_custom_tool
+    # Unregister all existing custom tools so they get re-registered with fresh code
+    for name in list(_registered_tools):
+        unregister_custom_tool(router, name)
+    # Re-register all tools (fresh module imports since sys.modules was cleaned)
     register_custom_tools(router)
-    after = len(_registered_tools)
-    new_count = after - before
-    return {"status": "ok", "new_tools_registered": new_count}
+    return {"status": "ok", "tools_registered": len(_registered_tools)}
 
 
 @router.get("/ai-coder", response_class=HTMLResponse)
@@ -2317,18 +2318,18 @@ async def marketplace_page(request: Request, db: Session = Depends(get_db)):
 
 
 # ============================================================================
-# Custom Tool Detail Page (catch-all — MUST be last route)
+# Custom Tool Admin Detail Page
 # ============================================================================
 
-@router.get("/{tool_name}", response_class=HTMLResponse)
-async def custom_tool_detail(request: Request, tool_name: str, db: Session = Depends(get_db)):
-    """Detail page for a custom-built tool."""
-    from fastapi.responses import RedirectResponse
+@router.get("/{tool_name}/detail", response_class=HTMLResponse)
+async def custom_tool_admin_detail(request: Request, tool_name: str, db: Session = Depends(get_db)):
+    """Admin detail page for a custom-built tool (Tool Information, Actions, Modified Files)."""
     from app.database import BuiltTool
     import json as _json
 
     user = await get_current_user_optional(request, None, db)
     if not user:
+        from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/auth/login", status_code=302)
 
     tool = db.query(BuiltTool).filter(
@@ -2336,23 +2337,9 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
         BuiltTool.user_id == user.id,
         BuiltTool.is_deleted == False
     ).first()
-
     if not tool:
-        # Preview tool (filesystem-only, no DB record yet) — call its handler directly
-        # to avoid redirect loop (catch-all /{tool_name} vs tool's own route)
-        from app.tools import CUSTOM_TOOLS_DIR, _registered_tools, register_custom_tools_on_app
-        tool_dir = CUSTOM_TOOLS_DIR / tool_name
-        if tool_name not in _registered_tools and (tool_dir / "routes.py").exists():
-            register_custom_tools_on_app(request.app)
-        if tool_name in _registered_tools:
-            mod = sys.modules.get(f"app.tools.custom.{tool_name}.routes")
-            if mod and hasattr(mod, "router"):
-                for route in mod.router.routes:
-                    if hasattr(route, "path") and route.path in ("", "/") and "GET" in getattr(route, "methods", set()):
-                        return await route.endpoint(request=request, db=db)
         raise HTTPException(status_code=404, detail="Tool not found")
 
-    # Parse files list
     files_list = []
     if tool.files:
         try:
@@ -2360,7 +2347,6 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
         except Exception:
             pass
 
-    # Resolve gradient from tool's actual template (matches index page logic)
     import re as _re
     from app.tools import CUSTOM_TOOLS_DIR
     _grad_re = _re.compile(r'linear-gradient\(135deg,\s*(#[0-9a-fA-F]{6})\s+0%,\s*(#[0-9a-fA-F]{6})\s+100%\)')
@@ -2390,3 +2376,41 @@ async def custom_tool_detail(request: Request, tool_name: str, db: Session = Dep
             "gradient_end": g_end,
         },
     )
+
+
+# ============================================================================
+# Custom Tool Working Page (catch-all — MUST be last route)
+# ============================================================================
+
+@router.get("/{tool_name}", response_class=HTMLResponse)
+async def custom_tool_page(request: Request, tool_name: str, db: Session = Depends(get_db)):
+    """Working page for a custom-built tool."""
+    from fastapi.responses import RedirectResponse
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    # For both published and preview tools, call the tool's own page handler
+    from app.tools import CUSTOM_TOOLS_DIR, _registered_tools, register_custom_tools_on_app
+    tool_dir = CUSTOM_TOOLS_DIR / tool_name
+    if tool_name not in _registered_tools and (tool_dir / "routes.py").exists():
+        register_custom_tools_on_app(request.app)
+    if tool_name in _registered_tools:
+        mod = sys.modules.get(f"app.tools.custom.{tool_name}.routes")
+        if mod and hasattr(mod, "router"):
+            for route in mod.router.routes:
+                if hasattr(route, "path") and route.path in ("", "/") and "GET" in getattr(route, "methods", set()):
+                    return await route.endpoint(request=request, db=db)
+
+    # Fallback: redirect to admin detail page if tool has no working routes
+    from app.database import BuiltTool
+    tool = db.query(BuiltTool).filter(
+        BuiltTool.name == tool_name,
+        BuiltTool.user_id == user.id,
+        BuiltTool.is_deleted == False
+    ).first()
+    if tool:
+        return RedirectResponse(url=f"/tools/{tool_name}/detail", status_code=302)
+
+    raise HTTPException(status_code=404, detail="Tool not found")

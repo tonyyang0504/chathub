@@ -14,6 +14,7 @@ from app.ai.providers.google_provider import GoogleProvider
 from app.ai.providers.deepseek_provider import DeepSeekProvider
 from app.ai.providers.qwen_provider import QwenProvider
 from app.ai.providers.grok_provider import GrokProvider
+from app.ai.providers.ollama_provider import OllamaProvider
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ PROVIDERS: Dict[str, Type[AIProvider]] = {
     "dashscope": QwenProvider,  # Alias
     "grok": GrokProvider,
     "xai": GrokProvider,  # Alias
+    "ollama": OllamaProvider,
 }
 
 # Default models for each provider
@@ -47,6 +49,7 @@ DEFAULT_MODELS: Dict[str, str] = {
     "dashscope": "qwen-turbo",
     "grok": "grok-4",
     "xai": "grok-4",
+    "ollama": "llama3.2",
 }
 
 

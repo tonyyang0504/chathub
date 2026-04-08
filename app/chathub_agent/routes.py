@@ -98,7 +98,7 @@ async def get_settings(request: Request, db: Session = Depends(get_db)):
             api_key_masked = "****"
 
     return {
-        "api_key_set": bool(settings.api_key_encrypted),
+        "api_key_set": bool(settings.api_key_encrypted) or (settings.ai_provider == "ollama"),
         "api_key_masked": api_key_masked,
         "ai_provider": settings.ai_provider or "openai",
         "default_model": settings.default_model or "gpt-4o",
@@ -333,10 +333,12 @@ async def create_session(request: Request, db: Session = Depends(get_db)):
         ChatHubAgentSettings.user_id == user.id
     ).first()
 
-    if not settings or not settings.api_key_encrypted:
-        raise HTTPException(status_code=400, detail="Please configure your API key in Settings")
-
-    api_key = decrypt_string(settings.api_key_encrypted)
+    if settings and settings.ai_provider == "ollama":
+        api_key = "ollama"
+    else:
+        if not settings or not settings.api_key_encrypted:
+            raise HTTPException(status_code=400, detail="Please configure your API key in Settings")
+        api_key = decrypt_string(settings.api_key_encrypted)
 
     # Build agent config from settings defaults
     approval_mode = settings.approval_mode or "auto_approve_all"

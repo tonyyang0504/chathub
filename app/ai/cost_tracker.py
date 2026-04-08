@@ -111,15 +111,15 @@ MODEL_PRICING = {
     "qwen-turbo": (0.30, 0.60),
     "qwen-plus": (0.80, 2.00),
     "qwen-max": (2.40, 9.60),
-    # xAI Grok
-    "grok-4": (3.00, 15.00),
-    "grok-4-1-fast-reasoning": (0.20, 0.50),
-    "grok-4-1-fast-non-reasoning": (0.20, 0.50),
-    "grok-code-fast-1": (0.20, 0.50),
-    "grok-3": (3.00, 15.00),
-    "grok-3-fast": (0.60, 3.00),
-    "grok-2": (2.00, 10.00),
-    "grok-2-mini": (0.30, 0.50),
+    # Grok
+    "grok-4": (5.00, 15.00),
+    "grok-3": (5.00, 15.00),
+    "grok": (3.00, 15.00),
+
+    # Ollama (Local)
+    "llama3.2": (0.00, 0.00),
+    "qwen2.5:0.5b": (0.00, 0.00),
+    "ollama": (0.00, 0.00),
 }
 
 # Fallback pricing per provider (conservative estimates)

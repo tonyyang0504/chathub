@@ -521,7 +521,27 @@ All three AI tools share the same 3-panel layout and must stay visually aligned.
 
 **Google AI Provider**: Uses `google-genai` SDK (not deprecated `google-generativeai`). Default model: `gemini-2.0-flash`.
 
-**Tool Event Bus** (`app/tools/event_bus.py`): Pub/sub system connecting system events to custom tool hook functions. Core code emits events via `tool_event_bus.emit("event.name", db=db, ...)` (one line). Custom tools subscribe via TOOL.md `events` field. ~55 emit points across message flow, bot lifecycle, hubs, contacts, agents, content, scripts, follow-ups, topics. Sync callers use `emit_event_sync()` helper from `message_handler.py`. Tool scheduled tasks use `app/tools/tool_scheduler.py` with APScheduler cron. All hook errors are caught and logged — never break core flow.
+**Tool Event Bus** (`app/tools/event_bus.py`): Pub/sub system connecting system events to custom tool hook functions. Core code emits events via `tool_event_bus.emit("event.name", db=db, ...)` (one line). Custom tools subscribe via TOOL.md `events` field. ~55 emit points across message flow, bot lifecycle, hubs, contacts, agents, content, scripts, follow-ups, topics. Sync callers use `emit_event_sync()` helper from `message_handler.py`. Tool scheduled tasks use `app/tools/tool_scheduler.py` with APScheduler cron. All hook errors are caught and logged — never break core flow. Event bus imports are conditional (`try/except ImportError`) in `__init__.py` to avoid breaking sandbox containers.
+
+**Tool Builder Sandbox** (`app/tools/sandbox_manager.py`):
+- Docker container mounts the git worktree as `/app` + DB snapshot at `/app/data` + auth overlay files (read-only)
+- `SANDBOX_MODE=true` env var enables auth bypass (no JWT needed in container)
+- `DEBUG=false` in container to prevent infinite uvicorn reload loops from host volume changes
+- Auth overlays: `app/config.py`, `app/auth/routes.py`, `app/auth/utils.py`, `app/tools/routes.py`, `app/tools/__init__.py`
+- `start_preview()` checks container liveness via `docker inspect` before returning cached URL — relaunches if container is dead
+- `_cleanup_stale_docker()` skips containers belonging to active sessions
+- On health check failure, `_launch_container()` resets `info.preview_url` and cleans up the failed container
+- `/tools/api/reload-custom-tools` force-reloads ALL custom tools (unregister + re-register) so the sandbox picks up the agent's latest file changes
+- `resume_session()` reuses the original worktree (found by matching `worktree_branch` from DB) instead of creating a fresh one, preserving the agent's file changes across server restarts
+- `requirements.txt` pins `fastapi>=0.104.0,<0.130.0` to prevent Starlette 1.0 breaking `TemplateResponse` in the Docker image
+
+**Tool Builder System Context**: `TOOL_BUILDER_SYSTEM_CONTEXT` in `builder_manager.py` and `AI_CODER_SYSTEM_CONTEXT` in `coder_manager.py` include full DB model column schemas and event hook kwargs. This is passed to all CLI providers via their respective mechanisms (Claude: `--append-system-prompt`, Codex: `AGENTS.md`, Gemini: `GEMINI.md`, ChatHub: agent system prompt).
+
+**Custom Tool Page Routing**: `/tools/{tool_name}` catch-all calls the tool's own page handler for both published and preview tools (not the admin detail page). The admin detail page is at `/tools/{tool_name}/detail`. If no handler found, falls back to admin detail page for published tools or 404.
+
+**Custom Tool Card Controls on Index Page**: Published tools (DB record) show toggle switch + trash icon. Preview tools ("Ready to Test", no DB record) show no controls — they're filesystem-only until published. Preview tool metadata is hardcoded (`icon="bi-eye"`, gray gradient) unless TOOL.md is parsed.
+
+**Tool Builder Right Panel Buttons**: Preview/Publish/Discard buttons appear when `changed_files.length > 0` or `preview_url` exists (via `refreshStatus()`). For historical sessions after page refresh, `viewSession()` auto-resumes the session and shows buttons. The `ensureSession()` helper auto-resumes before Preview/Publish/Discard actions if `sessionId` is null.
 
 ## Multi-Platform Architecture
 

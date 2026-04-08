@@ -98,24 +98,22 @@ Description of what the tool does, its features, and how it works.
 
 The `widgets` field is optional. If your tool provides a widget for the dashboard (or other pages), declare it here. The endpoint is relative to your tool's route prefix (`/tools/{tool-name}/`).
 
-The `events` field is optional. It lets your tool react to system events automatically. Available events:
-- **Message flow**: `message.received`, `message.sent`, `conversation.created`, `conversation.deleted`, `conversation.cleared`, `conversation.ai_resumed`, `conversation.human_takeover`
+The `events` field is optional. It lets your tool react to system events automatically. Available events (see CLAUDE.md for full kwargs documentation):
+- **Message flow**: `message.received`, `message.sent`, `conversation.created`, `conversation.deleted`, `conversation.cleared`, `conversation.ai_resumed`
 - **Bot lifecycle**: `bot.created`, `bot.updated`, `bot.deleted`, `bot.started`, `bot.stopped`
-- **Hub**: `hub.created`, `hub.updated`, `hub.deleted`, `hub.toggled`, `hub.bot_added`, `hub.bot_removed`, `hub.message_routed`
+- **Hub**: `hub.created`, `hub.updated`, `hub.deleted`, `hub.toggled`, `hub.bot_added`, `hub.bot_removed`
 - **Contacts**: `contact.created`, `contact.updated`, `contact.deleted`, `contact.analyzed`, `contact.tag_added`, `contact.tag_removed`
 - **Agents**: `agent.created`, `agent.updated`, `agent.deleted`, `agent.tested`
-- **Content**: `content.created`, `content.updated`, `content.sent`, `content.cancelled`, `content.generated`
-- **Scripts**: `script.created`, `script.executed`, `script.completed`, `script.failed`, `script.cancelled`
-- **Follow-ups**: `followup.sent`
+- **Content**: `content.created`, `content.updated`, `content.cancelled`, `content.generated`
+- **Scripts**: `script.created`, `script.executed`, `script.cancelled`
 - **Topics**: `topic.created`, `topic.updated`, `topic.deleted`
-- **Scheduled**: Use `scheduled: "cron_expression"` + `scheduled_handler: function_name` for periodic tasks
+- **Scheduled**: Use `scheduled: "cron_expression"` + `scheduled_handler: function_name`
 
-Event handler functions go in `routes.py`:
+Handler example:
 ```python
 async def on_message_handler(db, **kwargs):
     conversation_id = kwargs.get("conversation_id")
-    message = kwargs.get("message")
-    # React to incoming message
+    message = kwargs.get("message")  # Message ORM object
 ```
 
 ## Plugin Structure (CRITICAL — follow exactly)
@@ -1196,10 +1194,20 @@ class ToolBuilderManager:
         if not tool_name and metadata:
             tool_name = (metadata.get("name") or "").strip()
 
-        # Validate: all changed files must be within the tool's plugin directory
-        if tool_name:
-            changed_files_check = sandbox_manager.get_changed_files(session.session_id)
-            blocked = [f for f in changed_files_check
+        # Validate: all COMMITTED files must be within the tool's plugin directory
+        # (only check committed changes, not uncommitted/untracked which may include host files)
+        if tool_name and session.sandbox_info and session.sandbox_info.worktree_path:
+            wt = str(session.sandbox_info.worktree_path)
+            from app.tools.worktree_manager import worktree_manager
+            wt_info = worktree_manager._find_by_session(session.session_id)
+            base = (wt_info.base_commit if wt_info else None) or "HEAD~1"
+            import subprocess as _sp
+            committed_result = _sp.run(
+                ["git", "diff", "--name-only", f"{base}..HEAD"],
+                capture_output=True, text=True, cwd=wt
+            )
+            committed_files = [f for f in committed_result.stdout.strip().split("\n") if f] if committed_result.returncode == 0 else []
+            blocked = [f for f in committed_files
                        if not f.startswith(f"app/tools/custom/{tool_name}/") and not f.upper().endswith("TOOL.MD")]
             if blocked:
                 return {"error": f"Publish rejected: tool modified core files: {', '.join(blocked[:5])}. "
@@ -1438,9 +1446,69 @@ class ToolBuilderManager:
         finally:
             db.close()
 
-        # Create a new in-memory session object backed by the existing DB record
+        # Try to reuse the old worktree (preserves agent's file changes)
         session_id = str(uuid.uuid4())
-        sandbox_info = sandbox_manager.create(session_id, user_id)
+        old_branch = db_sess.worktree_branch if db_sess else None
+        reused_worktree = False
+        if old_branch:
+            from app.tools.worktree_manager import WorktreeInfo, WORKTREES_DIR
+            # Find existing worktree with this branch
+            import subprocess as _sp
+            result = _sp.run(
+                ["git", "worktree", "list", "--porcelain"],
+                capture_output=True, text=True,
+                cwd=str(Path(__file__).resolve().parent.parent.parent)
+            )
+            for block in result.stdout.split("\n\n"):
+                lines = block.strip().split("\n")
+                wt_path = None
+                wt_branch = None
+                for line in lines:
+                    if line.startswith("worktree "):
+                        wt_path = line.split(" ", 1)[1]
+                    if line.startswith("branch refs/heads/"):
+                        wt_branch = line.replace("branch refs/heads/", "")
+                if wt_branch == old_branch and wt_path and Path(wt_path).exists():
+                    wt_pathobj = Path(wt_path)
+                    # Reuse existing worktree
+                    from app.tools.sandbox_manager import SandboxInfo
+                    sandbox_info = SandboxInfo(
+                        session_id=session_id, user_id=user_id,
+                        branch=old_branch, worktree_path=wt_pathobj
+                    )
+                    sandbox_manager._active[user_id] = sandbox_info
+
+                    # Also register with worktree_manager so get_changed_files works
+                    from app.tools.worktree_manager import worktree_manager, WorktreeInfo
+                    # Find base commit (parent of first tool-builder commit)
+                    base_result = _sp.run(
+                        ["git", "log", "--oneline", "--format=%H", "--reverse"],
+                        capture_output=True, text=True, cwd=wt_path
+                    )
+                    all_commits = [c for c in base_result.stdout.strip().split("\n") if c]
+                    # Base is the commit the worktree branched from (first commit's parent)
+                    base_commit = ""
+                    if all_commits:
+                        parent_result = _sp.run(
+                            ["git", "rev-parse", f"{all_commits[0]}^"],
+                            capture_output=True, text=True, cwd=wt_path
+                        )
+                        if parent_result.returncode == 0:
+                            base_commit = parent_result.stdout.strip()
+
+                    wt_info = WorktreeInfo(
+                        session_id=session_id, user_id=user_id,
+                        path=wt_pathobj, branch=old_branch,
+                        base_commit=base_commit
+                    )
+                    worktree_manager._active[user_id] = wt_info
+
+                    reused_worktree = True
+                    logger.info(f"Reusing existing worktree at {wt_path} for resumed session")
+                    break
+
+        if not reused_worktree:
+            sandbox_info = sandbox_manager.create(session_id, user_id)
 
         session = ToolBuilderSession(
             session_id=session_id,

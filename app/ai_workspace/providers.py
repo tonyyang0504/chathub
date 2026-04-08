@@ -119,6 +119,12 @@ class CodexProvider(CLIProvider):
             os.rename(path, path + ".chathub_bak")
         with open(path, "w") as f:
             f.write(system_context)
+            # Append CLAUDE.md so Codex always has the latest project documentation
+            claude_md = os.path.join(cwd, "CLAUDE.md")
+            if os.path.exists(claude_md):
+                with open(claude_md, "r") as cm:
+                    f.write("\n\n---\n\n")
+                    f.write(cm.read())
             if existing:
                 f.write("\n\n---\n\n")
                 f.write(existing)
@@ -234,6 +240,12 @@ class GeminiProvider(CLIProvider):
             os.rename(path, path + ".chathub_bak")
         with open(path, "w") as f:
             f.write(system_context)
+            # Append CLAUDE.md so Gemini always has the latest project documentation
+            claude_md = os.path.join(cwd, "CLAUDE.md")
+            if os.path.exists(claude_md):
+                with open(claude_md, "r") as cm:
+                    f.write("\n\n---\n\n")
+                    f.write(cm.read())
             if existing:
                 f.write("\n\n---\n\n")
                 f.write(existing)

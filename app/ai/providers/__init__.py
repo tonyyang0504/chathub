@@ -11,6 +11,7 @@ from app.ai.providers.google_provider import GoogleProvider
 from app.ai.providers.deepseek_provider import DeepSeekProvider
 from app.ai.providers.qwen_provider import QwenProvider
 from app.ai.providers.grok_provider import GrokProvider
+from app.ai.providers.ollama_provider import OllamaProvider
 
 
 def get_ai_provider(provider_name: str, api_key: str, model: str = None) -> AIProvider:
@@ -32,6 +33,7 @@ def get_ai_provider(provider_name: str, api_key: str, model: str = None) -> AIPr
         'deepseek': DeepSeekProvider,
         'qwen': QwenProvider,
         'grok': GrokProvider,
+        'ollama': OllamaProvider,
     }
 
     provider_class = providers.get(provider_name.lower())
@@ -51,5 +53,6 @@ __all__ = [
     'DeepSeekProvider',
     'QwenProvider',
     'GrokProvider',
+    'OllamaProvider',
     'get_ai_provider',
 ]
