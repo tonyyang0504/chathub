@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+
+{% block title %}Conversation Quality Scorer - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.quality-hero {
+    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.quality-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.quality-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.quality-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* Grade badge */
+.grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+}
+.grade-badge-sm {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.grade-A { background: linear-gradient(135deg, #10b981, #059669); }
+.grade-B { background: linear-gradient(135deg, #22d3ee, #06b6d4); }
+.grade-C { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.grade-D { background: linear-gradient(135deg, #f97316, #ea580c); }
+.grade-F { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
+/* Grade distribution bar */
+.grade-bar {
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    overflow: hidden;
+    background: var(--hover-bg);
+}
+.grade-bar > div { transition: width 0.4s ease; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; }
+
+/* Conversation item */
+.conv-item {
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: background 0.15s, border-color 0.15s;
+    cursor: pointer;
+}
+.conv-item:hover {
+    background: var(--hover-bg);
+    border-color: #0ea5e9;
+}
+.conv-item.expanded {
+    border-color: #0ea5e9;
+    background: var(--hover-bg);
+}
+
+/* Score bar */
+.score-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hover-bg);
+    flex-grow: 1;
+}
+.score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+.score-bar-fill.fill-rt { background: linear-gradient(90deg, #0ea5e9, #06b6d4); }
+.score-bar-fill.fill-bal { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.score-bar-fill.fill-dep { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.score-bar-fill.fill-eng { background: linear-gradient(90deg, #10b981, #34d399); }
+
+/* Expand panel */
+.conv-expand {
+    display: none;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+.conv-item.expanded .conv-expand { display: block; }
+
+/* AI Analysis */
+.ai-analysis-box {
+    background: var(--hover-bg);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+/* Scrollable */
+.quality-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.quality-scroll::-webkit-scrollbar { width: 6px; }
+.quality-scroll::-webkit-scrollbar-track { background: transparent; }
+.quality-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.quality-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+.quality-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+#hubFilter:focus {
+    border-color: #0ea5e9;
+    box-shadow: none;
+}
+
+/* Donut */
+.donut-container { position: relative; width: 160px; height: 160px; margin: 0 auto; }
+.donut-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center;
+}
+.donut-center .value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
+.donut-center .label { font-size: 0.75rem; color: var(--text-muted); }
+
+.loading-spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border-color);
+    border-top-color: #0ea5e9;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Contact avatar */
+.contact-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 0.85rem; color: white; flex-shrink: 0;
+}
+.contact-avatar.avatar-color-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+.contact-avatar.avatar-color-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.contact-avatar.avatar-color-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.contact-avatar.avatar-color-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.contact-avatar.avatar-color-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
+.contact-avatar.avatar-color-6 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+.contact-avatar.avatar-color-7 { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+.contact-avatar.avatar-color-8 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="quality-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-clipboard2-pulse me-3"></i>Conversation Quality Scorer</h1>
+                <p>Analyze and grade conversations based on response time, engagement, depth, and message balance. Identify top-performing conversations and spot areas for improvement.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-graph-up-arrow" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card quality-card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-5 col-md-6">
+                    <label class="form-label">Hub</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto d-grid">
+                    <button id="refreshBtn" class="btn rounded-pill" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: white;">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Score
+                    </button>
+                </div>
+                <div class="col-auto d-grid">
+                    <button id="demoBtn" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="generateDemo()">
+                        <i class="bi bi-database-add me-1"></i>Generate Demo Data
+                    </button>
+                </div>
+                <div class="col text-lg-end">
+                    <span id="updatedAt" class="small text-muted">Last updated: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card quality-card h-100">
+                <div class="card-body text-center">
+                    <div id="avgScore" class="stat-value" style="color: #0ea5e9;">0</div>
+                    <div class="stat-label">Avg Score</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card quality-card h-100">
+                <div class="card-body text-center">
+                    <div id="avgGrade" class="stat-value" style="color: #06b6d4;">—</div>
+                    <div class="stat-label">Avg Grade</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card quality-card h-100">
+                <div class="card-body text-center">
+                    <div id="totalScored" class="stat-value" style="color: #0ea5e9;">0</div>
+                    <div class="stat-label">Conversations Scored</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card quality-card h-100">
+                <div class="card-body text-center">
+                    <div id="totalConversations" class="stat-value" style="color: #06b6d4;">0</div>
+                    <div class="stat-label">Total Conversations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Distribution + Donut -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <div class="card quality-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Grade Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div id="gradeBar" class="grade-bar mb-3"></div>
+                    <div id="gradeBreakdown" class="d-flex justify-content-around flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card quality-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Overall Health</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="donut-container">
+                        <canvas id="healthDonut" width="160" height="160"></canvas>
+                        <div class="donut-center">
+                            <div class="value" id="healthScore">0</div>
+                            <div class="label">avg score</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Lists -->
+    <div class="row g-3 mb-3">
+        <!-- Top Conversations -->
+        <div class="col-lg-7">
+            <div class="card quality-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-trophy me-2"></i>All Conversations</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="sortFilter" class="form-select form-select-sm rounded-pill" style="width: auto; font-size: 0.8rem;">
+                            <option value="score_desc">Highest Score</option>
+                            <option value="score_asc">Lowest Score</option>
+                            <option value="recent">Most Recent</option>
+                        </select>
+                        <span id="scoredBadge" class="badge rounded-pill" style="background: #0ea5e9;">0</span>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="convList" class="quality-scroll d-grid gap-2">
+                        <div class="text-center py-4">
+                            <div class="loading-spinner"></div>
+                            <div class="small text-muted mt-2">Loading conversations...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Needs Improvement -->
+        <div class="col-lg-5">
+            <div class="card quality-card h-100">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Needs Improvement</h6>
+                    <span id="bottomBadge" class="badge text-bg-danger rounded-pill">0</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="bottomList" class="quality-scroll d-grid gap-2">
+                        <div class="small text-muted text-center py-3">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const sortFilter = document.getElementById('sortFilter');
+const refreshBtn = document.getElementById('refreshBtn');
+const updatedAt = document.getElementById('updatedAt');
+
+let allConversations = [];
+
+const GRADE_COLORS = {
+    A: '#10b981', B: '#06b6d4', C: '#f59e0b', D: '#f97316', F: '#ef4444'
+};
+
+function getAvatarColorClass(name) {
+    if (!name) return 'avatar-color-1';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name[0].toUpperCase();
+}
+
+function formatTime(sec) {
+    if (sec === null || sec === undefined) return '—';
+    if (sec < 60) return `${Math.round(sec)}s`;
+    if (sec < 3600) return `${Math.round(sec / 60)}m`;
+    return `${(sec / 3600).toFixed(1)}h`;
+}
+
+function timeAgo(isoStr) {
+    if (!isoStr) return 'Never';
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+}
+
+function scoreBarHTML(label, value, fillClass) {
+    return `
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="small text-muted" style="width: 85px;">${label}</span>
+            <div class="score-bar"><div class="score-bar-fill ${fillClass}" style="width:${value}%;"></div></div>
+            <span class="small fw-semibold" style="width: 30px; text-align: right;">${value}</span>
+        </div>`;
+}
+
+function convItemHTML(c) {
+    return `
+        <div class="conv-item" data-id="${c.id}" onclick="toggleExpand(this, ${c.id})">
+            <div class="d-flex gap-3 align-items-center">
+                <div class="grade-badge grade-${c.grade}">${c.grade}</div>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;" title="${c.name}">${c.name}</span>
+                        <span class="small fw-bold" style="color: ${GRADE_COLORS[c.grade]};">${c.overall}/100</span>
+                    </div>
+                    <div class="small text-muted d-flex gap-2 flex-wrap">
+                        <span><i class="bi bi-robot me-1"></i>${c.bot_name}</span>
+                        <span><i class="bi bi-chat-dots me-1"></i>${c.details.total_messages} msgs</span>
+                        ${c.is_group ? '<span class="badge text-bg-secondary" style="font-size:0.65rem;">Group</span>' : ''}
+                        <span>${timeAgo(c.last_message)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="conv-expand">
+                ${scoreBarHTML('Response', c.response_time, 'fill-rt')}
+                ${scoreBarHTML('Balance', c.message_balance, 'fill-bal')}
+                ${scoreBarHTML('Depth', c.depth, 'fill-dep')}
+                ${scoreBarHTML('Engagement', c.engagement, 'fill-eng')}
+                <div class="d-flex gap-3 mt-2 small text-muted flex-wrap">
+                    <span><i class="bi bi-stopwatch me-1"></i>Avg response: ${formatTime(c.details.avg_response_sec)}</span>
+                    <span><i class="bi bi-person me-1"></i>${c.details.user_messages} user / ${c.details.bot_messages} bot</span>
+                    <span><i class="bi bi-clock me-1"></i>${c.details.duration_min != null ? c.details.duration_min + ' min' : '—'}</span>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: white; font-size: 0.8rem;" onclick="event.stopPropagation(); analyzeConv(${c.id}, this)">
+                        <i class="bi bi-stars me-1"></i>AI Analysis
+                    </button>
+                </div>
+                <div id="analysis-${c.id}"></div>
+            </div>
+        </div>`;
+}
+
+function bottomItemHTML(c) {
+    return `
+        <div class="conv-item" style="cursor: default;">
+            <div class="d-flex gap-3 align-items-center">
+                <div class="grade-badge-sm grade-${c.grade}">${c.grade}</div>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%;" title="${c.name}">${c.name}</span>
+                        <span class="small fw-bold" style="color: ${GRADE_COLORS[c.grade]};">${c.overall}</span>
+                    </div>
+                    <div class="small text-muted">${c.bot_name} &middot; ${c.details.total_messages} msgs</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function toggleExpand(el, id) {
+    el.classList.toggle('expanded');
+}
+
+async function analyzeConv(convId, btn) {
+    const container = document.getElementById(`analysis-${convId}`);
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
+    container.innerHTML = '';
+
+    try {
+        const resp = await fetch('./api/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({conversation_id: convId}),
+        });
+        if (!resp.ok) throw new Error('Analysis failed');
+        const data = await resp.json();
+
+        if (data.ai_analysis) {
+            container.innerHTML = `<div class="ai-analysis-box"><i class="bi bi-stars me-1" style="color: #0ea5e9;"></i><strong>AI Analysis</strong><br>${data.ai_analysis}</div>`;
+        } else {
+            container.innerHTML = `<div class="ai-analysis-box"><i class="bi bi-info-circle me-1"></i>AI analysis unavailable — no AI provider configured for this bot.</div>`;
+        }
+    } catch (err) {
+        container.innerHTML = `<div class="ai-analysis-box text-danger"><i class="bi bi-exclamation-circle me-1"></i>Analysis failed. Please try again.</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stars me-1"></i>AI Analysis';
+    }
+}
+
+function drawHealthDonut(score) {
+    const canvas = document.getElementById('healthDonut');
+    const ctx = canvas.getContext('2d');
+    const size = 160, cx = size / 2, cy = size / 2, radius = 60, lineWidth = 18;
+    ctx.clearRect(0, 0, size, size);
+
+    // Background ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+
+    if (score <= 0) return;
+
+    // Score arc
+    const pct = Math.min(score, 100) / 100;
+    const color = score >= 75 ? '#10b981' : score >= 60 ? '#06b6d4' : score >= 40 ? '#f59e0b' : '#ef4444';
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+}
+
+function renderGradeBar(dist) {
+    const bar = document.getElementById('gradeBar');
+    const breakdown = document.getElementById('gradeBreakdown');
+    const total = Object.values(dist).reduce((a, b) => a + b, 0);
+
+    if (total === 0) {
+        bar.innerHTML = '<div style="width:100%;background:var(--hover-bg);border-radius:8px;"></div>';
+        breakdown.innerHTML = '<div class="small text-muted">No data yet</div>';
+        return;
+    }
+
+    const grades = ['A', 'B', 'C', 'D', 'F'];
+    bar.innerHTML = grades.map(g => {
+        const pct = (dist[g] || 0) / total * 100;
+        if (pct <= 0) return '';
+        return `<div style="width:${pct}%;background:${GRADE_COLORS[g]};" title="${g}: ${dist[g]}">${pct >= 8 ? g : ''}</div>`;
+    }).join('');
+
+    breakdown.innerHTML = grades.map(g => `
+        <div class="text-center">
+            <div class="grade-badge-sm grade-${g} mb-1">${g}</div>
+            <div class="small fw-bold">${dist[g] || 0}</div>
+        </div>
+    `).join('');
+}
+
+function sortConversations() {
+    const sort = sortFilter.value;
+    let sorted = [...allConversations];
+    if (sort === 'score_desc') sorted.sort((a, b) => b.overall - a.overall);
+    else if (sort === 'score_asc') sorted.sort((a, b) => a.overall - b.overall);
+    else sorted.sort((a, b) => new Date(b.last_message || 0) - new Date(a.last_message || 0));
+    renderConvList(sorted);
+}
+
+function renderConvList(convs) {
+    const el = document.getElementById('convList');
+    const badge = document.getElementById('scoredBadge');
+    badge.textContent = convs.length;
+
+    if (!convs.length) {
+        el.innerHTML = '<div class="text-center py-4"><i class="bi bi-chat-square-text" style="font-size:2.5rem;opacity:0.3;"></i><div class="small text-muted mt-2">No conversations to score yet</div></div>';
+        return;
+    }
+    el.innerHTML = convs.map(c => convItemHTML(c)).join('');
+}
+
+function renderBottomList(convs) {
+    const el = document.getElementById('bottomList');
+    const badge = document.getElementById('bottomBadge');
+    badge.textContent = convs.length;
+
+    if (!convs.length) {
+        el.innerHTML = '<div class="text-center py-3"><i class="bi bi-check-circle text-success" style="font-size:2rem;opacity:0.5;"></i><div class="small text-muted mt-2">All conversations scoring well</div></div>';
+        return;
+    }
+    el.innerHTML = convs.map(c => bottomItemHTML(c)).join('');
+}
+
+async function loadData() {
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<span class="loading-spinner"></span> Scoring...';
+
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+
+    try {
+        const resp = await fetch(`./api/stats?${params.toString()}`);
+        if (!resp.ok) throw new Error('Failed');
+        const data = await resp.json();
+
+        // Stats
+        document.getElementById('avgScore').textContent = data.totals.avg_score;
+        document.getElementById('avgGrade').textContent = data.totals.avg_grade;
+        document.getElementById('totalScored').textContent = data.totals.scored;
+        document.getElementById('totalConversations').textContent = data.totals.conversations;
+
+        // Health donut
+        document.getElementById('healthScore').textContent = data.totals.avg_score;
+        drawHealthDonut(data.totals.avg_score);
+
+        // Grade bar
+        renderGradeBar(data.grade_distribution || {});
+
+        // Conversations
+        allConversations = data.top_conversations || [];
+        sortConversations();
+
+        renderBottomList(data.bottom_conversations || []);
+
+        updatedAt.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+        console.error('Quality scorer error:', err);
+    } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Score';
+    }
+}
+
+hubFilter.addEventListener('change', loadData);
+sortFilter.addEventListener('change', sortConversations);
+refreshBtn.addEventListener('click', loadData);
+
+async function generateDemo() {
+    const btn = document.getElementById('demoBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Generating...';
+    try {
+        const resp = await fetch('./api/generate-demo', {method: 'POST'});
+        const data = await resp.json();
+        if (data.status === 'created') {
+            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Demo Created!';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+            setTimeout(() => loadData(), 500);
+        } else {
+            btn.innerHTML = '<i class="bi bi-info-circle me-1"></i>Already Exists';
+            setTimeout(() => loadData(), 500);
+        }
+    } catch (err) {
+        btn.innerHTML = '<i class="bi bi-x-lg me-1"></i>Failed';
+        console.error('Demo generation error:', err);
+    }
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-database-add me-1"></i>Generate Demo Data';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+    }, 3000);
+}
+
+loadData();
+</script>
+{% endblock %}
