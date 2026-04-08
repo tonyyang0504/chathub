@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}Escalation Detector - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.escalation-hero {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}
+.escalation-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.escalation-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+.stat-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* Escalation badges */
+.esc-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.esc-critical { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.esc-high { background: linear-gradient(135deg, #f97316, #ea580c); }
+.esc-medium { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.esc-low { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.esc-none { background: var(--text-muted); }
+
+/* Conversation list */
+.conv-item {
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: background 0.15s, border-color 0.15s;
+    cursor: pointer;
+}
+.conv-item:hover {
+    background: var(--hover-bg);
+    border-color: #ef4444;
+}
+.conv-item.level-critical { border-left: 4px solid #ef4444; }
+.conv-item.level-high { border-left: 4px solid #f97316; }
+.conv-item.level-medium { border-left: 4px solid #f59e0b; }
+.conv-item.level-low { border-left: 4px solid #22c55e; }
+.conv-item.level-none { border-left: 4px solid var(--text-muted); }
+
+.signal-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--hover-bg);
+    color: var(--text-secondary);
+    margin: 1px 2px;
+}
+
+/* Score bar */
+.score-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hover-bg);
+    flex-grow: 1;
+}
+.score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* Activity log */
+.activity-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+.activity-item:last-child { border-bottom: none; }
+
+/* Modal message styling */
+.msg-bubble {
+    max-width: 80%;
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+.msg-user {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    margin-right: auto;
+}
+.msg-bot {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    margin-left: auto;
+}
+.msg-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Filter section */
+.filter-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+
+/* Scrollable list */
+.conv-list {
+    max-height: 600px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+.conv-list::-webkit-scrollbar { width: 6px; }
+.conv-list::-webkit-scrollbar-track { background: transparent; }
+.conv-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.conv-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+.msg-list {
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+.msg-list::-webkit-scrollbar { width: 6px; }
+.msg-list::-webkit-scrollbar-track { background: transparent; }
+.msg-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.msg-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+/* Focus states */
+#hubFilter:focus, .form-check-input:focus {
+    border-color: #ef4444;
+    box-shadow: none;
+}
+.form-check-input:checked {
+    background-color: #ef4444;
+    border-color: #ef4444;
+}
+
+/* Loading */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,0,0,0.1);
+    border-top-color: #ef4444;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+.empty-state i { font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero -->
+    <div class="escalation-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-exclamation-triangle me-3"></i>Escalation Detector</h1>
+                <p>AI-powered scanning to detect conversations that need human intervention. Identifies anger, confusion, repeated questions, and bot failures.</p>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="bi bi-shield-exclamation" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4 col-md-5">
+                    <label class="form-label fw-semibold">Hub</label>
+                    <select id="hubFilter" class="form-select rounded-pill">
+                        <option value="">All hubs</option>
+                        {% for hub in hubs %}
+                        <option value="{{ hub.id }}">{{ hub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="aiToggle">
+                        <label class="form-check-label" for="aiToggle">AI-enhanced scan</label>
+                    </div>
+                </div>
+                <div class="col-auto d-grid">
+                    <button id="scanBtn" class="btn rounded-pill" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">
+                        <i class="bi bi-search me-1"></i>Scan Conversations
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-3" id="statsRow" style="display: none;">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card">
+                <div class="card-body text-center">
+                    <div class="stat-value" id="statTotal" style="color: var(--text-primary);">0</div>
+                    <div class="stat-label">Conversations Scanned</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card">
+                <div class="card-body text-center">
+                    <div class="stat-value" id="statCritical" style="color: #ef4444;">0</div>
+                    <div class="stat-label">Critical</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card">
+                <div class="card-body text-center">
+                    <div class="stat-value" id="statHigh" style="color: #f97316;">0</div>
+                    <div class="stat-label">High</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card card">
+                <div class="card-body text-center">
+                    <div class="stat-value" id="statRate" style="color: #f59e0b;">0%</div>
+                    <div class="stat-label">Escalation Rate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="row g-3">
+        <!-- Conversation list -->
+        <div class="col-lg-8">
+            <div class="card" style="border-radius: 14px; border: 1px solid var(--border-color);">
+                <div class="card-header bg-transparent border-0 pt-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Flagged Conversations</h6>
+                    <div class="d-flex gap-2">
+                        <select id="levelFilter" class="form-select form-select-sm rounded-pill" style="width: auto; font-size: 0.8rem;">
+                            <option value="">All levels</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div id="convListContainer">
+                        <div class="empty-state">
+                            <i class="bi bi-shield-check"></i>
+                            <div>Click <strong>Scan Conversations</strong> to detect escalations</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity log -->
+        <div class="col-lg-4">
+            <div class="card" style="border-radius: 14px; border: 1px solid var(--border-color);">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Scan History</h6>
+                </div>
+                <div class="card-body pt-2" id="activityContainer">
+                    <div class="text-center text-muted py-3">
+                        <small>No scans yet</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px;">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i><span id="modalConvName">Conversation</span></h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span id="modalBadge" class="esc-badge">—</span>
+                    <span class="text-muted small">Score: <strong id="modalScore">0</strong>/100</span>
+                </div>
+                <div id="modalSignals" class="mb-3"></div>
+                <div id="modalReason" class="mb-3 text-muted small fst-italic"></div>
+                <hr style="border-color: var(--border-color);">
+                <h6 class="mb-2"><i class="bi bi-chat-left-text me-1"></i>Recent Messages</h6>
+                <div id="modalMessages" class="msg-list">
+                    <div class="text-center py-3"><div class="loading-spinner"></div></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const hubFilter = document.getElementById('hubFilter');
+const aiToggle = document.getElementById('aiToggle');
+const scanBtn = document.getElementById('scanBtn');
+const levelFilter = document.getElementById('levelFilter');
+const statsRow = document.getElementById('statsRow');
+const convListContainer = document.getElementById('convListContainer');
+const activityContainer = document.getElementById('activityContainer');
+
+let allConversations = [];
+
+function escBadgeHtml(level) {
+    const labels = {critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low', none: 'None'};
+    return `<span class="esc-badge esc-${level}">${labels[level] || level}</span>`;
+}
+
+function scoreBarColor(score) {
+    if (score >= 70) return '#ef4444';
+    if (score >= 45) return '#f97316';
+    if (score >= 20) return '#f59e0b';
+    return '#22c55e';
+}
+
+function timeAgo(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+function formatDateTime(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return d.toLocaleString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+}
+
+function renderConversations(conversations) {
+    if (!conversations.length) {
+        convListContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-shield-check"></i>
+                <div>No escalations found — all conversations look good!</div>
+            </div>`;
+        return;
+    }
+
+    const filter = levelFilter.value;
+    const filtered = filter ? conversations.filter(c => c.level === filter) : conversations;
+
+    if (!filtered.length) {
+        convListContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-funnel"></i>
+                <div>No conversations match this filter</div>
+            </div>`;
+        return;
+    }
+
+    let html = '<div class="conv-list d-flex flex-column gap-2">';
+    for (const c of filtered) {
+        const signalTags = c.signals.map(s => `<span class="signal-tag">${s}</span>`).join('');
+        html += `
+        <div class="conv-item level-${c.level}" onclick="showDetail(${c.conversation_id}, '${c.name.replace(/'/g, "\\'")}', '${c.level}', ${c.score}, ${JSON.stringify(c.signals).replace(/"/g, '&quot;')}, '${c.reason.replace(/'/g, "\\'")}')">
+            <div class="d-flex align-items-start justify-content-between mb-1">
+                <div class="d-flex align-items-center gap-2" style="min-width: 0;">
+                    <i class="bi ${c.is_group ? 'bi-people' : 'bi-person'}" style="color: var(--text-muted);"></i>
+                    <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.name}">${c.name}</strong>
+                    ${c.human_takeover ? '<span class="signal-tag" style="background: #dbeafe; color: #2563eb;"><i class="bi bi-person-check me-1"></i>Human</span>' : ''}
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    ${escBadgeHtml(c.level)}
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="score-bar">
+                    <div class="score-bar-fill" style="width: ${c.score}%; background: ${scoreBarColor(c.score)};"></div>
+                </div>
+                <span class="small text-muted" style="flex-shrink: 0;">${c.score}/100</span>
+            </div>
+            ${c.last_user_message ? `<div class="small text-muted fst-italic mb-1" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.last_user_message.replace(/"/g, '&quot;')}">"${c.last_user_message}"</div>` : ''}
+            <div class="d-flex align-items-center justify-content-between">
+                <div style="overflow: hidden;">${signalTags}</div>
+                <small class="text-muted flex-shrink-0">${timeAgo(c.last_message_at)}</small>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    convListContainer.innerHTML = html;
+}
+
+async function scanConversations() {
+    scanBtn.disabled = true;
+    scanBtn.innerHTML = '<span class="loading-spinner" style="border-top-color: white;"></span> Scanning...';
+    convListContainer.innerHTML = '<div class="text-center py-4"><div class="loading-spinner"></div><div class="small text-muted mt-2">Analyzing conversations...</div></div>';
+
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+    if (aiToggle.checked) params.set('use_ai', 'true');
+
+    try {
+        const resp = await fetch(`./api/scan?${params.toString()}`);
+        if (!resp.ok) throw new Error('Scan failed');
+        const data = await resp.json();
+
+        allConversations = data.conversations;
+
+        // Update stats
+        statsRow.style.display = '';
+        document.getElementById('statTotal').textContent = data.stats.total;
+        document.getElementById('statCritical').textContent = data.stats.critical;
+        document.getElementById('statHigh').textContent = data.stats.high;
+        document.getElementById('statRate').textContent = data.stats.escalation_rate + '%';
+
+        renderConversations(allConversations);
+        loadActivity();
+    } catch (err) {
+        convListContainer.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-circle"></i><div>Failed to scan conversations. Please try again.</div></div>`;
+    } finally {
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = '<i class="bi bi-search me-1"></i>Scan Conversations';
+    }
+}
+
+async function showDetail(convId, name, level, score, signals, reason) {
+    document.getElementById('modalConvName').textContent = name;
+    document.getElementById('modalBadge').className = `esc-badge esc-${level}`;
+    document.getElementById('modalBadge').textContent = level.charAt(0).toUpperCase() + level.slice(1);
+    document.getElementById('modalScore').textContent = score;
+    document.getElementById('modalReason').textContent = reason;
+
+    const signalsHtml = (typeof signals === 'string' ? JSON.parse(signals) : signals)
+        .map(s => `<span class="signal-tag">${s}</span>`).join(' ');
+    document.getElementById('modalSignals').innerHTML = signalsHtml;
+    document.getElementById('modalMessages').innerHTML = '<div class="text-center py-3"><div class="loading-spinner"></div></div>';
+
+    const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+    modal.show();
+
+    try {
+        const resp = await fetch(`./api/conversation/${convId}/messages`);
+        if (!resp.ok) throw new Error('Failed');
+        const data = await resp.json();
+
+        let html = '';
+        for (const m of data.messages) {
+            const isUser = m.role === 'user';
+            html += `
+            <div class="d-flex flex-column ${isUser ? 'align-items-start' : 'align-items-end'} mb-2">
+                <div class="msg-bubble ${isUser ? 'msg-user' : 'msg-bot'}">${m.content}</div>
+                <div class="msg-time">${formatDateTime(m.timestamp)}</div>
+            </div>`;
+        }
+        document.getElementById('modalMessages').innerHTML = html || '<div class="text-center text-muted py-3">No messages</div>';
+
+        // Scroll to bottom
+        const msgList = document.getElementById('modalMessages');
+        msgList.scrollTop = msgList.scrollHeight;
+    } catch (err) {
+        document.getElementById('modalMessages').innerHTML = '<div class="text-center text-muted py-3">Failed to load messages</div>';
+    }
+}
+
+async function loadActivity() {
+    const params = new URLSearchParams();
+    if (hubFilter.value) params.set('hub_id', hubFilter.value);
+    params.set('limit', '10');
+
+    try {
+        const resp = await fetch(`./api/activity?${params.toString()}`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        if (!data.activity.length) {
+            activityContainer.innerHTML = '<div class="text-center text-muted py-3"><small>No scans yet</small></div>';
+            return;
+        }
+
+        let html = '';
+        for (const a of data.activity) {
+            const out = a.output_data || {};
+            const inp = a.input_data || {};
+            const critBadge = out.critical ? `<span class="esc-badge esc-critical" style="font-size: 0.65rem; padding: 1px 6px;">${out.critical} critical</span>` : '';
+            const highBadge = out.high ? `<span class="esc-badge esc-high" style="font-size: 0.65rem; padding: 1px 6px;">${out.high} high</span>` : '';
+
+            html += `
+            <div class="activity-item">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="fw-semibold small"><i class="bi bi-search me-1" style="color: #ef4444;"></i>Scan</span>
+                    <small class="text-muted">${formatDateTime(a.created_at)}</small>
+                </div>
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <small class="text-muted">${inp.conversations_checked || 0} checked</small>
+                    ${critBadge} ${highBadge}
+                    ${out.escalation_rate ? `<small class="text-muted">(${out.escalation_rate}%)</small>` : ''}
+                </div>
+                ${a.execution_time_ms ? `<small class="text-muted">${a.execution_time_ms}ms</small>` : ''}
+            </div>`;
+        }
+        activityContainer.innerHTML = html;
+    } catch (err) {
+        // Silent fail
+    }
+}
+
+// Event listeners
+scanBtn.addEventListener('click', scanConversations);
+levelFilter.addEventListener('change', () => renderConversations(allConversations));
+
+// Load activity on page load
+loadActivity();
+</script>
+{% endblock %}
