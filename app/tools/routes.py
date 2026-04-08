@@ -2379,19 +2379,17 @@ async def custom_tool_admin_detail(request: Request, tool_name: str, db: Session
 
 
 # ============================================================================
-# Custom Tool Working Page (catch-all — MUST be last route)
+# Custom Tool Working Page — trailing slash handler (serves the actual tool)
 # ============================================================================
 
-@router.get("/{tool_name}", response_class=HTMLResponse)
-async def custom_tool_page(request: Request, tool_name: str, db: Session = Depends(get_db)):
-    """Working page for a custom-built tool."""
-    from fastapi.responses import RedirectResponse
-
+@router.get("/{tool_name}/", response_class=HTMLResponse, include_in_schema=False)
+async def custom_tool_page_slash(request: Request, tool_name: str, db: Session = Depends(get_db)):
+    """Serve the custom tool's own page (with trailing slash for correct relative URLs)."""
     user = await get_current_user_optional(request, None, db)
     if not user:
+        from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/auth/login", status_code=302)
 
-    # For both published and preview tools, call the tool's own page handler
     from app.tools import CUSTOM_TOOLS_DIR, _registered_tools, register_custom_tools_on_app
     tool_dir = CUSTOM_TOOLS_DIR / tool_name
     if tool_name not in _registered_tools and (tool_dir / "routes.py").exists():
@@ -2402,6 +2400,30 @@ async def custom_tool_page(request: Request, tool_name: str, db: Session = Depen
             for route in mod.router.routes:
                 if hasattr(route, "path") and route.path in ("", "/") and "GET" in getattr(route, "methods", set()):
                     return await route.endpoint(request=request, db=db)
+    raise HTTPException(status_code=404, detail="Tool not found")
+
+
+# ============================================================================
+# Custom Tool Working Page (catch-all — MUST be last route)
+# ============================================================================
+
+@router.get("/{tool_name}", response_class=HTMLResponse)
+async def custom_tool_page(request: Request, tool_name: str, db: Session = Depends(get_db)):
+    """Redirect to trailing-slash URL so relative API calls resolve correctly."""
+    from fastapi.responses import RedirectResponse
+
+    user = await get_current_user_optional(request, None, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    # For both published and preview tools, redirect to /tools/{name}/ (trailing slash)
+    # so relative API calls (./api/data) resolve to /tools/{name}/api/data correctly
+    from app.tools import CUSTOM_TOOLS_DIR, _registered_tools, register_custom_tools_on_app
+    tool_dir = CUSTOM_TOOLS_DIR / tool_name
+    if tool_name not in _registered_tools and (tool_dir / "routes.py").exists():
+        register_custom_tools_on_app(request.app)
+    if tool_name in _registered_tools:
+        return RedirectResponse(url=f"/tools/{tool_name}/", status_code=302)
 
     # Fallback: redirect to admin detail page if tool has no working routes
     from app.database import BuiltTool

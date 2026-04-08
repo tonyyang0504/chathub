@@ -535,9 +535,9 @@ All three AI tools share the same 3-panel layout and must stay visually aligned.
 - `resume_session()` reuses the original worktree (found by matching `worktree_branch` from DB) instead of creating a fresh one, preserving the agent's file changes across server restarts
 - `requirements.txt` pins `fastapi>=0.104.0,<0.130.0` to prevent Starlette 1.0 breaking `TemplateResponse` in the Docker image
 
-**Tool Builder System Context**: `TOOL_BUILDER_SYSTEM_CONTEXT` in `builder_manager.py` and `AI_CODER_SYSTEM_CONTEXT` in `coder_manager.py` include full DB model column schemas and event hook kwargs. This is passed to all CLI providers via their respective mechanisms (Claude: `--append-system-prompt`, Codex: `AGENTS.md`, Gemini: `GEMINI.md`, ChatHub: agent system prompt).
+**Tool Builder System Context**: `TOOL_BUILDER_SYSTEM_CONTEXT` in `builder_manager.py` and `AI_CODER_SYSTEM_CONTEXT` in `coder_manager.py` contain tool-specific workflow instructions only. Shared project documentation (DB schema, event hooks, UI conventions) comes from CLAUDE.md — Codex and Gemini get it via `prepare_session()` which appends CLAUDE.md content to AGENTS.md/GEMINI.md automatically on each session start. Claude CLI reads CLAUDE.md natively.
 
-**Custom Tool Page Routing**: `/tools/{tool_name}` catch-all calls the tool's own page handler for both published and preview tools (not the admin detail page). The admin detail page is at `/tools/{tool_name}/detail`. If no handler found, falls back to admin detail page for published tools or 404.
+**Custom Tool Page Routing**: `/tools/{tool_name}` catch-all redirects to `/tools/{tool_name}/` (trailing slash). The `/{tool_name}/` route serves the tool's working page directly by calling the tool's own handler. The trailing slash is required so relative API calls in templates (`./api/data`) resolve to `/tools/{tool_name}/api/data` correctly. The admin detail page is at `/tools/{tool_name}/detail`. If no handler found, falls back to admin detail page for published tools or 404.
 
 **Custom Tool Card Controls on Index Page**: Published tools (DB record) show toggle switch + trash icon. Preview tools ("Ready to Test", no DB record) show no controls — they're filesystem-only until published. Preview tool metadata is hardcoded (`icon="bi-eye"`, gray gradient) unless TOOL.md is parsed.
 
