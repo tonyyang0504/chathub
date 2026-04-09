@@ -103,6 +103,7 @@
     .nav-pills .nav-link.active[href="#guide-imessage"]  { background: #34C759 !important; }
     .nav-pills .nav-link.active[href="#guide-wechat"]    { background: #07C160 !important; }
     .nav-pills .nav-link.active[href="#guide-whatsapp-business"] { background: #128C7E !important; }
+    .nav-pills .nav-link.active[href="#guide-email"] { background: #EA4335 !important; }
 </style>
 {% endblock %}
 
@@ -138,6 +139,7 @@
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-imessage"><i class="bi bi-chat-square-text me-1"></i>iMessage</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-wechat"><i class="bi bi-wechat me-1"></i>WeChat</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-whatsapp-business"><i class="bi bi-whatsapp me-1"></i>WA Business API</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-email"><i class="bi bi-envelope me-1"></i>Email</a></li>
 </ul>
 
 <div class="tab-content">
@@ -438,6 +440,32 @@
                 <div class="step-item"><span class="step-number" style="background: #07C160;">3</span><div>Open <b>WeChat</b> on your phone → Scan the QR code to log in.</div></div>
                 <div class="warning-box mt-3">
                     <b>Note:</b> WeChat integration is currently <b>planned</b> and not yet fully implemented. WeChat has strict API policies and may require a WeChat Official Account for automation.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email -->
+    <div class="tab-pane fade" id="guide-email">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #EA4335;"><i class="bi bi-envelope"></i></div>
+                <div>
+                    <h5 class="mb-0">Email</h5>
+                    <small class="text-muted">IMAP/SMTP (Gmail, Outlook, Yahoo, Custom)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #EA4335;">1</span><div><b>Gmail users:</b> Go to <a href="https://myaccount.google.com/apppasswords" target="_blank">Google App Passwords</a> → Generate an App Password. You need 2-Step Verification enabled first.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #EA4335;">2</span><div><b>Outlook users:</b> Use your regular password. If 2FA is enabled, generate an App Password from Security settings.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #EA4335;">3</span><div>In ChatHub, create a bot with <b>Email</b> platform. Click <b>Start</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #EA4335;">4</span><div>Enter your <b>email address</b> and <b>App Password</b>. IMAP/SMTP servers are auto-detected for Gmail, Outlook, and Yahoo.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #EA4335;">5</span><div>For custom email providers, enter IMAP server (port 993) and SMTP server (port 587) manually.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> The bot polls your inbox every 30 seconds for new unread emails. AI replies are sent as email thread replies (same subject, proper threading headers).
+                </div>
+                <div class="warning-box mt-2">
+                    <b>Important:</b> For Gmail, you <b>must</b> use an App Password — your regular Google password will not work with IMAP. Enable <b>2-Step Verification</b> first, then generate an App Password.
                 </div>
             </div>
         </div>

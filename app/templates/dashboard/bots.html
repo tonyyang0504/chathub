@@ -794,6 +794,14 @@
                 {key: 'platform_token', label: 'Access Token', placeholder: 'System User permanent token', type: 'password'},
                 {key: 'app_secret', label: 'App Secret (optional)', placeholder: 'For webhook signature verification', type: 'password'},
             ]},
+        email: { label: 'Email', icon: 'bi-envelope', color: '#EA4335', auth: 'credentials', tokenLabel: null,
+            setupGuide: 'Connect any email inbox via IMAP/SMTP. For Gmail, use an <b>App Password</b> (not your regular password).<br>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank">Google App Passwords</a> to generate one.',
+            connectFields: [
+                {key: 'email_address', label: 'Email Address', placeholder: 'you@gmail.com', type: 'text'},
+                {key: 'platform_token', label: 'Password / App Password', placeholder: 'App Password for Gmail', type: 'password'},
+                {key: 'imap_server', label: 'IMAP Server (auto-detected for Gmail/Outlook)', placeholder: 'imap.gmail.com', type: 'text'},
+                {key: 'smtp_server', label: 'SMTP Server (auto-detected for Gmail/Outlook)', placeholder: 'smtp.gmail.com', type: 'text'},
+            ]},
     };
 
     // Update form fields visibility based on selected platform

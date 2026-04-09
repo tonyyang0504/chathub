@@ -7,7 +7,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok", "ollama"]
-VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "imessage", "wechat", "whatsapp_business"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "imessage", "wechat", "whatsapp_business", "email"]
 
 # Platform auth method descriptions for the frontend
 PLATFORM_AUTH_INFO = {
@@ -25,6 +25,7 @@ PLATFORM_AUTH_INFO = {
     "imessage": {"auth_method": "credentials", "label": "iMessage", "icon": "bi-chat-square-text-fill", "color": "#34C759", "token_label": None},
     "wechat": {"auth_method": "qr_code", "label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "token_label": None},
     "whatsapp_business": {"auth_method": "api_token", "label": "WhatsApp Business API", "icon": "bi-whatsapp", "color": "#128C7E", "token_label": "Access Token", "setupGuide": "Official WhatsApp Business API via Meta Cloud API. Requires a Meta Business account and WhatsApp Business phone number."},
+    "email": {"auth_method": "credentials", "label": "Email", "icon": "bi-envelope", "color": "#EA4335", "token_label": None, "setupGuide": "IMAP/SMTP email integration. Works with Gmail, Outlook, Yahoo, or any email provider."},
 }
 
 
@@ -46,6 +47,9 @@ class BotProfileCreate(BaseModel):
     slack_app_token: Optional[str] = None  # Slack App Token (xapp-) for Socket Mode
     signal_api_url: Optional[str] = None  # Signal CLI REST API URL
     phone_number_id: Optional[str] = None  # WhatsApp Business API Phone Number ID
+    imap_server: Optional[str] = None  # Email IMAP server
+    smtp_server: Optional[str] = None  # Email SMTP server
+    email_address: Optional[str] = None  # Email address
 
     @field_validator('platform_type')
     @classmethod

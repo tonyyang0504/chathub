@@ -24,6 +24,7 @@ class PlatformType(str, Enum):
     IMESSAGE = "imessage"
     WECHAT = "wechat"
     WHATSAPP_BUSINESS = "whatsapp_business"
+    EMAIL = "email"
 
 
 class AuthMethod(str, Enum):

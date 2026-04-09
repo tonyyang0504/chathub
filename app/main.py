@@ -76,6 +76,8 @@ from app.platforms.imessage.adapter import iMessageAdapter
 platform_registry.register(PlatformType.IMESSAGE, iMessageAdapter)
 from app.platforms.whatsapp_business.adapter import WhatsAppBusinessAdapter
 platform_registry.register(PlatformType.WHATSAPP_BUSINESS, WhatsAppBusinessAdapter)
+from app.platforms.email.adapter import EmailAdapter
+platform_registry.register(PlatformType.EMAIL, EmailAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):

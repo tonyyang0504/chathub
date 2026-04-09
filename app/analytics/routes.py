@@ -516,6 +516,7 @@ PLATFORM_META = {
     "imessage": {"label": "iMessage", "icon": "bi-chat-square-text", "color": "#34C759", "auth_method": "credentials"},
     "wechat": {"label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "auth_method": "qr_code"},
     "whatsapp_business": {"label": "WhatsApp Business API", "icon": "bi-whatsapp", "color": "#128C7E", "auth_method": "api_token"},
+    "email": {"label": "Email", "icon": "bi-envelope", "color": "#EA4335", "auth_method": "credentials"},
 }
 
 PLATFORM_CAPABILITIES = {
@@ -533,6 +534,7 @@ PLATFORM_CAPABILITIES = {
     "imessage": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": True, "typing_indicator": True, "history_sync": True, "contacts_list": True, "groups_list": True, "voice_messages": True},
     "wechat": {"groups": True, "media": True, "file_send": True, "reactions": False, "read_receipts": False, "typing_indicator": False, "history_sync": False, "contacts_list": False, "groups_list": False, "voice_messages": True},
     "whatsapp_business": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": True, "typing_indicator": False, "history_sync": False, "contacts_list": False, "groups_list": False, "voice_messages": True},
+    "email": {"groups": False, "media": True, "file_send": True, "reactions": False, "read_receipts": False, "typing_indicator": False, "history_sync": False, "contacts_list": False, "groups_list": False, "voice_messages": False},
 }
 
 

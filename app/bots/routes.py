@@ -324,6 +324,12 @@ async def check_and_recover_bots(
                     config["signal_api_url"] = platform_config["signal_api_url"]
                 if platform_config.get("phone_number_id"):
                     config["phone_number_id"] = platform_config["phone_number_id"]
+                if platform_config.get("imap_server"):
+                    config["imap_server"] = platform_config["imap_server"]
+                if platform_config.get("smtp_server"):
+                    config["smtp_server"] = platform_config["smtp_server"]
+                if platform_config.get("email_address"):
+                    config["email_address"] = platform_config["email_address"]
 
                 # Map platform_token to adapter-specific config keys (non-Telegram platforms)
                 pt = config.get("platform_token")
@@ -557,6 +563,15 @@ async def update_bot(
         config_changed = True
     if bot_data.phone_number_id is not None:
         platform_config["phone_number_id"] = bot_data.phone_number_id
+        config_changed = True
+    if bot_data.imap_server is not None:
+        platform_config["imap_server"] = bot_data.imap_server
+        config_changed = True
+    if bot_data.smtp_server is not None:
+        platform_config["smtp_server"] = bot_data.smtp_server
+        config_changed = True
+    if bot_data.email_address is not None:
+        platform_config["email_address"] = bot_data.email_address
         config_changed = True
     if config_changed:
         bot.platform_config = json.dumps(platform_config)
