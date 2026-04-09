@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 ai_executor = ThreadPoolExecutor(max_workers=4)
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
+from sqlalchemy import func, distinct, or_
 
 from app.database import (
     get_db, User, BotProfile, Hub, HubBotMembership, AIAgent,
@@ -1771,10 +1771,23 @@ async def analyze_contact(
         )
 
     # Get conversation history for this contact
-    # Find conversations where chat_id matches the contact's phone
+    # Find conversations where phone matches (try exact, then normalized without spaces/+)
     conversations = db.query(Conversation).filter(
-        Conversation.phone == contact.phone
+        or_(
+            Conversation.phone == contact.phone,
+            Conversation.chat_id == contact.phone
+        )
     ).all()
+
+    # If no match, try normalized phone (strip spaces, +, dashes)
+    if not conversations:
+        import re
+        clean_phone = re.sub(r'[\s\+\-]', '', contact.phone or '')
+        if clean_phone:
+            all_convs = db.query(Conversation).filter(
+                Conversation.phone.isnot(None)
+            ).all()
+            conversations = [c for c in all_convs if re.sub(r'[\s\+\-]', '', c.phone or '') == clean_phone]
 
     # Collect messages from all conversations
     messages = []
