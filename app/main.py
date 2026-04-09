@@ -637,6 +637,18 @@ async def dashboard_hubs(
     )
 
 
+@app.get("/dashboard/platforms")
+async def dashboard_platforms(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Platform overview page"""
+    return templates.TemplateResponse(
+        "dashboard/platforms.html",
+        {"request": request, "user": user, "active_page": "platforms"}
+    )
+
+
 # Health check endpoint
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):

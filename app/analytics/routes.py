@@ -497,3 +497,194 @@ async def get_conversation_analytics(
         "sentiment": sentiment_data,
         "period_days": days,
     }
+
+
+# ============== Platform Stats ==============
+
+PLATFORM_META = {
+    "whatsapp": {"label": "WhatsApp", "icon": "bi-whatsapp", "color": "#25D366", "auth_method": "qr_code"},
+    "telegram": {"label": "Telegram", "icon": "bi-telegram", "color": "#26A5E4", "auth_method": "phone_code"},
+    "discord": {"label": "Discord", "icon": "bi-discord", "color": "#5865F2", "auth_method": "api_token"},
+    "messenger": {"label": "Facebook Page", "icon": "bi-facebook", "color": "#1877F2", "auth_method": "oauth"},
+    "instagram": {"label": "Instagram", "icon": "bi-instagram", "color": "#E4405F", "auth_method": "oauth"},
+    "slack": {"label": "Slack", "icon": "bi-slack", "color": "#4A154B", "auth_method": "api_token"},
+    "signal": {"label": "Signal", "icon": "bi-shield-lock-fill", "color": "#3A76F0", "auth_method": "credentials"},
+    "line": {"label": "LINE", "icon": "bi-chat-dots-fill", "color": "#00B900", "auth_method": "api_token"},
+    "linkedin": {"label": "LinkedIn", "icon": "bi-linkedin", "color": "#0A66C2", "auth_method": "oauth"},
+    "tinder": {"label": "Tinder", "icon": "bi-fire", "color": "#FE3C72", "auth_method": "credentials"},
+    "bumble": {"label": "Bumble", "icon": "bi-heart-fill", "color": "#FFC629", "auth_method": "credentials"},
+    "imessage": {"label": "iMessage", "icon": "bi-chat-square-text", "color": "#34C759", "auth_method": "credentials"},
+    "wechat": {"label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "auth_method": "qr_code"},
+}
+
+PLATFORM_CAPABILITIES = {
+    "whatsapp": {"groups": True, "media": True, "file_send": True, "reactions": False, "read_receipts": True, "typing_indicator": False, "history_sync": True, "contacts_list": True, "groups_list": True, "voice_messages": True},
+    "telegram": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": False, "typing_indicator": True, "history_sync": True, "contacts_list": True, "groups_list": True, "voice_messages": True},
+    "discord": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": False, "typing_indicator": True, "history_sync": False, "contacts_list": True, "groups_list": True, "voice_messages": False},
+    "messenger": {"groups": False, "media": True, "file_send": True, "reactions": True, "read_receipts": True, "typing_indicator": True, "history_sync": True, "contacts_list": True, "groups_list": False, "voice_messages": True},
+    "instagram": {"groups": False, "media": True, "file_send": False, "reactions": True, "read_receipts": True, "typing_indicator": True, "history_sync": False, "contacts_list": True, "groups_list": False, "voice_messages": False},
+    "slack": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": True, "typing_indicator": True, "history_sync": True, "contacts_list": True, "groups_list": True, "voice_messages": False},
+    "signal": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": True, "typing_indicator": False, "history_sync": False, "contacts_list": False, "groups_list": True, "voice_messages": True},
+    "line": {"groups": True, "media": True, "file_send": True, "reactions": False, "read_receipts": True, "typing_indicator": True, "history_sync": False, "contacts_list": False, "groups_list": False, "voice_messages": True},
+    "linkedin": {"groups": False, "media": True, "file_send": True, "reactions": False, "read_receipts": True, "typing_indicator": False, "history_sync": False, "contacts_list": True, "groups_list": False, "voice_messages": False},
+    "tinder": {"groups": False, "media": True, "file_send": False, "reactions": False, "read_receipts": False, "typing_indicator": False, "history_sync": False, "contacts_list": True, "groups_list": False, "voice_messages": False},
+    "bumble": {"groups": False, "media": True, "file_send": False, "reactions": False, "read_receipts": False, "typing_indicator": False, "history_sync": False, "contacts_list": True, "groups_list": False, "voice_messages": False},
+    "imessage": {"groups": True, "media": True, "file_send": True, "reactions": True, "read_receipts": True, "typing_indicator": True, "history_sync": True, "contacts_list": True, "groups_list": True, "voice_messages": True},
+    "wechat": {"groups": True, "media": True, "file_send": True, "reactions": False, "read_receipts": False, "typing_indicator": False, "history_sync": False, "contacts_list": False, "groups_list": False, "voice_messages": True},
+}
+
+
+@router.get("/platform-stats")
+async def get_platform_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get summary stats for all platforms."""
+    bot_ids = [b.id for b in db.query(BotProfile.id).filter(BotProfile.user_id == current_user.id).all()]
+
+    # Aggregate by platform
+    platform_data = db.query(
+        BotProfile.platform_type,
+        func.count(BotProfile.id),
+        func.sum(func.cast(BotProfile.is_running, db.bind.dialect.type_descriptor(type(1)) if hasattr(db.bind, 'dialect') else type(1))),
+    ).filter(BotProfile.user_id == current_user.id).group_by(BotProfile.platform_type).all()
+
+    # Build a quick lookup: platform -> (bot_count, running_count)
+    platform_bots = {}
+    for row in platform_data:
+        pt = row[0] or "whatsapp"
+        platform_bots[pt] = {"bot_count": row[1], "running_bots": sum(1 for b in db.query(BotProfile).filter(BotProfile.user_id == current_user.id, BotProfile.platform_type == pt, BotProfile.is_running == True).all())}
+
+    # Conversation/message counts by platform
+    conv_data = db.query(
+        BotProfile.platform_type,
+        func.count(Conversation.id),
+        func.coalesce(func.sum(Conversation.message_count), 0),
+    ).join(Conversation, Conversation.bot_profile_id == BotProfile.id).filter(
+        BotProfile.user_id == current_user.id
+    ).group_by(BotProfile.platform_type).all()
+
+    conv_lookup = {}
+    for row in conv_data:
+        pt = row[0] or "whatsapp"
+        conv_lookup[pt] = {"conversations": row[1], "messages": row[2] or 0}
+
+    # Build response for all 13 platforms
+    platforms = []
+    for pt, meta in PLATFORM_META.items():
+        bots = platform_bots.get(pt, {"bot_count": 0, "running_bots": 0})
+        convs = conv_lookup.get(pt, {"conversations": 0, "messages": 0})
+        platforms.append({
+            "platform": pt,
+            **meta,
+            **bots,
+            **convs,
+        })
+
+    return {"platforms": platforms}
+
+
+@router.get("/platform-stats/{platform}")
+async def get_platform_detail(
+    platform: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed stats for a specific platform."""
+    if platform not in PLATFORM_META:
+        raise HTTPException(status_code=404, detail="Unknown platform")
+
+    meta = PLATFORM_META[platform]
+
+    # Get bots for this platform
+    bots = db.query(BotProfile).filter(
+        BotProfile.user_id == current_user.id,
+        BotProfile.platform_type == platform
+    ).all()
+
+    bot_ids = [b.id for b in bots]
+    running_bots = sum(1 for b in bots if b.is_running)
+
+    # Conversation stats
+    total_conversations = 0
+    total_messages = 0
+    messages_today = 0
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if bot_ids:
+        total_conversations = db.query(func.count(Conversation.id)).filter(
+            Conversation.bot_profile_id.in_(bot_ids)
+        ).scalar() or 0
+
+        total_messages = db.query(func.coalesce(func.sum(Conversation.message_count), 0)).filter(
+            Conversation.bot_profile_id.in_(bot_ids)
+        ).scalar() or 0
+
+        messages_today = db.query(func.count(Message.id)).join(Conversation).filter(
+            Conversation.bot_profile_id.in_(bot_ids),
+            Message.timestamp >= today_start
+        ).scalar() or 0
+
+    # Contacts count (from conversations with non-group chats)
+    total_contacts = 0
+    if bot_ids:
+        total_contacts = db.query(func.count(Conversation.id)).filter(
+            Conversation.bot_profile_id.in_(bot_ids),
+            Conversation.is_group == False
+        ).scalar() or 0
+
+    # Groups count
+    total_groups = 0
+    if bot_ids:
+        total_groups = db.query(func.count(Conversation.id)).filter(
+            Conversation.bot_profile_id.in_(bot_ids),
+            Conversation.is_group == True
+        ).scalar() or 0
+
+    # Bot details
+    bots_data = []
+    for b in bots:
+        conv_count = db.query(func.count(Conversation.id)).filter(Conversation.bot_profile_id == b.id).scalar() or 0
+        msg_count = db.query(func.coalesce(func.sum(Conversation.message_count), 0)).filter(Conversation.bot_profile_id == b.id).scalar() or 0
+        bots_data.append({
+            "id": b.id,
+            "name": b.name,
+            "is_running": b.is_running,
+            "account_name": b.whatsapp_name or "",
+            "account_phone": b.whatsapp_phone or "",
+            "ai_provider": b.ai_provider,
+            "model": b.model,
+            "conversation_count": conv_count,
+            "message_count": msg_count,
+            "last_active": b.last_active.isoformat() + "Z" if b.last_active else None,
+        })
+
+    # Recent conversations
+    recent_convs = []
+    if bot_ids:
+        convs = db.query(Conversation).filter(
+            Conversation.bot_profile_id.in_(bot_ids)
+        ).order_by(desc(Conversation.last_message_at)).limit(10).all()
+        recent_convs = [{
+            "id": c.id,
+            "chat_name": c.chat_name or c.chat_id,
+            "message_count": c.message_count or 0,
+            "last_message_at": c.last_message_at.isoformat() + "Z" if c.last_message_at else None,
+            "is_group": c.is_group,
+            "bot_name": next((b.name for b in bots if b.id == c.bot_profile_id), ""),
+        } for c in convs]
+
+    return {
+        "platform": platform,
+        **meta,
+        "bot_count": len(bots),
+        "running_bots": running_bots,
+        "total_conversations": total_conversations,
+        "total_messages": total_messages,
+        "messages_today": messages_today,
+        "total_contacts": total_contacts,
+        "total_groups": total_groups,
+        "capabilities": PLATFORM_CAPABILITIES.get(platform, {}),
+        "bots": bots_data,
+        "recent_conversations": recent_convs,
+    }

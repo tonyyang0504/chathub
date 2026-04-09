@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Platforms - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+/* Platform tabs */
+.platform-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+.platform-tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+    border: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+    background: var(--hover-bg); color: var(--text-primary);
+}
+.platform-tab:hover { transform: scale(1.03); }
+.platform-tab.active { color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.05); }
+.platform-tab i { font-size: 1rem; }
+
+/* Platform grid cards */
+.platform-card {
+    border-radius: 12px; border: 1px solid var(--border-color);
+    background: var(--card-bg); transition: all 0.2s; cursor: pointer;
+    overflow: hidden;
+}
+.platform-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.platform-card-header {
+    padding: 16px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+.platform-card-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: white;
+}
+.platform-card-body { padding: 16px; }
+.platform-card-stat { font-size: 0.8rem; color: var(--text-muted); }
+.platform-card-stat strong { color: var(--text-primary); font-size: 1rem; }
+
+/* Capability badges */
+.cap-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 500;
+}
+.cap-badge.yes { background: #dcfce7; color: #166534; }
+.cap-badge.no { background: #f3f4f6; color: #9ca3af; }
+
+/* Detail view */
+.stat-card-sm {
+    border-radius: 12px; border: 1px solid var(--border-color);
+    background: var(--card-bg); padding: 16px; text-align: center;
+}
+.stat-card-sm .stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-card-sm .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+
+.detail-card {
+    border-radius: 12px; border: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+.detail-card .card-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 16px; font-weight: 600;
+}
+.detail-card .card-body { padding: 16px; }
+
+.cap-matrix { display: flex; flex-wrap: wrap; gap: 8px; }
+.cap-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px;
+    background: var(--hover-bg); font-size: 0.85rem;
+}
+.cap-item .cap-icon { font-size: 0.9rem; }
+.cap-item .cap-icon.yes { color: #22c55e; }
+.cap-item .cap-icon.no { color: #d1d5db; }
+
+.conv-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border-color);
+}
+.conv-item:last-child { border-bottom: none; }
+
+/* Scrollable tables */
+.detail-table-scroll {
+    max-height: 350px; overflow-y: auto;
+}
+.detail-table-scroll::-webkit-scrollbar { width: 6px; }
+.detail-table-scroll::-webkit-scrollbar-track { background: transparent; }
+.detail-table-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.detail-table-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+#searchContacts:focus, #searchGroups:focus {
+    border-color: #06b6d4;
+    box-shadow: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-globe2 me-3"></i>Platforms</h1>
+            <p>Monitor and manage all your messaging platform integrations</p>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-hdd-network" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Platform Tabs -->
+<div class="platform-tabs" id="platformTabs">
+    <div class="platform-tab active" data-platform="all" onclick="switchPlatform('all')">
+        <i class="bi bi-grid-3x3-gap"></i> All Platforms
+    </div>
+</div>
+
+<!-- Content Area -->
+<div id="platformContent">
+    <div class="text-center py-5"><div class="spinner-border text-secondary"></div></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const PLATFORMS = {};
+    let currentPlatform = 'all';
+    let detailCache = {};
+
+    async function loadPlatformStats() {
+        try {
+            const res = await fetch('/api/analytics/platform-stats');
+            const data = await res.json();
+
+            // Build tabs
+            const tabsEl = document.getElementById('platformTabs');
+            let tabsHtml = `<div class="platform-tab active" data-platform="all" onclick="switchPlatform('all')">
+                <i class="bi bi-grid-3x3-gap"></i> All
+            </div>`;
+            data.platforms.forEach(p => {
+                PLATFORMS[p.platform] = p;
+                tabsHtml += `<div class="platform-tab" data-platform="${p.platform}" onclick="switchPlatform('${p.platform}')" style="--tab-color: ${p.color};">
+                    <i class="bi ${p.icon}"></i> ${p.label}
+                </div>`;
+            });
+            tabsEl.innerHTML = tabsHtml;
+
+            renderAllPlatforms(data.platforms);
+        } catch (e) {
+            document.getElementById('platformContent').innerHTML = '<p class="text-danger">Error loading platform data</p>';
+        }
+    }
+
+    function switchPlatform(platform) {
+        currentPlatform = platform;
+
+        // Update active tab
+        document.querySelectorAll('.platform-tab').forEach(tab => {
+            const isActive = tab.dataset.platform === platform;
+            tab.classList.toggle('active', isActive);
+            if (isActive && platform !== 'all') {
+                const p = PLATFORMS[platform];
+                if (p) tab.style.background = p.color;
+            } else if (isActive && platform === 'all') {
+                tab.style.background = '#06b6d4';
+                tab.style.color = 'white';
+            } else {
+                tab.style.background = '';
+                tab.style.color = '';
+            }
+        });
+
+        if (platform === 'all') {
+            renderAllPlatforms(Object.values(PLATFORMS));
+        } else {
+            loadPlatformDetail(platform);
+        }
+    }
+
+    function renderAllPlatforms(platforms) {
+        const content = document.getElementById('platformContent');
+        content.innerHTML = '<div class="row g-3">' + platforms.map(p => {
+            const status = p.running_bots > 0
+                ? `<span class="badge bg-success">${p.running_bots} running</span>`
+                : p.bot_count > 0
+                    ? `<span class="badge bg-secondary">${p.bot_count} bot${p.bot_count > 1 ? 's' : ''} (stopped)</span>`
+                    : `<span class="badge bg-light text-muted">Not set up</span>`;
+
+            return `
+            <div class="col-md-6 col-lg-4">
+                <div class="platform-card" onclick="switchPlatform('${p.platform}')">
+                    <div class="platform-card-header">
+                        <div class="platform-card-icon" style="background: ${p.color};">
+                            <i class="bi ${p.icon}"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">${p.label}</div>
+                            ${status}
+                        </div>
+                    </div>
+                    <div class="platform-card-body">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="platform-card-stat"><strong>${p.conversations}</strong> conversations</span>
+                            <span class="platform-card-stat"><strong>${p.messages}</strong> messages</span>
+                        </div>
+                        ${p.bot_count === 0 ? `<a href="/dashboard/guides#${p.platform}" class="btn btn-sm btn-outline-primary rounded-pill mt-2 w-100" onclick="event.stopPropagation();">
+                            <i class="bi bi-plus-lg me-1"></i>Set Up
+                        </a>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('') + '</div>';
+    }
+
+    async function loadPlatformDetail(platform) {
+        const content = document.getElementById('platformContent');
+        content.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-secondary"></div></div>';
+
+        try {
+            const res = await fetch(`/api/analytics/platform-stats/${platform}`);
+            const data = await res.json();
+            detailCache[platform] = data;
+            renderPlatformDetail(data);
+        } catch (e) {
+            content.innerHTML = '<p class="text-danger">Error loading platform details</p>';
+        }
+    }
+
+    function renderPlatformDetail(data) {
+        const content = document.getElementById('platformContent');
+        const caps = data.capabilities || {};
+        const capLabels = {
+            groups: 'Groups', media: 'Media', file_send: 'File Send', reactions: 'Reactions',
+            read_receipts: 'Read Receipts', typing_indicator: 'Typing', history_sync: 'History Sync',
+            contacts_list: 'Contacts', groups_list: 'Groups List', voice_messages: 'Voice'
+        };
+
+        content.innerHTML = `
+        <!-- Stats Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-4 col-md-2">
+                <div class="stat-card-sm">
+                    <div class="stat-value" style="color: ${data.color};">${data.running_bots}/${data.bot_count}</div>
+                    <div class="stat-label">Bots Running</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="stat-card-sm">
+                    <div class="stat-value">${data.total_conversations}</div>
+                    <div class="stat-label">Conversations</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="stat-card-sm">
+                    <div class="stat-value">${data.total_messages}</div>
+                    <div class="stat-label">Messages</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="stat-card-sm">
+                    <div class="stat-value">${data.total_contacts}</div>
+                    <div class="stat-label">Contacts</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="stat-card-sm">
+                    <div class="stat-value">${data.total_groups}</div>
+                    <div class="stat-label">Groups</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="stat-card-sm">
+                    <div class="stat-value">${data.messages_today}</div>
+                    <div class="stat-label">Today</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Bots -->
+            <div class="col-lg-8">
+                <div class="detail-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-robot me-2"></i>Bots on ${data.label}</span>
+                        <a href="/dashboard/bots" class="btn btn-sm btn-outline-secondary rounded-pill">Manage</a>
+                    </div>
+                    <div class="card-body p-0">
+                        ${data.bots.length ? `
+                        <div class="detail-table-scroll">
+                            <table class="table table-hover mb-0">
+                                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Account</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Conversations</th>
+                                        <th class="text-center">Messages</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.bots.map(b => `
+                                    <tr>
+                                        <td><strong>${b.name}</strong></td>
+                                        <td class="text-muted small">${b.account_name || b.account_phone || '—'}</td>
+                                        <td class="text-center">${b.is_running
+                                            ? '<span class="badge bg-success">Running</span>'
+                                            : '<span class="badge bg-secondary">Stopped</span>'}</td>
+                                        <td class="text-center">${b.conversation_count}</td>
+                                        <td class="text-center">${b.message_count}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>` : `
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-robot" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <p class="mt-2 mb-0">No bots on ${data.label} yet</p>
+                        </div>`}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capabilities -->
+            <div class="col-lg-4">
+                <div class="detail-card h-100">
+                    <div class="card-header"><i class="bi bi-check2-square me-2"></i>Capabilities</div>
+                    <div class="card-body">
+                        <div class="cap-matrix">
+                            ${Object.entries(capLabels).map(([key, label]) => {
+                                const has = caps[key];
+                                return `<div class="cap-item">
+                                    <i class="bi ${has ? 'bi-check-circle-fill' : 'bi-x-circle'} cap-icon ${has ? 'yes' : 'no'}"></i>
+                                    ${label}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                        <div class="mt-3 pt-3" style="border-top: 1px solid var(--border-color);">
+                            <div class="small text-muted mb-1">Auth Method</div>
+                            <span class="badge bg-light text-dark">${data.auth_method.replace('_', ' ')}</span>
+                            <a href="/dashboard/guides#${data.platform}" class="btn btn-sm btn-outline-secondary rounded-pill ms-2">
+                                <i class="bi bi-book me-1"></i>Setup Guide
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Conversations -->
+            <div class="col-12">
+                <div class="detail-card">
+                    <div class="card-header"><i class="bi bi-chat-dots me-2"></i>Recent Conversations</div>
+                    <div class="card-body">
+                        ${data.recent_conversations.length ? data.recent_conversations.map(c => `
+                        <div class="conv-item">
+                            <div>
+                                <span>${c.is_group ? '<i class="bi bi-people-fill me-1"></i>' : '<i class="bi bi-person me-1"></i>'}</span>
+                                <strong>${c.chat_name}</strong>
+                                ${c.bot_name ? `<span class="text-muted small ms-2">${c.bot_name}</span>` : ''}
+                            </div>
+                            <div>
+                                <span class="badge bg-light text-dark me-2">${c.message_count} msgs</span>
+                                <span class="text-muted small">${c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : '—'}</span>
+                            </div>
+                        </div>`).join('') : '<p class="text-muted text-center mb-0">No conversations yet</p>'}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // Auto-select platform from URL hash
+    const hash = window.location.hash.replace('#', '');
+
+    loadPlatformStats().then(() => {
+        if (hash && PLATFORMS[hash]) {
+            switchPlatform(hash);
+        }
+    });
+</script>
+{% endblock %}
