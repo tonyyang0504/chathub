@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from pydantic import BaseModel
 
-from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact, HubBotMembership
+from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact, HubBotMembership, ContactTag
 from app.auth.utils import get_current_user
 from app.auth.ownership import get_user_hub_ids
 
@@ -685,3 +685,134 @@ async def get_platform_detail(
         "bots": bots_data,
         "recent_conversations": recent_convs,
     }
+
+
+@router.get("/platform-contacts/{platform}")
+async def get_platform_contacts(
+    platform: str,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get rich contact data for a platform, merging hub Contact records with conversation data."""
+    if platform not in PLATFORM_META:
+        raise HTTPException(status_code=404, detail="Unknown platform")
+
+    # Get bot IDs for this platform
+    bots = db.query(BotProfile).filter(
+        BotProfile.user_id == current_user.id,
+        BotProfile.platform_type == platform
+    ).all()
+    bot_ids = [b.id for b in bots]
+    bot_names = {b.id: b.name for b in bots}
+
+    if not bot_ids:
+        return {"items": [], "total": 0, "page": page, "page_size": page_size, "total_pages": 0}
+
+    # Get hub IDs that contain these bots
+    hub_ids = [m.hub_id for m in db.query(HubBotMembership.hub_id).filter(
+        HubBotMembership.bot_profile_id.in_(bot_ids)
+    ).distinct().all()]
+
+    # Get all private conversations for these bots (to map phone -> bot)
+    convs = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_ids),
+        Conversation.is_group == False
+    ).all()
+
+    phone_to_conv = {}
+    for conv in convs:
+        identifier = (conv.phone or "").strip() or conv.chat_id
+        if identifier and identifier not in phone_to_conv:
+            phone_to_conv[identifier] = conv
+
+    # Get rich Contact records from hubs
+    hub_contacts = {}
+    if hub_ids:
+        query = db.query(Contact).filter(Contact.hub_id.in_(hub_ids))
+        if search:
+            query = query.filter(
+                (Contact.phone.ilike(f"%{search}%")) |
+                (Contact.display_name.ilike(f"%{search}%"))
+            )
+        for c in query.all():
+            if c.phone in phone_to_conv or c.phone:
+                hub_contacts[c.phone] = c
+
+    # Build merged contact list
+    all_contacts = []
+    seen = set()
+
+    # First: hub contacts with rich data
+    for phone, contact in hub_contacts.items():
+        if phone in seen:
+            continue
+        seen.add(phone)
+        conv = phone_to_conv.get(phone)
+        tags = db.query(ContactTag).filter(ContactTag.contact_id == contact.id).limit(5).all()
+        contact_bot_ids = set()
+        for c in convs:
+            cid = (c.phone or "").strip() or c.chat_id
+            if cid == phone:
+                contact_bot_ids.add(c.bot_profile_id)
+        bot_name = ", ".join(bot_names.get(bid, "") for bid in contact_bot_ids if bid in bot_names) or None
+
+        all_contacts.append({
+            "id": contact.id,
+            "phone": contact.phone,
+            "display_name": contact.display_name or (conv.chat_name if conv else None),
+            "profile_pic": contact.profile_pic or (conv.profile_pic if conv else None),
+            "sentiment": contact.sentiment,
+            "urgency": contact.urgency,
+            "predicted_intent": contact.predicted_intent,
+            "engagement_score": contact.engagement_score,
+            "follow_up_needed": contact.follow_up_needed,
+            "analysis_status": contact.analysis_status,
+            "last_interaction_at": contact.last_interaction_at.isoformat() if contact.last_interaction_at else (conv.last_message_at.isoformat() if conv and conv.last_message_at else None),
+            "first_seen_at": contact.first_seen_at.isoformat() if contact.first_seen_at else None,
+            "description": contact.description,
+            "tags": [{"id": t.id, "tag": t.tag, "value": t.value, "confidence": t.confidence} for t in tags],
+            "tag_count": len(tags),
+            "bot_name": bot_name,
+            "has_hub_data": True,
+        })
+
+    # Then: conversation-only contacts (not in any hub)
+    for identifier, conv in phone_to_conv.items():
+        if identifier in seen:
+            continue
+        seen.add(identifier)
+        name = conv.chat_name or conv.display_name or identifier
+        if search and search.lower() not in name.lower() and search.lower() not in identifier.lower():
+            continue
+        all_contacts.append({
+            "id": None,
+            "phone": identifier,
+            "display_name": name,
+            "profile_pic": conv.profile_pic,
+            "sentiment": None,
+            "urgency": None,
+            "predicted_intent": None,
+            "engagement_score": None,
+            "follow_up_needed": None,
+            "analysis_status": None,
+            "last_interaction_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+            "first_seen_at": None,
+            "description": None,
+            "tags": [],
+            "tag_count": 0,
+            "bot_name": bot_names.get(conv.bot_profile_id),
+            "has_hub_data": False,
+        })
+
+    # Sort by last_interaction_at desc
+    all_contacts.sort(key=lambda x: x["last_interaction_at"] or "", reverse=True)
+
+    total = len(all_contacts)
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+    offset = (page - 1) * page_size
+    page_items = all_contacts[offset:offset + page_size]
+
+    return {"items": page_items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}

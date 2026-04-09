@@ -102,6 +102,41 @@
     border-color: #06b6d4;
     box-shadow: none;
 }
+
+/* Contact analyzer styles */
+.sentiment-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.sentiment-positive { background: #dcfce7; color: #166534; }
+.sentiment-negative { background: #fee2e2; color: #991b1b; }
+.sentiment-neutral { background: #f3f4f6; color: #6b7280; }
+.urgency-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.urgency-high { background: #fee2e2; color: #991b1b; }
+.urgency-medium { background: #fef9c3; color: #854d0e; }
+.urgency-low { background: #f3f4f6; color: #6b7280; }
+.engagement-bar { width: 50px; height: 6px; border-radius: 3px; background: var(--hover-bg); overflow: hidden; }
+.engagement-bar .fill { height: 100%; border-radius: 3px; }
+.tag-pill { font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; background: var(--hover-bg); color: var(--text-muted); }
+
+/* Contact detail modal */
+.contact-detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 1.5rem; }
+.contact-detail-stats { display: flex; gap: 16px; margin-bottom: 1.5rem; }
+.contact-detail-stat { text-align: center; flex: 1; padding: 12px; background: var(--hover-bg); border-radius: 10px; }
+.contact-detail-stat .val { font-size: 1.4rem; font-weight: 700; }
+.contact-detail-stat .lbl { font-size: 0.75rem; color: var(--text-muted); }
+.contact-msg-item { padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
+.contact-msg-item:last-child { border-bottom: none; }
+.contact-msg-role { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.contact-msg-role.user { background: #dbeafe; color: #1e40af; }
+.contact-msg-role.assistant { background: #dcfce7; color: #166534; }
+
+.content-pagination {
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+    padding: 12px 16px; border-top: 1px solid var(--border-color);
+}
+.content-pagination .btn {
+    width: 36px; height: 36px; padding: 0;
+    display: flex; align-items: center; justify-content: center; border-radius: 50%;
+}
+.content-pagination .page-info { margin: 0 12px; color: var(--text-muted); font-size: 0.875rem; }
 </style>
 {% endblock %}
 
@@ -128,6 +163,21 @@
 <!-- Content Area -->
 <div id="platformContent">
     <div class="text-center py-5"><div class="spinner-border text-secondary"></div></div>
+</div>
+
+<!-- Contact Detail Modal -->
+<div class="modal fade" id="contactDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px;">
+            <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
+                <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2"></i>Contact Details</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="contactDetailContent">
+                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -231,28 +281,21 @@
             const data = await res.json();
             detailCache[platform] = data;
 
-            // Fetch contacts and groups using bot IDs for this platform
+            // Fetch groups using bot IDs for this platform
             const botIds = data.bots.map(b => b.id).join(',');
             if (botIds) {
-                const [contactsRes, groupsRes] = await Promise.all([
-                    fetch(`/api/bots/all/contacts?bot_ids=${botIds}`),
-                    fetch(`/api/bots/all/groups?bot_ids=${botIds}`)
-                ]);
-                const contactsData = await contactsRes.json();
+                const groupsRes = await fetch(`/api/bots/all/groups?bot_ids=${botIds}`);
                 const groupsData = await groupsRes.json();
-                data._contacts = contactsData.contacts || [];
                 data._groups = groupsData.groups || [];
-                // Map bot_id to bot name
                 const botMap = {};
                 data.bots.forEach(b => botMap[b.id] = b.name);
-                data._contacts.forEach(c => c.bot_name = botMap[c.bot_id] || '');
                 data._groups.forEach(g => g.bot_name = botMap[g.bot_id] || '');
             } else {
-                data._contacts = [];
                 data._groups = [];
             }
 
             renderPlatformDetail(data);
+            loadPlatformContacts(platform, 1);
         } catch (e) {
             content.innerHTML = '<p class="text-danger">Error loading platform details</p>';
         }
@@ -376,48 +419,17 @@
                 </div>
             </div>
 
-            <!-- Contacts -->
-            <div class="col-lg-6">
+            <!-- Contacts (rich view) -->
+            <div class="col-12">
                 <div class="detail-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-person me-2"></i>Contacts <span class="badge bg-secondary ms-1">${(data._contacts || []).length}</span></span>
-                        <input type="text" class="form-control form-control-sm rounded-pill" style="width: 140px;" placeholder="Search..." id="searchContacts" onkeyup="filterContacts()">
+                        <span><i class="bi bi-person-lines-fill me-2"></i>Contacts <span class="badge bg-secondary ms-1" id="contactsTotalBadge">${data.total_contacts}</span></span>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm rounded-pill" style="width: 160px;" placeholder="Search contacts..." id="searchContacts" onkeyup="searchPlatformContacts()">
+                        </div>
                     </div>
-                    <div class="card-body p-0">
-                        ${(data._contacts || []).length ? `
-                        <div class="detail-table-scroll" id="contactsTableWrap">
-                            <table class="table table-hover table-sm mb-0">
-                                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
-                                    <tr>
-                                        <th>Contact</th>
-                                        <th>Bot</th>
-                                        <th class="text-end">Last Active</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="contactsTableBody">
-                                    ${(data._contacts || []).map(c => `
-                                    <tr class="contact-row" data-name="${(c.display_name || c.phone || '').toLowerCase()}">
-                                        <td>
-                                            <div class="d-flex align-items-center gap-2">
-                                                ${c.profile_pic
-                                                    ? `<img src="${c.profile_pic}" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;">`
-                                                    : `<div style="width:28px;height:28px;border-radius:50%;background:${data.color};display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;"><i class="bi bi-person"></i></div>`}
-                                                <div>
-                                                    <div class="fw-medium" style="font-size:0.85rem;">${c.display_name || c.phone}</div>
-                                                    ${c.display_name && c.phone !== c.display_name ? `<div class="text-muted" style="font-size:0.75rem;">${c.phone}</div>` : ''}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-muted small">${c.bot_name || '—'}</td>
-                                        <td class="text-end text-muted small">${c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : '—'}</td>
-                                    </tr>`).join('')}
-                                </tbody>
-                            </table>
-                        </div>` : `
-                        <div class="text-center py-4 text-muted">
-                            <i class="bi bi-person" style="font-size: 2rem; opacity: 0.3;"></i>
-                            <p class="mt-2 mb-0">No contacts yet</p>
-                        </div>`}
+                    <div class="card-body p-0" id="richContactsContainer">
+                        <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
                     </div>
                 </div>
             </div>
@@ -491,11 +503,239 @@
     // Auto-select platform from URL hash
     const hash = window.location.hash.replace('#', '');
 
-    function filterContacts() {
-        const query = (document.getElementById('searchContacts')?.value || '').toLowerCase();
-        document.querySelectorAll('.contact-row').forEach(row => {
-            row.style.display = row.dataset.name.includes(query) ? '' : 'none';
-        });
+    // ============== Rich Contacts ==============
+    let contactsSearchTimeout = null;
+    const contactDetailModal = new bootstrap.Modal(document.getElementById('contactDetailModal'));
+
+    async function loadPlatformContacts(platform, page = 1) {
+        const container = document.getElementById('richContactsContainer');
+        if (!container) return;
+        const search = document.getElementById('searchContacts')?.value || '';
+
+        try {
+            const res = await fetch(`/api/analytics/platform-contacts/${platform}?page=${page}&page_size=15&search=${encodeURIComponent(search)}`);
+            const data = await res.json();
+            renderRichContacts(data, platform, page);
+            const badge = document.getElementById('contactsTotalBadge');
+            if (badge) badge.textContent = data.total;
+        } catch (e) {
+            container.innerHTML = '<div class="text-center py-3 text-danger">Error loading contacts</div>';
+        }
+    }
+
+    function renderRichContacts(data, platform, page) {
+        const container = document.getElementById('richContactsContainer');
+        const contacts = data.items || [];
+
+        if (!contacts.length) {
+            container.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-person" style="font-size:2rem;opacity:0.3;"></i><p class="mt-2 mb-0">No contacts yet</p></div>';
+            return;
+        }
+
+        const getSentimentBadge = (s) => {
+            if (!s) return '';
+            const cls = s === 'positive' ? 'sentiment-positive' : s === 'negative' ? 'sentiment-negative' : 'sentiment-neutral';
+            return `<span class="sentiment-badge ${cls}">${s}</span>`;
+        };
+        const getUrgencyBadge = (u) => {
+            if (!u) return '';
+            const cls = u === 'high' ? 'urgency-high' : u === 'medium' ? 'urgency-medium' : 'urgency-low';
+            return `<span class="urgency-badge ${cls}">${u}</span>`;
+        };
+        const getEngagementBar = (score) => {
+            const pct = Math.round((score || 0) * 100);
+            const color = pct >= 70 ? '#22c55e' : pct >= 40 ? '#eab308' : '#ef4444';
+            return `<div class="d-flex align-items-center gap-2"><div class="engagement-bar"><div class="fill" style="width:${pct}%;background:${color};"></div></div><small class="text-muted">${pct}%</small></div>`;
+        };
+        const platformColor = PLATFORMS[platform]?.color || '#666';
+
+        let html = `
+        <div class="detail-table-scroll" style="max-height: 500px;">
+            <table class="table table-hover table-sm mb-0">
+                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
+                    <tr>
+                        <th>Contact</th>
+                        <th>Bot</th>
+                        <th>Sentiment</th>
+                        <th>Intent</th>
+                        <th>Engagement</th>
+                        <th>Tags</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${contacts.map(c => `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                ${c.profile_pic
+                                    ? `<img src="${c.profile_pic}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">`
+                                    : `<div style="width:32px;height:32px;border-radius:50%;background:${platformColor};display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;"><i class="bi bi-person"></i></div>`}
+                                <div>
+                                    <div class="fw-medium" style="font-size:0.85rem;">${c.display_name || c.phone}</div>
+                                    ${c.display_name && c.phone !== c.display_name ? `<div class="text-muted" style="font-size:0.7rem;">${c.phone}</div>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-muted small">${c.bot_name || '—'}</td>
+                        <td>${getSentimentBadge(c.sentiment)} ${getUrgencyBadge(c.urgency)}</td>
+                        <td class="small">${c.predicted_intent || '<span class="text-muted">—</span>'}</td>
+                        <td>${getEngagementBar(c.engagement_score)}</td>
+                        <td>${c.tags && c.tags.length ? c.tags.slice(0, 3).map(t => `<span class="tag-pill">${t.tag}</span>`).join(' ') + (c.tag_count > 3 ? ` <span class="text-muted small">+${c.tag_count - 3}</span>` : '') : '<span class="text-muted small">—</span>'}</td>
+                        <td class="text-center">
+                            ${c.id ? `<button class="btn btn-sm btn-outline-primary rounded-pill px-2" onclick="showPlatformContactDetail(${c.id})" title="View Details"><i class="bi bi-eye"></i></button>` : '<span class="text-muted small">No hub</span>'}
+                        </td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+        // Pagination
+        if (data.total_pages > 1) {
+            html += `
+            <div class="content-pagination">
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', 1)" ${page === 1 ? 'disabled' : ''} title="First"><i class="bi bi-chevron-double-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${page - 1})" ${page === 1 ? 'disabled' : ''} title="Previous"><i class="bi bi-chevron-left"></i></button>
+                <span class="page-info">Page ${page} of ${data.total_pages} (${data.total} contacts)</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${page + 1})" ${page === data.total_pages ? 'disabled' : ''} title="Next"><i class="bi bi-chevron-right"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${data.total_pages})" ${page === data.total_pages ? 'disabled' : ''} title="Last"><i class="bi bi-chevron-double-right"></i></button>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function searchPlatformContacts() {
+        clearTimeout(contactsSearchTimeout);
+        contactsSearchTimeout = setTimeout(() => {
+            if (currentPlatform && currentPlatform !== 'all') {
+                loadPlatformContacts(currentPlatform, 1);
+            }
+        }, 300);
+    }
+
+    async function showPlatformContactDetail(contactId) {
+        const content = document.getElementById('contactDetailContent');
+        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+        contactDetailModal.show();
+
+        try {
+            const [contactRes, messagesRes] = await Promise.all([
+                fetch(`/api/hubs/contacts/${contactId}`),
+                fetch(`/api/hubs/contacts/${contactId}/messages`)
+            ]);
+
+            if (!contactRes.ok) throw new Error('Failed to load contact');
+            const contact = await contactRes.json();
+            const messagesData = messagesRes.ok ? await messagesRes.json() : { statistics: {}, recent_messages: [] };
+            renderPlatformContactDetail(contact, messagesData);
+        } catch (e) {
+            content.innerHTML = '<div class="alert alert-danger">Failed to load contact details</div>';
+        }
+    }
+
+    function renderPlatformContactDetail(contact, messagesData) {
+        const content = document.getElementById('contactDetailContent');
+        const engPct = Math.round((contact.engagement_score || 0) * 100);
+        const engColor = engPct >= 70 ? '#22c55e' : engPct >= 40 ? '#eab308' : '#ef4444';
+        const stats = messagesData.statistics || {};
+        const msgs = messagesData.recent_messages || [];
+
+        const getSentimentBadge = (s) => {
+            if (!s) return '<span class="sentiment-badge sentiment-neutral">unknown</span>';
+            const cls = s === 'positive' ? 'sentiment-positive' : s === 'negative' ? 'sentiment-negative' : 'sentiment-neutral';
+            return `<span class="sentiment-badge ${cls}">${s}</span>`;
+        };
+        const getUrgencyBadge = (u) => {
+            if (!u) return '';
+            const cls = u === 'high' ? 'urgency-high' : u === 'medium' ? 'urgency-medium' : 'urgency-low';
+            return `<span class="urgency-badge ${cls}">${u}</span>`;
+        };
+
+        const platformColor = PLATFORMS[currentPlatform]?.color || '#06b6d4';
+
+        content.innerHTML = `
+        <div style="max-height: 70vh; overflow-y: auto; padding-right: 0.5rem;">
+            <!-- Header -->
+            <div class="contact-detail-header">
+                ${contact.profile_pic
+                    ? `<img src="${contact.profile_pic}" class="rounded-circle" style="width:56px;height:56px;object-fit:cover;">`
+                    : `<div style="width:56px;height:56px;border-radius:50%;background:${platformColor};display:flex;align-items:center;justify-content:center;color:white;font-size:1.3rem;"><i class="bi bi-person"></i></div>`}
+                <div>
+                    <h5 class="mb-0">${contact.display_name || contact.phone}</h5>
+                    <div class="text-muted small">${contact.phone}</div>
+                    <div class="mt-1">${getSentimentBadge(contact.sentiment)} ${getUrgencyBadge(contact.urgency)}</div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="contact-detail-stats">
+                <div class="contact-detail-stat">
+                    <div class="val" style="color: ${engColor};">${engPct}%</div>
+                    <div class="lbl">Engagement</div>
+                </div>
+                <div class="contact-detail-stat">
+                    <div class="val">${stats.total_messages || 0}</div>
+                    <div class="lbl">Messages</div>
+                </div>
+                <div class="contact-detail-stat">
+                    <div class="val">${contact.tags?.length || 0}</div>
+                    <div class="lbl">Tags</div>
+                </div>
+                <div class="contact-detail-stat">
+                    <div class="val">${contact.first_seen_at ? new Date(contact.first_seen_at).toLocaleDateString() : '—'}</div>
+                    <div class="lbl">First Seen</div>
+                </div>
+            </div>
+
+            <!-- Engagement bar -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">Engagement Score</label>
+                <div class="progress" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar" style="width: ${engPct}%; background: ${engColor};"></div>
+                </div>
+            </div>
+
+            ${contact.predicted_intent ? `
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">Predicted Intent</label>
+                <div>${contact.predicted_intent}</div>
+            </div>` : ''}
+
+            ${contact.description ? `
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">AI Summary</label>
+                <div class="small" style="background: var(--hover-bg); padding: 10px; border-radius: 8px;">${contact.description}</div>
+            </div>` : ''}
+
+            ${contact.follow_up_needed ? `
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">Follow-up</label>
+                <div class="small">${contact.follow_up_reason || 'Follow-up needed'}</div>
+            </div>` : ''}
+
+            <!-- Tags -->
+            ${contact.tags && contact.tags.length ? `
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">Tags</label>
+                <div class="d-flex flex-wrap gap-1">
+                    ${contact.tags.map(t => `<span class="tag-pill">${t.tag}${t.value ? ': ' + t.value : ''}</span>`).join('')}
+                </div>
+            </div>` : ''}
+
+            <!-- Recent Messages -->
+            <div>
+                <label class="form-label fw-semibold small">Recent Messages</label>
+                ${msgs.length ? msgs.slice(0, 10).map(m => `
+                <div class="contact-msg-item">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="contact-msg-role ${m.role || 'user'}">${m.role === 'assistant' ? 'Bot' : 'User'}</span>
+                        <span class="text-muted" style="font-size:0.7rem;">${m.timestamp ? new Date(m.timestamp).toLocaleString() : ''}</span>
+                    </div>
+                    <div class="small">${(m.content || '').substring(0, 200)}${(m.content || '').length > 200 ? '...' : ''}</div>
+                </div>`).join('') : '<p class="text-muted small">No messages yet</p>'}
+            </div>
+        </div>`;
     }
 
     function filterGroups() {
