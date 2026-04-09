@@ -100,6 +100,11 @@ class BotProfileUpdate(BaseModel):
     telegram_api_hash: Optional[str] = None
     app_secret: Optional[str] = None
     slack_app_token: Optional[str] = None
+    signal_api_url: Optional[str] = None
+    phone_number_id: Optional[str] = None
+    imap_server: Optional[str] = None
+    smtp_server: Optional[str] = None
+    email_address: Optional[str] = None
 
     @field_validator('platform_type')
     @classmethod
