@@ -321,6 +321,34 @@ Tables with pagination must use the `.content-pagination` class (defined in `hub
 ### Dashboard — Removed Leftover Sections
 The main dashboard (`index.html`) no longer includes: Message Volume chart, Today's Activity by Hour, Needs Attention card, Upcoming Scheduled Content card, or Chart.js CDN import. These were leftovers. Dashboard shows: stat cards, bots table (with Platform column), quick actions, and activity feed.
 
+### Platforms Page (`/dashboard/platforms`)
+New page at `/dashboard/platforms` with nav link between Bots and Conversations. Gradient: cyan-blue `#06b6d4 → #0284c7`.
+
+**All Platforms view** (default): 13 platform cards in 3-column grid showing icon, name, status badge, conversations/messages count, "Set Up" link for unconfigured platforms.
+
+**Per-Platform detail view** (click a platform tab): 6 stat cards, bots table, rich contacts table (matching hub contact analyzer exactly), groups table, capabilities matrix, recent conversations. Groups + Recent Conversations sit side by side (`col-lg-6` each).
+
+**Platform tabs**: white background + border when unselected, brand color when active, no border on active (`border: none`). Same styling used on guides page. The "All" tab uses hero cyan color `#06b6d4`.
+
+**Contacts section** matches hub contact analyzer exactly:
+- Same CSS classes: `contact-avatar-sm/lg`, `avatar-placeholder-sm/lg` with `avatar-color-1-8`, `contact-info-badge` variants, `contact-tag-badge`, `engagement-meter-lg`, `message-stats-grid`, `recent-messages-chat` (WhatsApp bubbles)
+- Same table columns: Contact, Bot (badge-bot), Intent (badge-intent), Engagement (progress bar), Tags (with popover), Actions (eye + analyze + delete)
+- Same contact detail modal: 3-stat grid, engagement meter, bots/intent/sentiment/urgency badges, follow-up alert, profile summary, key topics, tags with confidence %, last active/first seen, message statistics, WhatsApp-style chat bubbles
+- Analyze All / Stop buttons: toggle via `updatePlatformAnalysisButtons(hasPending)` — idle shows Analyze All, running shows Stop + progress counter
+- Export dropdown (CSV/JSON) matching hub pattern
+- All header buttons use `align-items-stretch` + `d-flex` for equal height
+
+**APIs** (`app/analytics/routes.py`):
+- `GET /api/analytics/platform-stats` — summary for all 13 platforms
+- `GET /api/analytics/platform-stats/{platform}` — detail for one platform
+- `GET /api/analytics/platform-contacts/{platform}` — rich contacts with hub data merge, pagination, search. Returns `hub_id` per contact and `hub_ids` list. Prefers contact from hub with API key when duplicates exist.
+
+**Phone normalization**: Contact.phone may differ from Conversation.phone in `+` prefix or spaces. `normalize_phone()` strips `+` for matching. The hub analyze endpoint (`/api/hubs/contacts/{id}/analyze`) also normalizes with `re.sub(r'[\s\+\-]', '')` fallback.
+
+**Platform capabilities**: `PLATFORM_CAPABILITIES` dict in `analytics/routes.py` — hardcoded per platform (groups, media, file_send, reactions, read_receipts, typing_indicator, history_sync, contacts_list, groups_list, voice_messages).
+
+**Detail card styling**: `border-radius: 16px` with `overflow: hidden`, header `border-radius: 16px 16px 0 0`. Scrollable tables use `.detail-table-scroll` with `max-height: 350px`.
+
 ### Card Grid Layout (Equal Height)
 When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:
 - Clamp variable-length text to single lines with `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` and add `title` attribute for hover tooltip
