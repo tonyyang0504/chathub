@@ -268,17 +268,19 @@ class EmailAdapter(PlatformAdapter):
         return imap
 
     def _mark_existing_as_seen(self, state: dict):
-        """Record all current email UIDs so we only process NEW ones arriving after startup."""
+        """Record baseline UID. Process emails from last 2 minutes to catch recent ones."""
         imap = self._connect_imap(state)
         imap.select("INBOX")
-        # Use UID SEARCH to get all message UIDs
+
+        # Get all UIDs
         status, data = imap.uid("search", None, "ALL")
         if status == "OK" and data[0]:
             uids = data[0].split()
-            # Record the highest UID — only process UIDs above this
             if uids:
-                state["last_uid"] = int(uids[-1])
-                logger.info(f"Email: Recorded last UID {state['last_uid']} — will only process newer emails")
+                # Set threshold to 10 UIDs before the latest — catches very recent emails
+                latest_uid = int(uids[-1])
+                state["last_uid"] = max(0, latest_uid - 10)
+                logger.info(f"Email: Baseline UID {state['last_uid']} (latest: {latest_uid}) — will process last ~10 emails + all new")
             else:
                 state["last_uid"] = 0
         else:
