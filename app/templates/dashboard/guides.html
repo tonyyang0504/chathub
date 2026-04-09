@@ -79,31 +79,26 @@
     }
     .nav-pills .nav-link {
         border-radius: 20px;
-        padding: 8px 16px;
+        padding: 6px 14px;
+        font-size: 0.85rem;
         font-weight: 500;
         transition: all 0.2s;
+        background: var(--card-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
     }
-    .nav-pills .nav-link[href="#guide-whatsapp"]  { color: white; background: #25D366; }
-    .nav-pills .nav-link[href="#guide-telegram"]  { color: white; background: #26A5E4; }
-    .nav-pills .nav-link[href="#guide-discord"]   { color: white; background: #5865F2; }
-    .nav-pills .nav-link[href="#guide-messenger"] { color: white; background: #1877F2; }
-    .nav-pills .nav-link[href="#guide-instagram"] { color: white; background: #E4405F; }
-    .nav-pills .nav-link[href="#guide-line"]      { color: white; background: #00B900; }
-    .nav-pills .nav-link[href="#guide-slack"]      { color: white; background: #4A154B; }
-    .nav-pills .nav-link[href="#guide-signal"]    { color: white; background: #3A76F0; }
-    .nav-pills .nav-link[href="#guide-tinder"]    { color: white; background: #FE3C72; }
-    .nav-pills .nav-link[href="#guide-bumble"]    { color: #333; background: #FFC629; }
-    .nav-pills .nav-link.active { box-shadow: 0 2px 8px rgba(0,0,0,0.25); transform: scale(1.05); }
-    .nav-pills .nav-link.active[href="#guide-whatsapp"]  { background: #1da851 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-telegram"]  { background: #1a8ac4 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-discord"]   { background: #4752c4 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-messenger"] { background: #0d6ebd !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-instagram"] { background: #c13050 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-line"]      { background: #009700 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-slack"]      { background: #3b1139 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-signal"]    { background: #2d5ec0 !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-tinder"]    { background: #d9305f !important; color: white !important; }
-    .nav-pills .nav-link.active[href="#guide-bumble"]    { background: #d4a520 !important; color: white !important; }
+    .nav-pills .nav-link:hover { transform: scale(1.03); }
+    .nav-pills .nav-link.active { border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.05); color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-whatsapp"]  { background: #25D366 !important; }
+    .nav-pills .nav-link.active[href="#guide-telegram"]  { background: #26A5E4 !important; }
+    .nav-pills .nav-link.active[href="#guide-discord"]   { background: #5865F2 !important; }
+    .nav-pills .nav-link.active[href="#guide-messenger"] { background: #1877F2 !important; }
+    .nav-pills .nav-link.active[href="#guide-instagram"] { background: #E4405F !important; }
+    .nav-pills .nav-link.active[href="#guide-line"]      { background: #00B900 !important; }
+    .nav-pills .nav-link.active[href="#guide-slack"]      { background: #4A154B !important; }
+    .nav-pills .nav-link.active[href="#guide-signal"]    { background: #3A76F0 !important; }
+    .nav-pills .nav-link.active[href="#guide-tinder"]    { background: #FE3C72 !important; }
+    .nav-pills .nav-link.active[href="#guide-bumble"]    { background: #FFC629 !important; color: #333 !important; }
 </style>
 {% endblock %}
 
