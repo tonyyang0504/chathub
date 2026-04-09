@@ -1505,7 +1505,7 @@
                 }, 3000);
             } else {
                 const err = await res.json().catch(() => ({}));
-                showToast(err.detail || 'Analysis failed', 'danger');
+                showToast(err.detail || 'Analysis failed. Check hub has an API key configured.', 'warning');
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-cpu"></i>'; }
             }
         } catch (e) {
