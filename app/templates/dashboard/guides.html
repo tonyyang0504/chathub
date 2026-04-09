@@ -477,7 +477,9 @@
     // Auto-select tab based on URL hash
     const hash = window.location.hash.replace('#', '');
     if (hash) {
-        const tab = document.querySelector(`a[href="#guide-${hash}"]`);
+        // Try exact match first, then with underscores converted to dashes
+        const tab = document.querySelector(`a[href="#guide-${hash}"]`)
+            || document.querySelector(`a[href="#guide-${hash.replace(/_/g, '-')}"]`);
         if (tab) {
             new bootstrap.Tab(tab).show();
         }
