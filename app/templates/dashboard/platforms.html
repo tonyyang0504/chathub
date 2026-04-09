@@ -593,6 +593,9 @@
                 <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
             </div>
             <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button type="button" class="btn btn-sm rounded-pill px-3" style="background: linear-gradient(135deg, #10b981, #059669); color: white;" onclick="analyzeCurrentContact()" id="modalAnalyzeBtn">
+                    <i class="bi bi-cpu me-1"></i>Analyze with AI
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -843,8 +846,15 @@
                 <div class="detail-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-person-lines-fill me-2"></i>Contacts <span class="badge bg-secondary ms-1" id="contactsTotalBadge">${data.total_contacts}</span></span>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
                             <input type="text" class="form-control form-control-sm rounded-pill" style="width: 160px;" placeholder="Search contacts..." id="searchContacts" onkeyup="searchPlatformContacts()">
+                            <span id="platformAnalysisProgress" class="small text-muted" style="display: none;"></span>
+                            <button class="btn btn-sm btn-outline-success rounded-pill" onclick="analyzeAllPlatformContacts()" id="analyzeAllBtn" title="Analyze all contacts with AI">
+                                <i class="bi bi-cpu me-1"></i>Analyze All
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning rounded-pill" style="display: none;" onclick="stopPlatformAnalysis()" id="stopAnalysisBtn" title="Stop analysis">
+                                <i class="bi bi-stop-circle me-1"></i>Stop
+                            </button>
                         </div>
                     </div>
                     <div class="card-body p-0" id="richContactsContainer">
@@ -1121,6 +1131,7 @@
         try {
             const res = await fetch(`/api/analytics/platform-contacts/${platform}?page=${page}&page_size=${contactsPageSize}&search=${encodeURIComponent(search)}`);
             const data = await res.json();
+            platformHubIds = data.hub_ids || [];
             renderRichContacts(data, platform, page);
             const badge = document.getElementById('contactsTotalBadge');
             if (badge) badge.textContent = data.total;
@@ -1189,6 +1200,9 @@
                                         <button class="btn btn-outline-primary" onclick="showPlatformContactDetail(${c.id})" title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </button>
+                                        <button class="btn btn-outline-success" onclick="analyzePlatformContact(${c.id}, this)" title="Analyze with AI" id="analyzeBtn-${c.id}">
+                                            <i class="bi bi-cpu"></i>
+                                        </button>
                                     </div>` : '<span class="text-muted small">No hub</span>'}
                                 </td>
                             </tr>
@@ -1233,7 +1247,24 @@
         }, 300);
     }
 
+    let currentDetailContactId = null;
+
+    async function analyzeCurrentContact() {
+        if (!currentDetailContactId) return;
+        const btn = document.getElementById('modalAnalyzeBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Analyzing...';
+        await analyzePlatformContact(currentDetailContactId, null);
+        // Refresh detail after a delay
+        setTimeout(async () => {
+            await showPlatformContactDetail(currentDetailContactId);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cpu me-1"></i>Analyze with AI';
+        }, 4000);
+    }
+
     async function showPlatformContactDetail(contactId) {
+        currentDetailContactId = contactId;
         const content = document.getElementById('contactDetailContent');
         content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
         contactDetailModal.show();
@@ -1447,6 +1478,115 @@
                 </div>
             </div>
         `;
+    }
+
+    // ============== Contact Analysis ==============
+    let platformHubIds = [];
+    let platformAnalysisPolling = null;
+
+    // Store hub_ids when contacts are loaded
+    function renderRichContactsOrig() {} // placeholder
+    const _origLoadPlatformContacts = loadPlatformContacts;
+
+    async function analyzePlatformContact(contactId, btn) {
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+        try {
+            const res = await fetch(`/api/hubs/contacts/${contactId}/analyze`, { method: 'POST' });
+            if (res.ok) {
+                showToast('Contact analysis started', 'success');
+                // Poll for completion then refresh
+                setTimeout(() => {
+                    if (currentPlatform && currentPlatform !== 'all') {
+                        loadPlatformContacts(currentPlatform, 1);
+                    }
+                }, 3000);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Analysis failed', 'danger');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-cpu"></i>'; }
+            }
+        } catch (e) {
+            showToast('Analysis failed', 'danger');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-cpu"></i>'; }
+        }
+    }
+
+    async function analyzeAllPlatformContacts() {
+        if (!platformHubIds || !platformHubIds.length) {
+            showToast('No hubs found for this platform. Add bots to a hub first.', 'warning');
+            return;
+        }
+
+        const analyzeBtn = document.getElementById('analyzeAllBtn');
+        const stopBtn = document.getElementById('stopAnalysisBtn');
+        const progress = document.getElementById('platformAnalysisProgress');
+
+        analyzeBtn.style.display = 'none';
+        stopBtn.style.display = '';
+        progress.style.display = 'inline';
+        progress.textContent = 'Starting...';
+
+        try {
+            // Analyze all hubs for this platform
+            for (const hubId of platformHubIds) {
+                await fetch(`/api/hubs/${hubId}/contacts/analyze-all`, { method: 'POST' });
+            }
+            showToast('Analysis started for all contacts', 'success');
+            startAnalysisPolling();
+        } catch (e) {
+            showToast('Failed to start analysis', 'danger');
+            analyzeBtn.style.display = '';
+            stopBtn.style.display = 'none';
+            progress.style.display = 'none';
+        }
+    }
+
+    function startAnalysisPolling() {
+        if (platformAnalysisPolling) clearInterval(platformAnalysisPolling);
+        platformAnalysisPolling = setInterval(async () => {
+            if (!platformHubIds.length) return;
+            try {
+                let totalPending = 0;
+                let totalCompleted = 0;
+                let totalContacts = 0;
+                for (const hubId of platformHubIds) {
+                    const res = await fetch(`/api/hubs/${hubId}/contacts/analysis-status`);
+                    if (res.ok) {
+                        const status = await res.json();
+                        totalPending += (status.pending || 0) + (status.analyzing || 0);
+                        totalCompleted += status.completed || 0;
+                        totalContacts += status.total_contacts || 0;
+                    }
+                }
+                const progress = document.getElementById('platformAnalysisProgress');
+                if (progress) progress.textContent = `${totalCompleted}/${totalContacts} analyzed`;
+
+                if (totalPending === 0) {
+                    stopPlatformAnalysis();
+                    // Refresh contacts
+                    if (currentPlatform && currentPlatform !== 'all') {
+                        loadPlatformContacts(currentPlatform, 1);
+                    }
+                    showToast('Analysis complete', 'success');
+                }
+            } catch (e) {}
+        }, 3000);
+    }
+
+    function stopPlatformAnalysis() {
+        if (platformAnalysisPolling) {
+            clearInterval(platformAnalysisPolling);
+            platformAnalysisPolling = null;
+        }
+        const analyzeBtn = document.getElementById('analyzeAllBtn');
+        const stopBtn = document.getElementById('stopAnalysisBtn');
+        const progress = document.getElementById('platformAnalysisProgress');
+        if (analyzeBtn) analyzeBtn.style.display = '';
+        if (stopBtn) stopBtn.style.display = 'none';
+        if (progress) progress.style.display = 'none';
     }
 
     function filterGroups() {

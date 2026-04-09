@@ -776,6 +776,7 @@ async def get_platform_contacts(
             "tags": [{"id": t.id, "tag": t.tag, "value": t.value, "confidence": t.confidence} for t in tags],
             "tag_count": len(tags),
             "bot_name": bot_name,
+            "hub_id": contact.hub_id,
             "has_hub_data": True,
         })
 
@@ -804,6 +805,7 @@ async def get_platform_contacts(
             "tags": [],
             "tag_count": 0,
             "bot_name": bot_names.get(conv.bot_profile_id),
+            "hub_id": None,
             "has_hub_data": False,
         })
 
@@ -815,4 +817,4 @@ async def get_platform_contacts(
     offset = (page - 1) * page_size
     page_items = all_contacts[offset:offset + page_size]
 
-    return {"items": page_items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
+    return {"items": page_items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages, "hub_ids": hub_ids}
