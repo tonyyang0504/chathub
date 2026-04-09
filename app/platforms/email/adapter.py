@@ -340,7 +340,12 @@ class EmailAdapter(PlatformAdapter):
                 content = f"Subject: {subject}\n\n{body}" if subject else body
 
                 try:
-                    timestamp = email.utils.parsedate_to_datetime(date_str) if date_str else datetime.utcnow()
+                    ts = email.utils.parsedate_to_datetime(date_str) if date_str else datetime.utcnow()
+                    # Convert to UTC naive datetime for consistent storage
+                    if ts.tzinfo is not None:
+                        from datetime import timezone
+                        ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
+                    timestamp = ts
                 except Exception:
                     timestamp = datetime.utcnow()
 
