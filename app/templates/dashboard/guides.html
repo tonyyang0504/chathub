@@ -99,6 +99,9 @@
     .nav-pills .nav-link.active[href="#guide-signal"]    { background: #3A76F0 !important; }
     .nav-pills .nav-link.active[href="#guide-tinder"]    { background: #FE3C72 !important; }
     .nav-pills .nav-link.active[href="#guide-bumble"]    { background: #FFC629 !important; color: #333 !important; }
+    .nav-pills .nav-link.active[href="#guide-linkedin"]  { background: #0A66C2 !important; }
+    .nav-pills .nav-link.active[href="#guide-imessage"]  { background: #34C759 !important; }
+    .nav-pills .nav-link.active[href="#guide-wechat"]    { background: #07C160 !important; }
 </style>
 {% endblock %}
 
@@ -130,6 +133,9 @@
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-signal"><i class="bi bi-shield-lock-fill me-1"></i>Signal</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-tinder"><i class="bi bi-fire me-1"></i>Tinder</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-bumble"><i class="bi bi-heart-fill me-1"></i>Bumble</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-linkedin"><i class="bi bi-linkedin me-1"></i>LinkedIn</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-imessage"><i class="bi bi-chat-square-text me-1"></i>iMessage</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-wechat"><i class="bi bi-wechat me-1"></i>WeChat</a></li>
 </ul>
 
 <div class="tab-content">
@@ -361,6 +367,75 @@
                 <div class="step-item"><span class="step-number" style="background: #FFC629;">4</span><div>The bot connects and starts receiving messages from your matches.</div></div>
                 <div class="warning-box mt-3">
                     <b>Warning:</b> This uses an unofficial API. There's a risk of account restrictions. In heterosexual matches, women must message first (Bumble's rule).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LinkedIn -->
+    <div class="tab-pane fade" id="guide-linkedin">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #0A66C2;"><i class="bi bi-linkedin"></i></div>
+                <div>
+                    <h5 class="mb-0">LinkedIn</h5>
+                    <small class="text-muted">OAuth Authentication</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #0A66C2;">1</span><div>Go to <a href="https://www.linkedin.com/developers/apps" target="_blank">LinkedIn Developer Portal</a> → Click <b>Create App</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #0A66C2;">2</span><div>Fill in app name, LinkedIn Page, logo → Submit. Go to <b>Auth</b> tab → Copy <b>Client ID</b> and <b>Client Secret</b>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #0A66C2;">3</span><div>Under <b>OAuth 2.0 settings</b>, add your redirect URL: <code>https://your-server/auth/linkedin-callback</code>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #0A66C2;">4</span><div>Request access to the <b>Messaging API</b> product under the <b>Products</b> tab (requires approval).</div></div>
+                <div class="step-item"><span class="step-number" style="background: #0A66C2;">5</span><div>In ChatHub, create a LinkedIn bot, click <b>Start</b>, enter your OAuth credentials.</div></div>
+                <div class="warning-box mt-3">
+                    <b>Note:</b> LinkedIn Messaging API has strict rate limits (100 requests/day). Access requires LinkedIn approval. Best suited for low-volume professional messaging.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iMessage -->
+    <div class="tab-pane fade" id="guide-imessage">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #34C759;"><i class="bi bi-chat-square-text"></i></div>
+                <div>
+                    <h5 class="mb-0">iMessage</h5>
+                    <small class="text-muted">BlueBubbles Server (macOS Required)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #34C759;">1</span><div>You need a <b>Mac</b> running 24/7. Download and install <a href="https://bluebubbles.app" target="_blank">BlueBubbles</a> on the Mac.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #34C759;">2</span><div>Open BlueBubbles → Complete setup → Enable the <b>REST API</b> under Settings → API/Webhooks.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #34C759;">3</span><div>Note the <b>Server URL</b> (e.g., <code>https://your-mac.ngrok.io</code>) and <b>Password</b> from BlueBubbles settings.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #34C759;">4</span><div>In ChatHub, create an iMessage bot, click <b>Start</b>, enter the BlueBubbles server URL and password.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> BlueBubbles requires the Mac to stay on with Messages app signed in. Use a Mac Mini as a dedicated server. Supports DMs, group chats, reactions, attachments, and read receipts.
+                </div>
+                <div class="warning-box mt-2">
+                    <b>Note:</b> iMessage only works with Apple devices. Non-Apple contacts will receive SMS (green bubbles) which may not be supported by all carriers via BlueBubbles.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WeChat -->
+    <div class="tab-pane fade" id="guide-wechat">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #07C160;"><i class="bi bi-wechat"></i></div>
+                <div>
+                    <h5 class="mb-0">WeChat</h5>
+                    <small class="text-muted">QR Code Authentication (Planned)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #07C160;">1</span><div>Create a new bot in ChatHub, select <b>WeChat</b>, enter your AI API key.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #07C160;">2</span><div>Click <b>Start</b> → A QR code will appear (similar to WhatsApp).</div></div>
+                <div class="step-item"><span class="step-number" style="background: #07C160;">3</span><div>Open <b>WeChat</b> on your phone → Scan the QR code to log in.</div></div>
+                <div class="warning-box mt-3">
+                    <b>Note:</b> WeChat integration is currently <b>planned</b> and not yet fully implemented. WeChat has strict API policies and may require a WeChat Official Account for automation.
                 </div>
             </div>
         </div>
