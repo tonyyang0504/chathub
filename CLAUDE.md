@@ -19,10 +19,6 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 pytest tests/
 pytest tests/test_auth.py -v          # Single file
 pytest tests/ -v --cov=app            # With coverage
-
-# Build Windows executable
-python build_windows.py
-python build_windows.py --clean --skip-playwright
 ```
 
 ## Architecture Overview
@@ -95,8 +91,7 @@ chathub/
 ├── tests/                         # pytest tests
 ├── .env                           # Environment config
 ├── run.py                         # Dev server entry
-├── build_windows.py               # PyInstaller build script
-└── tray_app.py                    # Windows system tray app
+└── run.py                         # Dev server entry
 ```
 
 ### Core Components
@@ -214,17 +209,7 @@ All models in `app/database.py`:
 
 - **Development**: `python run.py`
 - **Linux**: systemd services (xvfb.service + chathub.service) with DISPLAY=:99
-- **Windows**: PyInstaller executable with system tray (`tray_app.py`), data in `%APPDATA%/ChatHub/`
-
-### Frozen Executable Path Handling
-
-When running as PyInstaller executable vs script:
-```python
-if getattr(sys, 'frozen', False):
-    BASE_DIR = Path(sys.executable).resolve().parent.parent.parent  # <project>/dist/ChatHub/ChatHub.exe
-else:
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent
-```
+- **Windows**: `python run.py` on Windows server (direct execution, no PyInstaller)
 
 ## Environment Variables
 
