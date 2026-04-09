@@ -72,6 +72,8 @@ from app.platforms.slack.adapter import SlackAdapter
 platform_registry.register(PlatformType.SLACK, SlackAdapter)
 from app.platforms.signal.adapter import SignalAdapter
 platform_registry.register(PlatformType.SIGNAL, SignalAdapter)
+from app.platforms.imessage.adapter import iMessageAdapter
+platform_registry.register(PlatformType.IMESSAGE, iMessageAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
@@ -402,6 +404,57 @@ app.include_router(facebook_oauth_router, prefix="/api/bots", tags=["Facebook OA
 app.include_router(facebook_callback_router, prefix="/auth", tags=["Facebook OAuth"])
 from app.health import router as health_router
 app.include_router(health_router, tags=["Health Check"])
+from app.hubs.report_scheduler import generate_hub_report, format_report_text
+from app.database import ContactSegment
+
+@app.get("/api/segments")
+async def list_segments(user = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.auth.ownership import get_user_hub_ids
+    hub_ids = get_user_hub_ids(user, db)
+    segs = db.query(ContactSegment).filter(ContactSegment.hub_id.in_(hub_ids)).all() if hub_ids else []
+    return {"segments": [{"id": s.id, "hub_id": s.hub_id, "name": s.name, "description": s.description, "filter_rules": s.filter_rules, "contact_count": s.contact_count, "created_at": s.created_at.isoformat() + "Z" if s.created_at else None} for s in segs]}
+
+@app.post("/api/segments")
+async def create_segment(body: dict, user = Depends(get_current_user), db: Session = Depends(get_db)):
+    seg = ContactSegment(hub_id=body["hub_id"], name=body["name"], description=body.get("description"), filter_rules=body.get("filter_rules", "{}"))
+    db.add(seg); db.commit(); db.refresh(seg)
+    return {"id": seg.id, "success": True}
+
+@app.put("/api/segments/{seg_id}")
+async def update_segment(seg_id: int, body: dict, user = Depends(get_current_user), db: Session = Depends(get_db)):
+    seg = db.query(ContactSegment).filter(ContactSegment.id == seg_id).first()
+    if not seg: raise HTTPException(status_code=404, detail="Segment not found")
+    if body.get("name"): seg.name = body["name"]
+    if body.get("description") is not None: seg.description = body["description"]
+    if body.get("filter_rules"): seg.filter_rules = body["filter_rules"]
+    db.commit()
+    return {"success": True}
+
+@app.delete("/api/segments/{seg_id}")
+async def delete_segment(seg_id: int, user = Depends(get_current_user), db: Session = Depends(get_db)):
+    seg = db.query(ContactSegment).filter(ContactSegment.id == seg_id).first()
+    if seg: db.delete(seg); db.commit()
+    return {"success": True}
+
+@app.get("/api/reports/generate")
+async def api_generate_report(
+    hub_id: int,
+    period: str = "daily",
+    user = Depends(get_current_user),
+):
+    """Generate a hub report."""
+    report = generate_hub_report(hub_id, period)
+    text = format_report_text(report)
+    return {"report": report, "text": text}
+
+from app.webhooks import router as webhooks_router
+app.include_router(webhooks_router, tags=["Webhooks"])
+from app.voice_calls import router as voice_calls_router
+app.include_router(voice_calls_router, tags=["Voice Calls"])
+from app.mobile_api import router as mobile_api_router
+app.include_router(mobile_api_router, tags=["Mobile API"])
+from app.api_v1 import router as api_v1_router
+app.include_router(api_v1_router, tags=["Public API v1"])
 app.include_router(conversations_router, prefix="/api/conversations", tags=["Conversations"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
@@ -497,6 +550,66 @@ async def dashboard_guides(
     return templates.TemplateResponse(
         "dashboard/guides.html",
         {"request": request, "user": user, "active_page": "guides"}
+    )
+
+
+@app.get("/dashboard/api-access")
+async def dashboard_api_access(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """API access/keys page"""
+    return templates.TemplateResponse(
+        "dashboard/api_keys.html",
+        {"request": request, "user": user, "active_page": "api-access"}
+    )
+
+
+@app.get("/dashboard/voice-calls")
+async def dashboard_voice_calls(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Voice calls configuration page"""
+    return templates.TemplateResponse(
+        "dashboard/voice_calls.html",
+        {"request": request, "user": user, "active_page": "voice-calls"}
+    )
+
+
+@app.get("/dashboard/segments")
+async def dashboard_segments(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Contact segments page"""
+    return templates.TemplateResponse(
+        "dashboard/segments.html",
+        {"request": request, "user": user, "active_page": "segments"}
+    )
+
+
+@app.get("/dashboard/reports")
+async def dashboard_reports(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Reports page"""
+    return templates.TemplateResponse(
+        "dashboard/reports.html",
+        {"request": request, "user": user, "active_page": "reports"}
+    )
+
+
+@app.get("/dashboard/webhooks")
+async def dashboard_webhooks(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Webhook keys management page"""
+    return templates.TemplateResponse(
+        "dashboard/webhooks.html",
+        {"request": request, "user": user, "active_page": "webhooks"}
     )
 
 

@@ -1,0 +1,7 @@
+/**
+ * ChatHub Chrome Extension - Background Service Worker
+ */
+
+chrome.action.onClicked.addListener((tab) => {
+    chrome.tabs.sendMessage(tab.id, { action: 'toggleSidebar' });
+});

@@ -3,7 +3,18 @@
 {% block title %}Bot Management - ChatHub{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
 <style>
+.tool-hero {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
     /* Bot card action buttons - pill shaped */
     .card-footer .btn-group .btn {
         border-radius: 20px;
@@ -254,15 +265,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2>Bot Management</h2>
-        <p class="text-muted">Create and manage your messaging bots</p>
-    </div>
-    <div class="col-auto">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createBotModal">
-            <i class="bi bi-plus-lg me-2"></i>Create New Bot
-        </button>
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-robot me-3"></i>Bot Management</h1>
+            <p>Create and manage your messaging bots</p>
+            <button class="btn btn-light rounded-pill mt-2" data-bs-toggle="modal" data-bs-target="#createBotModal">
+                <i class="bi bi-plus-lg me-1"></i>Create New Bot
+            </button>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-cpu" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
     </div>
 </div>
 
@@ -377,6 +391,22 @@
                                     <input type="number" class="form-control" name="presence_penalty" min="-2" max="2" step="0.1" value="0.0">
                                     <small class="text-muted">New topics (-2 to 2)</small>
                                 </div>
+                            </div>
+                        </div>
+                        <!-- Fallback AI Providers (Collapsible) -->
+                        <div class="col-12 mt-2">
+                            <a class="text-decoration-none" data-bs-toggle="collapse" href="#createFallbackProviders" role="button" aria-expanded="false">
+                                <i class="bi bi-chevron-down me-1"></i>Fallback AI Providers
+                            </a>
+                            <small class="text-muted ms-2">(Auto-switch when primary fails)</small>
+                        </div>
+                        <div class="collapse col-12" id="createFallbackProviders">
+                            <div class="mt-2 p-3 rounded" style="background: var(--hover-bg); border-radius: 12px;">
+                                <div id="createFallbackList"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill mt-2" onclick="addFallbackProvider('create')">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Fallback Provider
+                                </button>
+                                <input type="hidden" name="fallback_providers" id="createFallbackProviders_value" value="[]">
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -586,6 +616,22 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Fallback AI Providers (Collapsible) -->
+                        <div class="col-12 mt-2">
+                            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editFallbackProviders" role="button" aria-expanded="false">
+                                <i class="bi bi-chevron-down me-1"></i>Fallback AI Providers
+                            </a>
+                            <small class="text-muted ms-2">(Auto-switch when primary fails)</small>
+                        </div>
+                        <div class="collapse col-12" id="editFallbackProviders">
+                            <div class="mt-2 p-3 rounded" style="background: var(--hover-bg); border-radius: 12px;">
+                                <div id="editFallbackList"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill mt-2" onclick="addFallbackProvider('edit')">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Fallback Provider
+                                </button>
+                                <input type="hidden" name="fallback_providers" id="editFallbackProviders_value" value="[]">
+                            </div>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label">Max History</label>
                             <input type="number" class="form-control" name="max_history" id="editMaxHistory" min="1" max="100">
@@ -726,6 +772,12 @@
             connectFields: [
                 {key: 'platform_token', label: 'Bot Token (xoxb-)', placeholder: 'xoxb-...', type: 'password'},
                 {key: 'slack_app_token', label: 'App Token (xapp-)', placeholder: 'xapp-...', type: 'password'},
+            ]},
+        imessage:  { label: 'iMessage',  icon: 'bi-chat-square-text-fill', color: '#34C759', auth: 'credentials', tokenLabel: null,
+            setupGuide: '1. Install <a href="https://bluebubbles.app" target="_blank">BlueBubbles</a> on a Mac<br>2. Enable Private API → get server URL + password<br>3. Enter below',
+            connectFields: [
+                {key: 'imessage_server_url', label: 'BlueBubbles Server URL', placeholder: 'http://192.168.1.100:1234', type: 'text'},
+                {key: 'platform_token', label: 'Password', placeholder: 'BlueBubbles password', type: 'password'},
             ]},
         signal:    { label: 'Signal',    icon: 'bi-shield-lock-fill', color: '#3A76F0', auth: 'credentials', tokenLabel: null,
             setupGuide: '1. Run signal-cli REST API: <code>docker run -p 8080:8080 bbernhard/signal-cli-rest-api</code><br>2. Register number: <code>POST /v1/register/+PHONE</code><br>3. Verify SMS code<br>4. Enter API URL + phone number below',
@@ -1006,6 +1058,7 @@
             ai_provider: form.ai_provider.value,
             api_key: form.api_key.value,
             model: form.model.value,
+            fallback_providers: document.getElementById('createFallbackProviders_value')?.value || '[]',
             system_prompt: form.system_prompt.value,
             temperature: parseFloat(form.temperature.value),
             max_tokens: parseInt(form.max_tokens.value),
@@ -1789,6 +1842,7 @@
             document.getElementById('editEndingDetection').checked = bot.ending_detection_enabled === true;
             document.getElementById('editDmPairing').checked = bot.dm_pairing_enabled === true;
             document.getElementById('editVoiceResponse').checked = bot.voice_response_enabled === true;
+            loadFallbackProviders('edit', bot.fallback_providers);
             document.getElementById('editHeadless').checked = bot.headless;
             // Proxy settings
             document.getElementById('editProxyEnabled').checked = bot.proxy_enabled || false;
@@ -1813,6 +1867,7 @@
             platform_type: form.platform_type.value,
             ai_provider: form.ai_provider.value,
             model: form.model.value,
+            fallback_providers: document.getElementById('editFallbackProviders_value')?.value || '[]',
             system_prompt: form.system_prompt.value,
             temperature: parseFloat(form.temperature.value),
             max_tokens: parseInt(form.max_tokens.value),
@@ -2543,6 +2598,82 @@
         `;
 
         setTimeout(() => { var inp = document.getElementById('telegramAuthInput'); if (inp) inp.focus(); }, 100);
+    }
+
+    // ============== Fallback Providers ==============
+    const FALLBACK_PROVIDERS = ['openai', 'anthropic', 'google', 'deepseek', 'qwen', 'grok'];
+
+    function addFallbackProvider(prefix) {
+        const list = document.getElementById(prefix + 'FallbackList');
+        const idx = list.children.length;
+        const row = document.createElement('div');
+        row.className = 'd-flex gap-2 mb-2 align-items-center';
+        row.innerHTML = `
+            <select class="form-select form-select-sm fallback-provider" style="border-radius: 20px; width: 140px;">
+                ${FALLBACK_PROVIDERS.map(p => `<option value="${p}">${PROVIDER_LABELS[p] || p}</option>`).join('')}
+            </select>
+            <input type="password" class="form-control form-control-sm fallback-key" placeholder="API Key" style="border-radius: 20px;">
+            <select class="form-select form-select-sm fallback-model" style="border-radius: 20px; width: 180px;"></select>
+            <button type="button" class="btn btn-sm btn-outline-danger" style="width: 30px; height: 30px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="this.parentElement.remove(); updateFallbackJSON('${prefix}')"><i class="bi bi-x"></i></button>
+        `;
+        const providerSelect = row.querySelector('.fallback-provider');
+        const modelSelect = row.querySelector('.fallback-model');
+        // Populate model dropdown based on selected provider
+        function updateFallbackModelDropdown() {
+            const providerName = providerSelect.value;
+            const provider = PROVIDER_MODELS[providerName];
+            if (!provider) return;
+            let html = '';
+            provider.groups.forEach(group => {
+                html += `<option disabled style="font-weight:600; font-size:0.75rem;">── ${group.header} ──</option>`;
+                group.models.forEach(m => {
+                    html += `<option value="${m.value}"${m.value === provider.defaultModel ? ' selected' : ''}>${m.label}</option>`;
+                });
+            });
+            modelSelect.innerHTML = html;
+            updateFallbackJSON(prefix);
+        }
+        providerSelect.addEventListener('change', updateFallbackModelDropdown);
+        updateFallbackModelDropdown();
+        row.querySelectorAll('select, input').forEach(el => el.addEventListener('change', () => updateFallbackJSON(prefix)));
+        list.appendChild(row);
+    }
+
+    function updateFallbackJSON(prefix) {
+        const list = document.getElementById(prefix + 'FallbackList');
+        const hidden = document.getElementById(prefix + 'FallbackProviders_value');
+        const providers = [];
+        list.querySelectorAll('.d-flex').forEach(row => {
+            const provider = row.querySelector('.fallback-provider')?.value;
+            const key = row.querySelector('.fallback-key')?.value;
+            const model = row.querySelector('.fallback-model')?.value;
+            if (provider && key) {
+                providers.push({provider, api_key: key, model: model || null});
+            }
+        });
+        hidden.value = JSON.stringify(providers);
+    }
+
+    function loadFallbackProviders(prefix, jsonStr) {
+        const list = document.getElementById(prefix + 'FallbackList');
+        list.innerHTML = '';
+        try {
+            const providers = JSON.parse(jsonStr || '[]');
+            providers.forEach(fb => {
+                addFallbackProvider(prefix);
+                const lastRow = list.lastElementChild;
+                if (lastRow) {
+                    const providerSelect = lastRow.querySelector('.fallback-provider');
+                    providerSelect.value = fb.provider || 'openai';
+                    // Trigger model dropdown repopulation for the selected provider
+                    providerSelect.dispatchEvent(new Event('change'));
+                    lastRow.querySelector('.fallback-key').placeholder = fb.api_key ? 'Key configured' : 'API Key';
+                    if (fb.model) {
+                        lastRow.querySelector('.fallback-model').value = fb.model;
+                    }
+                }
+            });
+        } catch (e) {}
     }
 
     async function initializePage() {

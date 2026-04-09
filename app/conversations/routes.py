@@ -238,6 +238,7 @@ class ConversationResponse(BaseModel):
     last_message: Optional[str] = None
     human_takeover: bool = False
     dm_approved: bool = True
+    model_override: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -346,7 +347,8 @@ async def list_conversations(
             created_at=conv.created_at,
             last_message=last_msg.content[:100] if last_msg else None,
             human_takeover=conv.human_takeover or False,
-            dm_approved=conv.dm_approved if hasattr(conv, 'dm_approved') and conv.dm_approved is not None else True
+            dm_approved=conv.dm_approved if hasattr(conv, 'dm_approved') and conv.dm_approved is not None else True,
+            model_override=getattr(conv, 'model_override', None),
         )
         result.append(conv_response)
 
@@ -775,6 +777,21 @@ async def reject_sender(
     conversation.dm_approved = False
     db.commit()
     return {"success": True, "message": "Sender rejected"}
+
+
+@router.post("/{conversation_id}/set-model")
+async def set_conversation_model(
+    conversation_id: int,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Set a model override for a specific conversation."""
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
+    model = body.get("model")  # None = clear override, use bot default
+    conversation.model_override = model
+    db.commit()
+    return {"success": True, "model_override": model}
 
 
 @router.post("/{conversation_id}/send-file")

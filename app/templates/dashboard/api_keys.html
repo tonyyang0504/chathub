@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}API Access - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+    .api-card { border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg); }
+    .key-display { font-family: monospace; font-size: 0.85rem; background: var(--hover-bg); padding: 10px 14px; border-radius: 8px; word-break: break-all; position: relative; }
+    .key-display .copy-btn { position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 2px 6px; border-radius: 4px; }
+    .key-display .copy-btn:hover { color: var(--text-primary); background: var(--border-color); }
+    .endpoint-item { padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; background: var(--hover-bg); transition: transform 0.15s; }
+    .endpoint-item:hover { transform: translateX(4px); }
+    .method-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 4px; font-family: monospace; letter-spacing: 0.5px; }
+    .method-get { background: #dcfce7; color: #166534; }
+    .method-post { background: #dbeafe; color: #1e40af; }
+    .method-delete { background: #fee2e2; color: #991b1b; }
+    .method-put { background: #fef9c3; color: #854d0e; }
+    .endpoint-group { margin-bottom: 1rem; }
+    .endpoint-group-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; padding-left: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-key me-3"></i>API Access</h1>
+            <p>Integrate ChatHub with your own applications</p>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-braces" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Start -->
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="api-card card h-100">
+            <div class="card-body">
+                <h6 class="mb-3"><i class="bi bi-globe me-2"></i>Base URL</h6>
+                <div class="key-display" id="baseUrl">
+                    <button class="copy-btn" onclick="copyToClipboard(this.parentElement.dataset.url, this)" title="Copy"><i class="bi bi-clipboard"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="api-card card h-100">
+            <div class="card-body">
+                <h6 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Authentication</h6>
+                <p class="small text-muted mb-2">Include your API key in the request header:</p>
+                <div class="key-display">X-API-Key: YOUR_KEY<button class="copy-btn" onclick="copyToClipboard('X-API-Key: YOUR_KEY', this)" title="Copy"><i class="bi bi-clipboard"></i></button></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="api-card card h-100">
+            <div class="card-body">
+                <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Status</h6>
+                <div class="alert alert-info small mb-0" style="border-radius: 10px;">
+                    <b>Coming Soon:</b> API key management. For now, use your JWT token from the login cookie.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Example -->
+<div class="api-card card mb-3">
+    <div class="card-body">
+        <h6 class="mb-3"><i class="bi bi-terminal me-2"></i>Quick Example</h6>
+        <div class="key-display" id="curlExample">
+            <button class="copy-btn" onclick="copyCurl(this)" title="Copy"><i class="bi bi-clipboard"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- Endpoints -->
+<div class="api-card card">
+    <div class="card-body">
+        <h5 class="mb-3"><i class="bi bi-signpost-split me-2"></i>Available Endpoints</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="endpoint-group">
+                    <div class="endpoint-group-title">Bot Management</div>
+                    <div class="endpoint-item">
+                        <span class="method-badge method-get">GET</span>
+                        <code class="ms-2">/api/v1/bots</code>
+                        <p class="small text-muted mb-0 mt-1">List all your bots</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method-badge method-post">POST</span>
+                        <code class="ms-2">/api/v1/bots/{id}/send</code>
+                        <p class="small text-muted mb-0 mt-1">Send a message via bot</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method-badge method-get">GET</span>
+                        <code class="ms-2">/api/v1/bots/{id}/conversations</code>
+                        <p class="small text-muted mb-0 mt-1">List conversations for a bot</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="endpoint-group">
+                    <div class="endpoint-group-title">Mobile API</div>
+                    <div class="endpoint-item">
+                        <span class="method-badge method-get">GET</span>
+                        <code class="ms-2">/api/mobile/conversations</code>
+                        <p class="small text-muted mb-0 mt-1">Mobile-optimized conversation list</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method-badge method-get">GET</span>
+                        <code class="ms-2">/api/mobile/conversations/{id}/messages</code>
+                        <p class="small text-muted mb-0 mt-1">Get messages for a conversation</p>
+                    </div>
+                </div>
+                <div class="endpoint-group">
+                    <div class="endpoint-group-title">Webhooks</div>
+                    <div class="endpoint-item">
+                        <span class="method-badge method-post">POST</span>
+                        <code class="ms-2">/api/webhooks/{key}/trigger</code>
+                        <p class="small text-muted mb-0 mt-1">Trigger action via webhook key</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const baseUrl = window.location.origin;
+    const baseUrlEl = document.getElementById('baseUrl');
+    baseUrlEl.dataset.url = baseUrl;
+    baseUrlEl.insertAdjacentText('afterbegin', baseUrl);
+
+    const curlCmd = `curl -H "X-API-Key: YOUR_KEY" ${baseUrl}/api/v1/bots`;
+    const curlEl = document.getElementById('curlExample');
+    curlEl.insertAdjacentText('afterbegin', curlCmd);
+
+    function copyToClipboard(text, btn) {
+        navigator.clipboard.writeText(text).then(() => {
+            const icon = btn.querySelector('i');
+            icon.className = 'bi bi-check-lg';
+            setTimeout(() => icon.className = 'bi bi-clipboard', 1500);
+        });
+    }
+
+    function copyCurl(btn) {
+        copyToClipboard(curlCmd, btn);
+    }
+</script>
+{% endblock %}

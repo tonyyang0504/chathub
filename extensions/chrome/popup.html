@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChatHub AI</title>
+    <style>
+        body { width: 300px; padding: 16px; font-family: -apple-system, sans-serif; }
+        h2 { font-size: 16px; margin: 0 0 12px; }
+        .setting { margin-bottom: 12px; }
+        label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; }
+        button { width: 100%; padding: 10px; background: #25D366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #1da851; }
+        .status { font-size: 12px; color: #666; margin-top: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>ChatHub AI Assistant</h2>
+    <div class="setting">
+        <label>Server URL</label>
+        <input type="text" id="serverUrl" placeholder="http://localhost:8000" value="http://localhost:8000">
+    </div>
+    <div class="setting">
+        <label>API Token</label>
+        <input type="password" id="apiToken" placeholder="Your ChatHub auth token">
+    </div>
+    <button onclick="saveSettings()">Save & Connect</button>
+    <div class="status" id="status">Not connected</div>
+
+    <script>
+        chrome.storage.local.get(['serverUrl', 'apiToken'], (data) => {
+            if (data.serverUrl) document.getElementById('serverUrl').value = data.serverUrl;
+            if (data.apiToken) document.getElementById('apiToken').value = data.apiToken;
+        });
+
+        function saveSettings() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const apiToken = document.getElementById('apiToken').value;
+            chrome.storage.local.set({serverUrl, apiToken}, () => {
+                document.getElementById('status').textContent = 'Settings saved!';
+            });
+        }
+    </script>
+</body>
+</html>

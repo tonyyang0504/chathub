@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "ChatHub AI Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered messaging assistant for any web messaging platform",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["http://localhost:8000/*", "https://*/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon48.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

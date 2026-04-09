@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Segments - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+    .segment-card { border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg); }
+    .filter-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; background: var(--hover-bg); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-diagram-3 me-3"></i>Contact Segments</h1>
+            <p>Group contacts by criteria for targeted campaigns</p>
+            <button class="btn btn-light rounded-pill mt-2" onclick="showCreateSegment()">
+                <i class="bi bi-plus-lg me-1"></i>Create Segment
+            </button>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-people" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+
+<div id="segmentsContainer">
+    <div class="text-center py-5"><div class="spinner-border text-secondary"></div></div>
+</div>
+
+<!-- Create/Edit Segment Modal -->
+<div class="modal fade" id="segmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 12px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="segmentModalTitle">Create Segment</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="segmentId">
+                <div class="mb-3">
+                    <label class="form-label">Hub</label>
+                    <select class="form-select" id="segmentHub" style="border-radius: 20px;"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" id="segmentName" placeholder="e.g., VIP Customers" style="border-radius: 20px;">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-control" id="segmentDesc" placeholder="Optional description" style="border-radius: 20px;">
+                </div>
+                <h6>Filter Rules</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small">Sentiment</label>
+                        <select class="form-select form-select-sm" id="filterSentiment" style="border-radius: 20px;">
+                            <option value="">Any</option>
+                            <option value="positive">Positive</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="negative">Negative</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">Urgency</label>
+                        <select class="form-select form-select-sm" id="filterUrgency" style="border-radius: 20px;">
+                            <option value="">Any</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Tags (comma-separated)</label>
+                        <input type="text" class="form-control form-control-sm" id="filterTags" placeholder="VIP, returning, premium" style="border-radius: 20px;">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">Follow-up Needed</label>
+                        <select class="form-select form-select-sm" id="filterFollowUp" style="border-radius: 20px;">
+                            <option value="">Any</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success rounded-pill" onclick="saveSegment()"><i class="bi bi-check-lg me-1"></i>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let segments = [];
+
+    async function loadSegments() {
+        try {
+            const res = await fetch('/api/segments');
+            const data = await res.json();
+            segments = data.segments || [];
+            renderSegments();
+        } catch (e) {
+            document.getElementById('segmentsContainer').innerHTML = '<p class="text-danger">Error loading segments</p>';
+        }
+    }
+
+    function renderSegments() {
+        const container = document.getElementById('segmentsContainer');
+        if (!segments.length) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-diagram-3 text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="text-muted mt-2">No segments yet</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = '<div class="row g-3">' + segments.map(s => {
+            const rules = JSON.parse(s.filter_rules || '{}');
+            const tags = [];
+            if (rules.sentiment) tags.push(`<span class="filter-tag"><i class="bi bi-emoji-smile"></i>${rules.sentiment}</span>`);
+            if (rules.urgency) tags.push(`<span class="filter-tag"><i class="bi bi-exclamation-triangle"></i>${rules.urgency}</span>`);
+            if (rules.tags) rules.tags.forEach(t => tags.push(`<span class="filter-tag"><i class="bi bi-tag"></i>${t}</span>`));
+            if (rules.follow_up_needed) tags.push(`<span class="filter-tag"><i class="bi bi-telephone"></i>Follow-up</span>`);
+
+            return `
+            <div class="col-md-6">
+                <div class="segment-card card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">${s.name}</h6>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-2" onclick="editSegment(${s.id})"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2" onclick="deleteSegment(${s.id})"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                        ${s.description ? `<p class="text-muted small mb-2">${s.description}</p>` : ''}
+                        <div class="d-flex flex-wrap gap-1 mb-2">${tags.join('') || '<span class="text-muted small">No filters</span>'}</div>
+                        <small class="text-muted">${s.contact_count || 0} contacts</small>
+                    </div>
+                </div>
+            </div>`;
+        }).join('') + '</div>';
+    }
+
+    async function showCreateSegment() {
+        document.getElementById('segmentModalTitle').textContent = 'Create Segment';
+        document.getElementById('segmentId').value = '';
+        document.getElementById('segmentName').value = '';
+        document.getElementById('segmentDesc').value = '';
+        document.getElementById('filterSentiment').value = '';
+        document.getElementById('filterUrgency').value = '';
+        document.getElementById('filterTags').value = '';
+        document.getElementById('filterFollowUp').value = '';
+
+        // Load hubs
+        const res = await fetch('/api/hubs');
+        const hubs = await res.json();
+        document.getElementById('segmentHub').innerHTML = hubs.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
+
+        new bootstrap.Modal(document.getElementById('segmentModal')).show();
+    }
+
+    async function saveSegment() {
+        const hubId = document.getElementById('segmentHub').value;
+        const name = document.getElementById('segmentName').value;
+        const desc = document.getElementById('segmentDesc').value;
+        const rules = {};
+        if (document.getElementById('filterSentiment').value) rules.sentiment = document.getElementById('filterSentiment').value;
+        if (document.getElementById('filterUrgency').value) rules.urgency = document.getElementById('filterUrgency').value;
+        if (document.getElementById('filterTags').value) rules.tags = document.getElementById('filterTags').value.split(',').map(t => t.trim()).filter(Boolean);
+        if (document.getElementById('filterFollowUp').value) rules.follow_up_needed = document.getElementById('filterFollowUp').value === 'true';
+
+        const segmentId = document.getElementById('segmentId').value;
+        const method = segmentId ? 'PUT' : 'POST';
+        const url = segmentId ? `/api/segments/${segmentId}` : '/api/segments';
+
+        const res = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({hub_id: parseInt(hubId), name, description: desc, filter_rules: JSON.stringify(rules)})
+        });
+
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('segmentModal')).hide();
+            showToast('Segment saved', 'success');
+            loadSegments();
+        } else {
+            showToast('Error saving segment', 'danger');
+        }
+    }
+
+    async function deleteSegment(id) {
+        if (!confirm('Delete this segment?')) return;
+        const res = await fetch(`/api/segments/${id}`, {method: 'DELETE'});
+        if (res.ok) { showToast('Segment deleted', 'success'); loadSegments(); }
+    }
+
+    function editSegment(id) {
+        const s = segments.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById('segmentModalTitle').textContent = 'Edit Segment';
+        document.getElementById('segmentId').value = s.id;
+        document.getElementById('segmentName').value = s.name;
+        document.getElementById('segmentDesc').value = s.description || '';
+        const rules = JSON.parse(s.filter_rules || '{}');
+        document.getElementById('filterSentiment').value = rules.sentiment || '';
+        document.getElementById('filterUrgency').value = rules.urgency || '';
+        document.getElementById('filterTags').value = (rules.tags || []).join(', ');
+        document.getElementById('filterFollowUp').value = rules.follow_up_needed != null ? String(rules.follow_up_needed) : '';
+        new bootstrap.Modal(document.getElementById('segmentModal')).show();
+    }
+
+    loadSegments();
+</script>
+{% endblock %}

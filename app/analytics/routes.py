@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from pydantic import BaseModel
 
-from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact
+from app.database import get_db, User, BotProfile, Conversation, Message, ActivityLog, Hub, Contact, HubBotMembership
 from app.auth.utils import get_current_user
 from app.auth.ownership import get_user_hub_ids
 
@@ -405,4 +405,95 @@ async def get_activity_log(
         "total": total,
         "page": page,
         "limit": limit
+    }
+
+
+@router.get("/conversation-analytics")
+async def get_conversation_analytics(
+    days: int = Query(7, ge=1, le=90),
+    bot_id: Optional[int] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get conversation-level analytics: volume trends, response times, platform breakdown."""
+    from sqlalchemy import case, extract
+
+    start = datetime.utcnow() - timedelta(days=days)
+
+    # Get user's bot IDs (filtered by bot_id if provided)
+    if bot_id:
+        bot_ids = [b.id for b in db.query(BotProfile.id).filter(BotProfile.user_id == current_user.id, BotProfile.id == bot_id).all()]
+    else:
+        bot_ids = [b.id for b in db.query(BotProfile.id).filter(BotProfile.user_id == current_user.id).all()]
+    if not bot_ids:
+        return {"daily_volume": [], "platform_breakdown": [], "top_conversations": []}
+
+    # Daily message volume
+    daily_volume = []
+    for i in range(days):
+        day_start = (datetime.utcnow() - timedelta(days=days - i - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        incoming = db.query(func.count(Message.id)).join(Conversation).filter(
+            Conversation.bot_profile_id.in_(bot_ids),
+            Message.timestamp >= day_start, Message.timestamp < day_end,
+            Message.role == "user",
+        ).scalar() or 0
+        outgoing = db.query(func.count(Message.id)).join(Conversation).filter(
+            Conversation.bot_profile_id.in_(bot_ids),
+            Message.timestamp >= day_start, Message.timestamp < day_end,
+            Message.role == "assistant",
+        ).scalar() or 0
+        daily_volume.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "incoming": incoming,
+            "outgoing": outgoing,
+        })
+
+    # Platform breakdown
+    platform_stats = db.query(
+        BotProfile.platform_type,
+        func.count(Conversation.id),
+        func.sum(Conversation.message_count),
+    ).join(Conversation).filter(
+        BotProfile.id.in_(bot_ids),
+    ).group_by(BotProfile.platform_type).all()
+
+    platform_breakdown = [
+        {"platform": p[0] or "whatsapp", "conversations": p[1], "messages": p[2] or 0}
+        for p in platform_stats
+    ]
+
+    # Top conversations by message count
+    top_convs = db.query(Conversation).filter(
+        Conversation.bot_profile_id.in_(bot_ids),
+    ).order_by(desc(Conversation.message_count)).limit(10).all()
+
+    top_conversations = [
+        {
+            "id": c.id,
+            "chat_name": c.chat_name or c.chat_id,
+            "message_count": c.message_count or 0,
+            "last_message_at": c.last_message_at.isoformat() + "Z" if c.last_message_at else None,
+            "is_group": c.is_group,
+        }
+        for c in top_convs
+    ]
+
+    # Contact sentiment summary (from hubs, filtered by bot if selected)
+    if bot_id:
+        hub_ids = [m.hub_id for m in db.query(HubBotMembership.hub_id).filter(HubBotMembership.bot_profile_id == bot_id).all()]
+    else:
+        hub_ids = get_user_hub_ids(current_user, db)
+    sentiment_data = {"positive": 0, "negative": 0, "neutral": 0}
+    if hub_ids:
+        for s in ["positive", "negative", "neutral"]:
+            sentiment_data[s] = db.query(func.count(Contact.id)).filter(
+                Contact.hub_id.in_(hub_ids), Contact.sentiment == s
+            ).scalar() or 0
+
+    return {
+        "daily_volume": daily_volume,
+        "top_conversations": top_conversations,
+        "sentiment": sentiment_data,
+        "period_days": days,
     }

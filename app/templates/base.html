@@ -67,6 +67,25 @@
                             Agents
                         </a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if active_page in ['health', 'reports', 'webhooks', 'segments', 'voice-calls', 'api-access', 'guides'] %}active{% endif %}" href="#" data-bs-toggle="dropdown">
+                            More
+                        </a>
+                        <ul class="dropdown-menu" style="border-radius: 12px;">
+                            <li><h6 class="dropdown-header">Monitoring</h6></li>
+                            <li><a class="dropdown-item" href="/dashboard/health"><i class="bi bi-heart-pulse me-2"></i>Health Check</a></li>
+                            <li><a class="dropdown-item" href="/dashboard/reports"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reports</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Automation</h6></li>
+                            <li><a class="dropdown-item" href="/dashboard/webhooks"><i class="bi bi-link-45deg me-2"></i>Webhooks</a></li>
+                            <li><a class="dropdown-item" href="/dashboard/segments"><i class="bi bi-diagram-3 me-2"></i>Segments</a></li>
+                            <li><a class="dropdown-item" href="/dashboard/voice-calls"><i class="bi bi-telephone me-2"></i>Voice Calls</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Developer</h6></li>
+                            <li><a class="dropdown-item" href="/dashboard/api-access"><i class="bi bi-key me-2"></i>API Access</a></li>
+                            <li><a class="dropdown-item" href="/dashboard/guides"><i class="bi bi-book me-2"></i>Platform Guides</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">

@@ -3,7 +3,18 @@
 {% block title %}Analytics - ChatHub{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
 <style>
+.tool-hero {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
     .stat-card {
         transition: transform 0.2s;
     }
@@ -53,6 +64,40 @@
     }
     .border-purple {
         border-color: rgba(111, 66, 193, 0.4) !important;
+    }
+
+    /* Daily Stats table scroll */
+    .daily-stats-scroll {
+        max-height: 420px;
+        overflow-y: auto;
+    }
+    .daily-stats-scroll::-webkit-scrollbar { width: 6px; }
+    .daily-stats-scroll::-webkit-scrollbar-track { background: transparent; }
+    .daily-stats-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+    .daily-stats-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+    .daily-stats-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+    .content-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--border-color);
+    }
+    .content-pagination .btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    .content-pagination .page-info {
+        margin: 0 12px;
+        color: var(--text-muted);
+        font-size: 0.875rem;
     }
 
     /* Custom Model Dropdown */
@@ -137,22 +182,27 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2>Analytics</h2>
-        <p class="text-muted">Monitor your bot performance and usage statistics</p>
-    </div>
-    <div class="col-auto">
-        <input type="hidden" id="botSelectorValue" value="">
-        <div class="dropdown model-dropdown">
-            <button class="btn model-dropdown-btn dropdown-toggle" type="button" id="botSelectorDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                All Bots
-            </button>
-            <div class="dropdown-menu model-dropdown-menu" aria-labelledby="botSelectorDropdown">
-                <div class="model-dropdown-menu-inner" id="botSelectorOptions">
-                    <a class="dropdown-item bot-selector-item selected" href="#" data-value="">All Bots</a>
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-graph-up me-3"></i>Analytics</h1>
+            <p>Monitor your bot performance and usage statistics</p>
+            <div class="mt-2">
+                <input type="hidden" id="botSelectorValue" value="">
+                <div class="dropdown model-dropdown d-inline-block">
+                    <button class="btn btn-light rounded-pill model-dropdown-btn dropdown-toggle" type="button" id="botSelectorDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: auto; background: white !important; color: #333;">
+                        All Bots
+                    </button>
+                    <div class="dropdown-menu model-dropdown-menu" aria-labelledby="botSelectorDropdown" style="width: auto; min-width: 160px;">
+                        <div class="model-dropdown-menu-inner" id="botSelectorOptions">
+                            <a class="dropdown-item bot-selector-item selected" href="#" data-value="">All Bots</a>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-bar-chart-line" style="font-size: 8rem; opacity: 0.3;"></i>
         </div>
     </div>
 </div>
@@ -288,9 +338,9 @@
                 <h5 class="mb-0"><i class="bi bi-table me-2"></i>Daily Statistics</h5>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="daily-stats-scroll">
                     <table class="table table-hover mb-0">
-                        <thead>
+                        <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
                             <tr>
                                 <th style="width: 25%; cursor: pointer;" data-sort="date" onclick="sortDailyTable('date')">
                                     Date <i class="bi bi-arrow-down-up text-muted ms-1" id="sort-icon-date"></i>
@@ -318,6 +368,19 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="content-pagination" id="dailyPagination" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Sentiment -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" style="border-radius: 12px;">
+            <div class="card-body">
+                <h6 class="mb-3"><i class="bi bi-emoji-smile me-1"></i>Contact Sentiment</h6>
+                <div id="sentimentBreakdown"><div class="spinner-border spinner-border-sm"></div></div>
             </div>
         </div>
     </div>
@@ -333,6 +396,8 @@
     let dailyStatsData = [];
     let currentSortColumn = 'date';
     let currentSortDirection = 'desc'; // desc = newest/highest first
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
 
     async function loadBots() {
         try {
@@ -359,13 +424,22 @@
     async function loadAnalytics() {
         // Load overview stats
         try {
-            const res = await fetch('/api/analytics/overview');
-            const stats = await res.json();
-
-            document.getElementById('statTotalMessages').textContent = stats.total_messages || 0;
-            document.getElementById('statActiveConvs').textContent = stats.total_conversations || 0;
-            document.getElementById('statMessagesToday').textContent = stats.messages_today || 0;
-            document.getElementById('statAvgResponse').textContent = stats.avg_response_time || 'N/A';
+            if (selectedBotId) {
+                const res = await fetch(`/api/bots/${selectedBotId}/analytics/daily?days=${selectedRange}`);
+                const stats = await res.json();
+                const today = (stats.daily_stats || [])[0] || {};
+                document.getElementById('statTotalMessages').textContent = stats.total_messages || 0;
+                document.getElementById('statActiveConvs').textContent = stats.total_conversations || 0;
+                document.getElementById('statMessagesToday').textContent = (today.messages_received || 0) + (today.messages_sent || 0);
+                document.getElementById('statAvgResponse').textContent = 'N/A';
+            } else {
+                const res = await fetch('/api/analytics/overview');
+                const stats = await res.json();
+                document.getElementById('statTotalMessages').textContent = stats.total_messages || 0;
+                document.getElementById('statActiveConvs').textContent = stats.total_conversations || 0;
+                document.getElementById('statMessagesToday').textContent = stats.messages_today || 0;
+                document.getElementById('statAvgResponse').textContent = stats.avg_response_time || 'N/A';
+            }
         } catch (e) {
             console.error('Error loading overview:', e);
         }
@@ -373,6 +447,7 @@
         // Load daily stats for chart
         await loadDailyStats();
         await loadTopConversations();
+        await loadConversationAnalytics();
     }
 
     async function loadDailyStats() {
@@ -412,7 +487,7 @@
         try {
             const list = document.getElementById('topConversations');
 
-            // Aggregate from all bots
+            // Get bots to query
             const res = await fetch('/api/bots');
             if (!res.ok) {
                 throw new Error('Failed to fetch bots');
@@ -424,8 +499,13 @@
                 return;
             }
 
+            // Filter to selected bot or all
+            const botsToQuery = selectedBotId
+                ? botsData.bots.filter(b => String(b.id) === String(selectedBotId))
+                : botsData.bots;
+
             let allConvs = [];
-            for (const bot of botsData.bots) {
+            for (const bot of botsToQuery) {
                 try {
                     const convRes = await fetch(`/api/conversations/bot/${bot.id}`);
                     if (convRes.ok) {
@@ -580,16 +660,18 @@
     }
 
     function updateDailyTable(data) {
-        // Store data for sorting
         dailyStatsData = data;
+        currentPage = 1;
         renderDailyTable();
     }
 
     function renderDailyTable() {
         const tbody = document.getElementById('dailyStatsTable');
+        const paginationEl = document.getElementById('dailyPagination');
 
         if (dailyStatsData.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+            paginationEl.style.display = 'none';
             return;
         }
 
@@ -612,7 +694,13 @@
             }
         });
 
-        tbody.innerHTML = sortedData.map(day => `
+        // Pagination
+        const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageData = sortedData.slice(start, start + PAGE_SIZE);
+
+        tbody.innerHTML = pageData.map(day => `
             <tr>
                 <td>${formatTableDate(day.date)}</td>
                 <td class="text-center">${day.messages_received || 0}</td>
@@ -622,18 +710,44 @@
             </tr>
         `).join('');
 
-        // Update sort icons
+        // Pagination controls
+        if (totalPages > 1) {
+            paginationEl.style.display = 'flex';
+            paginationEl.innerHTML = `
+                <button class="btn btn-sm btn-outline-secondary" onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''} title="First">
+                    <i class="bi bi-chevron-double-left"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} title="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <span class="page-info">Page ${currentPage} of ${totalPages} (${sortedData.length} days)</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} title="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''} title="Last">
+                    <i class="bi bi-chevron-double-right"></i>
+                </button>
+            `;
+        } else {
+            paginationEl.style.display = 'none';
+        }
+
         updateSortIcons();
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        renderDailyTable();
     }
 
     function sortDailyTable(column) {
         if (currentSortColumn === column) {
-            // Toggle direction
             currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
         } else {
             currentSortColumn = column;
-            currentSortDirection = 'desc'; // Default to descending for new column
+            currentSortDirection = 'desc';
         }
+        currentPage = 1;
         renderDailyTable();
     }
 
@@ -709,5 +823,48 @@
     // Initialize
     loadBots();
     loadAnalytics();
+
+    // ============== Conversation Analytics ==============
+    async function loadConversationAnalytics() {
+        try {
+            let url = `/api/analytics/conversation-analytics?days=${selectedRange}`;
+            if (selectedBotId) url += `&bot_id=${selectedBotId}`;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+            renderConvAnalytics(data);
+        } catch (e) {
+            console.error('Conversation analytics error:', e);
+        }
+    }
+
+    function renderConvAnalytics(data) {
+        // Sentiment
+        const sentDiv = document.getElementById('sentimentBreakdown');
+        if (sentDiv && data.sentiment) {
+            const total = data.sentiment.positive + data.sentiment.negative + data.sentiment.neutral || 1;
+            sentDiv.innerHTML = `
+                <div class="d-flex gap-3 mb-2">
+                    <div class="text-center flex-fill">
+                        <div class="fw-bold text-success fs-4">${data.sentiment.positive}</div>
+                        <small class="text-muted">Positive</small>
+                    </div>
+                    <div class="text-center flex-fill">
+                        <div class="fw-bold text-secondary fs-4">${data.sentiment.neutral}</div>
+                        <small class="text-muted">Neutral</small>
+                    </div>
+                    <div class="text-center flex-fill">
+                        <div class="fw-bold text-danger fs-4">${data.sentiment.negative}</div>
+                        <small class="text-muted">Negative</small>
+                    </div>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar bg-success" style="width: ${(data.sentiment.positive/total*100)}%"></div>
+                    <div class="progress-bar bg-secondary" style="width: ${(data.sentiment.neutral/total*100)}%"></div>
+                    <div class="progress-bar bg-danger" style="width: ${(data.sentiment.negative/total*100)}%"></div>
+                </div>
+            `;
+        }
+    }
 </script>
 {% endblock %}

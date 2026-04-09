@@ -290,6 +290,52 @@ For toggle switches that match the bot card style:
 - **Scripted Conversations**: Indigo gradient (`#6366f1` to `#4f46e5`)
 - **AI Workspace**: Orange/coral gradient (`#da6a46` to `#d4562a`)
 
+### Color Themes by Dashboard Page (More dropdown)
+- **Health Check**: Green (`#10b981` to `#059669`), icon `bi-heart-pulse`, decorative `bi-shield-check`
+- **Reports**: Blue (`#3b82f6` to `#2563eb`), icon `bi-file-earmark-bar-graph`, decorative `bi-graph-up-arrow`
+- **Webhooks**: Orange (`#f97316` to `#ea580c`), icon `bi-link-45deg`, decorative `bi-diagram-2`
+- **Segments**: Purple (`#8b5cf6` to `#7c3aed`), icon `bi-diagram-3`, decorative `bi-people`
+- **Voice Calls**: Teal (`#14b8a6` to `#0d9488`), icon `bi-telephone`, decorative `bi-mic`
+- **API Access**: Sky-blue (`#0ea5e9` to `#2563eb`), icon `bi-key`, decorative `bi-braces`
+- **Guides**: Indigo (`#6366f1` to `#4f46e5`), icon `bi-book`, decorative `bi-signpost-2`
+
+### Dashboard Pages — Tool Hero Pattern
+All dashboard pages use the same `.tool-hero` gradient banner as tool pages — both "More" dropdown pages AND main pages (Dashboard, Bots, Conversations, Analytics, Hubs). Each page imports `tools.css` and defines its own gradient. Action buttons (Refresh, Create, Back) go inside the hero as `btn-light rounded-pill`. Avoid dark gradients for hero backgrounds — white text must have strong contrast (the dark navy `#1e293b` was too close to the text color; sky-blue `#0ea5e9` works better).
+
+### Color Themes by Main Dashboard Page
+- **Dashboard**: Green/teal (`#25D366` to `#128C7E`), icon `bi-speedometer2`, decorative `bi-grid`
+- **Bots**: Blue (`#3b82f6` to `#1d4ed8`), icon `bi-robot`, decorative `bi-cpu`
+- **Conversations**: Emerald (`#10b981` to `#059669`), icon `bi-chat-dots`, decorative `bi-chat-square-text`
+- **Analytics**: Purple (`#8b5cf6` to `#6d28d9`), icon `bi-graph-up`, decorative `bi-bar-chart-line`
+- **Hubs**: Orange (`#f97316` to `#c2410c`), icon `bi-hdd-stack`, decorative `bi-diagram-3`
+
+### Hero Button — No Duplicate in Empty State
+When an action button (Create Key, Create Segment, etc.) is placed in the hero, do NOT add a second copy in the empty state below. The hero button is always visible and sufficient.
+
+### Fallback AI Provider UI
+- Model field is a `<select>` dropdown (not free-text input) matching the primary provider's model list
+- Changing the provider dropdown auto-populates models via `PROVIDER_MODELS` config
+- Delete button is a 36x36 round circle (`border-radius: 50%`) not a pill
+
+### Analytics Page — Bot Selector Filters All Sections
+When a bot is selected in the analytics bot selector dropdown:
+- **Stats cards**: fetch from `/api/bots/{id}/analytics/daily` (not global overview)
+- **Charts**: already filtered via `loadDailyStats()`
+- **Top Conversations**: filters `botsToQuery` to selected bot only
+- **Contact Sentiment**: passes `bot_id` to `/api/analytics/conversation-analytics` which filters hub contacts via `HubBotMembership`
+- The bot selector button inside the hero needs `model-dropdown-btn` class (for JS) + `style="width: auto"` (to prevent 100% stretch)
+
+### Analytics — Conversation Analytics Section
+- Removed "Conversation Analytics" heading and duplicate "Top Conversations" card
+- Only Platform Breakdown and Contact Sentiment remain (sentiment is full-width `col-12`)
+- Platform Breakdown was removed — redundant when bot is selected (single platform) and bots table already shows platform info
+
+### Table Pagination — Use `.content-pagination` Pattern
+Tables with pagination must use the `.content-pagination` class (defined in `hubs.html`): centered layout, circular 36x36 nav buttons, "Page X of Y (Z items)" info text between buttons. Reference `hubs.html` groups pagination for canonical implementation. Reset `currentPage = 1` on sort change or data reload.
+
+### Dashboard — Removed Leftover Sections
+The main dashboard (`index.html`) no longer includes: Message Volume chart, Today's Activity by Hour, Needs Attention card, Upcoming Scheduled Content card, or Chart.js CDN import. These were leftovers. Dashboard shows: stat cards, bots table (with Platform column), quick actions, and activity feed.
+
 ### Card Grid Layout (Equal Height)
 When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:
 - Clamp variable-length text to single lines with `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` and add `title` attribute for hover tooltip
@@ -733,7 +779,87 @@ Always use this in `conversations/routes.py` — never import `send_whatsapp_mes
 | LinkedIn | httpx (REST API) | OAuth | From conversations | No | Ready (rate-limited) |
 | Tinder | httpx (unofficial) | Auth Token | From conversations | No | Beta |
 | Bumble | httpx (unofficial) | Phone SMS | From conversations | No | Beta |
+| iMessage | httpx (BlueBubbles) | Server URL+Password | From conversations | BlueBubbles API | Ready |
 | WeChat | Not implemented | QR Code | — | — | Planned |
+
+### AI Provider Failover (`app/ai/factory.py`)
+- `FailoverAIProvider` class wraps primary provider + fallback chain
+- `get_ai_provider_with_failover(primary, key, model, fallback_configs)` factory
+- When primary fails (rate limit, error, timeout), auto-tries next provider
+- `fallback_providers` JSON column on BotProfile: `[{"provider": "anthropic", "api_key": "...", "model": "..."}]`
+- UI: collapsible "Fallback AI Providers" section in bot create/edit modals
+- All providers tried in order; if all fail, raises last error
+
+### Per-Conversation Model Selection
+- `Conversation.model_override` column — overrides bot's default model for that conversation
+- `POST /api/conversations/{id}/set-model` endpoint — set/clear override
+- `get_conversation_model(db, conversation_id)` helper in `message_handler.py`
+- UI: model dropdown in conversation header (GPT-4o Mini, Claude Sonnet, Gemini Flash, etc.)
+- Telegram adapter passes `model=model_override` to AI provider; pattern for other adapters
+
+### External Webhook Triggers (`app/webhooks.py`)
+- `POST /api/webhooks/{key}/trigger` — external services trigger ChatHub actions (no auth header, key in URL)
+- Actions: `send_message` (to specific chat), `send_to_all` (broadcast to all contacts)
+- `WebhookKey` model: user_id, bot_profile_id, key, name, use_count, last_used_at
+- Key management: `GET/POST/DELETE /api/webhooks/keys`
+- UI: `/dashboard/webhooks` page — create/delete keys, shows URL + curl example
+- Example: `curl -X POST .../api/webhooks/whk_abc123/trigger -d '{"action":"send_message","chat_id":"+1234567890","message":"Hello!"}'`
+
+### Conversation Threading
+- AI responses linked to the original user message (reply-to) on supported platforms
+- Discord: `message.reply(text, mention_author=False)` instead of `channel.send()`
+- Slack: `say(text, thread_ts=message_ts)` for threaded replies
+- Telegram: `event.reply()` already threads by default
+- Works in both DMs and groups — ensures correct message-to-reply mapping
+
+### Scheduled Reports (`app/hubs/report_scheduler.py`)
+- `generate_hub_report(hub_id, period)` — aggregates messages, contacts, sentiment, bot activity
+- `format_report_text(report)` — human-readable text with emoji formatting
+- Periods: daily (24h) or weekly (7d)
+- Data: message volume (in/out), new conversations, contact sentiment, follow-up needs, bot status
+
+### Contact Segmentation (`app/database.py:ContactSegment`)
+- `ContactSegment` model: hub_id, name, description, filter_rules (JSON), contact_count
+- Filter rules: `{"sentiment": "negative", "urgency": "high", "tags": ["VIP"]}`
+- Foundation for targeted campaigns via Scheduled Content
+
+### Conversation Analytics (`app/analytics/routes.py`)
+- `GET /api/analytics/conversation-analytics?days=14` — daily volume, platform breakdown, top conversations, sentiment
+- UI: three cards on analytics page (Platform Breakdown, Contact Sentiment, Top Conversations)
+- Chart.js already loaded on analytics page for visualization
+
+### iMessage-Specific (BlueBubbles)
+- Connects to BlueBubbles server (macOS app) via REST API
+- Requires a Mac running BlueBubbles 24/7
+- Auth: server URL + password entered in connection modal
+- Polls `POST /api/v1/message/query` for new messages
+- Sends via `POST /api/v1/message/text`
+- Supports attachments via `POST /api/v1/message/attachment` (base64)
+
+### Voice Calls via Twilio (`app/voice_calls.py`)
+- `POST /api/voice/incoming` — TwiML endpoint for incoming calls
+- `POST /api/voice/process` — processes transcribed speech, returns AI response via TTS
+- Uses Twilio's built-in `<Gather>` for speech recognition
+- Skeleton implementation — needs Twilio credentials + bot mapping for production
+
+### Chrome Browser Extension (`extensions/chrome/`)
+- Manifest V3 extension with popup settings + content script sidebar
+- Popup: configure server URL + API token
+- Content script: injects ChatHub sidebar into any web page
+- Sidebar: chat interface for AI assistance on any messaging platform
+- Skeleton — needs full API integration for production
+
+### Mobile API (`app/mobile_api.py`)
+- `POST /api/mobile/register-device` — register for push notifications
+- `GET /api/mobile/conversations` — lightweight conversation list
+- `GET /api/mobile/conversations/{id}/messages` — message history
+- Foundation for React Native companion app
+
+### Public API v1 (`app/api_v1.py`)
+- `GET /api/v1/bots` — list bots (X-API-Key auth)
+- `POST /api/v1/bots/{id}/send` — send message via bot
+- `GET /api/v1/bots/{id}/conversations` — list conversations
+- Foundation for white-label/third-party integration
 
 ## Testing
 

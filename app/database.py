@@ -230,6 +230,34 @@ class ScheduledMessage(Base):
     bot_profile = relationship("BotProfile", back_populates="scheduled_messages")
 
 
+class ContactSegment(Base):
+    """Contact segments for targeted campaigns."""
+    __tablename__ = "contact_segments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    filter_rules = Column(Text, default="{}")  # JSON: {"sentiment": "negative", "urgency": "high", "tags": ["VIP"]}
+    contact_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class WebhookKey(Base):
+    """Webhook API keys for external triggers."""
+    __tablename__ = "webhook_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=True)
+    name = Column(String(255), default="Webhook Key")
+    key = Column(String(100), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    use_count = Column(Integer, default=0)
+
+
 class ActivityLog(Base):
     """Activity log for analytics."""
     __tablename__ = "activity_logs"

@@ -3,7 +3,18 @@
 {% block title %}Health Check - ChatHub{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
 <style>
+.tool-hero {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
     .health-card {
         border-radius: 12px;
         border: 1px solid var(--border-color);
@@ -57,15 +68,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2><i class="bi bi-heart-pulse me-2"></i>Health Check</h2>
-        <p class="text-muted">System diagnostics and auto-repair</p>
-    </div>
-    <div class="col-auto">
-        <button class="btn btn-outline-primary rounded-pill" onclick="runHealthCheck()" id="refreshBtn">
-            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-        </button>
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-heart-pulse me-3"></i>Health Check</h1>
+            <p>System diagnostics and auto-repair</p>
+            <button class="btn btn-light rounded-pill mt-2" onclick="runHealthCheck()" id="refreshBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-shield-check" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
     </div>
 </div>
 

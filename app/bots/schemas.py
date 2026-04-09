@@ -7,7 +7,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok", "ollama"]
-VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "wechat"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "imessage", "wechat"]
 
 # Platform auth method descriptions for the frontend
 PLATFORM_AUTH_INFO = {
@@ -22,6 +22,7 @@ PLATFORM_AUTH_INFO = {
     "bumble": {"auth_method": "credentials", "label": "Bumble", "icon": "bi-heart-fill", "color": "#FFC629", "token_label": None},
     "slack": {"auth_method": "api_token", "label": "Slack", "icon": "bi-slack", "color": "#4A154B", "token_label": None},
     "signal": {"auth_method": "credentials", "label": "Signal", "icon": "bi-shield-lock-fill", "color": "#3A76F0", "token_label": None},
+    "imessage": {"auth_method": "credentials", "label": "iMessage", "icon": "bi-chat-square-text-fill", "color": "#34C759", "token_label": None},
     "wechat": {"auth_method": "qr_code", "label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "token_label": None},
 }
 

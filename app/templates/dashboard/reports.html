@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+    .report-card { border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg); }
+    .report-text { white-space: pre-line; font-size: 0.9rem; line-height: 1.8; }
+    .period-btn { border-radius: 20px; }
+    .period-btn.active { background: var(--wa-teal); color: white; border-color: var(--wa-teal); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-file-earmark-bar-graph me-3"></i>Reports</h1>
+            <p>Generate summary reports for your hubs</p>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-graph-up-arrow" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="report-card card h-100">
+            <div class="card-body">
+                <h6>Select Hub</h6>
+                <select class="form-select mb-3" id="reportHubSelect" onchange="generateReport()" style="border-radius: 20px;">
+                    <option value="">Loading hubs...</option>
+                </select>
+                <h6>Period</h6>
+                <div class="btn-group w-100 mb-3">
+                    <button class="btn btn-sm btn-outline-secondary period-btn active" onclick="setPeriod('daily', this)">Daily</button>
+                    <button class="btn btn-sm btn-outline-secondary period-btn" onclick="setPeriod('weekly', this)">Weekly</button>
+                </div>
+                <button class="btn btn-sm btn-success rounded-pill w-100" onclick="generateReport()" id="generateBtn">
+                    <i class="bi bi-graph-up me-1"></i>Generate Report
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="report-card card h-100">
+            <div class="card-body">
+                <div id="reportContent" class="report-text">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-file-earmark-bar-graph" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-2">Select a hub and click Generate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedPeriod = 'daily';
+
+    async function loadHubs() {
+        const res = await fetch('/api/hubs');
+        const hubs = await res.json();
+        const select = document.getElementById('reportHubSelect');
+        select.innerHTML = hubs.map(h => `<option value="${h.id}">${h.name} (${h.task_type})</option>`).join('');
+    }
+
+    function setPeriod(period, btn) {
+        selectedPeriod = period;
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    async function generateReport() {
+        const hubId = document.getElementById('reportHubSelect').value;
+        if (!hubId) return;
+
+        const btn = document.getElementById('generateBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+
+        try {
+            const res = await fetch(`/api/reports/generate?hub_id=${hubId}&period=${selectedPeriod}`);
+            const data = await res.json();
+            document.getElementById('reportContent').innerHTML = `<div class="report-text">${data.text}</div>`;
+        } catch (e) {
+            document.getElementById('reportContent').innerHTML = '<p class="text-danger">Error generating report</p>';
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-graph-up me-1"></i>Generate Report';
+    }
+
+    loadHubs();
+</script>
+{% endblock %}

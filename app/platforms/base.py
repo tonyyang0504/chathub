@@ -21,6 +21,7 @@ class PlatformType(str, Enum):
     DISCORD = "discord"
     SLACK = "slack"
     SIGNAL = "signal"
+    IMESSAGE = "imessage"
     WECHAT = "wechat"
 
 

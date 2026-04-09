@@ -684,6 +684,7 @@ class _HandlerContext:
             build_ai_messages,
             is_human_takeover_active,
             is_sender_approved,
+            get_conversation_model,
             broadcast_user_message,
             broadcast_assistant_message,
             broadcast_typing,
@@ -792,9 +793,12 @@ class _HandlerContext:
                 )
 
                 provider = self._get_ai_provider()
+                # Check for per-conversation model override
+                model_override = get_conversation_model(db, conversation.id)
                 response = await asyncio.to_thread(
                     provider.chat_completion,
                     messages=ai_messages,
+                    model=model_override,  # None = use provider default
                     max_tokens=self.config.get("max_tokens", 1000),
                     temperature=self.config.get("temperature", 0.7),
                 )

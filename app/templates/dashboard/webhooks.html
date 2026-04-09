@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Webhook Keys - ChatHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
+<style>
+.tool-hero {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
+    .webhook-card { border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg); }
+    .key-display { font-family: monospace; font-size: 0.85rem; background: var(--hover-bg); padding: 8px 12px; border-radius: 8px; word-break: break-all; }
+    .url-display { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-link-45deg me-3"></i>Webhook Keys</h1>
+            <p>Generate webhook URLs for external services (Zapier, Shopify, CRM, etc.)</p>
+            <button class="btn btn-light rounded-pill mt-2" onclick="showCreateKeyModal()">
+                <i class="bi bi-plus-lg me-1"></i>Create Key
+            </button>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-diagram-2" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+
+<div id="keysContainer">
+    <div class="text-center py-5"><div class="spinner-border text-secondary"></div></div>
+</div>
+
+<!-- Create Key Modal -->
+<div class="modal fade" id="createKeyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 12px;">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Webhook Key</h5>
+                <button type="button" class="modal-close-btn" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" id="keyName" placeholder="e.g., Shopify Orders" style="border-radius: 20px;">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Bot</label>
+                    <select class="form-select" id="keyBotId" style="border-radius: 20px;"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success rounded-pill" onclick="createKey()"><i class="bi bi-plus-lg me-1"></i>Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let webhookKeys = [];
+
+    async function loadKeys() {
+        try {
+            const res = await fetch('/api/webhooks/keys');
+            const data = await res.json();
+            webhookKeys = data.keys || [];
+            renderKeys();
+        } catch (e) {
+            document.getElementById('keysContainer').innerHTML = '<p class="text-danger">Error loading keys</p>';
+        }
+    }
+
+    function renderKeys() {
+        const container = document.getElementById('keysContainer');
+        if (!webhookKeys.length) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-link-45deg text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="text-muted mt-2">No webhook keys yet</p>
+                </div>`;
+            return;
+        }
+
+        const baseUrl = window.location.origin;
+        container.innerHTML = webhookKeys.map(k => `
+            <div class="webhook-card card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-0">${k.name}</h6>
+                            <small class="text-muted">Created ${new Date(k.created_at).toLocaleDateString()} &bull; Used ${k.use_count} times${k.last_used_at ? ' &bull; Last: ' + new Date(k.last_used_at).toLocaleString() : ''}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="deleteKey(${k.id})"><i class="bi bi-trash"></i></button>
+                    </div>
+                    <div class="key-display mb-2">${k.key}</div>
+                    <div class="url-display mb-2">
+                        <b>URL:</b> <code>${baseUrl}/api/webhooks/${k.key}/trigger</code>
+                    </div>
+                    <div class="small text-muted">
+                        <b>Example:</b> <code>curl -X POST "${baseUrl}/api/webhooks/${k.key}/trigger" -H "Content-Type: application/json" -d '{"action": "send_message", "chat_id": "+1234567890", "message": "Hello!"}'</code>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function showCreateKeyModal() {
+        // Load bots for dropdown
+        const res = await fetch('/api/bots');
+        const data = await res.json();
+        const select = document.getElementById('keyBotId');
+        select.innerHTML = data.bots.map(b => `<option value="${b.id}">${b.name} (${b.platform_type})</option>`).join('');
+        new bootstrap.Modal(document.getElementById('createKeyModal')).show();
+    }
+
+    async function createKey() {
+        const name = document.getElementById('keyName').value || 'Webhook Key';
+        const botId = document.getElementById('keyBotId').value;
+
+        const res = await fetch('/api/webhooks/keys', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, bot_id: parseInt(botId)})
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('createKeyModal')).hide();
+            showToast('Webhook key created', 'success');
+            loadKeys();
+        } else {
+            showToast('Error creating key', 'danger');
+        }
+    }
+
+    async function deleteKey(keyId) {
+        if (!confirm('Delete this webhook key? Any services using it will stop working.')) return;
+        const res = await fetch(`/api/webhooks/keys/${keyId}`, {method: 'DELETE'});
+        if (res.ok) {
+            showToast('Key deleted', 'success');
+            loadKeys();
+        }
+    }
+
+    loadKeys();
+</script>
+{% endblock %}

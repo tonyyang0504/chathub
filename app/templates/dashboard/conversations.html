@@ -3,7 +3,18 @@
 {% block title %}Conversations - ChatHub{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
 <style>
+.tool-hero {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
     :root {
         --wa-green: #25D366;
         --wa-dark-green: #25D366;
@@ -2018,10 +2029,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2>Conversations</h2>
-        <p class="text-muted">View and manage your conversations</p>
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-chat-dots me-3"></i>Conversations</h1>
+            <p>View and manage your conversations</p>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-chat-square-text" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
     </div>
 </div>
 
@@ -2514,6 +2530,12 @@
                                    style="width: 2.5em; height: 1.25em;">
                         </div>
                     </div>
+                    <div class="d-flex align-items-center me-2" id="modelSelectorWrapper" style="display: none !important;">
+                        <select class="form-select form-select-sm" id="convModelSelect" onchange="setConversationModel(this.value)"
+                                style="border-radius: 20px; font-size: 0.75rem; padding: 2px 8px; max-width: 140px; height: 28px;">
+                            <option value="">Bot Default</option>
+                        </select>
+                    </div>
                     <button class="header-action-btn" title="Search" onclick="toggleMessageSearch()">
                         <i class="bi bi-search"></i>
                     </button>
@@ -2574,6 +2596,7 @@
         connectConversationWebSocket(convId);
         checkHumanTakeover();
         updateAIToggleState();
+        updateModelSelector();
     }
 
     function connectConversationWebSocket(convId) {
@@ -4658,6 +4681,45 @@
                 showToast('Error rejecting sender', 'danger');
             }
         } catch (e) { showToast('Error rejecting sender', 'danger'); }
+    }
+
+    async function setConversationModel(model) {
+        if (!currentConversation) return;
+        try {
+            const res = await fetch(`/api/conversations/${currentConversation.id}/set-model`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model: model || null})
+            });
+            if (res.ok) {
+                currentConversation.model_override = model || null;
+                showToast(model ? `Model set to ${model}` : 'Using bot default model', 'success');
+            }
+        } catch (e) { showToast('Error setting model', 'danger'); }
+    }
+
+    function updateModelSelector() {
+        const wrapper = document.getElementById('modelSelectorWrapper');
+        const select = document.getElementById('convModelSelect');
+        if (!wrapper || !select || !currentConversation) return;
+
+        // Show the selector
+        wrapper.style.cssText = 'display: flex !important; align-items: center; margin-right: 8px;';
+
+        // Populate with common models
+        const models = [
+            {value: '', label: 'Bot Default'},
+            {value: 'gpt-4o-mini', label: 'GPT-4o Mini'},
+            {value: 'gpt-4o', label: 'GPT-4o'},
+            {value: 'gpt-5', label: 'GPT-5'},
+            {value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet'},
+            {value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku'},
+            {value: 'gemini-2.0-flash', label: 'Gemini Flash'},
+            {value: 'deepseek-chat', label: 'DeepSeek'},
+        ];
+        select.innerHTML = models.map(m =>
+            `<option value="${m.value}" ${currentConversation.model_override === m.value ? 'selected' : ''}>${m.label}</option>`
+        ).join('');
     }
 
     async function toggleAIResponseFromConv(enabled) {

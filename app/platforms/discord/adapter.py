@@ -423,8 +423,11 @@ class DiscordAdapter(PlatformAdapter):
                 await asyncio.sleep(0.5)
 
             chunks = self._split_message(ai_text, 2000)
-            for chunk in chunks:
-                await message.channel.send(chunk)
+            for i, chunk in enumerate(chunks):
+                if i == 0:
+                    await message.reply(chunk, mention_author=False)
+                else:
+                    await message.channel.send(chunk)
         except discord.Forbidden:
             logger.warning(f"Bot {bot_profile_id}: No permission to send in {chat_name}")
             return

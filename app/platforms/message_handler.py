@@ -1010,6 +1010,15 @@ def is_human_takeover_active(db, conversation_id: int) -> bool:
     return bool(conv and conv.human_takeover)
 
 
+def get_conversation_model(db, conversation_id: int) -> Optional[str]:
+    """Get model override for a conversation, or None to use bot default."""
+    from app.database import Conversation
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if conv and hasattr(conv, 'model_override') and conv.model_override:
+        return conv.model_override
+    return None
+
+
 def is_sender_approved(db, conversation_id: int) -> bool:
     """Check if sender is approved for DM pairing.
 

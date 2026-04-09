@@ -536,10 +536,10 @@ class _HandlerContext:
 
                 broadcast_assistant_message(conversation.id, assistant_msg)
 
-                # Send via Slack
+                # Send via Slack (threaded reply to original message)
                 chunks = _split_message(ai_text, 4000)
                 for chunk in chunks:
-                    await say(chunk)
+                    await say(chunk, thread_ts=message_ts)
 
             except Exception as e:
                 logger.error(f"Bot {self.bot_profile_id}: AI response error: {e}", exc_info=True)

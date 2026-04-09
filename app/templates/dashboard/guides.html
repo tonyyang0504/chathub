@@ -3,7 +3,18 @@
 {% block title %}Platform Setup Guides - ChatHub{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="/static/css/tools.css">
 <style>
+.tool-hero {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+.tool-hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+.tool-hero p { font-size: 1.1rem; opacity: 0.9; max-width: 600px; }
+
     .guide-card {
         border-radius: 12px;
         border: 1px solid var(--border-color);
@@ -97,15 +108,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2><i class="bi bi-book me-2"></i>Platform Setup Guides</h2>
-        <p class="text-muted">Step-by-step instructions for connecting each messaging platform</p>
-    </div>
-    <div class="col-auto">
-        <a href="/dashboard/bots" class="btn btn-outline-secondary rounded-pill">
-            <i class="bi bi-arrow-left me-1"></i>Back to Bots
-        </a>
+<div class="tool-hero">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1><i class="bi bi-book me-3"></i>Platform Setup Guides</h1>
+            <p>Step-by-step instructions for connecting each messaging platform</p>
+            <a href="/dashboard/bots" class="btn btn-light rounded-pill mt-2">
+                <i class="bi bi-arrow-left me-1"></i>Back to Bots
+            </a>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-signpost-2" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
     </div>
 </div>
 
