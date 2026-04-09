@@ -279,6 +279,8 @@ class BotManager:
         instance.whatsapp_connected = False
         _emit_event_sync("bot.stopped", bot_profile_id=bot_profile_id)
 
+        # Remove instance so a fresh one is created on next start
+        self.instances.pop(bot_profile_id, None)
         logger.info(f"Stopped bot instance for profile {bot_profile_id}")
         return True
 
