@@ -1203,6 +1203,9 @@
                                         <button class="btn btn-outline-success" onclick="analyzePlatformContact(${c.id}, this)" title="Analyze with AI" id="analyzeBtn-${c.id}">
                                             <i class="bi bi-cpu"></i>
                                         </button>
+                                        <button class="btn btn-outline-danger" onclick="deletePlatformContact(${c.id}, '${(c.display_name || c.phone || '').replace(/'/g, "\\'")}')" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </div>` : '<span class="text-muted small">No hub</span>'}
                                 </td>
                             </tr>
@@ -1587,6 +1590,24 @@
         if (analyzeBtn) analyzeBtn.style.display = '';
         if (stopBtn) stopBtn.style.display = 'none';
         if (progress) progress.style.display = 'none';
+    }
+
+    async function deletePlatformContact(contactId, name) {
+        if (!confirm(`Remove contact ${name}?\n\nThis will delete the contact record. Click Sync in the hub to restore it.`)) return;
+        try {
+            const res = await fetch(`/api/hubs/contacts/${contactId}`, { method: 'DELETE' });
+            if (res.ok) {
+                showToast('Contact deleted', 'success');
+                if (currentPlatform && currentPlatform !== 'all') {
+                    loadPlatformContacts(currentPlatform, 1);
+                }
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to delete contact', 'danger');
+            }
+        } catch (e) {
+            showToast('Failed to delete contact', 'danger');
+        }
     }
 
     function filterGroups() {
