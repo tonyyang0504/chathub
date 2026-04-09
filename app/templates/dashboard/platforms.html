@@ -846,13 +846,22 @@
                 <div class="detail-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-person-lines-fill me-2"></i>Contacts <span class="badge bg-secondary ms-1" id="contactsTotalBadge">${data.total_contacts}</span></span>
-                        <div class="d-flex gap-2 align-items-center">
+                        <div class="d-flex gap-2 align-items-stretch">
                             <input type="text" class="form-control form-control-sm rounded-pill" style="width: 160px;" placeholder="Search contacts..." id="searchContacts" onkeyup="searchPlatformContacts()">
-                            <span id="platformAnalysisProgress" class="small text-muted" style="display: none;"></span>
-                            <button class="btn btn-sm btn-outline-success rounded-pill" onclick="analyzeAllPlatformContacts()" id="analyzeAllBtn" title="Analyze all contacts with AI">
+                            <span id="platformAnalysisProgress" class="small text-muted d-flex align-items-center" style="display: none;"></span>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-download me-1"></i>Export<i class="bi bi-chevron-down ms-1" style="font-size: 0.65rem;"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="exportPlatformContacts('csv'); return false;"><i class="bi bi-filetype-csv me-2"></i>Export as CSV</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportPlatformContacts('json'); return false;"><i class="bi bi-filetype-json me-2"></i>Export as JSON</a></li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success rounded-pill d-flex align-items-center" onclick="analyzeAllPlatformContacts()" id="analyzeAllBtn" title="Analyze all contacts with AI">
                                 <i class="bi bi-cpu me-1"></i>Analyze All
                             </button>
-                            <button class="btn btn-sm btn-outline-warning rounded-pill" style="display: none;" onclick="stopPlatformAnalysis()" id="stopAnalysisBtn" title="Stop analysis">
+                            <button class="btn btn-sm btn-outline-warning rounded-pill d-flex align-items-center" style="display: none;" onclick="stopPlatformAnalysis()" id="stopAnalysisBtn" title="Stop analysis">
                                 <i class="bi bi-stop-circle me-1"></i>Stop
                             </button>
                         </div>
@@ -1590,6 +1599,47 @@
         if (analyzeBtn) analyzeBtn.style.display = '';
         if (stopBtn) stopBtn.style.display = 'none';
         if (progress) progress.style.display = 'none';
+    }
+
+    async function exportPlatformContacts(format) {
+        if (!platformHubIds || !platformHubIds.length) {
+            showToast('No hub data available for export', 'warning');
+            return;
+        }
+        try {
+            // Export from the first hub that has contacts for this platform
+            const hubId = platformHubIds[0];
+            const response = await fetch(`/api/hubs/${hubId}/contacts/export?format=${format}`);
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.detail || 'Export failed');
+            }
+            if (format === 'json') {
+                const data = await response.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `contacts_${currentPlatform}_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } else {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `contacts_${currentPlatform}_${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            }
+            showToast(`Contacts exported as ${format.toUpperCase()}`, 'success');
+        } catch (e) {
+            showToast(e.message || 'Export failed', 'danger');
+        }
     }
 
     async function deletePlatformContact(contactId, name) {
