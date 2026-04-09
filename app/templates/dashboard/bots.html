@@ -787,6 +787,13 @@
             ]},
         wechat:    { label: 'WeChat',    icon: 'bi-wechat',          color: '#07C160', auth: 'qr_code',     tokenLabel: null,
             setupGuide: 'WeChat integration is not yet available.' },
+        whatsapp_business: { label: 'WhatsApp Business API', icon: 'bi-whatsapp', color: '#128C7E', auth: 'api_token', tokenLabel: null,
+            setupGuide: 'Official WhatsApp Business API via Meta Cloud API.<br>1. Create app at <a href="https://developers.facebook.com" target="_blank">Meta Developers</a><br>2. Add WhatsApp product → verify phone number<br>3. Copy <b>Phone Number ID</b> and generate a <b>Permanent Access Token</b><br>4. Set webhook URL to your server + <code>/webhooks/whatsapp-business</code>',
+            connectFields: [
+                {key: 'phone_number_id', label: 'Phone Number ID', placeholder: 'From WhatsApp > API Setup', type: 'text'},
+                {key: 'platform_token', label: 'Access Token', placeholder: 'System User permanent token', type: 'password'},
+                {key: 'app_secret', label: 'App Secret (optional)', placeholder: 'For webhook signature verification', type: 'password'},
+            ]},
     };
 
     // Update form fields visibility based on selected platform

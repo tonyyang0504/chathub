@@ -7,7 +7,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok", "ollama"]
-VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "imessage", "wechat"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "imessage", "wechat", "whatsapp_business"]
 
 # Platform auth method descriptions for the frontend
 PLATFORM_AUTH_INFO = {
@@ -45,6 +45,7 @@ class BotProfileCreate(BaseModel):
     app_secret: Optional[str] = None  # Meta App Secret (Messenger/Instagram)
     slack_app_token: Optional[str] = None  # Slack App Token (xapp-) for Socket Mode
     signal_api_url: Optional[str] = None  # Signal CLI REST API URL
+    phone_number_id: Optional[str] = None  # WhatsApp Business API Phone Number ID
 
     @field_validator('platform_type')
     @classmethod

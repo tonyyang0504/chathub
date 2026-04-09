@@ -322,6 +322,8 @@ async def check_and_recover_bots(
                     config["slack_app_token"] = platform_config["slack_app_token"]
                 if platform_config.get("signal_api_url"):
                     config["signal_api_url"] = platform_config["signal_api_url"]
+                if platform_config.get("phone_number_id"):
+                    config["phone_number_id"] = platform_config["phone_number_id"]
 
                 # Map platform_token to adapter-specific config keys (non-Telegram platforms)
                 pt = config.get("platform_token")
@@ -552,6 +554,9 @@ async def update_bot(
         config_changed = True
     if bot_data.signal_api_url is not None:
         platform_config["signal_api_url"] = bot_data.signal_api_url
+        config_changed = True
+    if bot_data.phone_number_id is not None:
+        platform_config["phone_number_id"] = bot_data.phone_number_id
         config_changed = True
     if config_changed:
         bot.platform_config = json.dumps(platform_config)
