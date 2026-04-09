@@ -217,12 +217,25 @@ class EmailAdapter(PlatformAdapter):
 
         logger.info(f"Bot {bot_id}: Email connected as {email_address} (IMAP: {imap_server}, SMTP: {smtp_server})")
 
+        # Mark all existing unread as seen (don't process backlog)
+        try:
+            logger.info(f"Bot {bot_id}: Marking existing unread emails as seen (skipping backlog)")
+            await asyncio.to_thread(self._mark_existing_as_seen, state)
+        except Exception as e:
+            logger.warning(f"Bot {bot_id}: Failed to mark existing emails: {e}")
+
         # Polling loop
         poll_interval = 30  # seconds
         try:
             while instance.is_running and not instance.stopped_by_user:
                 try:
-                    await asyncio.to_thread(self._poll_inbox, bot_id, state)
+                    # Fetch new emails in thread, process async
+                    new_emails = await asyncio.to_thread(self._fetch_new_emails, bot_id, state)
+                    for email_data in new_emails:
+                        try:
+                            await self._handle_email(bot_id, state, **email_data)
+                        except Exception as e:
+                            logger.error(f"Bot {bot_id}: Email handling error: {e}", exc_info=True)
                 except Exception as e:
                     logger.error(f"Bot {bot_id}: Email poll error: {e}", exc_info=True)
 
@@ -254,30 +267,42 @@ class EmailAdapter(PlatformAdapter):
         imap.login(state["email_address"], state["password"])
         return imap
 
-    def _poll_inbox(self, bot_id: int, state: dict):
-        """Poll IMAP inbox for new unread emails (runs in thread)."""
+    def _mark_existing_as_seen(self, state: dict):
+        """Mark all current unread emails as seen so we only process NEW ones."""
+        imap = self._connect_imap(state)
+        imap.select("INBOX")
+        status, data = imap.search(None, "UNSEEN")
+        if status == "OK" and data[0]:
+            ids = data[0].split()
+            for uid in ids:
+                state["seen_uids"].add(uid.decode())
+            logger.info(f"Email: Marked {len(ids)} existing unread emails as seen (will not process)")
+        imap.logout()
+
+    def _fetch_new_emails(self, bot_id: int, state: dict) -> list:
+        """Fetch new unread emails (runs in thread). Returns list of email dicts."""
+        results = []
         try:
             imap = self._connect_imap(state)
             imap.select("INBOX")
 
-            # Search for unread emails
             status, data = imap.search(None, "UNSEEN")
-            if status != "OK":
+            if status != "OK" or not data[0]:
                 imap.logout()
-                return
+                return results
 
             email_ids = data[0].split()
-            if not email_ids:
+
+            # Only process emails not seen before (new since last poll)
+            new_ids = [eid for eid in email_ids if eid.decode() not in state["seen_uids"]]
+            if not new_ids:
                 imap.logout()
-                return
+                return results
 
-            for email_id in email_ids:
-                uid = email_id.decode()
-                if uid in state["seen_uids"]:
-                    continue
-                state["seen_uids"].add(uid)
+            # Limit to 10 per poll to avoid overload
+            for email_id in new_ids[:10]:
+                state["seen_uids"].add(email_id.decode())
 
-                # Fetch email
                 status, msg_data = imap.fetch(email_id, "(RFC822)")
                 if status != "OK":
                     continue
@@ -285,7 +310,6 @@ class EmailAdapter(PlatformAdapter):
                 raw_email = msg_data[0][1]
                 msg = email.message_from_bytes(raw_email)
 
-                # Extract fields
                 from_addr = email.utils.parseaddr(msg.get("From", ""))[1]
                 from_name = email.utils.parseaddr(msg.get("From", ""))[0] or from_addr
                 subject = self._decode_header(msg.get("Subject", ""))
@@ -297,33 +321,35 @@ class EmailAdapter(PlatformAdapter):
                 if from_addr.lower() == state["email_address"].lower():
                     continue
 
-                # Extract body
                 body = self._extract_body(msg)
                 if not body:
                     body = f"[Email with subject: {subject}]"
 
-                # Combine subject + body for AI context
                 content = f"Subject: {subject}\n\n{body}" if subject else body
 
-                # Parse timestamp
                 try:
                     timestamp = email.utils.parsedate_to_datetime(date_str) if date_str else datetime.utcnow()
                 except Exception:
                     timestamp = datetime.utcnow()
 
-                # Process in the main event loop
-                import asyncio
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.run_coroutine_threadsafe(
-                        self._handle_email(bot_id, state, from_addr, from_name, subject, content, message_id, references, timestamp),
-                        loop
-                    )
+                results.append({
+                    "from_addr": from_addr,
+                    "from_name": from_name,
+                    "subject": subject,
+                    "content": content,
+                    "message_id": message_id,
+                    "references": references,
+                    "timestamp": timestamp,
+                })
+
+            if new_ids:
+                logger.info(f"Bot {bot_id}: Fetched {len(results)} new email(s)")
 
             imap.logout()
-
         except Exception as e:
-            logger.error(f"Bot {bot_id}: IMAP poll error: {e}")
+            logger.error(f"Bot {bot_id}: IMAP fetch error: {e}")
+
+        return results
 
     async def _handle_email(self, bot_id: int, state: dict, from_addr: str, from_name: str,
                              subject: str, content: str, message_id: str, references: str,
