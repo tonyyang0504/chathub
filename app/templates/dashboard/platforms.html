@@ -849,8 +849,8 @@
                         <div class="d-flex gap-2 align-items-stretch">
                             <input type="text" class="form-control form-control-sm rounded-pill" style="width: 160px;" placeholder="Search contacts..." id="searchContacts" onkeyup="searchPlatformContacts()">
                             <span id="platformAnalysisProgress" class="small text-muted d-flex align-items-center" style="display: none;"></span>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                            <div class="dropdown d-flex">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill" type="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-download me-1"></i>Export<i class="bi bi-chevron-down ms-1" style="font-size: 0.65rem;"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
@@ -858,10 +858,10 @@
                                     <li><a class="dropdown-item" href="#" onclick="exportPlatformContacts('json'); return false;"><i class="bi bi-filetype-json me-2"></i>Export as JSON</a></li>
                                 </ul>
                             </div>
-                            <button class="btn btn-sm btn-outline-success rounded-pill d-flex align-items-center" onclick="analyzeAllPlatformContacts()" id="analyzeAllBtn" title="Analyze all contacts with AI">
+                            <button class="btn btn-sm btn-outline-success rounded-pill" onclick="analyzeAllPlatformContacts()" id="analyzeAllBtn" title="Analyze all contacts with AI">
                                 <i class="bi bi-cpu me-1"></i>Analyze All
                             </button>
-                            <button class="btn btn-sm btn-outline-warning rounded-pill d-flex align-items-center" style="display: none;" onclick="stopPlatformAnalysis()" id="stopAnalysisBtn" title="Stop analysis">
+                            <button class="btn btn-sm btn-outline-warning rounded-pill" style="display: none;" onclick="stopPlatformAnalysis()" id="stopAnalysisBtn" title="Stop analysis">
                                 <i class="bi bi-stop-circle me-1"></i>Stop
                             </button>
                         </div>
@@ -1526,33 +1526,45 @@
         }
     }
 
+    function updatePlatformAnalysisButtons(hasPending) {
+        const analyzeBtn = document.getElementById('analyzeAllBtn');
+        const stopBtn = document.getElementById('stopAnalysisBtn');
+        const progress = document.getElementById('platformAnalysisProgress');
+        if (!analyzeBtn || !stopBtn) return;
+
+        if (hasPending) {
+            analyzeBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+            if (!platformAnalysisPolling) startAnalysisPolling();
+        } else {
+            analyzeBtn.style.display = 'inline-flex';
+            stopBtn.style.display = 'none';
+            if (progress) progress.style.display = 'none';
+            if (platformAnalysisPolling) {
+                clearInterval(platformAnalysisPolling);
+                platformAnalysisPolling = null;
+            }
+        }
+    }
+
     async function analyzeAllPlatformContacts() {
         if (!platformHubIds || !platformHubIds.length) {
             showToast('No hubs found for this platform. Add bots to a hub first.', 'warning');
             return;
         }
 
-        const analyzeBtn = document.getElementById('analyzeAllBtn');
-        const stopBtn = document.getElementById('stopAnalysisBtn');
+        updatePlatformAnalysisButtons(true);
         const progress = document.getElementById('platformAnalysisProgress');
-
-        analyzeBtn.style.display = 'none';
-        stopBtn.style.display = '';
-        progress.style.display = 'inline';
-        progress.textContent = 'Starting...';
+        if (progress) { progress.style.display = 'inline-flex'; progress.textContent = 'Starting...'; }
 
         try {
-            // Analyze all hubs for this platform
             for (const hubId of platformHubIds) {
                 await fetch(`/api/hubs/${hubId}/contacts/analyze-all`, { method: 'POST' });
             }
             showToast('Analysis started for all contacts', 'success');
-            startAnalysisPolling();
         } catch (e) {
             showToast('Failed to start analysis', 'danger');
-            analyzeBtn.style.display = '';
-            stopBtn.style.display = 'none';
-            progress.style.display = 'none';
+            updatePlatformAnalysisButtons(false);
         }
     }
 
@@ -1574,11 +1586,13 @@
                     }
                 }
                 const progress = document.getElementById('platformAnalysisProgress');
-                if (progress) progress.textContent = `${totalCompleted}/${totalContacts} analyzed`;
+                if (progress) {
+                    progress.style.display = 'inline-flex';
+                    progress.textContent = `${totalCompleted}/${totalContacts} analyzed`;
+                }
 
                 if (totalPending === 0) {
-                    stopPlatformAnalysis();
-                    // Refresh contacts
+                    updatePlatformAnalysisButtons(false);
                     if (currentPlatform && currentPlatform !== 'all') {
                         loadPlatformContacts(currentPlatform, 1);
                     }
@@ -1589,16 +1603,11 @@
     }
 
     function stopPlatformAnalysis() {
-        if (platformAnalysisPolling) {
-            clearInterval(platformAnalysisPolling);
-            platformAnalysisPolling = null;
+        updatePlatformAnalysisButtons(false);
+        // Refresh to get latest data
+        if (currentPlatform && currentPlatform !== 'all') {
+            loadPlatformContacts(currentPlatform, 1);
         }
-        const analyzeBtn = document.getElementById('analyzeAllBtn');
-        const stopBtn = document.getElementById('stopAnalysisBtn');
-        const progress = document.getElementById('platformAnalysisProgress');
-        if (analyzeBtn) analyzeBtn.style.display = '';
-        if (stopBtn) stopBtn.style.display = 'none';
-        if (progress) progress.style.display = 'none';
     }
 
     async function exportPlatformContacts(format) {
