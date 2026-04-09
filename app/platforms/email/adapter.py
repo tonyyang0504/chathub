@@ -553,6 +553,8 @@ class EmailAdapter(PlatformAdapter):
     @staticmethod
     def _extract_body(msg: email.message.Message) -> str:
         """Extract plain text body from email message."""
+        raw_text = ""
+
         if msg.is_multipart():
             for part in msg.walk():
                 content_type = part.get_content_type()
@@ -562,23 +564,65 @@ class EmailAdapter(PlatformAdapter):
                     payload = part.get_payload(decode=True)
                     if payload:
                         charset = part.get_content_charset() or "utf-8"
-                        return payload.decode(charset, errors="replace").strip()
+                        raw_text = payload.decode(charset, errors="replace").strip()
+                        break
 
             # Fallback to HTML
-            for part in msg.walk():
-                if part.get_content_type() == "text/html":
-                    payload = part.get_payload(decode=True)
-                    if payload:
-                        charset = part.get_content_charset() or "utf-8"
-                        html = payload.decode(charset, errors="replace")
-                        # Strip HTML tags (basic)
-                        text = re.sub(r'<[^>]+>', '', html)
-                        text = re.sub(r'\s+', ' ', text).strip()
-                        return text
+            if not raw_text:
+                for part in msg.walk():
+                    if part.get_content_type() == "text/html":
+                        payload = part.get_payload(decode=True)
+                        if payload:
+                            charset = part.get_content_charset() or "utf-8"
+                            html = payload.decode(charset, errors="replace")
+                            raw_text = re.sub(r'<[^>]+>', '', html)
+                            break
         else:
             payload = msg.get_payload(decode=True)
             if payload:
                 charset = msg.get_content_charset() or "utf-8"
-                return payload.decode(charset, errors="replace").strip()
+                raw_text = payload.decode(charset, errors="replace").strip()
 
-        return ""
+        return EmailAdapter._clean_email_body(raw_text)
+
+    @staticmethod
+    def _clean_email_body(text: str) -> str:
+        """Clean up raw email text for display."""
+        if not text:
+            return ""
+
+        # Remove image placeholders like [image: Google]
+        text = re.sub(r'\[image:[^\]]*\]', '', text)
+
+        # Remove URLs in angle brackets <https://...>
+        text = re.sub(r'<https?://[^>]+>', '', text)
+
+        # Shorten long standalone URLs (keep domain only)
+        text = re.sub(r'https?://\S{80,}', '[link]', text)
+
+        # Remove common email footer markers and content after them
+        for marker in [
+            'You received this email',
+            'Unsubscribe',
+            'unsubscribe',
+            'To stop receiving',
+            'If you no longer wish',
+            'View in browser',
+            'Privacy Policy',
+        ]:
+            idx = text.find(marker)
+            if idx > 50:  # Only cut if there's enough content before
+                text = text[:idx].rstrip()
+                break
+
+        # Collapse multiple blank lines into max 2
+        text = re.sub(r'\n{3,}', '\n\n', text)
+
+        # Remove lines that are just whitespace
+        lines = [line for line in text.split('\n') if line.strip()]
+        text = '\n'.join(lines)
+
+        # Collapse multiple spaces
+        text = re.sub(r'  +', ' ', text)
+
+        return text.strip()
