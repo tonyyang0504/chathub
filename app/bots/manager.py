@@ -237,9 +237,11 @@ class BotManager:
 
         # Create task for running the bot
         logger.info(f"Creating task for bot {bot_profile_id} (platform: {platform_type})")
+        instance.config = config  # Update config with latest credentials
         instance.is_running = True
         instance.stopped_by_user = False  # Reset the flag when starting
         instance.error = None  # Clear any previous error
+        instance.last_status = None  # Clear cached status from previous run
         _emit_event_sync("bot.started", bot_profile_id=bot_profile_id, platform_type=instance.platform_type)
 
         async def run_bot_with_error_handling():
