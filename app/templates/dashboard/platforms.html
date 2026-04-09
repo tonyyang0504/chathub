@@ -24,7 +24,7 @@
     background: var(--card-bg); color: var(--text-primary);
 }
 .platform-tab:hover { transform: scale(1.03); }
-.platform-tab.active { color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.05); }
+.platform-tab.active { color: white; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transform: scale(1.05); }
 .platform-tab i { font-size: 1rem; }
 
 /* Platform grid cards */
@@ -570,8 +570,8 @@
 
 <!-- Platform Tabs -->
 <div class="platform-tabs" id="platformTabs">
-    <div class="platform-tab active" data-platform="all" onclick="switchPlatform('all')">
-        <i class="bi bi-grid-3x3-gap"></i> All Platforms
+    <div class="platform-tab active" data-platform="all" onclick="switchPlatform('all')" style="background: #06b6d4; color: white;">
+        <i class="bi bi-grid-3x3-gap"></i> All
     </div>
 </div>
 
@@ -612,7 +612,7 @@
 
             // Build tabs
             const tabsEl = document.getElementById('platformTabs');
-            let tabsHtml = `<div class="platform-tab active" data-platform="all" onclick="switchPlatform('all')">
+            let tabsHtml = `<div class="platform-tab active" data-platform="all" onclick="switchPlatform('all')" style="background: #06b6d4; color: white;">
                 <i class="bi bi-grid-3x3-gap"></i> All
             </div>`;
             data.platforms.forEach(p => {
