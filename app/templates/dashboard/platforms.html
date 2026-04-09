@@ -230,6 +230,28 @@
             const res = await fetch(`/api/analytics/platform-stats/${platform}`);
             const data = await res.json();
             detailCache[platform] = data;
+
+            // Fetch contacts and groups using bot IDs for this platform
+            const botIds = data.bots.map(b => b.id).join(',');
+            if (botIds) {
+                const [contactsRes, groupsRes] = await Promise.all([
+                    fetch(`/api/bots/all/contacts?bot_ids=${botIds}`),
+                    fetch(`/api/bots/all/groups?bot_ids=${botIds}`)
+                ]);
+                const contactsData = await contactsRes.json();
+                const groupsData = await groupsRes.json();
+                data._contacts = contactsData.contacts || [];
+                data._groups = groupsData.groups || [];
+                // Map bot_id to bot name
+                const botMap = {};
+                data.bots.forEach(b => botMap[b.id] = b.name);
+                data._contacts.forEach(c => c.bot_name = botMap[c.bot_id] || '');
+                data._groups.forEach(g => g.bot_name = botMap[g.bot_id] || '');
+            } else {
+                data._contacts = [];
+                data._groups = [];
+            }
+
             renderPlatformDetail(data);
         } catch (e) {
             content.innerHTML = '<p class="text-danger">Error loading platform details</p>';
@@ -354,6 +376,95 @@
                 </div>
             </div>
 
+            <!-- Contacts -->
+            <div class="col-lg-6">
+                <div class="detail-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-person me-2"></i>Contacts <span class="badge bg-secondary ms-1">${(data._contacts || []).length}</span></span>
+                        <input type="text" class="form-control form-control-sm rounded-pill" style="width: 140px;" placeholder="Search..." id="searchContacts" onkeyup="filterContacts()">
+                    </div>
+                    <div class="card-body p-0">
+                        ${(data._contacts || []).length ? `
+                        <div class="detail-table-scroll" id="contactsTableWrap">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
+                                    <tr>
+                                        <th>Contact</th>
+                                        <th>Bot</th>
+                                        <th class="text-end">Last Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contactsTableBody">
+                                    ${(data._contacts || []).map(c => `
+                                    <tr class="contact-row" data-name="${(c.display_name || c.phone || '').toLowerCase()}">
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                ${c.profile_pic
+                                                    ? `<img src="${c.profile_pic}" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;">`
+                                                    : `<div style="width:28px;height:28px;border-radius:50%;background:${data.color};display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;"><i class="bi bi-person"></i></div>`}
+                                                <div>
+                                                    <div class="fw-medium" style="font-size:0.85rem;">${c.display_name || c.phone}</div>
+                                                    ${c.display_name && c.phone !== c.display_name ? `<div class="text-muted" style="font-size:0.75rem;">${c.phone}</div>` : ''}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-muted small">${c.bot_name || '—'}</td>
+                                        <td class="text-end text-muted small">${c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : '—'}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>` : `
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-person" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <p class="mt-2 mb-0">No contacts yet</p>
+                        </div>`}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Groups -->
+            <div class="col-lg-6">
+                <div class="detail-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people me-2"></i>Groups <span class="badge bg-secondary ms-1">${(data._groups || []).length}</span></span>
+                        <input type="text" class="form-control form-control-sm rounded-pill" style="width: 140px;" placeholder="Search..." id="searchGroups" onkeyup="filterGroups()">
+                    </div>
+                    <div class="card-body p-0">
+                        ${(data._groups || []).length ? `
+                        <div class="detail-table-scroll" id="groupsTableWrap">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
+                                    <tr>
+                                        <th>Group</th>
+                                        <th>Bot</th>
+                                        <th class="text-end">Last Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="groupsTableBody">
+                                    ${(data._groups || []).map(g => `
+                                    <tr class="group-row" data-name="${(g.name || g.chat_id || '').toLowerCase()}">
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                ${g.profile_pic
+                                                    ? `<img src="${g.profile_pic}" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;">`
+                                                    : `<div style="width:28px;height:28px;border-radius:50%;background:${data.color};display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;"><i class="bi bi-people-fill"></i></div>`}
+                                                <div class="fw-medium" style="font-size:0.85rem;">${g.name || g.chat_id}</div>
+                                            </div>
+                                        </td>
+                                        <td class="text-muted small">${g.bot_name || '—'}</td>
+                                        <td class="text-end text-muted small">${g.last_message_at ? new Date(g.last_message_at).toLocaleDateString() : '—'}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>` : `
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-people" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <p class="mt-2 mb-0">No groups yet</p>
+                        </div>`}
+                    </div>
+                </div>
+            </div>
+
             <!-- Recent Conversations -->
             <div class="col-12">
                 <div class="detail-card">
@@ -379,6 +490,20 @@
 
     // Auto-select platform from URL hash
     const hash = window.location.hash.replace('#', '');
+
+    function filterContacts() {
+        const query = (document.getElementById('searchContacts')?.value || '').toLowerCase();
+        document.querySelectorAll('.contact-row').forEach(row => {
+            row.style.display = row.dataset.name.includes(query) ? '' : 'none';
+        });
+    }
+
+    function filterGroups() {
+        const query = (document.getElementById('searchGroups')?.value || '').toLowerCase();
+        document.querySelectorAll('.group-row').forEach(row => {
+            row.style.display = row.dataset.name.includes(query) ? '' : 'none';
+        });
+    }
 
     loadPlatformStats().then(() => {
         if (hash && PLATFORMS[hash]) {
