@@ -739,6 +739,20 @@ async def get_platform_contacts(
                 phone_to_conv[norm] = conv
 
     # Get rich Contact records from hubs
+    # Build a set of hub_ids that have an API key (agent or hub-level)
+    from app.database import AIAgent
+    hubs_with_key = set()
+    for hid in hub_ids:
+        has_key = db.query(AIAgent).filter(
+            AIAgent.hub_id == hid, AIAgent.agent_type == "analyzer", AIAgent.is_active == True,
+            AIAgent.api_key_encrypted.isnot(None)
+        ).first() is not None
+        if not has_key:
+            hub_obj = db.query(Hub).filter(Hub.id == hid).first()
+            has_key = bool(hub_obj and hub_obj.api_key_encrypted)
+        if has_key:
+            hubs_with_key.add(hid)
+
     hub_contacts = {}
     if hub_ids:
         query = db.query(Contact).filter(Contact.hub_id.in_(hub_ids))
@@ -749,7 +763,10 @@ async def get_platform_contacts(
             )
         for c in query.all():
             if c.phone in phone_to_conv or c.phone:
-                hub_contacts[c.phone] = c
+                existing = hub_contacts.get(c.phone)
+                # Prefer contact from a hub that has an API key
+                if not existing or (c.hub_id in hubs_with_key and (not existing or existing.hub_id not in hubs_with_key)):
+                    hub_contacts[c.phone] = c
 
     # Build merged contact list
     all_contacts = []
