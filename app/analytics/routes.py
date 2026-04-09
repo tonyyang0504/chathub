@@ -540,20 +540,17 @@ async def get_platform_stats(
     db: Session = Depends(get_db)
 ):
     """Get summary stats for all platforms."""
-    bot_ids = [b.id for b in db.query(BotProfile.id).filter(BotProfile.user_id == current_user.id).all()]
-
     # Aggregate by platform
-    platform_data = db.query(
-        BotProfile.platform_type,
-        func.count(BotProfile.id),
-        func.sum(func.cast(BotProfile.is_running, db.bind.dialect.type_descriptor(type(1)) if hasattr(db.bind, 'dialect') else type(1))),
-    ).filter(BotProfile.user_id == current_user.id).group_by(BotProfile.platform_type).all()
+    all_bots = db.query(BotProfile).filter(BotProfile.user_id == current_user.id).all()
 
-    # Build a quick lookup: platform -> (bot_count, running_count)
     platform_bots = {}
-    for row in platform_data:
-        pt = row[0] or "whatsapp"
-        platform_bots[pt] = {"bot_count": row[1], "running_bots": sum(1 for b in db.query(BotProfile).filter(BotProfile.user_id == current_user.id, BotProfile.platform_type == pt, BotProfile.is_running == True).all())}
+    for b in all_bots:
+        pt = b.platform_type or "whatsapp"
+        if pt not in platform_bots:
+            platform_bots[pt] = {"bot_count": 0, "running_bots": 0}
+        platform_bots[pt]["bot_count"] += 1
+        if b.is_running:
+            platform_bots[pt]["running_bots"] += 1
 
     # Conversation/message counts by platform
     conv_data = db.query(
