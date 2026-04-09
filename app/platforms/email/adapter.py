@@ -370,15 +370,10 @@ class EmailAdapter(PlatformAdapter):
         if not instance:
             return
 
-        db = get_db_session()
-        try:
+        with get_db_session() as db:
             from app.database import BotProfile
             bot = db.query(BotProfile).filter(BotProfile.id == bot_id).first()
             if not bot:
-                return
-
-            # Dedup
-            if is_duplicate_message(db, message_id, from_addr, content[:100]):
                 return
 
             # Find or create conversation (use email address as chat_id)
@@ -389,51 +384,49 @@ class EmailAdapter(PlatformAdapter):
                 chat_name=from_name,
                 phone=from_addr,
                 is_group=False,
-                platform_type="email",
             )
 
             # Save user message
             save_user_message(
-                db=db,
-                conversation=conversation,
-                content=content,
-                sender=from_addr,
+                db,
+                conversation.id,
+                content,
                 sender_name=from_name,
-                wa_message_id=message_id,
+                sender_id=from_addr,
+                platform_message_id=message_id,
                 timestamp=timestamp,
             )
 
-            broadcast_user_message(conversation.id, {
-                "content": content,
-                "sender": from_addr,
-                "sender_name": from_name,
-                "timestamp": timestamp.isoformat(),
-            })
+            update_conversation_stats(db, conversation.id)
+            db.commit()  # Commit the message before AI response attempt
 
-            update_conversation_stats(db, conversation)
+            logger.info(f"Bot {bot_id}: Saved email from {from_addr} ({from_name}), subject: {subject}")
 
             # Check human takeover and DM approval
             if is_human_takeover_active(db, conversation.id):
                 return
             if not is_sender_approved(db, conversation.id):
                 return
-            if not bot.ai_response_enabled:
-                return
-            if has_response_after(db, conversation.id, timestamp):
+            if not bot.is_active:
                 return
 
             # Generate AI response
-            broadcast_typing(conversation.id, True)
             try:
+                from app.auth.utils import decrypt_string
+                ai_key = decrypt_string(bot.api_key_encrypted) if bot.api_key_encrypted else None
+                if not ai_key:
+                    logger.warning(f"Bot {bot_id}: No AI API key configured")
+                    return
+
                 ai_messages = build_ai_messages(
-                    db=db,
-                    bot=bot,
-                    conversation=conversation,
-                    latest_content=content,
+                    db,
+                    conversation.id,
+                    bot.system_prompt or "You are a helpful email assistant. Reply concisely and professionally.",
+                    bot.max_history or 20,
                 )
 
                 from app.ai.factory import get_ai_provider
-                provider = get_ai_provider(bot.ai_provider, bot.api_key_encrypted, bot.model)
+                provider = get_ai_provider(bot.ai_provider, ai_key, bot.model)
                 reply = await provider.chat_completion(ai_messages)
 
                 if reply:
@@ -449,20 +442,12 @@ class EmailAdapter(PlatformAdapter):
                         self._send_email_sync, state, from_addr, subject, reply, message_id, references
                     )
                     if sent:
-                        save_assistant_message(db, conversation, reply)
-                        broadcast_assistant_message(conversation.id, {
-                            "content": reply,
-                            "timestamp": datetime.utcnow().isoformat(),
-                        })
-                        update_conversation_stats(db, conversation)
+                        save_assistant_message(db, conversation.id, reply)
+                        update_conversation_stats(db, conversation.id)
+                        logger.info(f"Bot {bot_id}: AI replied to {from_addr}")
 
             except Exception as e:
                 logger.error(f"Bot {bot_id}: AI response error: {e}", exc_info=True)
-            finally:
-                broadcast_typing(conversation.id, False)
-
-        finally:
-            db.close()
 
     def _send_email_sync(self, state: dict, to_addr: str, subject: str, body: str,
                           in_reply_to: str = "", references: str = "") -> bool:
