@@ -268,43 +268,53 @@ class EmailAdapter(PlatformAdapter):
         return imap
 
     def _mark_existing_as_seen(self, state: dict):
-        """Mark all current unread emails as seen so we only process NEW ones."""
+        """Record all current email UIDs so we only process NEW ones arriving after startup."""
         imap = self._connect_imap(state)
         imap.select("INBOX")
-        status, data = imap.search(None, "UNSEEN")
+        # Use UID SEARCH to get all message UIDs
+        status, data = imap.uid("search", None, "ALL")
         if status == "OK" and data[0]:
-            ids = data[0].split()
-            for uid in ids:
-                state["seen_uids"].add(uid.decode())
-            logger.info(f"Email: Marked {len(ids)} existing unread emails as seen (will not process)")
+            uids = data[0].split()
+            # Record the highest UID — only process UIDs above this
+            if uids:
+                state["last_uid"] = int(uids[-1])
+                logger.info(f"Email: Recorded last UID {state['last_uid']} — will only process newer emails")
+            else:
+                state["last_uid"] = 0
+        else:
+            state["last_uid"] = 0
         imap.logout()
 
     def _fetch_new_emails(self, bot_id: int, state: dict) -> list:
-        """Fetch new unread emails (runs in thread). Returns list of email dicts."""
+        """Fetch new emails by UID (runs in thread). Returns list of email dicts."""
         results = []
         try:
             imap = self._connect_imap(state)
             imap.select("INBOX")
 
-            status, data = imap.search(None, "UNSEEN")
+            # Search for UIDs greater than the last seen UID
+            last_uid = state.get("last_uid", 0)
+            search_uid = str(last_uid + 1)
+            status, data = imap.uid("search", None, f"UID {search_uid}:*")
             if status != "OK" or not data[0]:
                 imap.logout()
                 return results
 
-            email_ids = data[0].split()
-
-            # Only process emails not seen before (new since last poll)
-            new_ids = [eid for eid in email_ids if eid.decode() not in state["seen_uids"]]
-            if not new_ids:
+            uid_list = data[0].split()
+            # Filter out UIDs we've already seen (including last_uid itself which may match)
+            new_uids = [uid for uid in uid_list if int(uid) > last_uid]
+            if not new_uids:
                 imap.logout()
                 return results
 
             # Limit to 10 per poll to avoid overload
-            for email_id in new_ids[:10]:
-                state["seen_uids"].add(email_id.decode())
+            for uid in new_uids[:10]:
+                uid_int = int(uid)
+                if uid_int > state.get("last_uid", 0):
+                    state["last_uid"] = uid_int
 
-                status, msg_data = imap.fetch(email_id, "(RFC822)")
-                if status != "OK":
+                status, msg_data = imap.uid("fetch", uid, "(RFC822)")
+                if status != "OK" or not msg_data or not msg_data[0]:
                     continue
 
                 raw_email = msg_data[0][1]
@@ -342,8 +352,7 @@ class EmailAdapter(PlatformAdapter):
                     "timestamp": timestamp,
                 })
 
-            if new_ids:
-                logger.info(f"Bot {bot_id}: Fetched {len(results)} new email(s)")
+            logger.info(f"Bot {bot_id}: Fetched {len(results)} new email(s) (UIDs > {last_uid})")
 
             imap.logout()
         except Exception as e:
