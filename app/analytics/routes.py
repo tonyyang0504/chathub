@@ -762,7 +762,9 @@ async def get_platform_contacts(
                 (Contact.display_name.ilike(f"%{search}%"))
             )
         for c in query.all():
-            if c.phone in phone_to_conv or c.phone:
+            # Only include contacts that have conversations with bots on THIS platform
+            norm_phone = normalize_phone(c.phone)
+            if c.phone in phone_to_conv or norm_phone in phone_to_conv:
                 existing = hub_contacts.get(c.phone)
                 # Prefer contact from a hub that has an API key
                 if not existing or (c.hub_id in hubs_with_key and (not existing or existing.hub_id not in hubs_with_key)):
