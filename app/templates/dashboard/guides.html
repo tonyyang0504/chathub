@@ -102,6 +102,7 @@
     .nav-pills .nav-link.active[href="#guide-linkedin"]  { background: #0A66C2 !important; }
     .nav-pills .nav-link.active[href="#guide-imessage"]  { background: #34C759 !important; }
     .nav-pills .nav-link.active[href="#guide-wechat"]    { background: #07C160 !important; }
+    .nav-pills .nav-link.active[href="#guide-whatsapp-business"] { background: #128C7E !important; }
 </style>
 {% endblock %}
 
@@ -136,6 +137,7 @@
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-linkedin"><i class="bi bi-linkedin me-1"></i>LinkedIn</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-imessage"><i class="bi bi-chat-square-text me-1"></i>iMessage</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-wechat"><i class="bi bi-wechat me-1"></i>WeChat</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-whatsapp-business"><i class="bi bi-whatsapp me-1"></i>WA Business API</a></li>
 </ul>
 
 <div class="tab-content">
@@ -436,6 +438,32 @@
                 <div class="step-item"><span class="step-number" style="background: #07C160;">3</span><div>Open <b>WeChat</b> on your phone → Scan the QR code to log in.</div></div>
                 <div class="warning-box mt-3">
                     <b>Note:</b> WeChat integration is currently <b>planned</b> and not yet fully implemented. WeChat has strict API policies and may require a WeChat Official Account for automation.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Business API -->
+    <div class="tab-pane fade" id="guide-whatsapp-business">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #128C7E;"><i class="bi bi-whatsapp"></i></div>
+                <div>
+                    <h5 class="mb-0">WhatsApp Business API</h5>
+                    <small class="text-muted">Official Meta Cloud API (Webhook-based)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #128C7E;">1</span><div>Go to <a href="https://business.facebook.com" target="_blank">Meta Business Suite</a> → Create or select a Business account.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #128C7E;">2</span><div>Go to <a href="https://developers.facebook.com/apps" target="_blank">Meta Developers</a> → Create a new app → Select <b>Business</b> type → Add the <b>WhatsApp</b> product.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #128C7E;">3</span><div>In <b>WhatsApp > API Setup</b>: Add a phone number and verify it. Copy the <b>Phone Number ID</b> and generate a <b>Permanent Access Token</b> (via System User in Business Settings).</div></div>
+                <div class="step-item"><span class="step-number" style="background: #128C7E;">4</span><div>In <b>WhatsApp > Configuration</b>: Set the <b>Webhook URL</b> to <code>https://your-server/webhooks/whatsapp-business</code>. Set the <b>Verify Token</b> to <code>chathub_whatsapp_business</code>. Subscribe to the <b>messages</b> field.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #128C7E;">5</span><div>In ChatHub, create a bot with <b>WhatsApp Business API</b> platform. Click <b>Start</b>, enter the <b>Phone Number ID</b> and <b>Access Token</b>.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> Use a <b>System User</b> permanent token (not the temporary one from API Setup). The temporary token expires in 24 hours. System User tokens are permanent.
+                </div>
+                <div class="warning-box mt-2">
+                    <b>Note:</b> WhatsApp Business API has a <b>24-hour messaging window</b> — you can only send messages within 24 hours of the customer's last message. After that, you need to use approved Message Templates.
                 </div>
             </div>
         </div>

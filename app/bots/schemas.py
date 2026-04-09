@@ -24,6 +24,7 @@ PLATFORM_AUTH_INFO = {
     "signal": {"auth_method": "credentials", "label": "Signal", "icon": "bi-shield-lock-fill", "color": "#3A76F0", "token_label": None},
     "imessage": {"auth_method": "credentials", "label": "iMessage", "icon": "bi-chat-square-text-fill", "color": "#34C759", "token_label": None},
     "wechat": {"auth_method": "qr_code", "label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "token_label": None},
+    "whatsapp_business": {"auth_method": "api_token", "label": "WhatsApp Business API", "icon": "bi-whatsapp", "color": "#128C7E", "token_label": "Access Token", "setupGuide": "Official WhatsApp Business API via Meta Cloud API. Requires a Meta Business account and WhatsApp Business phone number."},
 }
 
 

@@ -23,6 +23,7 @@ class PlatformType(str, Enum):
     SIGNAL = "signal"
     IMESSAGE = "imessage"
     WECHAT = "wechat"
+    WHATSAPP_BUSINESS = "whatsapp_business"
 
 
 class AuthMethod(str, Enum):
