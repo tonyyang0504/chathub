@@ -722,11 +722,21 @@ async def get_platform_contacts(
         Conversation.is_group == False
     ).all()
 
+    def normalize_phone(p):
+        """Strip + prefix and whitespace for matching."""
+        if not p:
+            return p
+        return p.strip().lstrip('+')
+
     phone_to_conv = {}
     for conv in convs:
         identifier = (conv.phone or "").strip() or conv.chat_id
-        if identifier and identifier not in phone_to_conv:
+        if identifier:
             phone_to_conv[identifier] = conv
+            # Also store normalized version for matching
+            norm = normalize_phone(identifier)
+            if norm and norm not in phone_to_conv:
+                phone_to_conv[norm] = conv
 
     # Get rich Contact records from hubs
     hub_contacts = {}
@@ -750,12 +760,13 @@ async def get_platform_contacts(
         if phone in seen:
             continue
         seen.add(phone)
-        conv = phone_to_conv.get(phone)
+        norm = normalize_phone(phone)
+        conv = phone_to_conv.get(phone) or phone_to_conv.get(norm)
         tags = db.query(ContactTag).filter(ContactTag.contact_id == contact.id).limit(5).all()
         contact_bot_ids = set()
         for c in convs:
             cid = (c.phone or "").strip() or c.chat_id
-            if cid == phone:
+            if cid == phone or normalize_phone(cid) == norm:
                 contact_bot_ids.add(c.bot_profile_id)
         bot_name = ", ".join(bot_names.get(bid, "") for bid in contact_bot_ids if bid in bot_names) or None
 
@@ -782,9 +793,11 @@ async def get_platform_contacts(
 
     # Then: conversation-only contacts (not in any hub)
     for identifier, conv in phone_to_conv.items():
-        if identifier in seen:
+        norm_id = normalize_phone(identifier)
+        if identifier in seen or norm_id in seen:
             continue
         seen.add(identifier)
+        seen.add(norm_id)
         name = conv.chat_name or conv.display_name or identifier
         if search and search.lower() not in name.lower() and search.lower() not in identifier.lower():
             continue
