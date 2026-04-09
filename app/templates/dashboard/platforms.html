@@ -103,30 +103,445 @@
     box-shadow: none;
 }
 
-/* Contact analyzer styles */
-.sentiment-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
-.sentiment-positive { background: #dcfce7; color: #166534; }
-.sentiment-negative { background: #fee2e2; color: #991b1b; }
-.sentiment-neutral { background: #f3f4f6; color: #6b7280; }
-.urgency-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
-.urgency-high { background: #fee2e2; color: #991b1b; }
-.urgency-medium { background: #fef9c3; color: #854d0e; }
-.urgency-low { background: #f3f4f6; color: #6b7280; }
-.engagement-bar { width: 50px; height: 6px; border-radius: 3px; background: var(--hover-bg); overflow: hidden; }
-.engagement-bar .fill { height: 100%; border-radius: 3px; }
-.tag-pill { font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; background: var(--hover-bg); color: var(--text-muted); }
+/* Contact avatar styles */
+.contact-avatar-sm {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
 
-/* Contact detail modal */
-.contact-detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 1.5rem; }
-.contact-detail-stats { display: flex; gap: 16px; margin-bottom: 1.5rem; }
-.contact-detail-stat { text-align: center; flex: 1; padding: 12px; background: var(--hover-bg); border-radius: 10px; }
-.contact-detail-stat .val { font-size: 1.4rem; font-weight: 700; }
-.contact-detail-stat .lbl { font-size: 0.75rem; color: var(--text-muted); }
-.contact-msg-item { padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
-.contact-msg-item:last-child { border-bottom: none; }
-.contact-msg-role { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
-.contact-msg-role.user { background: #dbeafe; color: #1e40af; }
-.contact-msg-role.assistant { background: #dcfce7; color: #166534; }
+.avatar-placeholder-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+/* Avatar color variations */
+.avatar-placeholder-sm.avatar-color-1 { background: linear-gradient(135deg, #25D366 0%, #1ebe5d 100%); }
+.avatar-placeholder-sm.avatar-color-2 { background: linear-gradient(135deg, #53bdeb 0%, #3a9fd1 100%); }
+.avatar-placeholder-sm.avatar-color-3 { background: linear-gradient(135deg, #e542a3 0%, #c9358a 100%); }
+.avatar-placeholder-sm.avatar-color-4 { background: linear-gradient(135deg, #ff7b5a 0%, #e5634a 100%); }
+.avatar-placeholder-sm.avatar-color-5 { background: linear-gradient(135deg, #9c7cff 0%, #7c5ce0 100%); }
+.avatar-placeholder-sm.avatar-color-6 { background: linear-gradient(135deg, #00a884 0%, #008f70 100%); }
+.avatar-placeholder-sm.avatar-color-7 { background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%); }
+.avatar-placeholder-sm.avatar-color-8 { background: linear-gradient(135deg, #ab47bc 0%, #8e24aa 100%); }
+
+.contact-avatar-lg {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+}
+
+.avatar-placeholder-lg {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+}
+
+/* Avatar color variations for large */
+.avatar-placeholder-lg.avatar-color-1 { background: linear-gradient(135deg, #25D366 0%, #1ebe5d 100%); }
+.avatar-placeholder-lg.avatar-color-2 { background: linear-gradient(135deg, #53bdeb 0%, #3a9fd1 100%); }
+.avatar-placeholder-lg.avatar-color-3 { background: linear-gradient(135deg, #e542a3 0%, #c9358a 100%); }
+.avatar-placeholder-lg.avatar-color-4 { background: linear-gradient(135deg, #ff7b5a 0%, #e5634a 100%); }
+.avatar-placeholder-lg.avatar-color-5 { background: linear-gradient(135deg, #9c7cff 0%, #7c5ce0 100%); }
+.avatar-placeholder-lg.avatar-color-6 { background: linear-gradient(135deg, #00a884 0%, #008f70 100%); }
+.avatar-placeholder-lg.avatar-color-7 { background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%); }
+.avatar-placeholder-lg.avatar-color-8 { background: linear-gradient(135deg, #ab47bc 0%, #8e24aa 100%); }
+
+/* Contact Detail Modal */
+.contact-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.contact-detail-info h5 {
+    margin-bottom: 0.25rem;
+}
+
+.contact-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.contact-stat {
+    text-align: center;
+    padding: 1rem;
+    background: var(--bs-light);
+    border-radius: 8px;
+}
+
+.contact-stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--wa-teal);
+}
+
+.contact-stat-label {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+    text-transform: uppercase;
+}
+
+.contact-tags-section {
+    margin-bottom: 1.5rem;
+}
+
+.contact-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--bs-light);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    margin: 0.25rem;
+}
+
+.contact-tag-badge .confidence {
+    font-size: 0.65rem;
+    color: var(--bs-secondary);
+}
+
+.contact-tag-badge .remove-tag {
+    cursor: pointer;
+    color: var(--bs-danger);
+    margin-left: 0.25rem;
+}
+
+.contact-tag-badge .remove-tag:hover {
+    color: var(--bs-danger);
+}
+
+.contact-tag-badge.ai-tag {
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-color: #4dd0e1;
+}
+
+/* Unified badge style for Bots, Intent, Sentiment, Urgency */
+.contact-info-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.contact-info-badge.badge-bot {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: #64b5f6;
+    color: #1565c0;
+}
+
+.contact-info-badge.badge-intent {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+    border-color: #f48fb1;
+    color: #c2185b;
+}
+
+.contact-info-badge.badge-sentiment-positive {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-color: #81c784;
+    color: #2e7d32;
+}
+
+.contact-info-badge.badge-sentiment-neutral {
+    background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%);
+    border-color: #90a4ae;
+    color: #546e7a;
+}
+
+.contact-info-badge.badge-sentiment-negative {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-color: #e57373;
+    color: #c62828;
+}
+
+.contact-info-badge.badge-urgency-low {
+    background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%);
+    border-color: #90a4ae;
+    color: #546e7a;
+}
+
+.contact-info-badge.badge-urgency-medium {
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    border-color: #ffd54f;
+    color: #f57f17;
+}
+
+.contact-info-badge.badge-urgency-high {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-color: #e57373;
+    color: #c62828;
+}
+
+.contact-info-badge.badge-topic {
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-color: #4dd0e1;
+    color: #00838f;
+}
+
+.engagement-meter-lg {
+    height: 12px;
+    background: var(--bs-light);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.engagement-meter-lg .fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+
+/* Message Statistics */
+.message-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.message-stat-item {
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    background: var(--bs-light);
+    border-radius: 6px;
+}
+
+.message-stat-item .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--wa-teal);
+}
+
+.message-stat-item .stat-label {
+    font-size: 0.65rem;
+    color: var(--bs-secondary);
+    text-transform: uppercase;
+}
+
+/* Recent Messages - WhatsApp style */
+.recent-messages-chat {
+    background: #efeae2;
+    padding: 12px;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.recent-message-row {
+    display: flex;
+    margin-bottom: 4px;
+}
+
+.recent-message-row.incoming {
+    justify-content: flex-start;
+}
+
+.recent-message-row.outgoing {
+    justify-content: flex-end;
+}
+
+.recent-message-bubble {
+    max-width: 75%;
+    padding: 6px 8px 6px 9px;
+    border-radius: 7.5px;
+    position: relative;
+    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+    font-family: Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.recent-message-row.incoming .recent-message-bubble {
+    background: #ffffff;
+}
+
+.recent-message-row.incoming.with-tail .recent-message-bubble {
+    border-top-left-radius: 0;
+}
+
+.recent-message-row.incoming.with-tail .recent-message-bubble::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 8px;
+    height: 13px;
+    background: #ffffff;
+    clip-path: polygon(100% 0, 100% 100%, 0 0);
+}
+
+.recent-message-row.outgoing .recent-message-bubble {
+    background: #d9fdd3;
+}
+
+.recent-message-row.outgoing.with-tail .recent-message-bubble {
+    border-top-right-radius: 0;
+}
+
+.recent-message-row.outgoing.with-tail .recent-message-bubble::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -8px;
+    width: 8px;
+    height: 13px;
+    background: #d9fdd3;
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.recent-message-sender {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 2px;
+    color: #1fa855;
+}
+
+.recent-message-row.incoming .recent-message-sender {
+    color: #6b5ce7;
+}
+
+.recent-message-text {
+    color: #111b21;
+    font-size: 13.5px;
+    line-height: 18px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.recent-message-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.recent-message-time {
+    font-size: 10px;
+    color: rgba(17, 27, 33, 0.45);
+}
+
+.recent-message-meta {
+    display: flex;
+    gap: 4px;
+}
+
+.recent-message-meta .badge {
+    font-size: 9px;
+    padding: 2px 4px;
+}
+
+/* Cell with popover for Bot, Intent, Tags columns */
+.cell-with-popover {
+    position: relative;
+}
+
+.cell-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.cell-badge {
+    display: inline-block;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    background: var(--bs-light);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-dark);
+}
+
+.cell-badge.badge-primary {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: #64b5f6;
+    color: #1565c0;
+}
+
+.cell-badge.badge-intent {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+    border-color: #f48fb1;
+    color: #c2185b;
+}
+
+.cell-badge.badge-tag {
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-color: #4dd0e1;
+    color: #00838f;
+}
+
+.cell-badge.badge-more {
+    background: var(--bs-secondary);
+    border-color: var(--bs-secondary);
+    color: white;
+    cursor: default;
+    border-radius: 12px;
+}
+
+.cell-popover {
+    display: none;
+    position: absolute;
+    left: 0;
+    z-index: 1000;
+    min-width: 150px;
+    max-width: 280px;
+    padding: 8px;
+    background: white;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.cell-popover.popover-below {
+    top: 100%;
+    margin-top: 4px;
+}
+
+.cell-popover.popover-above {
+    bottom: 100%;
+    margin-bottom: 4px;
+}
+
+.cell-with-popover:hover .cell-popover {
+    display: flex;
+}
+
+.cell-popover .cell-badge {
+    max-width: none;
+    white-space: normal;
+}
+
+.recent-messages-chat::-webkit-scrollbar { width: 6px; }
+.recent-messages-chat::-webkit-scrollbar-track { background: transparent; }
+.recent-messages-chat::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.recent-messages-chat { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
 
 .content-pagination {
     display: flex; justify-content: center; align-items: center; gap: 8px;
@@ -167,14 +582,17 @@
 
 <!-- Contact Detail Modal -->
 <div class="modal fade" id="contactDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px;">
             <div class="modal-header border-bottom" style="border-color: var(--border-color) !important;">
-                <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2"></i>Contact Details</h5>
+                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Contact Details</h5>
                 <button type="button" class="modal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="contactDetailContent">
-                <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+                <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-color) !important;">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -503,8 +921,195 @@
     // Auto-select platform from URL hash
     const hash = window.location.hash.replace('#', '');
 
+    // ============== Helper Functions ==============
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function getContactAvatarColor(identifier) {
+        if (!identifier) return 'avatar-color-1';
+        let hash = 0;
+        for (let i = 0; i < identifier.length; i++) {
+            hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return `avatar-color-${(Math.abs(hash) % 8) + 1}`;
+    }
+
+    function getEngagementBarClass(score) {
+        if (score >= 0.7) return 'bg-success';
+        if (score >= 0.4) return 'bg-warning';
+        return 'bg-danger';
+    }
+
+    function formatRelativeTime(dateStr) {
+        if (!dateStr) return '';
+        const utcDateStr = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-', 10)
+            ? dateStr
+            : dateStr + 'Z';
+        const date = new Date(utcDateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '';
+        const utcDateStr = dateStr.endsWith('Z') || dateStr.includes('+') || dateStr.includes('-', 10)
+            ? dateStr
+            : dateStr + 'Z';
+        return new Date(utcDateStr).toLocaleString();
+    }
+
+    function formatTagName(tag) {
+        if (!tag) return '';
+        let formatted = tag.replace(/[_-]/g, ' ');
+        formatted = formatted.replace(/([a-z])([A-Z])/g, '$1 $2');
+        formatted = formatted.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        return formatted;
+    }
+
+    function renderBotCell(botName) {
+        if (!botName) return '<span class="text-muted">-</span>';
+
+        const bots = botName.split(',').map(b => b.trim()).filter(b => b);
+        if (bots.length === 0) return '<span class="text-muted">-</span>';
+
+        const maxVisible = 2;
+        const visibleBots = bots.slice(0, maxVisible);
+        const hiddenCount = bots.length - maxVisible;
+        const needsPopover = bots.length > maxVisible || bots.some(b => b.length > 12);
+
+        let html = '<div class="cell-with-popover"><div class="cell-badges">';
+
+        visibleBots.forEach(bot => {
+            html += `<span class="cell-badge badge-primary" title="${escapeHtml(bot)}">${escapeHtml(bot)}</span>`;
+        });
+
+        if (hiddenCount > 0) {
+            html += `<span class="cell-badge badge-more">+${hiddenCount}</span>`;
+        }
+
+        html += '</div>';
+
+        if (needsPopover) {
+            html += '<div class="cell-popover popover-below">';
+            bots.forEach(bot => {
+                html += `<span class="cell-badge badge-primary">${escapeHtml(bot)}</span>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function renderIntentCell(intent) {
+        if (!intent) return '<span class="text-muted">-</span>';
+
+        const formatted = formatTagName(intent);
+        const needsPopover = formatted.length > 15;
+
+        let html = '<div class="cell-with-popover"><div class="cell-badges">';
+        html += `<span class="cell-badge badge-intent" title="${escapeHtml(formatted)}">${escapeHtml(formatted)}</span>`;
+        html += '</div>';
+
+        if (needsPopover) {
+            html += '<div class="cell-popover popover-below">';
+            html += `<span class="cell-badge badge-intent">${escapeHtml(formatted)}</span>`;
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function renderTagsCell(tags, tagCount) {
+        if (!tags || tags.length === 0) {
+            return '<span class="text-muted small">No tags</span>';
+        }
+
+        const maxVisible = 3;
+        const visibleTags = tags.slice(0, maxVisible);
+        const hiddenCount = tagCount - maxVisible;
+        const needsPopover = tagCount > maxVisible || tags.some(t => formatTagName(t.tag).length > 12);
+
+        let html = '<div class="cell-with-popover"><div class="cell-badges">';
+
+        visibleTags.forEach(t => {
+            const name = formatTagName(t.tag);
+            html += `<span class="cell-badge badge-tag" title="${escapeHtml(name)}">${escapeHtml(name)}</span>`;
+        });
+
+        if (hiddenCount > 0) {
+            html += `<span class="cell-badge badge-more">+${hiddenCount}</span>`;
+        }
+
+        html += '</div>';
+
+        if (needsPopover) {
+            html += '<div class="cell-popover popover-below">';
+            tags.forEach(t => {
+                const name = formatTagName(t.tag);
+                html += `<span class="cell-badge badge-tag">${escapeHtml(name)}</span>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function renderContactTags(tags) {
+        if (!tags || tags.length === 0) {
+            return '<p class="text-muted small mb-0">No tags yet.</p>';
+        }
+
+        return tags.map(tag => `
+            <span class="contact-tag-badge ${tag.source === 'ai_analyzer' ? 'ai-tag' : ''}">
+                ${escapeHtml(formatTagName(tag.tag))}
+                ${tag.confidence && tag.confidence < 1 ? `<span class="confidence">${Math.round(tag.confidence * 100)}%</span>` : ''}
+            </span>
+        `).join('');
+    }
+
+    // Initialize popover positioning
+    document.addEventListener('mouseover', function(e) {
+        const cell = e.target.closest('.cell-with-popover');
+        if (!cell) return;
+
+        const popover = cell.querySelector('.cell-popover');
+        if (!popover) return;
+
+        const cellRect = cell.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - cellRect.bottom;
+        const popoverHeight = 100;
+
+        popover.classList.remove('popover-below', 'popover-above');
+
+        if (spaceBelow >= popoverHeight) {
+            popover.classList.add('popover-below');
+        } else {
+            popover.classList.add('popover-above');
+        }
+    });
+
     // ============== Rich Contacts ==============
     let contactsSearchTimeout = null;
+    let contactsPageSize = 15;
     const contactDetailModal = new bootstrap.Modal(document.getElementById('contactDetailModal'));
 
     async function loadPlatformContacts(platform, page = 1) {
@@ -513,7 +1118,7 @@
         const search = document.getElementById('searchContacts')?.value || '';
 
         try {
-            const res = await fetch(`/api/analytics/platform-contacts/${platform}?page=${page}&page_size=15&search=${encodeURIComponent(search)}`);
+            const res = await fetch(`/api/analytics/platform-contacts/${platform}?page=${page}&page_size=${contactsPageSize}&search=${encodeURIComponent(search)}`);
             const data = await res.json();
             renderRichContacts(data, platform, page);
             const badge = document.getElementById('contactsTotalBadge');
@@ -526,83 +1131,96 @@
     function renderRichContacts(data, platform, page) {
         const container = document.getElementById('richContactsContainer');
         const contacts = data.items || [];
+        const total = data.total || 0;
+        const totalPages = data.total_pages || 0;
 
         if (!contacts.length) {
             container.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-person" style="font-size:2rem;opacity:0.3;"></i><p class="mt-2 mb-0">No contacts yet</p></div>';
             return;
         }
 
-        const getSentimentBadge = (s) => {
-            if (!s) return '';
-            const cls = s === 'positive' ? 'sentiment-positive' : s === 'negative' ? 'sentiment-negative' : 'sentiment-neutral';
-            return `<span class="sentiment-badge ${cls}">${s}</span>`;
-        };
-        const getUrgencyBadge = (u) => {
-            if (!u) return '';
-            const cls = u === 'high' ? 'urgency-high' : u === 'medium' ? 'urgency-medium' : 'urgency-low';
-            return `<span class="urgency-badge ${cls}">${u}</span>`;
-        };
-        const getEngagementBar = (score) => {
-            const pct = Math.round((score || 0) * 100);
-            const color = pct >= 70 ? '#22c55e' : pct >= 40 ? '#eab308' : '#ef4444';
-            return `<div class="d-flex align-items-center gap-2"><div class="engagement-bar"><div class="fill" style="width:${pct}%;background:${color};"></div></div><small class="text-muted">${pct}%</small></div>`;
-        };
-        const platformColor = PLATFORMS[platform]?.color || '#666';
+        container.innerHTML = `
+            <div class="detail-table-scroll" style="max-height: 500px;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
+                        <tr>
+                            <th>Contact</th>
+                            <th>Bot</th>
+                            <th>Intent</th>
+                            <th>Engagement</th>
+                            <th>Tags</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${contacts.map(c => `
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="contact-avatar-sm">
+                                            ${c.profile_pic ? `<img src="${c.profile_pic}" alt="" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">` : `<div class="avatar-placeholder-sm ${getContactAvatarColor(c.phone)}"><i class="bi bi-person"></i></div>`}
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium">${escapeHtml(c.display_name || c.phone)}</div>
+                                            <small class="text-muted">${c.display_name ? escapeHtml(c.phone) : ''}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    ${renderBotCell(c.bot_name)}
+                                </td>
+                                <td>
+                                    ${renderIntentCell(c.predicted_intent)}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress" style="width: 50px; height: 6px;">
+                                            <div class="progress-bar ${getEngagementBarClass(c.engagement_score)}" style="width: ${(c.engagement_score || 0) * 100}%"></div>
+                                        </div>
+                                        <small class="text-muted">${Math.round((c.engagement_score || 0) * 100)}%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    ${renderTagsCell(c.tags, c.tag_count)}
+                                </td>
+                                <td>
+                                    ${c.id ? `<div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="showPlatformContactDetail(${c.id})" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>` : '<span class="text-muted small">No hub</span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            ${total > 0 ? renderPlatformContactsPagination(platform, page, totalPages, total) : ''}
+        `;
+    }
 
-        let html = `
-        <div class="detail-table-scroll" style="max-height: 500px;">
-            <table class="table table-hover table-sm mb-0">
-                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
-                    <tr>
-                        <th>Contact</th>
-                        <th>Bot</th>
-                        <th>Sentiment</th>
-                        <th>Intent</th>
-                        <th>Engagement</th>
-                        <th>Tags</th>
-                        <th class="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${contacts.map(c => `
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                ${c.profile_pic
-                                    ? `<img src="${c.profile_pic}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">`
-                                    : `<div style="width:32px;height:32px;border-radius:50%;background:${platformColor};display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;"><i class="bi bi-person"></i></div>`}
-                                <div>
-                                    <div class="fw-medium" style="font-size:0.85rem;">${c.display_name || c.phone}</div>
-                                    ${c.display_name && c.phone !== c.display_name ? `<div class="text-muted" style="font-size:0.7rem;">${c.phone}</div>` : ''}
-                                </div>
-                            </div>
-                        </td>
-                        <td class="text-muted small">${c.bot_name || '—'}</td>
-                        <td>${getSentimentBadge(c.sentiment)} ${getUrgencyBadge(c.urgency)}</td>
-                        <td class="small">${c.predicted_intent || '<span class="text-muted">—</span>'}</td>
-                        <td>${getEngagementBar(c.engagement_score)}</td>
-                        <td>${c.tags && c.tags.length ? c.tags.slice(0, 3).map(t => `<span class="tag-pill">${t.tag}</span>`).join(' ') + (c.tag_count > 3 ? ` <span class="text-muted small">+${c.tag_count - 3}</span>` : '') : '<span class="text-muted small">—</span>'}</td>
-                        <td class="text-center">
-                            ${c.id ? `<button class="btn btn-sm btn-outline-primary rounded-pill px-2" onclick="showPlatformContactDetail(${c.id})" title="View Details"><i class="bi bi-eye"></i></button>` : '<span class="text-muted small">No hub</span>'}
-                        </td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>`;
-
-        // Pagination
-        if (data.total_pages > 1) {
-            html += `
+    function renderPlatformContactsPagination(platform, currentPage, totalPages, total) {
+        return `
             <div class="content-pagination">
-                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', 1)" ${page === 1 ? 'disabled' : ''} title="First"><i class="bi bi-chevron-double-left"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${page - 1})" ${page === 1 ? 'disabled' : ''} title="Previous"><i class="bi bi-chevron-left"></i></button>
-                <span class="page-info">Page ${page} of ${data.total_pages} (${data.total} contacts)</span>
-                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${page + 1})" ${page === data.total_pages ? 'disabled' : ''} title="Next"><i class="bi bi-chevron-right"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${data.total_pages})" ${page === data.total_pages ? 'disabled' : ''} title="Last"><i class="bi bi-chevron-double-right"></i></button>
-            </div>`;
-        }
-
-        container.innerHTML = html;
+                ${totalPages > 1 ? `
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', 1)" ${currentPage === 1 ? 'disabled' : ''} title="First">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} title="Previous">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                ` : ''}
+                <span class="page-info">Page ${currentPage} of ${totalPages} (${total} contacts)</span>
+                ${totalPages > 1 ? `
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} title="Next">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadPlatformContacts('${platform}', ${totalPages})" ${currentPage === totalPages ? 'disabled' : ''} title="Last">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                ` : ''}
+            </div>
+        `;
     }
 
     function searchPlatformContacts() {
@@ -616,7 +1234,7 @@
 
     async function showPlatformContactDetail(contactId) {
         const content = document.getElementById('contactDetailContent');
-        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
         contactDetailModal.show();
 
         try {
@@ -634,108 +1252,200 @@
         }
     }
 
-    function renderPlatformContactDetail(contact, messagesData) {
+    function renderPlatformContactDetail(contact, messagesData = {}) {
         const content = document.getElementById('contactDetailContent');
-        const engPct = Math.round((contact.engagement_score || 0) * 100);
-        const engColor = engPct >= 70 ? '#22c55e' : engPct >= 40 ? '#eab308' : '#ef4444';
+        const engagementPercent = Math.round((contact.engagement_score || 0) * 100);
+        const engagementClass = engagementPercent >= 70 ? 'bg-success' : engagementPercent >= 40 ? 'bg-warning' : 'bg-danger';
+
         const stats = messagesData.statistics || {};
-        const msgs = messagesData.recent_messages || [];
+        const recentMessages = messagesData.recent_messages || [];
 
-        const getSentimentBadge = (s) => {
-            if (!s) return '<span class="sentiment-badge sentiment-neutral">unknown</span>';
-            const cls = s === 'positive' ? 'sentiment-positive' : s === 'negative' ? 'sentiment-negative' : 'sentiment-neutral';
-            return `<span class="sentiment-badge ${cls}">${s}</span>`;
-        };
-        const getUrgencyBadge = (u) => {
-            if (!u) return '';
-            const cls = u === 'high' ? 'urgency-high' : u === 'medium' ? 'urgency-medium' : 'urgency-low';
-            return `<span class="urgency-badge ${cls}">${u}</span>`;
+        const getSentimentBadgeClass = (sentiment) => {
+            if (!sentiment) return 'contact-info-badge badge-sentiment-neutral';
+            const s = sentiment.toLowerCase();
+            if (s === 'positive') return 'contact-info-badge badge-sentiment-positive';
+            if (s === 'negative') return 'contact-info-badge badge-sentiment-negative';
+            return 'contact-info-badge badge-sentiment-neutral';
         };
 
-        const platformColor = PLATFORMS[currentPlatform]?.color || '#06b6d4';
+        const getUrgencyBadgeClass = (urgency) => {
+            if (!urgency) return 'contact-info-badge badge-urgency-low';
+            const u = urgency.toLowerCase();
+            if (u === 'high') return 'contact-info-badge badge-urgency-high';
+            if (u === 'medium') return 'contact-info-badge badge-urgency-medium';
+            return 'contact-info-badge badge-urgency-low';
+        };
 
         content.innerHTML = `
-        <div style="max-height: 70vh; overflow-y: auto; padding-right: 0.5rem;">
-            <!-- Header -->
-            <div class="contact-detail-header">
-                ${contact.profile_pic
-                    ? `<img src="${contact.profile_pic}" class="rounded-circle" style="width:56px;height:56px;object-fit:cover;">`
-                    : `<div style="width:56px;height:56px;border-radius:50%;background:${platformColor};display:flex;align-items:center;justify-content:center;color:white;font-size:1.3rem;"><i class="bi bi-person"></i></div>`}
-                <div>
-                    <h5 class="mb-0">${contact.display_name || contact.phone}</h5>
-                    <div class="text-muted small">${contact.phone}</div>
-                    <div class="mt-1">${getSentimentBadge(contact.sentiment)} ${getUrgencyBadge(contact.urgency)}</div>
-                </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="contact-detail-stats">
-                <div class="contact-detail-stat">
-                    <div class="val" style="color: ${engColor};">${engPct}%</div>
-                    <div class="lbl">Engagement</div>
-                </div>
-                <div class="contact-detail-stat">
-                    <div class="val">${stats.total_messages || 0}</div>
-                    <div class="lbl">Messages</div>
-                </div>
-                <div class="contact-detail-stat">
-                    <div class="val">${contact.tags?.length || 0}</div>
-                    <div class="lbl">Tags</div>
-                </div>
-                <div class="contact-detail-stat">
-                    <div class="val">${contact.first_seen_at ? new Date(contact.first_seen_at).toLocaleDateString() : '—'}</div>
-                    <div class="lbl">First Seen</div>
-                </div>
-            </div>
-
-            <!-- Engagement bar -->
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">Engagement Score</label>
-                <div class="progress" style="height: 8px; border-radius: 4px;">
-                    <div class="progress-bar" style="width: ${engPct}%; background: ${engColor};"></div>
-                </div>
-            </div>
-
-            ${contact.predicted_intent ? `
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">Predicted Intent</label>
-                <div>${contact.predicted_intent}</div>
-            </div>` : ''}
-
-            ${contact.description ? `
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">AI Summary</label>
-                <div class="small" style="background: var(--hover-bg); padding: 10px; border-radius: 8px;">${contact.description}</div>
-            </div>` : ''}
-
-            ${contact.follow_up_needed ? `
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">Follow-up</label>
-                <div class="small">${contact.follow_up_reason || 'Follow-up needed'}</div>
-            </div>` : ''}
-
-            <!-- Tags -->
-            ${contact.tags && contact.tags.length ? `
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">Tags</label>
-                <div class="d-flex flex-wrap gap-1">
-                    ${contact.tags.map(t => `<span class="tag-pill">${t.tag}${t.value ? ': ' + t.value : ''}</span>`).join('')}
-                </div>
-            </div>` : ''}
-
-            <!-- Recent Messages -->
-            <div>
-                <label class="form-label fw-semibold small">Recent Messages</label>
-                ${msgs.length ? msgs.slice(0, 10).map(m => `
-                <div class="contact-msg-item">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="contact-msg-role ${m.role || 'user'}">${m.role === 'assistant' ? 'Bot' : 'User'}</span>
-                        <span class="text-muted" style="font-size:0.7rem;">${m.timestamp ? new Date(m.timestamp).toLocaleString() : ''}</span>
+            <div style="max-height: 70vh; overflow-y: auto; overflow-x: hidden; padding-right: 1rem;">
+                <div class="contact-detail-header">
+                    <div class="contact-avatar-lg">
+                        ${contact.profile_pic
+                            ? `<img src="${contact.profile_pic}" alt="" class="rounded-circle" style="width: 64px; height: 64px; object-fit: cover;"
+                                   onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                               <div class="avatar-placeholder-lg ${getContactAvatarColor(contact.phone)}" style="display:none;"><i class="bi bi-person"></i></div>`
+                            : `<div class="avatar-placeholder-lg ${getContactAvatarColor(contact.phone)}"><i class="bi bi-person"></i></div>`
+                        }
                     </div>
-                    <div class="small">${(m.content || '').substring(0, 200)}${(m.content || '').length > 200 ? '...' : ''}</div>
-                </div>`).join('') : '<p class="text-muted small">No messages yet</p>'}
+                    <div class="contact-detail-info">
+                        <h5>${escapeHtml(contact.display_name || contact.phone)}</h5>
+                        <div class="text-muted">${escapeHtml(contact.phone)}</div>
+                    </div>
+                </div>
+
+                <div class="contact-stats">
+                    <div class="contact-stat">
+                        <div class="contact-stat-value">${engagementPercent}%</div>
+                        <div class="contact-stat-label">Engagement</div>
+                    </div>
+                    <div class="contact-stat">
+                        <div class="contact-stat-value">${contact.tags?.length || 0}</div>
+                        <div class="contact-stat-label">Tags</div>
+                    </div>
+                    <div class="contact-stat">
+                        <div class="contact-stat-value">${contact.first_seen_at ? formatRelativeTime(contact.first_seen_at) : '-'}</div>
+                        <div class="contact-stat-label">First Seen</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Engagement Score</label>
+                    <div class="engagement-meter-lg">
+                        <div class="fill ${engagementClass}" style="width: ${engagementPercent}%"></div>
+                    </div>
+                </div>
+
+                ${contact.bot_names && contact.bot_names.length > 0 ? `
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Interacted with Bots</label>
+                        <div class="d-flex flex-wrap gap-1">
+                            ${contact.bot_names.map(name => `<span class="contact-info-badge badge-bot">${escapeHtml(name)}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${(contact.predicted_intent || contact.sentiment || contact.urgency) ? `
+                    <div class="row g-3 mb-3">
+                        <div class="col-4">
+                            <div class="small text-muted mb-1">Intent</div>
+                            ${contact.predicted_intent
+                                ? `<span class="contact-info-badge badge-intent">${escapeHtml(formatTagName(contact.predicted_intent))}</span>`
+                                : '<span class="text-muted small">-</span>'
+                            }
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted mb-1">Sentiment</div>
+                            ${contact.sentiment
+                                ? `<span class="${getSentimentBadgeClass(contact.sentiment)}">${escapeHtml(contact.sentiment.charAt(0).toUpperCase() + contact.sentiment.slice(1))}</span>`
+                                : '<span class="text-muted small">-</span>'
+                            }
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted mb-1">Urgency</div>
+                            ${contact.urgency
+                                ? `<span class="${getUrgencyBadgeClass(contact.urgency)}">${escapeHtml(contact.urgency.charAt(0).toUpperCase() + contact.urgency.slice(1))}</span>`
+                                : '<span class="text-muted small">-</span>'
+                            }
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${contact.follow_up_needed ? `
+                    <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2" style="font-size: 0.875rem;">
+                        <i class="bi bi-bell-fill"></i>
+                        <div>
+                            <strong>Follow-up Needed</strong>
+                            ${contact.follow_up_reason ? `<div class="small">${escapeHtml(contact.follow_up_reason)}</div>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${contact.description ? `
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Profile Summary</label>
+                        <p class="text-muted mb-0">${escapeHtml(contact.description)}</p>
+                    </div>
+                ` : ''}
+
+                ${contact.key_topics && contact.key_topics.length > 0 ? `
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Key Topics</label>
+                        <div class="d-flex flex-wrap gap-1">
+                            ${contact.key_topics.map(topic => `<span class="contact-info-badge badge-topic">${escapeHtml(topic)}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="contact-tags-section">
+                    <label class="form-label fw-semibold mb-2">Tags</label>
+                    <div id="contactTagsList">
+                        ${renderContactTags(contact.tags || [])}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Last Active</label>
+                        <p class="text-muted mb-0">${contact.last_interaction_at ? formatDateTime(contact.last_interaction_at) : 'Never'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">First Seen</label>
+                        <p class="text-muted mb-0">${contact.first_seen_at ? formatDateTime(contact.first_seen_at) : 'Unknown'}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Message Statistics -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Message Statistics</label>
+                    <div class="message-stats-grid">
+                        <div class="message-stat-item">
+                            <div class="stat-value">${stats.total_messages || 0}</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="message-stat-item">
+                            <div class="stat-value">${stats.messages_received || 0}</div>
+                            <div class="stat-label">Received</div>
+                        </div>
+                        <div class="message-stat-item">
+                            <div class="stat-value">${stats.messages_sent || 0}</div>
+                            <div class="stat-label">Sent</div>
+                        </div>
+                        <div class="message-stat-item">
+                            <div class="stat-value">${stats.conversations_count || 0}</div>
+                            <div class="stat-label">Chats</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Messages -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Recent Messages</label>
+                    ${recentMessages.length > 0 ? (() => {
+                        const reversed = recentMessages.slice().reverse();
+                        let lastRole = null;
+                        return `<div class="recent-messages-chat">` + reversed.map(msg => {
+                            const isNewSender = msg.role !== lastRole;
+                            lastRole = msg.role;
+                            const senderName = msg.role === 'assistant' ? escapeHtml(msg.bot_name || 'Bot') : escapeHtml(msg.sender_name || contact.display_name || 'Contact');
+                            return `
+                                <div class="recent-message-row ${msg.role === 'assistant' ? 'outgoing' : 'incoming'}${isNewSender ? ' with-tail' : ''}">
+                                    <div class="recent-message-bubble">
+                                        ${isNewSender ? `<div class="recent-message-sender">${senderName}</div>` : ''}
+                                        <div class="recent-message-text">${escapeHtml(msg.content || '')}</div>
+                                        <div class="recent-message-footer">
+                                            ${msg.is_group ? `<span class="badge bg-info">Group</span>` : ''}
+                                            ${msg.has_attachment ? `<span class="badge bg-secondary"><i class="bi bi-paperclip"></i></span>` : ''}
+                                            <span class="recent-message-time">${msg.timestamp ? formatRelativeTime(msg.timestamp) : ''}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        }).join('') + `</div>`;
+                    })() : '<p class="text-muted small mb-0">No messages found for this contact.</p>'}
+                </div>
             </div>
-        </div>`;
+        `;
     }
 
     function filterGroups() {
