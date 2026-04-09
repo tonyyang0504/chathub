@@ -109,6 +109,88 @@ def get_ai_provider(
         )
 
 
+class FailoverAIProvider:
+    """Wraps a primary provider with fallback providers for automatic failover."""
+
+    def __init__(self, primary: AIProvider, fallbacks: list):
+        self.primary = primary
+        self.fallbacks = fallbacks  # List of AIProvider instances
+        self._all = [primary] + fallbacks
+
+    def __getattr__(self, name):
+        """Delegate attribute access to primary provider."""
+        return getattr(self.primary, name)
+
+    def chat_completion(self, **kwargs):
+        """Try primary, then each fallback on failure."""
+        last_error = None
+        for i, provider in enumerate(self._all):
+            try:
+                return provider.chat_completion(**kwargs)
+            except Exception as e:
+                label = "primary" if i == 0 else f"fallback-{i}"
+                logger.warning(f"AI {label} ({type(provider).__name__}) failed: {e}")
+                last_error = e
+        # All providers failed — raise the last error
+        logger.error(f"All AI providers failed. Last error: {last_error}")
+        raise last_error
+
+    def analyze_image(self, **kwargs):
+        """Try primary, then fallbacks for image analysis."""
+        last_error = None
+        for i, provider in enumerate(self._all):
+            if not provider.supports_vision:
+                continue
+            try:
+                return provider.analyze_image(**kwargs)
+            except Exception as e:
+                last_error = e
+        if last_error:
+            raise last_error
+        return None
+
+
+def get_ai_provider_with_failover(
+    primary_provider: str,
+    primary_key: str,
+    primary_model: str = None,
+    fallback_configs: list = None,
+) -> AIProvider:
+    """Create an AI provider with optional failover chain.
+
+    Args:
+        primary_provider: Primary provider name
+        primary_key: Primary API key
+        primary_model: Primary model
+        fallback_configs: List of dicts with {provider, api_key, model}
+
+    Returns:
+        AIProvider (or FailoverAIProvider if fallbacks configured)
+    """
+    primary = get_ai_provider(primary_provider, primary_key, primary_model)
+
+    if not fallback_configs:
+        return primary
+
+    fallbacks = []
+    for fb in fallback_configs:
+        try:
+            provider = get_ai_provider(
+                fb.get("provider", "openai"),
+                fb.get("api_key", ""),
+                fb.get("model"),
+            )
+            fallbacks.append(provider)
+        except Exception as e:
+            logger.warning(f"Failed to init fallback provider {fb.get('provider')}: {e}")
+
+    if not fallbacks:
+        return primary
+
+    logger.info(f"AI failover chain: {primary_provider} → {', '.join(fb.get('provider', '?') for fb in fallback_configs)}")
+    return FailoverAIProvider(primary, fallbacks)
+
+
 def get_available_providers() -> Dict[str, Dict]:
     """
     Get information about available providers.

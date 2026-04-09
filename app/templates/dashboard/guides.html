@@ -78,6 +78,8 @@
     .nav-pills .nav-link[href="#guide-messenger"] { color: white; background: #1877F2; }
     .nav-pills .nav-link[href="#guide-instagram"] { color: white; background: #E4405F; }
     .nav-pills .nav-link[href="#guide-line"]      { color: white; background: #00B900; }
+    .nav-pills .nav-link[href="#guide-slack"]      { color: white; background: #4A154B; }
+    .nav-pills .nav-link[href="#guide-signal"]    { color: white; background: #3A76F0; }
     .nav-pills .nav-link[href="#guide-tinder"]    { color: white; background: #FE3C72; }
     .nav-pills .nav-link[href="#guide-bumble"]    { color: #333; background: #FFC629; }
     .nav-pills .nav-link.active { box-shadow: 0 2px 8px rgba(0,0,0,0.25); transform: scale(1.05); }
@@ -87,6 +89,8 @@
     .nav-pills .nav-link.active[href="#guide-messenger"] { background: #0d6ebd !important; color: white !important; }
     .nav-pills .nav-link.active[href="#guide-instagram"] { background: #c13050 !important; color: white !important; }
     .nav-pills .nav-link.active[href="#guide-line"]      { background: #009700 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-slack"]      { background: #3b1139 !important; color: white !important; }
+    .nav-pills .nav-link.active[href="#guide-signal"]    { background: #2d5ec0 !important; color: white !important; }
     .nav-pills .nav-link.active[href="#guide-tinder"]    { background: #d9305f !important; color: white !important; }
     .nav-pills .nav-link.active[href="#guide-bumble"]    { background: #d4a520 !important; color: white !important; }
 </style>
@@ -113,6 +117,8 @@
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-messenger"><i class="bi bi-facebook me-1"></i>Facebook Page</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-instagram"><i class="bi bi-instagram me-1"></i>Instagram</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-line"><i class="bi bi-chat-dots-fill me-1"></i>LINE</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-slack"><i class="bi bi-slack me-1"></i>Slack</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-signal"><i class="bi bi-shield-lock-fill me-1"></i>Signal</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-tinder"><i class="bi bi-fire me-1"></i>Tinder</a></li>
     <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#guide-bumble"><i class="bi bi-heart-fill me-1"></i>Bumble</a></li>
 </ul>
@@ -258,6 +264,55 @@
     </div>
 
     <!-- Tinder -->
+    <!-- Signal -->
+    <div class="tab-pane fade" id="guide-signal">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #3A76F0;"><i class="bi bi-shield-lock-fill"></i></div>
+                <div>
+                    <h5 class="mb-0">Signal</h5>
+                    <small class="text-muted">signal-cli REST API + Phone Number</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #3A76F0;">1</span><div>Install and run <b>signal-cli REST API</b>:<br><code>docker run -p 8080:8080 -v ./signal-data:/home/.local/share/signal-cli bbernhard/signal-cli-rest-api</code></div></div>
+                <div class="step-item"><span class="step-number" style="background: #3A76F0;">2</span><div>Register a phone number (use a dedicated number, NOT your personal Signal):<br><code>curl -X POST http://localhost:8080/v1/register/+1234567890</code></div></div>
+                <div class="step-item"><span class="step-number" style="background: #3A76F0;">3</span><div>Verify with the SMS code you receive:<br><code>curl -X POST http://localhost:8080/v1/register/+1234567890/verify/123456</code></div></div>
+                <div class="step-item"><span class="step-number" style="background: #3A76F0;">4</span><div>In ChatHub, create a Signal bot, click <b>Start</b>, enter the API URL (<code>http://localhost:8080</code>) and your registered phone number.</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> Signal requires a <b>dedicated phone number</b> — you can't use the same number as your personal Signal app. Consider using a VoIP number or second SIM.
+                </div>
+                <div class="warning-box mt-2">
+                    <b>Note:</b> signal-cli is an unofficial client. Signal may change their protocol at any time. Use Docker for easy updates.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slack -->
+    <div class="tab-pane fade" id="guide-slack">
+        <div class="guide-card card">
+            <div class="card-header d-flex align-items-center gap-3 py-3">
+                <div class="guide-icon" style="background: #4A154B;"><i class="bi bi-slack"></i></div>
+                <div>
+                    <h5 class="mb-0">Slack</h5>
+                    <small class="text-muted">Bot Token + App Token (Socket Mode)</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="step-item"><span class="step-number" style="background: #4A154B;">1</span><div>Go to <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a> → Click <b>Create New App</b> → Choose <b>From scratch</b> → Name it and select your workspace.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #4A154B;">2</span><div>Go to <b>Socket Mode</b> (left sidebar) → Toggle <b>Enable Socket Mode</b> → Generate an <b>App Token</b> (name it "socket", add <code>connections:write</code> scope) → Copy the <b>xapp-</b> token.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #4A154B;">3</span><div>Go to <b>OAuth & Permissions</b> → Under <b>Bot Token Scopes</b>, add: <code>chat:write</code>, <code>files:write</code>, <code>users:read</code>, <code>channels:read</code>, <code>im:read</code>, <code>groups:read</code>, <code>im:history</code>, <code>channels:history</code>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #4A154B;">4</span><div>Go to <b>Event Subscriptions</b> → Toggle <b>Enable Events</b> → Under <b>Subscribe to bot events</b>, add: <code>message.im</code>, <code>message.channels</code>, <code>message.groups</code>, <code>app_mention</code>.</div></div>
+                <div class="step-item"><span class="step-number" style="background: #4A154B;">5</span><div>Go to <b>Install App</b> → Click <b>Install to Workspace</b> → Authorize → Copy the <b>Bot Token</b> (xoxb-).</div></div>
+                <div class="step-item"><span class="step-number" style="background: #4A154B;">6</span><div>In ChatHub, create a Slack bot, click <b>Start</b>, enter both tokens (Bot Token + App Token).</div></div>
+                <div class="tip-box mt-3">
+                    <b>Tip:</b> Slack uses <b>Socket Mode</b> (WebSocket), so no webhook URL or ngrok is needed. The bot responds to @mentions in channels and all DMs. Invite the bot to channels with <code>/invite @botname</code>.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="tab-pane fade" id="guide-tinder">
         <div class="guide-card card">
             <div class="card-header d-flex align-items-center gap-3 py-3">

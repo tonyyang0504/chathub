@@ -3090,7 +3090,7 @@ function renderStreamEvent(data, timestamp) {
         document.getElementById('stopBtn').style.display = 'none';
         document.getElementById('sendBtn').disabled = false;
     } else if (type === 'system') {
-        if (data.subtype === 'init') return;  // Skip session init metadata
+        if (data.subtype === 'init' || data.subtype === 'hook_response') return;  // Skip session init/hook metadata
         appendSystemMessage(data.message || data.content || '');
     }
 }

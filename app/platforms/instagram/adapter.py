@@ -486,6 +486,7 @@ class InstagramAdapter(PlatformAdapter):
             has_response_after,
             build_ai_messages,
             is_human_takeover_active,
+            is_sender_approved,
             broadcast_user_message,
             broadcast_assistant_message,
             broadcast_typing,
@@ -617,6 +618,9 @@ class InstagramAdapter(PlatformAdapter):
             # Check human takeover
             if is_human_takeover_active(db, conversation.id):
                 logger.debug(f"Bot {bot_id}: Human takeover active, skipping AI")
+                return
+
+            if not is_sender_approved(db, conversation.id):
                 return
 
             # Send typing indicator

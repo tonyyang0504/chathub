@@ -40,6 +40,7 @@ from app.platforms.message_handler import (
     get_db_session,
     is_duplicate_message,
     is_human_takeover_active,
+    is_sender_approved,
     save_assistant_message,
     save_media_file,
     save_user_message,
@@ -827,6 +828,8 @@ class BumbleAdapter(PlatformAdapter):
             # Check human takeover
             if is_human_takeover_active(db, conversation.id):
                 logger.info(f"Bot {bot_id}: Human takeover active, skipping AI")
+                return
+            if not is_sender_approved(db, conversation.id):
                 return
 
             # Generate AI response if enabled

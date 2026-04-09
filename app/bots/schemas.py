@@ -7,7 +7,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 VALID_AI_PROVIDERS = ["openai", "anthropic", "google", "deepseek", "qwen", "grok", "ollama"]
-VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "wechat"]
+VALID_PLATFORMS = ["whatsapp", "telegram", "instagram", "messenger", "line", "linkedin", "tinder", "bumble", "discord", "slack", "signal", "wechat"]
 
 # Platform auth method descriptions for the frontend
 PLATFORM_AUTH_INFO = {
@@ -20,6 +20,8 @@ PLATFORM_AUTH_INFO = {
     "linkedin": {"auth_method": "oauth", "label": "LinkedIn", "icon": "bi-linkedin", "color": "#0A66C2", "token_label": None},
     "tinder": {"auth_method": "credentials", "label": "Tinder", "icon": "bi-fire", "color": "#FE3C72", "token_label": None},
     "bumble": {"auth_method": "credentials", "label": "Bumble", "icon": "bi-heart-fill", "color": "#FFC629", "token_label": None},
+    "slack": {"auth_method": "api_token", "label": "Slack", "icon": "bi-slack", "color": "#4A154B", "token_label": None},
+    "signal": {"auth_method": "credentials", "label": "Signal", "icon": "bi-shield-lock-fill", "color": "#3A76F0", "token_label": None},
     "wechat": {"auth_method": "qr_code", "label": "WeChat", "icon": "bi-wechat", "color": "#07C160", "token_label": None},
 }
 
@@ -29,15 +31,18 @@ class BotProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     platform_type: str = "whatsapp"
     ai_provider: str = "openai"
-    ai_provider: str = "openai"
     api_key: str = Field(..., min_length=10)
     model: str = "gpt-4o-mini"
+    # Fallback AI providers (JSON string: [{"provider": "anthropic", "api_key": "sk-ant-...", "model": "claude-3-5-sonnet"}])
+    fallback_providers: Optional[str] = None
     # Platform-specific token (Discord bot token, etc.)
     platform_token: Optional[str] = None
     # Telegram API credentials (from my.telegram.org)
     telegram_api_id: Optional[str] = None
     telegram_api_hash: Optional[str] = None
     app_secret: Optional[str] = None  # Meta App Secret (Messenger/Instagram)
+    slack_app_token: Optional[str] = None  # Slack App Token (xapp-) for Socket Mode
+    signal_api_url: Optional[str] = None  # Signal CLI REST API URL
 
     @field_validator('platform_type')
     @classmethod
@@ -65,6 +70,8 @@ class BotProfileCreate(BaseModel):
     group_chat_enabled: bool = True
     respond_to_all_in_group: bool = False
     ending_detection_enabled: bool = False  # Enable AI-based ending detection
+    dm_pairing_enabled: bool = False  # Require approval for unknown DM senders
+    voice_response_enabled: bool = False  # Send AI responses as voice notes
     headless: bool = False  # Run browser in headless mode
     # Proxy Settings
     proxy_enabled: bool = False
@@ -80,10 +87,12 @@ class BotProfileUpdate(BaseModel):
     ai_provider: Optional[str] = None
     api_key: Optional[str] = Field(None, min_length=10)
     model: Optional[str] = None
+    fallback_providers: Optional[str] = None
     platform_token: Optional[str] = None
     telegram_api_id: Optional[str] = None
     telegram_api_hash: Optional[str] = None
     app_secret: Optional[str] = None
+    slack_app_token: Optional[str] = None
 
     @field_validator('platform_type')
     @classmethod
@@ -111,6 +120,8 @@ class BotProfileUpdate(BaseModel):
     group_chat_enabled: Optional[bool] = None
     respond_to_all_in_group: Optional[bool] = None
     ending_detection_enabled: Optional[bool] = None
+    dm_pairing_enabled: Optional[bool] = None
+    voice_response_enabled: Optional[bool] = None
     headless: Optional[bool] = None
     # Proxy Settings
     proxy_enabled: Optional[bool] = None
@@ -127,6 +138,7 @@ class BotProfileResponse(BaseModel):
     ai_provider: str = "openai"
     api_key_masked: Optional[str] = None  # Masked API key for display (e.g., sk-proj-...gasA)
     model: str
+    fallback_providers: Optional[str] = "[]"
     system_prompt: str
     temperature: float = 0.7
     max_tokens: int = 1000
@@ -140,6 +152,7 @@ class BotProfileResponse(BaseModel):
     group_chat_enabled: bool
     respond_to_all_in_group: bool
     ending_detection_enabled: bool = False
+    dm_pairing_enabled: bool = False
     headless: bool = False
     # Proxy Settings
     proxy_enabled: bool = False

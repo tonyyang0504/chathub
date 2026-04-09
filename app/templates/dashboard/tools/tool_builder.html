@@ -3649,10 +3649,23 @@ function replayMessages(messages) {
     if (!messages || !messages.length) return;
     document.getElementById('emptyState').style.display = 'none';
     for (const m of messages) {
+        // Skip system init/hook events (noisy CLI internals)
+        if (m.role === 'system' && (m.message_type === 'system' || m.message_type === 'init')) continue;
+        if (m.event_data) {
+            try {
+                const data = JSON.parse(m.event_data);
+                // Skip system init, hook_response, and subtype:init events
+                if (data.type === 'system' && (data.subtype === 'init' || data.subtype === 'hook_response')) continue;
+                renderStreamEvent(data);
+                continue;
+            } catch {}
+        }
+        // Fallback for messages without event_data
         if (m.message_type === 'user_message' || (m.role === 'user' && m.message_type === 'text')) {
+            flushAssistantBuffer();
             appendUserMessage(m.content || '');
-        } else if (m.role === 'assistant' && (m.message_type === 'result' || m.message_type === 'assistant_message')) {
-            appendAssistantMessage(m.content || '');
+        } else if (m.role === 'assistant') {
+            if (m.content) appendAssistantMessage(m.content || '');
         } else if (m.role === 'tool_use') {
             try {
                 const d = JSON.parse(m.content || '{}');
@@ -3663,8 +3676,12 @@ function replayMessages(messages) {
                 const c = JSON.parse(m.content || '""');
                 appendToolResult(typeof c === 'string' ? c : JSON.stringify(c));
             } catch(e) { appendToolResult(m.content || ''); }
+        } else if (m.role === 'system') {
+            if (m.message_type === 'user' || (m.content && m.content.startsWith('{"type":"user"'))) continue;
+            appendSystemMessage(m.content || '');
         }
     }
+    flushAssistantBuffer();
 }
 
 // ============================================================

@@ -543,6 +543,16 @@ All three AI tools share the same 3-panel layout and must stay visually aligned.
 
 **Tool Builder Right Panel Buttons**: Preview/Publish/Discard buttons appear when `changed_files.length > 0` or `preview_url` exists (via `refreshStatus()`). For historical sessions after page refresh, `viewSession()` auto-resumes the session and shows buttons. The `ensureSession()` helper auto-resumes before Preview/Publish/Discard actions if `sessionId` is null.
 
+**Session Message Persistence**: User messages MUST be persisted to DB in `send_message()` (both `builder_manager.py` and `coder_manager.py`) so they appear during session replay. The AI Workspace persists user messages in the routes layer. Tool Builder and AI Coder persist them in `send_message()` before broadcasting.
+
+**Session Replay** (`replayMessages()`): Uses `event_data` JSON when available — calls `renderStreamEvent()` to render tool call pills in chat AND artifact cards in the right panel (matching live streaming behavior). Skips system init events (`subtype: init`) and hook responses (`subtype: hook_response`) to avoid showing noisy CLI internals. Falls back to basic text rendering for messages without `event_data`.
+
+**Dashboard Custom Tool Widgets**: Widget container (`#custom-widgets-container`) uses `display: flex; flex-direction: column; gap: 1rem;` for consistent spacing between tool widgets.
+
+**Sandbox Tool Reload**: `/tools/api/reload-custom-tools` force-reloads ALL custom tools (unregister + re-register via `unregister_custom_tool` + `register_custom_tools`). This clears `sys.modules` cache so the sandbox picks up the agent's latest file changes from the mounted worktree volume.
+
+**Publish Validation**: Only checks **committed** file changes (`git diff base..HEAD`), not uncommitted/untracked files which may include host file bleed-through from the worktree volume mount.
+
 ## Multi-Platform Architecture
 
 ### Platform Adapter Pattern
@@ -645,17 +655,83 @@ Always use this in `conversations/routes.py` — never import `send_whatsapp_mes
 
 **Guide tab CSS**: Each tab has platform-specific colors via `nav-link[href="#guide-platform"]` selectors. Active tabs use darker shade + `box-shadow` + `transform: scale(1.05)`. No opacity — solid colors only.
 
+### DM Pairing / Sender Approval
+- Per-bot toggle `dm_pairing_enabled` (default OFF = auto-approve all senders)
+- When ON: new private DM conversations start with `dm_approved = False`
+- Messages from unapproved senders are saved to DB but get NO AI response
+- Conversations page shows yellow "Pending" badge + "Approve" / "Reject" buttons in header
+- Groups are always auto-approved regardless of setting
+- Existing conversations remain approved (backward compatible)
+- Check in ALL adapters: `is_sender_approved(db, conversation.id)` after `is_human_takeover_active()`
+- DB columns: `BotProfile.dm_pairing_enabled`, `Conversation.dm_approved`
+- Endpoints: `POST /api/conversations/{id}/approve-sender`, `POST /api/conversations/{id}/reject-sender`
+
+### Health Check Dashboard (`/dashboard/health`)
+- Page at `/dashboard/health` with auto-running diagnostics
+- **System Resources**: CPU, memory, disk usage with progress bars (uses `psutil`)
+- **Database**: Connection test, bot/conversation/message counts, stale `is_running` detection, DB size
+- **Per-Bot Health**: Status dots (green/yellow/red/gray), error messages, "Recover" button
+- **AI Providers**: Key validation, model info, bot count per provider
+- **Quick Fixes**: Reset stale bots, clean up logs, clear orphaned sessions
+- API: `GET /api/health`, `POST /api/health/fix/{fix_type}`
+- File: `app/health.py` (routes + check logic)
+
+### Tool Event Bus (`app/tools/event_bus.py`)
+- Pub/sub system connecting system events to custom tool hook functions
+- Core code emits events via `tool_event_bus.emit("event.name", db=db, ...)`
+- Custom tools subscribe via TOOL.md `events` field
+- ~55 emit points across message flow, bot lifecycle, hubs, contacts, agents, content, scripts, follow-ups, topics
+- Sync callers use `emit_event_sync()` helper from `message_handler.py`
+- Tool scheduled tasks use `app/tools/tool_scheduler.py` with APScheduler cron
+- All hook errors are caught and logged — never break core flow
+
+### Voice Support (STT + TTS)
+
+**Speech-to-Text (STT)** — Automatic transcription of incoming voice messages:
+- `transcribe_audio()` in `message_handler.py` — calls OpenAI Whisper API (`/v1/audio/transcriptions`)
+- Uses the bot's existing AI API key (OpenAI compatible)
+- `analyze_media_with_ai()` routes `audio/*` files to `transcribe_audio()` automatically
+- Transcribed text saved as message content with `🎤` prefix (visible in conversations UI)
+- AI context shows `[Voice message: "transcribed text"]` — AI responds to the actual words
+- Works on all platforms that receive voice messages (WhatsApp, Telegram, Discord, Slack)
+
+**Text-to-Speech (TTS)** — Send AI responses as voice notes:
+- `text_to_speech()` in `message_handler.py` — calls OpenAI TTS API (`/v1/audio/speech`)
+- Per-bot toggle: `voice_response_enabled` (default OFF)
+- Output format: Opus/OGG (small file, compatible with all platforms)
+- Voices: alloy, echo, fable, onyx, nova, shimmer
+- DB column: `BotProfile.voice_response_enabled`
+
+### Slack-Specific (slack-bolt Socket Mode)
+- Uses **Socket Mode** (WebSocket) — no webhook/ngrok needed
+- Requires TWO tokens: Bot Token (`xoxb-`) + App Token (`xapp-`)
+- Bot Token scopes: `chat:write`, `files:write`, `users:read`, `channels:read`, `im:read`, `groups:read`, `im:history`, `channels:history`
+- Event subscriptions: `message.im`, `message.channels`, `message.groups`, `app_mention`
+- Responds to @mentions in channels + all DMs
+- History sync via `conversations.history` API
+
+### Signal-Specific (signal-cli REST API)
+- Connects to self-hosted `signal-cli-rest-api` instance via HTTP
+- Docker: `docker run -p 8080:8080 bbernhard/signal-cli-rest-api`
+- Requires dedicated phone number (can't share with personal Signal app)
+- Registration: `POST /v1/register/{phone}` → SMS verify → `POST /v1/register/{phone}/verify/{code}`
+- Message polling via `GET /v1/receive/{phone}`
+- Send via `POST /v2/send`
+- Supports DMs and groups, file attachments via base64
+
 ### Platform Status
 | Platform | Adapter | Auth | Contact Sync | History Sync | Status |
 |----------|---------|------|-------------|-------------|--------|
 | WhatsApp | Playwright browser | QR Code | From conversations | Browser scroll | Production |
 | Telegram | Telethon client | Phone+Code | `get_dialogs()` | `get_messages()` | Production |
 | Discord | discord.py | Bot Token | From conversations | No | Production |
-| Messenger | httpx (Graph API) | Facebook OAuth | Graph API `/me/conversations` | Graph API | Production |
+| Facebook Page | httpx (Graph API) | Facebook OAuth | Graph API `/me/conversations` | Graph API | Production |
 | Instagram | httpx (Graph API) | Facebook OAuth | Graph API `/me/conversations` | No | Production |
+| Slack | slack-bolt (Socket Mode) | Bot+App Token | `conversations.list` | `conversations.history` | Production |
+| Signal | httpx (signal-cli REST) | Phone+SMS | From conversations | No | Ready |
 | LINE | httpx (Messaging API) | Channel Token | From conversations | No | Ready |
 | LinkedIn | httpx (REST API) | OAuth | From conversations | No | Ready (rate-limited) |
-| Tinder | httpx (unofficial) | Phone OTP | From conversations | No | Beta |
+| Tinder | httpx (unofficial) | Auth Token | From conversations | No | Beta |
 | Bumble | httpx (unofficial) | Phone SMS | From conversations | No | Beta |
 | WeChat | Not implemented | QR Code | — | — | Planned |
 

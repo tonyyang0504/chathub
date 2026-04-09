@@ -817,6 +817,8 @@ class TinderAdapter(PlatformAdapter):
             if message_handler.is_human_takeover_active(db, conversation.id):
                 logger.info(f"Bot {bot_id}: Human takeover active for {sender_name}, skipping AI")
                 return
+            if not message_handler.is_sender_approved(db, conversation.id):
+                return
 
             # Check if AI responses are enabled
             if not instance.ai_response_enabled:

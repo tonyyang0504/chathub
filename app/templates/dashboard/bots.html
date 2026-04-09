@@ -406,6 +406,20 @@
                         </div>
                         <div class="col-md-6 d-flex align-items-center">
                             <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="dm_pairing_enabled" id="dmPairingEnabled">
+                                <label class="form-check-label" for="dmPairingEnabled">Sender Approval</label>
+                            </div>
+                            <small class="text-muted ms-2">(Approve unknown senders)</small>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="voice_response_enabled" id="voiceResponseEnabled">
+                                <label class="form-check-label" for="voiceResponseEnabled">Voice Response</label>
+                            </div>
+                            <small class="text-muted ms-2">(Reply with voice notes)</small>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="headless" id="headlessMode">
                                 <label class="form-check-label" for="headlessMode">Headless Mode</label>
                             </div>
@@ -599,6 +613,20 @@
                         </div>
                         <div class="col-md-6 d-flex align-items-center">
                             <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="dm_pairing_enabled" id="editDmPairing">
+                                <label class="form-check-label" for="editDmPairing">Sender Approval</label>
+                            </div>
+                            <small class="text-muted ms-2">(Approve unknown senders)</small>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="voice_response_enabled" id="editVoiceResponse">
+                                <label class="form-check-label" for="editVoiceResponse">Voice Response</label>
+                            </div>
+                            <small class="text-muted ms-2">(Reply with voice notes)</small>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="headless" id="editHeadless">
                                 <label class="form-check-label" for="editHeadless">Headless Mode</label>
                             </div>
@@ -693,6 +721,18 @@
             connectFields: [
                 {key: 'platform_token', label: 'Auth Token', placeholder: 'From phone/SMS verification', type: 'password'},
             ]},
+        slack:     { label: 'Slack',     icon: 'bi-slack',           color: '#4A154B', auth: 'api_token',   tokenLabel: null,
+            setupGuide: '1. Go to <a href="https://api.slack.com/apps" target="_blank">api.slack.com</a> → Create New App<br>2. Enable <b>Socket Mode</b> → generate App Token (xapp-)<br>3. Add Bot Token Scopes: chat:write, users:read, channels:read, im:read<br>4. Enable Events: message.im, message.channels, app_mention<br>5. Install to workspace → copy Bot Token (xoxb-)',
+            connectFields: [
+                {key: 'platform_token', label: 'Bot Token (xoxb-)', placeholder: 'xoxb-...', type: 'password'},
+                {key: 'slack_app_token', label: 'App Token (xapp-)', placeholder: 'xapp-...', type: 'password'},
+            ]},
+        signal:    { label: 'Signal',    icon: 'bi-shield-lock-fill', color: '#3A76F0', auth: 'credentials', tokenLabel: null,
+            setupGuide: '1. Run signal-cli REST API: <code>docker run -p 8080:8080 bbernhard/signal-cli-rest-api</code><br>2. Register number: <code>POST /v1/register/+PHONE</code><br>3. Verify SMS code<br>4. Enter API URL + phone number below',
+            connectFields: [
+                {key: 'signal_api_url', label: 'Signal API URL', placeholder: 'http://localhost:8080', type: 'text'},
+                {key: 'platform_token', label: 'Phone Number', placeholder: '+1234567890', type: 'text'},
+            ]},
         wechat:    { label: 'WeChat',    icon: 'bi-wechat',          color: '#07C160', auth: 'qr_code',     tokenLabel: null,
             setupGuide: 'WeChat integration is not yet available.' },
     };
@@ -718,10 +758,7 @@
             const headlessRow = headlessSwitch.closest('.col-md-6');
             if (headlessRow) headlessRow.classList.toggle('d-none', !isWhatsApp);
         }
-        if (endingSwitch) {
-            const endingRow = endingSwitch.closest('.col-md-6');
-            if (endingRow) endingRow.classList.toggle('d-none', !isWhatsApp);
-        }
+        // AI Ending Detection shown for all platforms (not WhatsApp-only)
         // Show proxy for WhatsApp, Tinder, Bumble (platforms that may need it)
         const showProxy = isWhatsApp || platformName === 'tinder' || platformName === 'bumble';
         if (proxySection) {
@@ -980,6 +1017,8 @@
             response_delay_max: parseInt(form.response_delay_max.value),
             group_chat_enabled: form.group_chat_enabled.checked,
             ending_detection_enabled: form.ending_detection_enabled.checked,
+            dm_pairing_enabled: form.dm_pairing_enabled.checked,
+            voice_response_enabled: form.voice_response_enabled.checked,
             headless: form.headless.checked,
             // Proxy settings
             proxy_enabled: form.proxy_enabled.checked,
@@ -1748,6 +1787,8 @@
             document.getElementById('editDelayMax').value = bot.response_delay_max;
             document.getElementById('editGroupChat').checked = bot.group_chat_enabled;
             document.getElementById('editEndingDetection').checked = bot.ending_detection_enabled === true;
+            document.getElementById('editDmPairing').checked = bot.dm_pairing_enabled === true;
+            document.getElementById('editVoiceResponse').checked = bot.voice_response_enabled === true;
             document.getElementById('editHeadless').checked = bot.headless;
             // Proxy settings
             document.getElementById('editProxyEnabled').checked = bot.proxy_enabled || false;
@@ -1783,6 +1824,8 @@
             response_delay_max: parseInt(form.response_delay_max.value),
             group_chat_enabled: form.group_chat_enabled.checked,
             ending_detection_enabled: form.ending_detection_enabled.checked,
+            dm_pairing_enabled: form.dm_pairing_enabled.checked,
+            voice_response_enabled: form.voice_response_enabled.checked,
             headless: form.headless.checked,
             // Proxy settings
             proxy_enabled: form.proxy_enabled.checked,

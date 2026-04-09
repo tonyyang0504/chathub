@@ -685,6 +685,7 @@ class LinkedInAdapter(PlatformAdapter):
             broadcast_assistant_message,
             broadcast_typing,
             is_human_takeover_active,
+            is_sender_approved,
             analyze_media_with_ai,
         )
         from app.ai.factory import get_ai_provider
@@ -772,6 +773,8 @@ class LinkedInAdapter(PlatformAdapter):
             if not instance.ai_response_enabled:
                 return
             if is_human_takeover_active(db, conversation.id):
+                return
+            if not is_sender_approved(db, conversation.id):
                 return
 
             # Generate AI response

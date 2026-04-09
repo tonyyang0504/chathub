@@ -683,6 +683,7 @@ class _HandlerContext:
             has_response_after,
             build_ai_messages,
             is_human_takeover_active,
+            is_sender_approved,
             broadcast_user_message,
             broadcast_assistant_message,
             broadcast_typing,
@@ -769,6 +770,9 @@ class _HandlerContext:
 
             if is_human_takeover_active(db, conversation.id):
                 return
+
+            if not is_sender_approved(db, conversation.id):
+                return  # DM pairing: message saved but no AI response
 
             broadcast_typing(conversation.id, True, "Bot")
 

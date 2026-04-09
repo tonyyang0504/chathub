@@ -7112,6 +7112,7 @@ CONVERSATION ENDING GUIDELINES:
 
         # Store flags for use outside db session
         is_human_takeover = conversation.human_takeover
+        is_dm_approved = conversation.dm_approved if hasattr(conversation, 'dm_approved') else True
         needs_history_sync = not conversation.history_synced
         conversation_db_id = conversation.id
         logger.info(f"Bot {bot_profile_id}: Conversation {chat_name} - human_takeover={is_human_takeover}")
@@ -7300,6 +7301,11 @@ CONVERSATION ENDING GUIDELINES:
     # [2] Skip AI response if this is not the last message in a batch (for multiple incoming messages)
     if skip_ai_response:
         logger.info(f"Bot {bot_profile_id}: Skipping AI response for {chat_name} (not last message in batch)")
+        return
+
+    # Check if sender is approved (DM pairing)
+    if not is_dm_approved:
+        logger.info(f"Bot {bot_profile_id}: Sender not approved for {chat_name}, skipping AI response")
         return
 
     # Check if human has taken over this conversation - skip AI response if so

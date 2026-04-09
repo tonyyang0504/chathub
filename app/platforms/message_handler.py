@@ -127,6 +127,14 @@ def find_or_create_conversation(
         db.flush()
         return conversation
 
+    # Check if DM pairing is enabled for this bot (new private DMs start unapproved)
+    dm_approved = True  # Default: auto-approve
+    if not is_group:
+        from app.database import BotProfile
+        bot = db.query(BotProfile).filter(BotProfile.id == bot_profile_id).first()
+        if bot and bot.dm_pairing_enabled:
+            dm_approved = False
+
     # Create new conversation
     conversation = Conversation(
         bot_profile_id=bot_profile_id,
@@ -138,13 +146,14 @@ def find_or_create_conversation(
         profile_pic=profile_pic or "",
         message_count=0,
         last_message_at=datetime.utcnow(),
+        dm_approved=dm_approved,
     )
     db.add(conversation)
     db.flush()
     emit_event_sync("conversation.created", db=db, bot_profile_id=bot_profile_id, conversation=conversation)
     logger.info(
         f"Bot {bot_profile_id}: Created conversation '{chat_name}' "
-        f"(chat_id={chat_id}, group={is_group})"
+        f"(chat_id={chat_id}, group={is_group}, dm_approved={dm_approved})"
     )
     return conversation
 
@@ -199,6 +208,10 @@ def save_user_message(
         ).first()
         if existing:
             return existing
+
+    # For voice messages: use transcription as display content
+    if media_analysis and file_type and file_type.startswith("audio/"):
+        content = f"🎤 {media_analysis}"
 
     msg = Message(
         conversation_id=conversation_id,
@@ -476,6 +489,15 @@ def _build_message_dict(
             except Exception as e:
                 logger.error(f"Error building image message: {e}")
 
+    # Audio/voice attachment — show transcription as the message
+    elif msg.file_type and msg.file_type.startswith("audio/"):
+        has_analysis = hasattr(msg, "media_analysis") and msg.media_analysis
+        if has_analysis:
+            text = f'[Voice message: "{msg.media_analysis}"]'
+            return {"role": msg.role, "content": text}
+        else:
+            return {"role": msg.role, "content": content or "[Voice message - not transcribed]"}
+
     # Document attachment
     elif msg.file_type and not msg.file_type.startswith("image/") and (msg.file_url or msg.file_name):
         has_analysis = hasattr(msg, "media_analysis") and msg.media_analysis
@@ -647,8 +669,129 @@ def analyze_media_with_ai(
     """
     if file_type.startswith("image/"):
         return _analyze_image(ai_provider, file_path, file_type, user_message)
+    elif file_type.startswith("audio/"):
+        return transcribe_audio(file_path, ai_provider)
     else:
         return _analyze_document(ai_provider, file_path, file_type, user_message)
+
+
+def transcribe_audio(file_path: str, ai_provider=None) -> Optional[str]:
+    """Transcribe an audio file to text using OpenAI Whisper API.
+
+    Uses the bot's AI provider to get the API key. Falls back to trying
+    the OpenAI API directly if the provider has an OpenAI-compatible key.
+
+    Args:
+        file_path: Path to the audio file (.ogg, .mp3, .m4a, .wav, etc.)
+        ai_provider: AI provider instance (to get API key)
+
+    Returns:
+        Transcribed text, or None on error
+    """
+    try:
+        path = Path(file_path)
+        if not path.exists():
+            logger.warning(f"Audio file not found: {file_path}")
+            return None
+
+        # Get API key from provider
+        api_key = None
+        if ai_provider and hasattr(ai_provider, 'api_key'):
+            api_key = ai_provider.api_key
+        elif ai_provider and hasattr(ai_provider, 'client'):
+            api_key = getattr(ai_provider.client, 'api_key', None)
+
+        if not api_key:
+            logger.warning("No API key available for audio transcription")
+            return None
+
+        import httpx
+
+        # Use OpenAI Whisper API
+        with open(path, "rb") as f:
+            response = httpx.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                files={"file": (path.name, f, "audio/ogg")},
+                data={"model": "whisper-1"},
+                timeout=60.0,
+            )
+
+        if response.status_code == 200:
+            text = response.json().get("text", "").strip()
+            if text:
+                logger.info(f"Audio transcribed ({len(text)} chars): {text[:80]}...")
+                return text
+            return None
+        else:
+            logger.warning(f"Whisper API error {response.status_code}: {response.text[:200]}")
+            return None
+
+    except Exception as e:
+        logger.error(f"Audio transcription error: {e}")
+        return None
+
+
+def text_to_speech(text: str, ai_provider=None, voice: str = "alloy", output_path: str = None) -> Optional[str]:
+    """Convert text to speech using OpenAI TTS API.
+
+    Args:
+        text: Text to convert to speech
+        ai_provider: AI provider instance (to get API key)
+        voice: Voice name (alloy, echo, fable, onyx, nova, shimmer)
+        output_path: Where to save the audio file (auto-generated if None)
+
+    Returns:
+        Path to the generated audio file, or None on error
+    """
+    try:
+        if not text or len(text.strip()) < 2:
+            return None
+
+        # Get API key
+        api_key = None
+        if ai_provider and hasattr(ai_provider, 'api_key'):
+            api_key = ai_provider.api_key
+        elif ai_provider and hasattr(ai_provider, 'client'):
+            api_key = getattr(ai_provider.client, 'api_key', None)
+
+        if not api_key:
+            logger.warning("No API key available for TTS")
+            return None
+
+        import httpx
+        import tempfile
+
+        response = httpx.post(
+            "https://api.openai.com/v1/audio/speech",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "model": "tts-1",
+                "input": text[:4096],  # TTS has a 4096 char limit
+                "voice": voice,
+                "response_format": "opus",  # Small file, good for voice notes
+            },
+            timeout=60.0,
+        )
+
+        if response.status_code == 200:
+            if not output_path:
+                fd, output_path = tempfile.mkstemp(suffix=".ogg", prefix="tts_")
+                import os
+                os.close(fd)
+
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+
+            logger.info(f"TTS generated: {len(response.content)} bytes → {output_path}")
+            return output_path
+        else:
+            logger.warning(f"TTS API error {response.status_code}: {response.text[:200]}")
+            return None
+
+    except Exception as e:
+        logger.error(f"TTS error: {e}")
+        return None
 
 
 def _analyze_image(ai_provider, file_path: str, file_type: str, user_message: str = "") -> Optional[str]:
@@ -865,6 +1008,22 @@ def is_human_takeover_active(db, conversation_id: int) -> bool:
 
     conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
     return bool(conv and conv.human_takeover)
+
+
+def is_sender_approved(db, conversation_id: int) -> bool:
+    """Check if sender is approved for DM pairing.
+
+    Returns True if:
+    - The conversation is approved (dm_approved = True, default)
+    - DM pairing is not relevant (groups are always approved)
+    """
+    from app.database import Conversation
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conv:
+        return True  # No conversation = allow (shouldn't happen)
+    if conv.is_group:
+        return True  # Groups are always approved
+    return bool(conv.dm_approved)
 
 
 # ---------------------------------------------------------------------------

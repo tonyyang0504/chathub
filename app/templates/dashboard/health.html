@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Health Check - ChatHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .health-card {
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        transition: box-shadow 0.2s;
+    }
+    .health-card:hover { box-shadow: var(--shadow); }
+    .status-dot {
+        width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+    }
+    .status-dot.green { background: #22c55e; }
+    .status-dot.yellow { background: #eab308; }
+    .status-dot.red { background: #ef4444; }
+    .status-dot.gray { background: #9ca3af; }
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+    }
+    .status-badge.green { background: #dcfce7; color: #166534; }
+    .status-badge.yellow { background: #fef9c3; color: #854d0e; }
+    .status-badge.red { background: #fee2e2; color: #991b1b; }
+    .status-badge.gray { background: #f3f4f6; color: #6b7280; }
+    .progress-thin { height: 8px; border-radius: 4px; }
+    .metric-value { font-size: 1.5rem; font-weight: 600; }
+    .metric-label { font-size: 0.8rem; color: var(--text-muted); }
+    .fix-btn {
+        border-radius: 20px; padding: 4px 14px; font-size: 0.75rem;
+    }
+    .issue-item {
+        padding: 6px 0; font-size: 0.85rem; color: #b45309;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .issue-item:last-child { border-bottom: none; }
+    .section-title {
+        font-size: 1rem; font-weight: 600; margin-bottom: 12px;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .bot-health-row {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 0; border-bottom: 1px solid var(--border-color);
+    }
+    .bot-health-row:last-child { border-bottom: none; }
+    .overall-banner {
+        border-radius: 12px; padding: 16px 24px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .overall-banner.green { background: linear-gradient(135deg, #dcfce7, #bbf7d0); }
+    .overall-banner.yellow { background: linear-gradient(135deg, #fef9c3, #fde68a); }
+    .overall-banner.red { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-heart-pulse me-2"></i>Health Check</h2>
+        <p class="text-muted">System diagnostics and auto-repair</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-primary rounded-pill" onclick="runHealthCheck()" id="refreshBtn">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Overall Status Banner -->
+<div id="overallBanner" class="overall-banner green mb-4" style="display: none;">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-check-circle-fill" style="font-size: 2rem;" id="overallIcon"></i>
+        <div>
+            <div class="fw-bold" id="overallTitle">All Systems Healthy</div>
+            <small id="overallSubtitle" class="text-muted">Last checked: just now</small>
+        </div>
+    </div>
+    <div id="overallDuration" class="text-muted small"></div>
+</div>
+
+<!-- Loading -->
+<div id="loadingState" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 text-muted">Running health checks...</p>
+</div>
+
+<!-- Health Cards Grid -->
+<div id="healthGrid" class="row g-3" style="display: none;">
+
+    <!-- System Resources -->
+    <div class="col-md-6">
+        <div class="health-card card h-100">
+            <div class="card-body">
+                <div class="section-title"><i class="bi bi-cpu"></i> System Resources <span class="status-badge" id="systemStatus"></span></div>
+                <div id="systemContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database -->
+    <div class="col-md-6">
+        <div class="health-card card h-100">
+            <div class="card-body">
+                <div class="section-title"><i class="bi bi-database"></i> Database <span class="status-badge" id="dbStatus"></span></div>
+                <div id="dbContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bots -->
+    <div class="col-12">
+        <div class="health-card card">
+            <div class="card-body">
+                <div class="section-title"><i class="bi bi-robot"></i> Bots <span class="small text-muted" id="botSummary"></span></div>
+                <div id="botsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Providers -->
+    <div class="col-12">
+        <div class="health-card card">
+            <div class="card-body">
+                <div class="section-title"><i class="bi bi-stars"></i> AI Providers</div>
+                <div id="providersContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Fixes -->
+    <div class="col-12" id="fixesSection" style="display: none;">
+        <div class="health-card card border-warning">
+            <div class="card-body">
+                <div class="section-title"><i class="bi bi-wrench"></i> Available Fixes</div>
+                <div id="fixesContent" class="d-flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const PLATFORM_ICONS = {
+        whatsapp: 'bi-whatsapp', telegram: 'bi-telegram', discord: 'bi-discord',
+        messenger: 'bi-facebook', instagram: 'bi-instagram', line: 'bi-chat-dots-fill',
+        linkedin: 'bi-linkedin', tinder: 'bi-fire', bumble: 'bi-heart-fill', wechat: 'bi-wechat'
+    };
+    const PLATFORM_COLORS = {
+        whatsapp: '#25D366', telegram: '#26A5E4', discord: '#5865F2',
+        messenger: '#1877F2', instagram: '#E4405F', line: '#00B900',
+        linkedin: '#0A66C2', tinder: '#FE3C72', bumble: '#FFC629', wechat: '#07C160'
+    };
+
+    async function runHealthCheck() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Checking...';
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('healthGrid').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/health');
+            const data = await res.json();
+            renderHealth(data);
+        } catch (e) {
+            showToast('Health check failed', 'danger');
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh';
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('healthGrid').style.display = '';
+    }
+
+    function renderHealth(data) {
+        // Overall banner
+        const banner = document.getElementById('overallBanner');
+        banner.style.display = '';
+        banner.className = `overall-banner ${data.overall} mb-4`;
+        const icon = document.getElementById('overallIcon');
+        const title = document.getElementById('overallTitle');
+        if (data.overall === 'green') {
+            icon.className = 'bi bi-check-circle-fill'; icon.style.color = '#166534';
+            title.textContent = 'All Systems Healthy';
+        } else if (data.overall === 'yellow') {
+            icon.className = 'bi bi-exclamation-triangle-fill'; icon.style.color = '#854d0e';
+            title.textContent = 'Some Issues Detected';
+        } else {
+            icon.className = 'bi bi-x-circle-fill'; icon.style.color = '#991b1b';
+            title.textContent = 'Critical Issues Found';
+        }
+        document.getElementById('overallSubtitle').textContent = `Checked in ${data.duration_ms}ms`;
+
+        // System
+        renderSystem(data.checks.system);
+        // Database
+        renderDatabase(data.checks.database);
+        // Bots
+        renderBots(data.checks.bots);
+        // AI Providers
+        renderProviders(data.checks.ai_providers);
+        // Fixes
+        renderFixes(data);
+    }
+
+    function statusBadge(status) {
+        const labels = {green: 'Healthy', yellow: 'Warning', red: 'Critical', gray: 'Stopped'};
+        const icons = {green: 'bi-check-circle', yellow: 'bi-exclamation-triangle', red: 'bi-x-circle', gray: 'bi-circle'};
+        return `<span class="status-badge ${status}"><i class="bi ${icons[status]}"></i>${labels[status]}</span>`;
+    }
+
+    function progressBar(pct, color) {
+        const barColor = pct > 90 ? '#ef4444' : pct > 75 ? '#eab308' : '#22c55e';
+        return `<div class="progress progress-thin"><div class="progress-bar" style="width:${pct}%;background:${barColor}"></div></div>`;
+    }
+
+    function renderSystem(sys) {
+        document.getElementById('systemStatus').outerHTML = statusBadge(sys.status);
+        document.getElementById('systemContent').innerHTML = `
+            <div class="row g-3 mb-3">
+                <div class="col-4 text-center">
+                    <div class="metric-value">${sys.cpu_percent}%</div>
+                    <div class="metric-label">CPU</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="metric-value">${sys.memory.percent}%</div>
+                    <div class="metric-label">Memory</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="metric-value">${sys.disk.percent}%</div>
+                    <div class="metric-label">Disk</div>
+                </div>
+            </div>
+            <div class="mb-2"><small class="text-muted">Disk</small> ${progressBar(sys.disk.percent)}
+                <small class="text-muted">${sys.disk.used_gb}GB / ${sys.disk.total_gb}GB</small></div>
+            <div class="mb-2"><small class="text-muted">Memory</small> ${progressBar(sys.memory.percent)}
+                <small class="text-muted">${sys.memory.used_gb}GB / ${sys.memory.total_gb}GB</small></div>
+            <div class="d-flex justify-content-between small text-muted mt-2">
+                <span>Process: ${sys.process_memory_mb}MB</span>
+                <span>Data: ${sys.data_size_mb}MB</span>
+                <span>Logs: ${sys.log_size_mb}MB</span>
+            </div>
+            ${sys.issues.length ? sys.issues.map(i => `<div class="issue-item"><i class="bi bi-exclamation-triangle me-1"></i>${i}</div>`).join('') : ''}
+        `;
+    }
+
+    function renderDatabase(db) {
+        document.getElementById('dbStatus').outerHTML = statusBadge(db.status);
+        document.getElementById('dbContent').innerHTML = `
+            <div class="row g-3 mb-3">
+                <div class="col-4 text-center">
+                    <div class="metric-value">${db.bots || 0}</div>
+                    <div class="metric-label">Bots</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="metric-value">${db.conversations || 0}</div>
+                    <div class="metric-label">Conversations</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="metric-value">${db.messages || 0}</div>
+                    <div class="metric-label">Messages</div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>Connection: ${db.connected ? '<span class="text-success">OK</span>' : '<span class="text-danger">Failed</span>'}</span>
+                <span>DB Size: ${db.db_size_mb || 0}MB</span>
+                ${db.stale_running ? `<span class="text-warning">${db.stale_running} stale bot(s)</span>` : ''}
+            </div>
+            ${db.issues?.length ? db.issues.map(i => `<div class="issue-item"><i class="bi bi-exclamation-triangle me-1"></i>${i}</div>`).join('') : ''}
+        `;
+    }
+
+    function renderBots(bots) {
+        const running = bots.filter(b => b.is_running).length;
+        const connected = bots.filter(b => b.connected).length;
+        const errored = bots.filter(b => b.status === 'red').length;
+        document.getElementById('botSummary').textContent = `${bots.length} total, ${running} running, ${connected} connected${errored ? `, ${errored} errored` : ''}`;
+
+        if (!bots.length) {
+            document.getElementById('botsContent').innerHTML = '<p class="text-muted small">No bots configured</p>';
+            return;
+        }
+
+        document.getElementById('botsContent').innerHTML = bots.map(bot => {
+            const icon = PLATFORM_ICONS[bot.platform_type] || 'bi-robot';
+            const color = PLATFORM_COLORS[bot.platform_type] || '#666';
+            return `
+                <div class="bot-health-row">
+                    <span class="status-dot ${bot.status}"></span>
+                    <i class="bi ${icon}" style="color: ${color}; font-size: 1.2rem;"></i>
+                    <div style="flex: 1;">
+                        <div class="fw-medium">${bot.name}</div>
+                        <div class="small text-muted">${bot.platform_type}${bot.last_active ? ' &bull; Last active: ' + new Date(bot.last_active).toLocaleString() : ''}</div>
+                    </div>
+                    ${statusBadge(bot.status)}
+                    ${bot.issues.length ? `<span class="text-warning small" title="${bot.issues.join(', ')}"><i class="bi bi-exclamation-triangle"></i></span>` : ''}
+                    ${bot.needs_recovery ? `<button class="btn btn-sm btn-outline-warning fix-btn" onclick="recoverBot(${bot.id})"><i class="bi bi-arrow-clockwise me-1"></i>Recover</button>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderProviders(providers) {
+        if (!providers.length) {
+            document.getElementById('providersContent').innerHTML = '<p class="text-muted small">No AI providers configured</p>';
+            return;
+        }
+        document.getElementById('providersContent').innerHTML = providers.map(p => `
+            <div class="bot-health-row">
+                <span class="status-dot ${p.status}"></span>
+                <div style="flex: 1;">
+                    <div class="fw-medium">${p.provider}</div>
+                    <div class="small text-muted">Model: ${p.model} &bull; ${p.bot_count} bot(s)</div>
+                </div>
+                ${statusBadge(p.status)}
+                ${p.issues.length ? `<span class="text-warning small">${p.issues.join(', ')}</span>` : ''}
+            </div>
+        `).join('');
+    }
+
+    function renderFixes(data) {
+        const fixes = [];
+        if (data.checks.database.stale_running > 0) {
+            fixes.push({type: 'recover_bots', label: 'Reset Stale Bots', icon: 'bi-arrow-clockwise', color: 'warning'});
+        }
+        if (data.checks.system.log_size_mb > 50) {
+            fixes.push({type: 'cleanup_logs', label: 'Clean Up Logs', icon: 'bi-trash', color: 'info'});
+        }
+        fixes.push({type: 'clear_sessions', label: 'Clear Orphaned Sessions', icon: 'bi-folder-x', color: 'secondary'});
+
+        const section = document.getElementById('fixesSection');
+        if (fixes.length) {
+            section.style.display = '';
+            document.getElementById('fixesContent').innerHTML = fixes.map(f => `
+                <button class="btn btn-sm btn-outline-${f.color} fix-btn" onclick="applyFix('${f.type}', this)">
+                    <i class="bi ${f.icon} me-1"></i>${f.label}
+                </button>
+            `).join('');
+        }
+    }
+
+    async function applyFix(type, btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        try {
+            const res = await fetch(`/api/health/fix/${type}`, {method: 'POST'});
+            const data = await res.json();
+            showToast(data.message, 'success');
+            setTimeout(() => runHealthCheck(), 1000);
+        } catch (e) {
+            showToast('Fix failed', 'danger');
+        }
+    }
+
+    async function recoverBot(botId) {
+        try {
+            await fetch(`/api/bots/${botId}/stop`, {method: 'POST'}).catch(() => {});
+            await new Promise(r => setTimeout(r, 500));
+            const res = await fetch(`/api/bots/${botId}/start`, {method: 'POST'});
+            if (res.ok) {
+                showToast('Bot recovery started', 'success');
+                setTimeout(() => runHealthCheck(), 3000);
+            }
+        } catch (e) {
+            showToast('Recovery failed', 'danger');
+        }
+    }
+
+    // Auto-run on page load
+    runHealthCheck();
+</script>
+{% endblock %}

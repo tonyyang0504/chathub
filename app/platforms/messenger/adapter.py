@@ -43,6 +43,7 @@ from app.platforms.message_handler import (
     broadcast_assistant_message,
     broadcast_typing,
     is_human_takeover_active,
+    is_sender_approved,
 )
 
 logger = logging.getLogger(__name__)
@@ -833,6 +834,9 @@ async def _handle_message(
         # Check human takeover
         if is_human_takeover_active(db, conversation.id):
             logger.info(f"Bot {bot_id}: Human takeover active, skipping AI for {sender_id}")
+            return
+
+        if not is_sender_approved(db, conversation.id):
             return
 
         # Check AI response toggle

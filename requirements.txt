@@ -60,6 +60,10 @@ discord.py>=2.3.0
 telethon>=1.36
 qrcode>=7.4
 
+# Slack
+slack-bolt>=1.17.0
+slack-sdk>=3.23.0
+
 # AI Providers
 anthropic>=0.18.0
 google-genai>=1.0.0

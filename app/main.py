@@ -68,6 +68,10 @@ platform_registry.register(PlatformType.INSTAGRAM, InstagramAdapter)
 platform_registry.register(PlatformType.MESSENGER, MessengerAdapter)
 platform_registry.register(PlatformType.TINDER, TinderAdapter)
 platform_registry.register(PlatformType.BUMBLE, BumbleAdapter)
+from app.platforms.slack.adapter import SlackAdapter
+platform_registry.register(PlatformType.SLACK, SlackAdapter)
+from app.platforms.signal.adapter import SignalAdapter
+platform_registry.register(PlatformType.SIGNAL, SignalAdapter)
 
 # Detect if running as frozen executable (PyInstaller)
 if getattr(sys, 'frozen', False):
@@ -396,6 +400,8 @@ app.include_router(bots_router, prefix="/api/bots", tags=["Bots"])
 from app.platforms.facebook.oauth import router as facebook_oauth_router, callback_router as facebook_callback_router
 app.include_router(facebook_oauth_router, prefix="/api/bots", tags=["Facebook OAuth"])
 app.include_router(facebook_callback_router, prefix="/auth", tags=["Facebook OAuth"])
+from app.health import router as health_router
+app.include_router(health_router, tags=["Health Check"])
 app.include_router(conversations_router, prefix="/api/conversations", tags=["Conversations"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(hubs_router, prefix="/api/hubs", tags=["Hubs"])
@@ -491,6 +497,18 @@ async def dashboard_guides(
     return templates.TemplateResponse(
         "dashboard/guides.html",
         {"request": request, "user": user, "active_page": "guides"}
+    )
+
+
+@app.get("/dashboard/health")
+async def dashboard_health(
+    request: Request,
+    user = Depends(get_current_user)
+):
+    """Health check dashboard page"""
+    return templates.TemplateResponse(
+        "dashboard/health.html",
+        {"request": request, "user": user, "active_page": "health"}
     )
 
 

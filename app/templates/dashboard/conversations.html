@@ -2165,12 +2165,12 @@
             const container = document.getElementById('botFilterOptions');
             const CONV_PLATFORM_ICONS = {
                 whatsapp: 'bi-whatsapp', telegram: 'bi-telegram', instagram: 'bi-instagram',
-                messenger: 'bi-facebook', discord: 'bi-discord', line: 'bi-chat-dots-fill',
+                messenger: 'bi-facebook', discord: 'bi-discord', slack: 'bi-slack', signal: 'bi-shield-lock-fill', line: 'bi-chat-dots-fill',
                 linkedin: 'bi-linkedin', tinder: 'bi-fire', bumble: 'bi-heart-fill', wechat: 'bi-wechat'
             };
             const CONV_PLATFORM_COLORS = {
                 whatsapp: '#25D366', telegram: '#26A5E4', instagram: '#E4405F',
-                messenger: '#1877F2', discord: '#5865F2', line: '#00B900',
+                messenger: '#1877F2', discord: '#5865F2', slack: '#4A154B', signal: '#3A76F0', line: '#00B900',
                 linkedin: '#0A66C2', tinder: '#FE3C72', bumble: '#FFC629', wechat: '#07C160'
             };
             bots.forEach(bot => {
@@ -2367,6 +2367,7 @@
                     </div>
                     <div class="chat-meta">
                         <div class="chat-time">${conv.last_message_at ? formatDate(conv.last_message_at) : ''}</div>
+                        ${conv.dm_approved === false ? '<span class="badge bg-warning text-dark" style="font-size: 9px; border-radius: 8px;">Pending</span>' : ''}
                     </div>
                 </div>
             `;
@@ -2494,6 +2495,16 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    ${currentConversation.dm_approved === false ? `
+                    <div class="d-flex align-items-center me-2 gap-1" id="dmPairingActions">
+                        <button class="btn btn-sm btn-success rounded-pill px-3" onclick="approveSender(${currentConversation.id})" title="Approve this sender">
+                            <i class="bi bi-check-lg me-1"></i>Approve
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2" onclick="rejectSender(${currentConversation.id})" title="Reject this sender">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    ` : ''}
                     <div class="d-flex align-items-center me-2" style="display: none !important; gap: 6px;"
                          id="aiToggleWrapper" title="AI Response (all conversations)">
                         <span class="small">AI Response</span>
@@ -4616,6 +4627,37 @@
     function getCurrentBotId() {
         if (!currentConversation) return null;
         return currentConversation.bot_id;
+    }
+
+    async function approveSender(convId) {
+        try {
+            const res = await fetch(`/api/conversations/${convId}/approve-sender`, {method: 'POST'});
+            if (res.ok) {
+                showToast('Sender approved — AI will now respond', 'success');
+                // Update local data and re-render
+                const conv = conversations.find(c => c.id === convId);
+                if (conv) conv.dm_approved = true;
+                if (currentConversation?.id === convId) selectConversation(convId);
+                renderChatList();
+            } else {
+                showToast('Error approving sender', 'danger');
+            }
+        } catch (e) { showToast('Error approving sender', 'danger'); }
+    }
+
+    async function rejectSender(convId) {
+        if (!confirm('Reject this sender? They will not receive AI responses.')) return;
+        try {
+            const res = await fetch(`/api/conversations/${convId}/reject-sender`, {method: 'POST'});
+            if (res.ok) {
+                showToast('Sender rejected', 'info');
+                const conv = conversations.find(c => c.id === convId);
+                if (conv) conv.dm_approved = false;
+                renderChatList();
+            } else {
+                showToast('Error rejecting sender', 'danger');
+            }
+        } catch (e) { showToast('Error rejecting sender', 'danger'); }
     }
 
     async function toggleAIResponseFromConv(enabled) {

@@ -237,6 +237,7 @@ class ConversationResponse(BaseModel):
     created_at: datetime
     last_message: Optional[str] = None
     human_takeover: bool = False
+    dm_approved: bool = True
 
     class Config:
         from_attributes = True
@@ -344,7 +345,8 @@ async def list_conversations(
             last_message_at=conv.last_message_at,
             created_at=conv.created_at,
             last_message=last_msg.content[:100] if last_msg else None,
-            human_takeover=conv.human_takeover or False
+            human_takeover=conv.human_takeover or False,
+            dm_approved=conv.dm_approved if hasattr(conv, 'dm_approved') and conv.dm_approved is not None else True
         )
         result.append(conv_response)
 
@@ -747,6 +749,32 @@ async def resume_ai_bot(
     emit_event_sync("conversation.ai_resumed", db=db, conversation_id=conversation_id)
 
     return {"success": True, "message": "AI bot resumed"}
+
+
+@router.post("/{conversation_id}/approve-sender")
+async def approve_sender(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Approve an unknown sender (DM pairing)."""
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
+    conversation.dm_approved = True
+    db.commit()
+    return {"success": True, "message": "Sender approved"}
+
+
+@router.post("/{conversation_id}/reject-sender")
+async def reject_sender(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reject an unknown sender (DM pairing)."""
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
+    conversation.dm_approved = False
+    db.commit()
+    return {"success": True, "message": "Sender rejected"}
 
 
 @router.post("/{conversation_id}/send-file")

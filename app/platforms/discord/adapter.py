@@ -54,6 +54,7 @@ from app.platforms.message_handler import (
     broadcast_assistant_message,
     broadcast_typing,
     is_human_takeover_active,
+    is_sender_approved,
     log_activity,
 )
 
@@ -360,6 +361,9 @@ class DiscordAdapter(PlatformAdapter):
                 # Check human takeover
                 if is_human_takeover_active(db, conversation.id):
                     logger.info(f"Bot {bot_profile_id}: Human takeover active for {chat_name}, skipping AI")
+                    return conversation.id, None
+
+                if not is_sender_approved(db, conversation.id):
                     return conversation.id, None
 
                 broadcast_typing(conversation.id, True, "Bot")

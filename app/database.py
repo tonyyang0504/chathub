@@ -77,6 +77,9 @@ class BotProfile(Base):
     # AI Provider Settings
     ai_provider = Column(String(50), default="openai")  # 'openai', 'anthropic', 'google', 'deepseek', 'qwen'
 
+    # Fallback AI providers (JSON array of {provider, api_key_encrypted, model} objects)
+    fallback_providers = Column(Text, default="[]")
+
     # API Settings (API key encrypted - used for any provider)
     api_key_encrypted = Column(Text, nullable=False)
     model = Column(String(50), default="gpt-4o-mini")
@@ -95,6 +98,8 @@ class BotProfile(Base):
     group_chat_enabled = Column(Boolean, default=True)
     respond_to_all_in_group = Column(Boolean, default=False)
     ending_detection_enabled = Column(Boolean, default=False)  # Enable AI-based ending detection (False = pattern matching only)
+    dm_pairing_enabled = Column(Boolean, default=False)  # Require approval for unknown DM senders
+    voice_response_enabled = Column(Boolean, default=False)  # Send AI responses as voice notes
     headless = Column(Boolean, default=False)  # Run browser in headless mode
 
     # Proxy Settings
@@ -165,6 +170,12 @@ class Conversation(Base):
     # Human takeover - when human replies, AI bot pauses
     human_takeover = Column(Boolean, default=False)  # True if human has taken over
     human_takeover_at = Column(DateTime)  # When human takeover started
+
+    # DM Pairing - require approval for unknown senders
+    dm_approved = Column(Boolean, default=True)  # True = auto-approved (default for existing convos)
+
+    # Per-conversation model override (if set, uses this instead of bot's default)
+    model_override = Column(String(100), nullable=True)
 
     # Relationships
     bot_profile = relationship("BotProfile", back_populates="conversations")
@@ -1135,6 +1146,49 @@ def run_migrations():
                     print("Added ending_detection_enabled column to bot_profiles table")
                 except Exception as e:
                     print(f"Could not add ending_detection_enabled column: {e}")
+
+            # Add fallback_providers column if not exists
+            if 'fallback_providers' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE bot_profiles ADD COLUMN fallback_providers TEXT DEFAULT '[]'"))
+                    conn.commit()
+                    print("Added fallback_providers column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add fallback_providers column: {e}")
+
+            # Add voice_response_enabled column if not exists
+            if 'voice_response_enabled' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN voice_response_enabled BOOLEAN DEFAULT 0'))
+                    conn.commit()
+                    print("Added voice_response_enabled column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add voice_response_enabled column: {e}")
+
+            # Add dm_pairing_enabled column if not exists
+            if 'dm_pairing_enabled' not in existing_columns:
+                try:
+                    conn.execute(text('ALTER TABLE bot_profiles ADD COLUMN dm_pairing_enabled BOOLEAN DEFAULT 0'))
+                    conn.commit()
+                    print("Added dm_pairing_enabled column to bot_profiles table")
+                except Exception as e:
+                    print(f"Could not add dm_pairing_enabled column: {e}")
+
+        # Add dm_approved to conversations table
+        with engine.connect() as conn:
+            try:
+                result = conn.execute(text("PRAGMA table_info(conversations)"))
+                conv_columns = {row[1] for row in result.fetchall()}
+                if 'dm_approved' not in conv_columns:
+                    conn.execute(text('ALTER TABLE conversations ADD COLUMN dm_approved BOOLEAN DEFAULT 1'))
+                    conn.commit()
+                    print("Added dm_approved column to conversations table")
+                if 'model_override' not in conv_columns:
+                    conn.execute(text('ALTER TABLE conversations ADD COLUMN model_override VARCHAR(100)'))
+                    conn.commit()
+                    print("Added model_override column to conversations table")
+            except Exception as e:
+                print(f"Could not add conversation columns: {e}")
 
         # Check if scheduled_contents table exists
         if 'scheduled_contents' in existing_tables:

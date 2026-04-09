@@ -247,6 +247,22 @@ class AiCoderManager:
                 except Exception as e:
                     logger.warning(f"Failed to save session title: {e}")
 
+            # Persist user message to DB (so it appears in replay)
+            try:
+                from app.database import SessionLocal, AiWorkspaceMessage
+                db = SessionLocal()
+                user_msg = AiWorkspaceMessage(
+                    session_id=session.db_session_id,
+                    role="user",
+                    content=message,
+                    message_type="user_message"
+                )
+                db.add(user_msg)
+                db.commit()
+                db.close()
+            except Exception as e:
+                logger.warning(f"Failed to persist user message: {e}")
+
             await session.broadcast({"type": "user_message", "content": message})
             await self._run_turn(session, message, is_first=is_first)
             return True

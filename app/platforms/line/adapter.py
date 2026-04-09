@@ -437,6 +437,8 @@ class LineAdapter(PlatformAdapter):
             if message_handler.is_human_takeover_active(db, conversation.id):
                 logger.debug(f"Bot {bot_profile_id}: Human takeover active, skipping AI")
                 return
+            if not message_handler.is_sender_approved(db, conversation.id):
+                return
 
             # Check group chat setting
             if is_group and not config.get("group_chat_enabled", True):

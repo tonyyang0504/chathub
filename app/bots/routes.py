@@ -124,6 +124,7 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
         ai_provider=bot.ai_provider or "openai",
         api_key_masked=mask_api_key(bot.api_key_encrypted),
         model=bot.model,
+        fallback_providers=bot.fallback_providers or "[]",
         system_prompt=bot.system_prompt or "",
         temperature=bot.temperature if bot.temperature is not None else 0.7,
         max_tokens=bot.max_tokens if bot.max_tokens is not None else 1000,
@@ -136,6 +137,8 @@ def bot_to_response(bot: BotProfile, db: Session) -> BotProfileResponse:
         group_chat_enabled=bot.group_chat_enabled,
         respond_to_all_in_group=bot.respond_to_all_in_group,
         ending_detection_enabled=bot.ending_detection_enabled if bot.ending_detection_enabled is not None else False,
+        dm_pairing_enabled=bot.dm_pairing_enabled if bot.dm_pairing_enabled is not None else False,
+        voice_response_enabled=bot.voice_response_enabled if bot.voice_response_enabled is not None else False,
         headless=bot.headless if bot.headless is not None else False,
         # Proxy Settings
         proxy_enabled=bot.proxy_enabled if bot.proxy_enabled is not None else False,
@@ -315,6 +318,10 @@ async def check_and_recover_bots(
                     config["webhook_verify_token"] = platform_config["webhook_verify_token"]
                 if platform_config.get("page_id"):
                     config["page_id"] = platform_config["page_id"]
+                if platform_config.get("slack_app_token"):
+                    config["slack_app_token"] = platform_config["slack_app_token"]
+                if platform_config.get("signal_api_url"):
+                    config["signal_api_url"] = platform_config["signal_api_url"]
 
                 # Map platform_token to adapter-specific config keys (non-Telegram platforms)
                 pt = config.get("platform_token")
@@ -400,6 +407,7 @@ async def create_bot(
         name=bot_data.name,
         platform_type=bot_data.platform_type,
         ai_provider=bot_data.ai_provider,
+        fallback_providers=bot_data.fallback_providers or "[]",
         api_key_encrypted=encrypted_key,
         model=bot_data.model,
         system_prompt=bot_data.system_prompt,
@@ -414,6 +422,8 @@ async def create_bot(
         group_chat_enabled=bot_data.group_chat_enabled,
         respond_to_all_in_group=bot_data.respond_to_all_in_group,
         ending_detection_enabled=bot_data.ending_detection_enabled,
+        dm_pairing_enabled=bot_data.dm_pairing_enabled,
+        voice_response_enabled=bot_data.voice_response_enabled,
         headless=bot_data.headless,
         # Proxy settings
         proxy_enabled=bot_data.proxy_enabled,
@@ -434,6 +444,10 @@ async def create_bot(
         platform_config["telegram_api_hash"] = bot_data.telegram_api_hash
     if bot_data.app_secret:
         platform_config["app_secret"] = bot_data.app_secret
+    if bot_data.slack_app_token:
+        platform_config["slack_app_token"] = bot_data.slack_app_token
+    if bot_data.signal_api_url:
+        platform_config["signal_api_url"] = bot_data.signal_api_url
     bot.platform_config = json.dumps(platform_config)
 
     db.add(bot)
@@ -472,6 +486,8 @@ async def update_bot(
         bot.platform_type = bot_data.platform_type
     if bot_data.ai_provider is not None:
         bot.ai_provider = bot_data.ai_provider
+    if bot_data.fallback_providers is not None:
+        bot.fallback_providers = bot_data.fallback_providers
     if bot_data.api_key is not None:
         bot.api_key_encrypted = encrypt_string(bot_data.api_key)
     if bot_data.model is not None:
@@ -500,6 +516,10 @@ async def update_bot(
         bot.respond_to_all_in_group = bot_data.respond_to_all_in_group
     if bot_data.ending_detection_enabled is not None:
         bot.ending_detection_enabled = bot_data.ending_detection_enabled
+    if bot_data.dm_pairing_enabled is not None:
+        bot.dm_pairing_enabled = bot_data.dm_pairing_enabled
+    if bot_data.voice_response_enabled is not None:
+        bot.voice_response_enabled = bot_data.voice_response_enabled
     if bot_data.headless is not None:
         bot.headless = bot_data.headless
     # Proxy settings
@@ -526,6 +546,12 @@ async def update_bot(
         config_changed = True
     if bot_data.app_secret is not None:
         platform_config["app_secret"] = bot_data.app_secret
+        config_changed = True
+    if bot_data.slack_app_token is not None:
+        platform_config["slack_app_token"] = bot_data.slack_app_token
+        config_changed = True
+    if bot_data.signal_api_url is not None:
+        platform_config["signal_api_url"] = bot_data.signal_api_url
         config_changed = True
     if config_changed:
         bot.platform_config = json.dumps(platform_config)
@@ -609,6 +635,7 @@ async def start_bot(
         config = {
             "platform_type": platform_type,
             "ai_provider": bot.ai_provider or "openai",
+            "fallback_providers": bot.fallback_providers or "[]",
             "api_key_encrypted": bot.api_key_encrypted,
             "model": bot.model,
             "system_prompt": bot.system_prompt,
@@ -651,6 +678,10 @@ async def start_bot(
             config["instagram_app_secret"] = platform_config["instagram_app_secret"]
         if platform_config.get("webhook_verify_token"):
             config["webhook_verify_token"] = platform_config["webhook_verify_token"]
+        if platform_config.get("slack_app_token"):
+            config["slack_app_token"] = platform_config["slack_app_token"]
+        if platform_config.get("signal_api_url"):
+            config["signal_api_url"] = platform_config["signal_api_url"]
         if platform_config.get("page_id"):
             config["page_id"] = platform_config["page_id"]
 
