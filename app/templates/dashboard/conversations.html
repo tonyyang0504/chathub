@@ -2069,6 +2069,31 @@
         font-size: 0.9rem;
         line-height: 1.6;
         white-space: pre-wrap;
+        overflow: hidden;
+    }
+    .email-message-body iframe {
+        white-space: normal;
+    }
+    .email-message-actions {
+        padding: 8px 16px 12px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 8px;
+    }
+    .email-reply-form {
+        padding: 12px 16px;
+        border-top: 1px solid var(--border-color);
+        background: var(--hover-bg);
+    }
+    .email-reply-form textarea {
+        border-radius: 12px;
+        resize: vertical;
+        min-height: 80px;
+        font-size: 0.9rem;
+    }
+    .email-reply-form textarea:focus {
+        border-color: #3b82f6;
+        box-shadow: none;
         word-wrap: break-word;
     }
 </style>
@@ -2409,8 +2434,19 @@
             }
 
             // Show last message preview if available
-            const preview = conv.last_message
-                ? `<span class="text-truncate">${escapeHtml(conv.last_message)}</span>`
+            let previewMsg = conv.last_message || '';
+            // Strip email HTML data from preview
+            if (previewMsg.includes('<!--EMAIL_HTML-->')) {
+                previewMsg = previewMsg.split('<!--EMAIL_HTML-->')[0].trim();
+            }
+            // Strip Subject: prefix from preview
+            previewMsg = previewMsg.replace(/^Subject:.*?\n\n/s, '').trim();
+            // For email conversations, show "Subject: ..." prefix
+            if (conv.bot_platform_type === 'email' && conv.chat_name && !previewMsg.startsWith('Subject:')) {
+                previewMsg = `Subject: ${conv.chat_name.substring(0, 40)}${conv.chat_name.length > 40 ? '...' : ''}`;
+            }
+            const preview = previewMsg
+                ? `<span class="text-truncate">${escapeHtml(previewMsg)}</span>`
                 : `<span>${conv.message_count || 0} messages</span>`;
 
             const avatarStyle = 'background: #dfe5e7;';
@@ -3006,15 +3042,25 @@
         const htmlIdx = rawContent.indexOf(htmlMarker);
 
         if (htmlIdx !== -1) {
-            // Has embedded HTML email — render in sandboxed iframe using srcdoc
+            // Has embedded HTML email — render in sandboxed iframe
             const base64Html = rawContent.substring(htmlIdx + htmlMarker.length).trim();
             try {
-                const decodedHtml = atob(base64Html);
-                // Escape for srcdoc attribute (double-escape quotes)
+                let decodedHtml = atob(base64Html);
+                // Inject <base target="_blank"> so all links open in new tab
+                // Also inject a style to make images responsive
+                const headInject = `<base target="_blank"><style>img{max-width:100%;height:auto;}body{margin:0;padding:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;}</style>`;
+                if (decodedHtml.includes('<head>')) {
+                    decodedHtml = decodedHtml.replace('<head>', '<head>' + headInject);
+                } else if (decodedHtml.includes('<html>')) {
+                    decodedHtml = decodedHtml.replace('<html>', '<html><head>' + headInject + '</head>');
+                } else {
+                    decodedHtml = headInject + decodedHtml;
+                }
+                // Escape for srcdoc attribute
                 const srcdocHtml = decodedHtml
                     .replace(/&/g, '&amp;')
                     .replace(/"/g, '&quot;');
-                bodyHtml = `<iframe srcdoc="${srcdocHtml}" sandbox="allow-same-origin" style="width:100%;border:none;min-height:200px;max-height:600px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+20,600)+'px'"></iframe>`;
+                bodyHtml = `<iframe srcdoc="${srcdocHtml}" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" style="width:100%;border:none;min-height:200px;max-height:600px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+20,600)+'px'"></iframe>`;
             } catch(e) {
                 let plainText = rawContent.substring(0, htmlIdx).trim().replace(/^Subject:.*?\n\n/s, '');
                 bodyHtml = escapeHtml(plainText);
@@ -3024,6 +3070,14 @@
             let body = rawContent.replace(/^Subject:.*?\n\n/s, '');
             bodyHtml = escapeHtml(body);
         }
+
+        // Reply button (only for incoming emails)
+        const replyBtn = !isOutgoing ? `
+            <div class="email-message-actions">
+                <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="showEmailReply(this)">
+                    <i class="bi bi-reply me-1"></i>Reply
+                </button>
+            </div>` : '';
 
         return `
         <div class="email-message-card ${cardClass}">
@@ -3036,7 +3090,65 @@
                 <div class="email-message-time">${time}</div>
             </div>
             <div class="email-message-body">${bodyHtml}</div>
+            ${replyBtn}
         </div>`;
+    }
+
+    function showEmailReply(btn) {
+        const card = btn.closest('.email-message-card');
+        // Remove any existing reply forms
+        document.querySelectorAll('.email-reply-form').forEach(f => f.remove());
+        // Add reply form below the actions
+        const form = document.createElement('div');
+        form.className = 'email-reply-form';
+        form.innerHTML = `
+            <textarea class="form-control mb-2" placeholder="Type your reply..." id="emailReplyText"></textarea>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-primary rounded-pill" onclick="sendEmailReply(this)">
+                    <i class="bi bi-send me-1"></i>Send Reply
+                </button>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-reply-form').remove()">
+                    Cancel
+                </button>
+            </div>`;
+        card.appendChild(form);
+        form.querySelector('textarea').focus();
+    }
+
+    async function sendEmailReply(btn) {
+        const form = btn.closest('.email-reply-form');
+        const text = form.querySelector('textarea').value.trim();
+        if (!text) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+
+        try {
+            const convId = currentConversation?.id;
+            if (!convId) throw new Error('No conversation selected');
+
+            const res = await fetch(`/api/conversations/${convId}/send`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: text})
+            });
+
+            if (res.ok) {
+                form.remove();
+                showToast('Reply sent', 'success');
+                // Reload messages to show the sent reply
+                loadMessages(convId);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to send reply', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send me-1"></i>Send Reply';
+            }
+        } catch(e) {
+            showToast('Failed to send reply', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send me-1"></i>Send Reply';
+        }
     }
 
     function createMessageHTML(msg, isFirstInSeries = false, isGroup = false) {
