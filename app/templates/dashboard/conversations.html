@@ -2737,7 +2737,14 @@
                 <div class="message-header-info" style="cursor: pointer;" onclick="toggleContactInfo()">
                     <div class="message-header-name">${currentConversation.display_name || currentConversation.chat_name || currentConversation.chat_id}</div>
                     <div class="message-header-status" id="chatStatus">
-                        ${currentIsGroup ? 'Group' : 'Private chat'} • ${currentConversation.message_count || 0} messages
+                        ${isEmailConv
+                            ? `<i class="bi bi-envelope me-1"></i>${(() => {
+                                const cid = currentConversation.chat_id || '';
+                                const email = cid.includes(':') && cid.split(':')[0].includes('@') ? cid.split(':')[0] : '';
+                                return email ? email + ' • ' : '';
+                            })()}${currentConversation.message_count || 0} emails`
+                            : `${currentIsGroup ? 'Group' : 'Private chat'} • ${currentConversation.message_count || 0} messages`
+                        }
                     </div>
                 </div>
                 <div class="header-actions">
@@ -2915,7 +2922,13 @@
     function updateChatStatus() {
         const statusEl = document.getElementById('chatStatus');
         if (statusEl && currentConversation) {
-            statusEl.textContent = `${isGroupChat(currentConversation) ? 'Group' : 'Private chat'} • ${currentConversation.message_count || 0} messages`;
+            if (isEmailConversation()) {
+                const cid = currentConversation.chat_id || '';
+                const emailAddr = cid.includes(':') && cid.split(':')[0].includes('@') ? cid.split(':')[0] : '';
+                statusEl.innerHTML = `<i class="bi bi-envelope me-1"></i>${emailAddr ? emailAddr + ' • ' : ''}${currentConversation.message_count || 0} emails`;
+            } else {
+                statusEl.textContent = `${isGroupChat(currentConversation) ? 'Group' : 'Private chat'} • ${currentConversation.message_count || 0} messages`;
+            }
         }
     }
 
@@ -5117,9 +5130,20 @@
         const panel = document.getElementById('contactInfoPanel');
         const contactIsGroup = isGroupChat(currentConversation);
 
+        // Check if email conversation
+        const isEmailInfo = currentConversation.bot_platform_type === 'email';
+        const cid = currentConversation.chat_id || '';
+        const emailAddr = cid.includes(':') && cid.split(':')[0].includes('@') ? cid.split(':')[0] : '';
+        const emailSubject = cid.includes(':') ? cid.split(':', 1)[1] || '' : '';
+
         // Avatar content
         let avatarContent;
-        if (currentConversation.profile_pic) {
+        if (isEmailInfo) {
+            const name = currentConversation.display_name || currentConversation.chat_name || '?';
+            const initial = name.charAt(0).toUpperCase();
+            const color = getEmailAvatarColor(name);
+            avatarContent = `<div style="width: 80px; height: 80px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${initial}</div>`;
+        } else if (currentConversation.profile_pic) {
             avatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <span class="avatar-fallback" style="display:none;">${contactIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
         } else {
@@ -5128,9 +5152,60 @@
                 : '<i class="bi bi-person-fill"></i>';
         }
 
-        // Get phone number - use dedicated phone field, or try to extract from chat_id/chat_name
-        const phoneNumber = currentConversation.phone || formatPhoneNumber(currentConversation.chat_id) || formatPhoneNumber(currentConversation.chat_name);
         const displayName = currentConversation.display_name || currentConversation.chat_name || 'Unknown';
+
+        if (isEmailInfo) {
+            // Email-specific contact info
+            panel.innerHTML = `
+                <div class="contact-info-header">
+                    <button class="close-btn" onclick="closeContactInfo()" aria-label="Close"></button>
+                    <h5><i class="bi bi-envelope me-2"></i>Email Info</h5>
+                </div>
+                <div class="contact-info-body">
+                    <div class="contact-info-profile">
+                        <div class="contact-info-avatar">
+                            ${avatarContent}
+                        </div>
+                        <div class="contact-info-name">${escapeHtml(displayName)}</div>
+                    </div>
+
+                    <div class="contact-info-section">
+                        <div class="contact-info-section-title"><i class="bi bi-envelope me-1"></i>Email Address</div>
+                        <div class="contact-info-section-content">${escapeHtml(emailAddr) || 'Not available'}</div>
+                    </div>
+
+                    <div class="contact-info-section">
+                        <div class="contact-info-section-title"><i class="bi bi-chat-square-text me-1"></i>Subject</div>
+                        <div class="contact-info-section-content">${escapeHtml(currentConversation.chat_name || 'No subject')}</div>
+                    </div>
+
+                    <div class="contact-info-section">
+                        <div class="contact-info-section-title"><i class="bi bi-robot me-1"></i>Handled by Bot</div>
+                        <div class="contact-info-section-content">${bot?.name || 'Unknown Bot'}</div>
+                    </div>
+
+                    <div class="contact-info-section">
+                        <div class="contact-info-section-title"><i class="bi bi-chat-dots me-1"></i>Emails in Thread</div>
+                        <div class="contact-info-section-content">${currentConversation.message_count || 0} emails</div>
+                    </div>
+
+                    <div class="contact-info-section">
+                        <div class="contact-info-section-title"><i class="bi bi-calendar me-1"></i>First Email</div>
+                        <div class="contact-info-section-content">${currentConversation.created_at ? new Date(currentConversation.created_at).toLocaleString() : 'Unknown'}</div>
+                    </div>
+
+                    <div class="contact-info-section">
+                        <div class="contact-info-section-title"><i class="bi bi-clock me-1"></i>Last Activity</div>
+                        <div class="contact-info-section-content">${currentConversation.last_message_at ? new Date(currentConversation.last_message_at).toLocaleString() : 'Unknown'}</div>
+                    </div>
+                </div>
+            `;
+            panel.classList.add('show');
+            return;
+        }
+
+        // Non-email: original contact info
+        const phoneNumber = currentConversation.phone || formatPhoneNumber(currentConversation.chat_id) || formatPhoneNumber(currentConversation.chat_name);
         const chatId = currentConversation.chat_id || 'Not available';
 
         panel.innerHTML = `
