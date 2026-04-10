@@ -2564,8 +2564,14 @@
                 avatarStyle = 'background: transparent; overflow: hidden;';
                 avatarContent = getEmailAvatarHtml(name, email, 44);
             } else if (conv.profile_pic) {
-                avatarContent = `<img src="${conv.profile_pic}" alt="${conv.display_name || conv.chat_name || 'Chat'}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <span class="avatar-fallback" style="display:none;">${convIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
+                const fbName = conv.display_name || conv.chat_name || '?';
+                const fbColor = getEmailAvatarColor(fbName);
+                const fbInitial = fbName.charAt(0).toUpperCase();
+                avatarStyle = 'background: transparent; overflow: hidden;';
+                avatarContent = `<div style="width:44px;height:44px;border-radius:50%;background:${fbColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${44*0.45}px;position:relative;overflow:hidden;">
+                    <span>${fbInitial}</span>
+                    <img src="${conv.profile_pic}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
+                </div>`;
             } else {
                 // Colored letter avatar for all platforms without profile pic
                 const fallbackName = conv.display_name || conv.chat_name || '?';
@@ -2717,9 +2723,14 @@
             headerAvatarContent = getEmailAvatarHtml(name, hEmail, 40);
             headerAvatarStyle = 'background: transparent; overflow: hidden;';
         } else if (currentConversation.profile_pic) {
-            headerAvatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name || 'Chat'}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <span class="avatar-fallback" style="display:none;">${currentIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
-            headerAvatarStyle = 'background: #dfe5e7;';
+            const hfName = currentConversation.display_name || currentConversation.chat_name || '?';
+            const hfColor = getEmailAvatarColor(hfName);
+            const hfInitial = hfName.charAt(0).toUpperCase();
+            headerAvatarContent = `<div style="width:40px;height:40px;border-radius:50%;background:${hfColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${40*0.45}px;position:relative;overflow:hidden;">
+                <span>${hfInitial}</span>
+                <img src="${currentConversation.profile_pic}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
+            </div>`;
+            headerAvatarStyle = 'background: transparent; overflow: hidden;';
         } else {
             const hName = currentConversation.display_name || currentConversation.chat_name || '?';
             if (currentIsGroup) {
@@ -5177,8 +5188,13 @@
             const color = getEmailAvatarColor(name);
             avatarContent = getEmailAvatarHtml(name, emailAddr, 140);
         } else if (currentConversation.profile_pic) {
-            avatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <span class="avatar-fallback" style="display:none;">${contactIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
+            const cifName = currentConversation.display_name || currentConversation.chat_name || '?';
+            const cifColor = getEmailAvatarColor(cifName);
+            const cifInitial = cifName.charAt(0).toUpperCase();
+            avatarContent = `<div style="width:140px;height:140px;border-radius:50%;background:${cifColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:3.5rem;position:relative;overflow:hidden;">
+                <span>${cifInitial}</span>
+                <img src="${currentConversation.profile_pic}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
+            </div>`;
         } else {
             const ciName = currentConversation.display_name || currentConversation.chat_name || '?';
             if (contactIsGroup) {
