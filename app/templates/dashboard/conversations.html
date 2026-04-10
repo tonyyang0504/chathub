@@ -5243,10 +5243,6 @@
         menu.className = 'header-dropdown';
         const menuIsGroup = currentConversation && isGroupChat(currentConversation);
         menu.innerHTML = `
-            <div class="header-dropdown-item" onclick="toggleContactInfo(); closeAllMenus();">
-                <i class="bi bi-${menuIsGroup ? 'people' : 'person'}"></i>
-                <span>${menuIsGroup ? 'Group info' : 'Contact info'}</span>
-            </div>
             <div class="header-dropdown-item" onclick="summarizeConversation(); closeAllMenus();">
                 <i class="bi bi-stars"></i>
                 <span>AI Summary</span>
