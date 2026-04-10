@@ -451,6 +451,9 @@ def _build_message_dict(
         OpenAI message dict
     """
     content = msg.content or ""
+    # Strip email HTML data from AI context (only use plain text part)
+    if "<!--EMAIL_HTML-->" in content:
+        content = content.split("<!--EMAIL_HTML-->")[0].strip()
     if sender_prefix and msg.role == "user":
         content = f"[{sender_prefix}]: {content}"
 

@@ -3000,10 +3000,30 @@
         const cardClass = isOutgoing ? 'outgoing' : 'incoming';
         const time = new Date(msg.timestamp).toLocaleString();
 
-        // Strip "Subject: ..." prefix from content for display
-        let body = msg.content || '';
-        body = body.replace(/^Subject:.*?\n\n/s, '');
-        body = escapeHtml(body);
+        let rawContent = msg.content || '';
+        let bodyHtml = '';
+        const htmlMarker = '<!--EMAIL_HTML-->';
+        const htmlIdx = rawContent.indexOf(htmlMarker);
+
+        if (htmlIdx !== -1) {
+            // Has embedded HTML email — render in sandboxed iframe using srcdoc
+            const base64Html = rawContent.substring(htmlIdx + htmlMarker.length).trim();
+            try {
+                const decodedHtml = atob(base64Html);
+                // Escape for srcdoc attribute (double-escape quotes)
+                const srcdocHtml = decodedHtml
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;');
+                bodyHtml = `<iframe srcdoc="${srcdocHtml}" sandbox="allow-same-origin" style="width:100%;border:none;min-height:200px;max-height:600px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+20,600)+'px'"></iframe>`;
+            } catch(e) {
+                let plainText = rawContent.substring(0, htmlIdx).trim().replace(/^Subject:.*?\n\n/s, '');
+                bodyHtml = escapeHtml(plainText);
+            }
+        } else {
+            // Plain text only
+            let body = rawContent.replace(/^Subject:.*?\n\n/s, '');
+            bodyHtml = escapeHtml(body);
+        }
 
         return `
         <div class="email-message-card ${cardClass}">
@@ -3015,7 +3035,7 @@
                 </div>
                 <div class="email-message-time">${time}</div>
             </div>
-            <div class="email-message-body">${body}</div>
+            <div class="email-message-body">${bodyHtml}</div>
         </div>`;
     }
 

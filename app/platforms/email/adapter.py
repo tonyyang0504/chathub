@@ -334,6 +334,7 @@ class EmailAdapter(PlatformAdapter):
                     continue
 
                 body = self._extract_body(msg)
+                html_body = self._extract_html_body(msg)
                 if not body:
                     body = f"[Email with subject: {subject}]"
 
@@ -354,6 +355,7 @@ class EmailAdapter(PlatformAdapter):
                     "from_name": from_name,
                     "subject": subject,
                     "content": content,
+                    "html_body": html_body,
                     "message_id": message_id,
                     "references": references,
                     "timestamp": timestamp,
@@ -369,7 +371,7 @@ class EmailAdapter(PlatformAdapter):
 
     async def _handle_email(self, bot_id: int, state: dict, from_addr: str, from_name: str,
                              subject: str, content: str, message_id: str, references: str,
-                             timestamp: datetime):
+                             timestamp: datetime, html_body: str = ""):
         """Handle a single inbound email."""
         instance = state.get("instance")
         if not instance:
@@ -400,11 +402,19 @@ class EmailAdapter(PlatformAdapter):
                 is_group=False,
             )
 
-            # Save user message
+            # Save user message — store HTML body if available for rich display
+            # Plain text content is used for AI context
+            # HTML body is base64-encoded and appended after <!--EMAIL_HTML--> marker
+            display_content = content
+            if html_body:
+                import base64
+                encoded_html = base64.b64encode(html_body.encode('utf-8')).decode('ascii')
+                display_content = content + f"\n<!--EMAIL_HTML-->{encoded_html}"
+
             save_user_message(
                 db,
                 conversation.id,
-                content,
+                display_content,
                 sender_name=from_name,
                 sender_id=from_addr,
                 platform_message_id=message_id,
@@ -565,6 +575,26 @@ class EmailAdapter(PlatformAdapter):
             else:
                 result.append(part)
         return " ".join(result)
+
+    @staticmethod
+    def _extract_html_body(msg: email.message.Message) -> str:
+        """Extract raw HTML body from email for rich display."""
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_type() == "text/html":
+                    disposition = str(part.get("Content-Disposition", ""))
+                    if "attachment" in disposition:
+                        continue
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        charset = part.get_content_charset() or "utf-8"
+                        return payload.decode(charset, errors="replace")
+        elif msg.get_content_type() == "text/html":
+            payload = msg.get_payload(decode=True)
+            if payload:
+                charset = msg.get_content_charset() or "utf-8"
+                return payload.decode(charset, errors="replace")
+        return ""
 
     @staticmethod
     def _extract_body(msg: email.message.Message) -> str:
