@@ -757,11 +757,13 @@ async def send_manual_message(
     if not bot_profile:
         raise HTTPException(status_code=404, detail="Bot profile not found")
 
-    # Check if bot is running and connected
+    # Check if bot is running
     from app.bots.manager import bot_manager
     bot_instance = bot_manager.get_instance(bot_profile.id)
     if not bot_instance or not bot_instance.is_running:
-        raise HTTPException(status_code=400, detail="Bot is not running. Please start the bot first.")
+        # For email and other non-realtime platforms, check DB flag as fallback
+        if not bot_profile.is_running:
+            raise HTTPException(status_code=400, detail="Bot is not running. Please start the bot first.")
 
     # Send the message via the correct platform adapter
     try:
