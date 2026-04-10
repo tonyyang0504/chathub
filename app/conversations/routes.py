@@ -747,6 +747,71 @@ Rules:
         raise HTTPException(status_code=500, detail=f"Failed to generate reply: {str(e)}")
 
 
+@router.post("/{conversation_id}/summarize-thread")
+async def summarize_email_thread(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Generate an AI summary of the email thread."""
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
+
+    bot_profile = db.query(BotProfile).filter(BotProfile.id == conversation.bot_profile_id).first()
+    if not bot_profile or not bot_profile.api_key_encrypted:
+        raise HTTPException(status_code=400, detail="No AI API key configured")
+
+    messages = db.query(Message).filter(
+        Message.conversation_id == conversation_id
+    ).order_by(Message.timestamp.asc()).all()
+
+    if not messages:
+        raise HTTPException(status_code=400, detail="No messages to summarize")
+
+    # Build thread context
+    thread_parts = []
+    for msg in messages:
+        content = msg.content or ""
+        if "<!--EMAIL_HTML-->" in content:
+            content = content.split("<!--EMAIL_HTML-->")[0].strip()
+        content = content.replace("Subject:", "").strip() if content.startswith("Subject:") else content
+        role = "Sender" if msg.role == "user" else "Bot Reply"
+        sender = msg.sender_name or role
+        thread_parts.append(f"[{role} - {sender}]:\n{content[:500]}")
+
+    thread_text = "\n\n---\n\n".join(thread_parts)
+
+    system_prompt = """You are an email thread summarizer. Analyze the email thread and provide a concise summary.
+
+Include:
+- Main topic/purpose of the thread
+- Key points discussed
+- Any action items or decisions made
+- Current status (who needs to respond, what's pending)
+
+Keep the summary brief (3-5 bullet points). Use clear, direct language."""
+
+    ai_messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Summarize this email thread:\n\n{thread_text}"}
+    ]
+
+    try:
+        from app.ai.factory import get_ai_provider
+        from app.auth.utils import decrypt_string
+        import asyncio
+
+        api_key = decrypt_string(bot_profile.api_key_encrypted)
+        provider = get_ai_provider(bot_profile.ai_provider, api_key, bot_profile.model)
+        response = await asyncio.to_thread(provider.chat_completion, ai_messages)
+        summary = response.content if hasattr(response, 'content') else str(response)
+
+        return {"summary": summary}
+
+    except Exception as e:
+        logger.error(f"Thread summary error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(e)}")
+
+
 @router.post("/{conversation_id}/send-email")
 async def send_email_with_attachments(
     conversation_id: int,
