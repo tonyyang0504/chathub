@@ -753,6 +753,7 @@ async def send_email_with_attachments(
     message: str = Form(""),
     subject: str = Form(""),
     cc: str = Form(""),
+    forward_to: str = Form(""),
     files: List[UploadFile] = File(default=[]),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -768,7 +769,11 @@ async def send_email_with_attachments(
 
     # Extract email address from chat_id thread key
     chat_id = conversation.chat_id or ""
-    to_addr = chat_id.split(":")[0] if ":" in chat_id and "@" in chat_id.split(":")[0] else chat_id
+    # Use forward_to if provided (for forwarding), otherwise reply to original sender
+    if forward_to and "@" in forward_to:
+        to_addr = forward_to
+    else:
+        to_addr = chat_id.split(":")[0] if ":" in chat_id and "@" in chat_id.split(":")[0] else chat_id
 
     if not to_addr or "@" not in to_addr:
         raise HTTPException(status_code=400, detail="Invalid recipient email address")

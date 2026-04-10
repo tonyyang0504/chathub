@@ -3320,6 +3320,9 @@
                     <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="emailReplyTo(${msg.id || 0})">
                         <i class="bi bi-reply me-1"></i>Reply
                     </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="emailForward(${msg.id || 0})">
+                        <i class="bi bi-forward me-1"></i>Forward
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleEmailCard(this.closest('.email-card'))">
                         <i class="bi bi-chevron-up me-1"></i>Collapse
                     </button>
@@ -3331,6 +3334,138 @@
     function toggleEmailCard(cardEl) {
         if (!cardEl) return;
         cardEl.classList.toggle('expanded');
+    }
+
+    function emailForward(msgId) {
+        // Remove any existing reply forms
+        document.querySelectorAll('.email-inline-reply').forEach(f => f.remove());
+        emailAttachmentFiles = [];
+
+        const cards = document.querySelectorAll('.email-card');
+        let targetCard = null;
+        cards.forEach(card => {
+            if (card.dataset.msgId == msgId) targetCard = card;
+        });
+        if (!targetCard) targetCard = cards[cards.length - 1];
+        if (!targetCard) return;
+
+        // Get original email content for forwarding
+        const subject = currentConversation?.chat_name || '';
+        const fwdSubject = subject.startsWith('Fwd:') ? subject : (subject ? 'Fwd: ' + subject : 'Fwd:');
+
+        // Get the original sender and content
+        const senderEl = targetCard.querySelector('.email-sender-name');
+        const originalSender = senderEl ? senderEl.textContent.trim() : '';
+        const dateEl = targetCard.querySelector('.email-date');
+        const originalDate = dateEl ? dateEl.textContent.trim() : '';
+
+        let originalBody = '';
+        const expandedBody = targetCard.querySelector('.email-expanded-body');
+        if (expandedBody) {
+            const plainEl = expandedBody.querySelector('.plain-text');
+            if (plainEl) originalBody = plainEl.textContent.trim();
+        }
+
+        const forwardedContent = `---------- Forwarded message ----------\nFrom: ${originalSender}\nDate: ${originalDate}\nSubject: ${subject}\n\n${originalBody}`;
+
+        const form = document.createElement('div');
+        form.className = 'email-inline-reply';
+        form.style.cssText = 'padding: 16px 20px; border-top: 1px solid var(--border-color); background: var(--card-bg); border-radius: 0 0 8px 8px;';
+        form.innerHTML = `
+            <div style="margin-bottom: 10px; font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                <i class="bi bi-forward me-1"></i>Forward
+            </div>
+            <div class="mb-2">
+                <div class="d-flex align-items-center gap-2 mb-1" style="font-size: 0.85rem;">
+                    <span class="text-muted" style="min-width: 50px;">To:</span>
+                    <input type="text" class="form-control form-control-sm" placeholder="Enter recipient email..." id="emailReplyTo" style="border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-1" style="font-size: 0.85rem;">
+                    <span class="text-muted" style="min-width: 50px;">Cc:</span>
+                    <input type="text" class="form-control form-control-sm" placeholder="Add CC recipients..." id="emailReplyCc" style="border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                    <span class="text-muted" style="min-width: 50px;">Subject:</span>
+                    <input type="text" class="form-control form-control-sm" value="${escapeHtml(fwdSubject)}" id="emailReplySubject" style="border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+            </div>
+            <textarea class="form-control mb-2" id="emailReplyBody" placeholder="Add a message..." style="border-radius: 8px; resize: vertical; min-height: 80px; font-size: 0.9rem; border: 1px solid var(--border-color);"></textarea>
+            <details class="mb-2" open style="font-size: 0.8rem; color: var(--text-muted);">
+                <summary style="cursor: pointer;">Forwarded message</summary>
+                <div style="padding: 8px; margin-top: 4px; border-left: 3px solid var(--border-color); background: var(--hover-bg); border-radius: 4px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-size: 0.8rem;">${escapeHtml(forwardedContent.substring(0, 1000))}${forwardedContent.length > 1000 ? '...' : ''}</div>
+            </details>
+            <div id="emailAttachmentList" style="display: none;" class="mb-2 d-flex flex-wrap gap-1"></div>
+            <input type="file" id="emailAttachmentInput" multiple style="display: none;" onchange="handleEmailAttachments(this)">
+            <div class="d-flex gap-2 justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="emailAttachmentFiles=[]; this.closest('.email-inline-reply').remove()">
+                        <i class="bi bi-x me-1"></i>Discard
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('emailAttachmentInput').click()">
+                        <i class="bi bi-paperclip me-1"></i>Attach
+                    </button>
+                </div>
+                <button class="btn btn-sm rounded-pill px-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailForward(this)">
+                    <i class="bi bi-send me-1"></i>Forward
+                </button>
+            </div>`;
+        targetCard.appendChild(form);
+        form.querySelector('#emailReplyTo').focus();
+    }
+
+    async function sendEmailForward(btn) {
+        const form = btn.closest('.email-inline-reply');
+        const toInput = form.querySelector('#emailReplyTo');
+        const to = toInput ? toInput.value.trim() : '';
+        if (!to || !to.includes('@')) { showToast('Enter a valid recipient email', 'warning'); return; }
+
+        const textarea = form.querySelector('#emailReplyBody');
+        const subjectInput = form.querySelector('#emailReplySubject');
+        const ccInput = form.querySelector('#emailReplyCc');
+
+        // Get the forwarded content from the details section
+        const fwdDiv = form.querySelector('details div');
+        const fwdContent = fwdDiv ? fwdDiv.textContent : '';
+        const userMsg = textarea ? textarea.value.trim() : '';
+        const fullBody = userMsg ? userMsg + '\n\n' + fwdContent : fwdContent;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Forwarding...';
+
+        try {
+            const convId = currentConversation?.id;
+            if (!convId) throw new Error('No conversation selected');
+
+            const formData = new FormData();
+            formData.append('message', fullBody);
+            formData.append('subject', subjectInput ? subjectInput.value.trim() : '');
+            formData.append('cc', ccInput ? ccInput.value.trim() : '');
+            formData.append('forward_to', to);  // Override recipient
+            for (const file of emailAttachmentFiles) {
+                formData.append('files', file);
+            }
+
+            const res = await fetch(`/api/conversations/${convId}/send-email`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                emailAttachmentFiles = [];
+                form.remove();
+                showToast('Email forwarded', 'success');
+                loadMessages(convId);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to forward', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send me-1"></i>Forward';
+            }
+        } catch(e) {
+            showToast('Failed to forward email', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send me-1"></i>Forward';
+        }
     }
 
     function emailReplyTo(msgId) {
