@@ -433,7 +433,8 @@ class EmailAdapter(PlatformAdapter):
 
                 from app.ai.factory import get_ai_provider
                 provider = get_ai_provider(bot.ai_provider, ai_key, bot.model)
-                reply = await provider.chat_completion(ai_messages)
+                response = await asyncio.to_thread(provider.chat_completion, ai_messages)
+                reply = response.content if hasattr(response, 'content') else str(response)
 
                 if reply:
                     import random
