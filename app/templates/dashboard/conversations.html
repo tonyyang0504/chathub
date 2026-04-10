@@ -2035,7 +2035,7 @@
         display: none !important;
     }
     .email-thread-view {
-        max-width: 900px;
+        max-width: 100%;
         margin: 0 auto;
         padding: 20px;
     }
@@ -2550,10 +2550,20 @@
         }
 
         chatList.innerHTML = filtered.map(conv => {
-            // Avatar: use profile picture if available, otherwise default icon (like WhatsApp Web)
+            // Avatar: colored letter for email, profile pic or icon for others
             let avatarContent;
+            let avatarStyle = 'background: #dfe5e7;';
             const convIsGroup = isGroupChat(conv);
-            if (conv.profile_pic) {
+            const isEmail = conv.bot_platform_type === 'email';
+
+            if (isEmail) {
+                // Colored letter avatar matching email card style
+                const name = conv.display_name || conv.chat_name || '?';
+                const initial = name.charAt(0).toUpperCase();
+                const color = getEmailAvatarColor(name);
+                avatarStyle = `background: ${color};`;
+                avatarContent = `<span style="color: white; font-weight: 600; font-size: 1.1rem;">${initial}</span>`;
+            } else if (conv.profile_pic) {
                 avatarContent = `<img src="${conv.profile_pic}" alt="${conv.display_name || conv.chat_name || 'Chat'}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <span class="avatar-fallback" style="display:none;">${convIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
             } else {
@@ -2578,7 +2588,7 @@
                 ? `<span class="text-truncate">${escapeHtml(previewMsg)}</span>`
                 : `<span>${conv.message_count || 0} messages</span>`;
 
-            const avatarStyle = 'background: #dfe5e7;';
+            if (!isEmail && !conv.profile_pic) avatarStyle = 'background: #dfe5e7;';
 
             return `
                 <div class="chat-item ${currentConversation?.id === conv.id ? 'active' : ''}"
