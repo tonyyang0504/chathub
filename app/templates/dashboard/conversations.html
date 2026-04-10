@@ -2557,12 +2557,12 @@
             const isEmail = conv.bot_platform_type === 'email';
 
             if (isEmail) {
-                // Colored letter avatar matching email card style
+                // Email avatar with Gravatar/favicon fallback
                 const name = conv.display_name || conv.chat_name || '?';
-                const initial = name.charAt(0).toUpperCase();
-                const color = getEmailAvatarColor(name);
-                avatarStyle = `background: ${color};`;
-                avatarContent = `<span style="color: white; font-weight: 600; font-size: 1.1rem;">${initial}</span>`;
+                const cid = conv.chat_id || '';
+                const email = cid.includes(':') && cid.split(':')[0].includes('@') ? cid.split(':')[0] : '';
+                avatarStyle = 'background: transparent; overflow: hidden;';
+                avatarContent = getEmailAvatarHtml(name, email, 44);
             } else if (conv.profile_pic) {
                 avatarContent = `<img src="${conv.profile_pic}" alt="${conv.display_name || conv.chat_name || 'Chat'}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <span class="avatar-fallback" style="display:none;">${convIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
@@ -2709,10 +2709,10 @@
 
         if (isEmailConv) {
             const name = currentConversation.display_name || currentConversation.chat_name || '?';
-            const initial = name.charAt(0).toUpperCase();
-            const color = getEmailAvatarColor(name);
-            headerAvatarContent = `<span style="color: white; font-weight: 600; font-size: 1.2rem;">${initial}</span>`;
-            headerAvatarStyle = `background: ${color};`;
+            const hCid = currentConversation.chat_id || '';
+            const hEmail = hCid.includes(':') && hCid.split(':')[0].includes('@') ? hCid.split(':')[0] : '';
+            headerAvatarContent = getEmailAvatarHtml(name, hEmail, 40);
+            headerAvatarStyle = 'background: transparent; overflow: hidden;';
         } else if (currentConversation.profile_pic) {
             headerAvatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name || 'Chat'}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <span class="avatar-fallback" style="display:none;">${currentIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
@@ -3241,6 +3241,42 @@
         return colors[Math.abs(hash) % colors.length];
     }
 
+    // MD5 hash for Gravatar (simple implementation)
+    function md5(string) {
+        // Use SubtleCrypto if available, otherwise return null
+        // For Gravatar we use a sync approach with a simple hash
+        let hash = 0;
+        for (let i = 0; i < string.length; i++) {
+            const char = string.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0;
+        }
+        return Math.abs(hash).toString(16).padStart(32, '0');
+    }
+
+    function getEmailAvatarHtml(name, email, size = 32) {
+        const initial = (name || '?').charAt(0).toUpperCase();
+        const color = getEmailAvatarColor(name || email);
+        const domain = email ? email.split('@')[1] : '';
+
+        // Try Gravatar first (with colored letter fallback via d=blank)
+        // Then try domain favicon
+        // Final fallback: colored letter
+        if (email) {
+            const emailHash = md5(email.trim().toLowerCase());
+            const gravatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=${size * 2}&d=blank`;
+            const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 2}` : '';
+
+            return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${size * 0.45}px;position:relative;overflow:hidden;flex-shrink:0;">
+                <span class="email-avatar-initial">${initial}</span>
+                ${faviconUrl ? `<img src="${faviconUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">` : ''}
+                <img src="${gravatarUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
+            </div>`;
+        }
+
+        return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${size * 0.45}px;flex-shrink:0;">${initial}</div>`;
+    }
+
     function getEmailSnippet(content) {
         const plain = getEmailPlainText(content);
         if (plain) return plain.substring(0, 120);
@@ -3298,8 +3334,14 @@
     function renderEmailCard(msg, isExpanded) {
         const isOutgoing = msg.role === 'assistant';
         const senderName = isOutgoing ? 'AI Bot' : (msg.sender_name || msg.sender || 'Unknown');
-        const firstLetter = senderName.charAt(0).toUpperCase();
-        const avatarColor = isOutgoing ? '#22c55e' : getEmailAvatarColor(senderName);
+        // Get sender email for avatar lookup
+        const senderEmail = !isOutgoing ? (msg.sender_id || msg.sender || '') : '';
+        const collapsedAvatar = isOutgoing
+            ? `<div class="email-avatar" style="background: #22c55e;">${senderName.charAt(0).toUpperCase()}</div>`
+            : getEmailAvatarHtml(senderName, senderEmail, 32);
+        const expandedAvatar = isOutgoing
+            ? `<div class="email-avatar" style="background: #22c55e;">${senderName.charAt(0).toUpperCase()}</div>`
+            : getEmailAvatarHtml(senderName, senderEmail, 40);
         const rawContent = msg.content || '';
         const snippet = getEmailSnippet(rawContent);
         const dateStr = formatEmailDate(msg.timestamp);
@@ -3326,7 +3368,7 @@
         return `
         <div class="email-card${expandedClass}" data-msg-id="${msg.id || ''}">
             <div class="email-card-collapsed" onclick="toggleEmailCard(this.parentElement)">
-                <div class="email-avatar" style="background: ${avatarColor};">${firstLetter}</div>
+                ${collapsedAvatar}
                 <span class="email-sender-name">${escapeHtml(senderName)}</span>
                 ${botBadge}
                 <span class="email-snippet">${escapeHtml(snippet)}</span>
@@ -3334,7 +3376,7 @@
             </div>
             <div class="email-card-expanded">
                 <div class="email-expanded-header">
-                    <div class="email-avatar" style="background: ${avatarColor};">${firstLetter}</div>
+                    ${expandedAvatar}
                     <div class="email-header-info">
                         <div class="email-sender-line">
                             <span class="email-sender-name">${escapeHtml(senderName)}</span>
@@ -5142,7 +5184,7 @@
             const name = currentConversation.display_name || currentConversation.chat_name || '?';
             const initial = name.charAt(0).toUpperCase();
             const color = getEmailAvatarColor(name);
-            avatarContent = `<div style="width: 140px; height: 140px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 3.5rem; font-weight: 600;">${initial}</div>`;
+            avatarContent = getEmailAvatarHtml(name, emailAddr, 140);
         } else if (currentConversation.profile_pic) {
             avatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <span class="avatar-fallback" style="display:none;">${contactIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
