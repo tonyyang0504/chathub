@@ -6011,33 +6011,31 @@
         });
 
         // Search in email cards (email platform)
-        // Use messagesData for content search since HTML emails are in iframes
+        // Use messagesData (object keyed by msg.id) for content search since HTML emails are in iframes
         const emailCards = container.querySelectorAll('.email-card');
         emailCards.forEach((card, index) => {
             const msgId = card.dataset.msgId;
 
-            // Get the raw message content from messagesData
+            // Get the raw message content from messagesData object
             let searchText = '';
-            if (messagesData && messagesData.length) {
-                const msgData = messagesData.find(m => String(m.id) === String(msgId));
-                if (msgData) {
-                    let content = msgData.content || '';
-                    // Strip HTML marker — search only plain text part
-                    if (content.includes('<!--EMAIL_HTML-->')) {
-                        content = content.split('<!--EMAIL_HTML-->')[0];
-                    }
-                    // Strip Subject: prefix
-                    content = content.replace(/^Subject:.*?\n\n/s, '');
-                    searchText = content + ' ' + (msgData.sender_name || '') + ' ' + (msgData.sender || '');
+            const msgData = msgId ? messagesData[msgId] : null;
+            if (msgData) {
+                let content = msgData.content || '';
+                // Strip HTML marker — search only plain text part
+                if (content.includes('<!--EMAIL_HTML-->')) {
+                    content = content.split('<!--EMAIL_HTML-->')[0];
                 }
+                // Strip Subject: prefix
+                content = content.replace(/^Subject:.*?\n\n/s, '');
+                searchText = content + ' ' + (msgData.sender_name || '') + ' ' + (msgData.sender || '');
             }
 
             // Fallback: search visible DOM text
             if (!searchText) {
                 const snippet = card.querySelector('.email-snippet');
                 const plainText = card.querySelector('.plain-text');
-                const sender = card.querySelector('.email-sender-name');
-                searchText = [snippet, plainText, sender].filter(Boolean).map(el => el.textContent).join(' ');
+                const senderEl = card.querySelector('.email-sender-name');
+                searchText = [snippet, plainText, senderEl].filter(Boolean).map(el => el.textContent).join(' ');
             }
 
             if (searchText.toLowerCase().includes(queryLower)) {
