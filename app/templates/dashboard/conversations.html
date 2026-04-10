@@ -57,10 +57,9 @@
     }
 
     .chat-list-header {
-        background: #25D366 !important;
-        background-color: #25D366 !important;
-        color: white;
-        padding: 12px 16px;
+        background: var(--card-bg);
+        color: var(--text-primary);
+        padding: 10px 16px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -68,6 +67,7 @@
         z-index: 10;
         flex-shrink: 0;
         border-radius: 12px 12px 0 0;
+        border-bottom: 1px solid var(--border-color);
     }
 
     /* Bot filter dropdown - WhatsApp style button */
@@ -78,9 +78,9 @@
 
     .bot-filter-btn {
         width: 100%;
-        background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white;
+        background: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
         border-radius: 18px;
         padding: 6px 14px;
         font-size: 13px;
@@ -93,15 +93,15 @@
     .bot-filter-btn:hover,
     .bot-filter-btn:focus,
     .bot-filter-btn.show {
-        background: rgba(255,255,255,0.2) !important;
-        border-color: rgba(255,255,255,0.5) !important;
-        color: white !important;
+        background: var(--border-color) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
         box-shadow: none !important;
         outline: none !important;
     }
 
     .bot-filter-btn::after {
-        border-top-color: white;
+        border-top-color: var(--text-muted);
         margin-left: 8px;
     }
 
@@ -5258,7 +5258,6 @@
             // Email-specific contact info
             panel.innerHTML = `
                 <div class="contact-info-header">
-                    <button class="close-btn" onclick="closeContactInfo()" aria-label="Close"></button>
                     <h5><i class="bi bi-envelope me-2"></i>Email Info</h5>
                 </div>
                 <div class="contact-info-body">
