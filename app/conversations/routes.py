@@ -705,7 +705,10 @@ async def generate_email_reply(
         "concise": "Write a very brief, to-the-point reply. Keep it short — maximum 2-3 sentences.",
     }
 
-    system_prompt = f"""You are an email reply assistant. Generate a reply to the latest email in the thread below.
+    is_email = (bot_profile.platform_type or "") == "email"
+
+    if is_email:
+        system_prompt = f"""You are an email reply assistant. Generate a reply to the latest email in the thread below.
 
 Tone: {tone_instructions.get(tone, tone_instructions['professional'])}
 
@@ -715,6 +718,16 @@ Rules:
 - Be contextually relevant to the conversation thread
 - Keep the reply focused and natural
 - Do not include email headers or signatures beyond the subject line"""
+    else:
+        system_prompt = f"""You are a messaging reply assistant. Generate a reply to the latest message in the conversation below.
+
+Tone: {tone_instructions.get(tone, tone_instructions['professional'])}
+
+Rules:
+- Write ONLY the reply message text — short and conversational
+- Be contextually relevant to the conversation
+- Keep it natural and appropriate for a chat message
+- No greetings or sign-offs unless the tone requires it"""
 
     ai_messages = [
         {"role": "system", "content": system_prompt},
@@ -783,10 +796,20 @@ async def summarize_email_thread(
 
     thread_text = "\n\n---\n\n".join(thread_parts)
 
-    system_prompt = """You are an email thread summarizer. Analyze the email thread and provide a concise summary.
+    # Detect platform type for context-aware prompt
+    platform_type = bot_profile.platform_type or "whatsapp"
+    platform_labels = {
+        "whatsapp": "WhatsApp chat", "telegram": "Telegram chat", "discord": "Discord conversation",
+        "messenger": "Messenger conversation", "instagram": "Instagram DM", "slack": "Slack conversation",
+        "signal": "Signal chat", "line": "LINE chat", "email": "email thread",
+        "whatsapp_business": "WhatsApp Business conversation", "linkedin": "LinkedIn conversation",
+    }
+    conv_label = platform_labels.get(platform_type, "conversation")
+
+    system_prompt = f"""You are a conversation summarizer. Analyze the {conv_label} and provide a concise summary.
 
 Include:
-- Main topic/purpose of the thread
+- Main topic/purpose of the {conv_label}
 - Key points discussed
 - Any action items or decisions made
 - Current status (who needs to respond, what's pending)
@@ -795,7 +818,7 @@ Keep the summary brief (3-5 bullet points). Use clear, direct language."""
 
     ai_messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Summarize this email thread:\n\n{thread_text}"}
+        {"role": "user", "content": f"Summarize this {conv_label}:\n\n{thread_text}"}
     ]
 
     try:
