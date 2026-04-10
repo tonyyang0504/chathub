@@ -299,6 +299,29 @@
     .chat-meta {
         text-align: right;
         flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+
+    .chat-delete-btn {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        padding: 2px 4px;
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0.5;
+    }
+    .chat-delete-btn:hover {
+        color: #ef4444;
+        opacity: 1;
+    }
+    .chat-item:hover .chat-delete-btn {
+        display: inline-block;
     }
 
     .chat-time {
@@ -2618,6 +2641,9 @@
                     <div class="chat-meta">
                         <div class="chat-time">${conv.last_message_at ? formatDate(conv.last_message_at) : ''}</div>
                         ${conv.dm_approved === false ? '<span class="badge bg-warning text-dark" style="font-size: 9px; border-radius: 8px;">Pending</span>' : ''}
+                        <button class="chat-delete-btn" onclick="event.stopPropagation(); deleteConversation(${conv.id}, '${escapeHtml(conv.display_name || conv.chat_name || '').replace(/'/g, "\\'")}')" title="Delete">
+                            <i class="bi bi-trash3"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -2694,6 +2720,27 @@
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
         }
         return colors[Math.abs(hash) % colors.length];
+    }
+
+    async function deleteConversation(convId, name) {
+        if (!confirm(`Delete conversation with ${name || 'this contact'}?\n\nAll messages will be permanently deleted.`)) return;
+        try {
+            const res = await fetch(`/api/conversations/${convId}`, { method: 'DELETE' });
+            if (res.ok) {
+                showToast('Conversation deleted', 'success');
+                conversations = conversations.filter(c => c.id !== convId);
+                if (currentConversation?.id === convId) {
+                    currentConversation = null;
+                    document.getElementById('messagePanel').innerHTML = '<div class="no-chat-selected"><i class="bi bi-chat-dots" style="font-size: 4rem; opacity: 0.2;"></i><p class="text-muted mt-3">Select a conversation</p></div>';
+                }
+                renderChatList();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to delete', 'danger');
+            }
+        } catch(e) {
+            showToast('Failed to delete conversation', 'danger');
+        }
     }
 
     async function selectConversation(convId) {
