@@ -5142,7 +5142,7 @@
             const name = currentConversation.display_name || currentConversation.chat_name || '?';
             const initial = name.charAt(0).toUpperCase();
             const color = getEmailAvatarColor(name);
-            avatarContent = `<div style="width: 80px; height: 80px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${initial}</div>`;
+            avatarContent = `<div style="width: 140px; height: 140px; border-radius: 50%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 3.5rem; font-weight: 600;">${initial}</div>`;
         } else if (currentConversation.profile_pic) {
             avatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <span class="avatar-fallback" style="display:none;">${contactIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
