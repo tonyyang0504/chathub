@@ -349,6 +349,38 @@ New page at `/dashboard/platforms` with nav link between Bots and Conversations.
 
 **Detail card styling**: `border-radius: 16px` with `overflow: hidden`, header `border-radius: 16px 16px 0 0`. Scrollable tables use `.detail-table-scroll` with `max-height: 350px`.
 
+### Email Platform (`app/platforms/email/`)
+15th platform. IMAP/SMTP adapter polling inbox every 30s. Works with Gmail, Outlook, Yahoo, any IMAP provider.
+- **Threading**: `sender:normalized_subject` key groups emails into conversations. Strip `Re:`/`Fwd:` prefixes.
+- **HTML rendering**: store raw HTML as base64 after `<!--EMAIL_HTML-->` marker. Frontend decodes with `TextDecoder('utf-8')` and renders in sandboxed iframe with `srcdoc`. Inject `<meta charset="utf-8">`, `<base target="_blank">`, responsive img styles, custom scrollbar styles.
+- **Body cleanup**: `_clean_email_body()` strips `[image:]` placeholders, long URLs in angle brackets, email footers. `_extract_html_body()` for rich display, `_extract_body()` for plain text AI context.
+- **AI context**: `_build_message_dict()` in `message_handler.py` strips `<!--EMAIL_HTML-->` marker before sending to AI.
+- **UID tracking**: `_mark_existing_as_seen()` records baseline UID (10 back from latest). `_fetch_new_emails()` uses IMAP UID search for new messages.
+- **Timestamps**: convert email Date header to UTC naive datetime before storage.
+- **Bot instance**: `stop_bot()` removes instance from `self.instances`. `start_bot()` updates `instance.config` + clears `last_status`. `send_message()` loads credentials from DB if state is empty.
+
+### Email Display — Gmail-style Thread View
+- **Thread view**: subject header + collapsible cards. Latest message expanded, older collapsed. Click to toggle.
+- **Email cards**: collapsed (avatar + sender + snippet + date), expanded (header + HTML iframe + Reply/Forward/Collapse buttons)
+- **Reply form**: To/Cc/Subject fields (pre-filled), formatting toolbar (B/I/U), tone selector + AI Generate, textarea, attachments (paperclip button + file pills), Discard/Send
+- **Forward form**: same as reply but empty To, "Fwd:" subject, quoted original content
+- **Attachments**: `POST /api/conversations/{id}/send-email` accepts multipart/form-data. `_send_email_with_attachments_sync()` uses `mimetypes.guess_type()` for correct MIME types.
+- **AI features**: `POST /api/conversations/{id}/generate-reply` (tone-aware, generates subject for email), `POST /api/conversations/{id}/summarize-thread` (platform-aware prompts)
+- **Email info panel**: shows email address, subject, emails in thread, first/last dates (no phone/chat ID)
+- **Sidebar**: colored letter avatars, subject as preview, `bot-label` badge uses `getPlatformColor()` for platform brand color
+
+### Conversations Page — Unified Styling
+- **Headers**: all three panels (sidebar, message, contact/email info) use `var(--card-bg)` background, `min-height: 60px`, `border-bottom: 1px solid var(--border-color)`. No green backgrounds.
+- **Avatars**: colored letter initials for ALL conversations without profile pics (not just email). `getEmailAvatarHtml(name, email, size)` generates colored circle. Profile pics layered on top with `onerror="display:none"` fallback. Inner avatar size must match container (sidebar: 49px, header: 40px, contact info: 80px).
+- **Bot label badges**: `getPlatformColor(platformType)` returns platform brand color (15 platforms). Applied inline on `.bot-label` span.
+- **Bot filter dropdown**: platform icons + brand colors for all 15 platforms including email, whatsapp_business, imessage.
+- **3-dot menu**: AI Summary → Export chat → Clear messages. No Contact info (accessible via header click), no Delete chat (accessible via sidebar hover), no divider line.
+- **Contact info panel**: no close button, no Export chat (in 3-dot menu), no icons in header. Group member avatars use colored letter style.
+- **Delete**: hover trash icon on sidebar items only. Closes contact info panel + resets message area to empty state on delete.
+- **Search**: works in both chat bubbles (`.message-bubble`) and email cards (searches `messagesData[msgId]` object for content). Auto-expands matched email cards.
+- **AI Summary**: in 3-dot menu for all platforms. Platform-aware prompts ("WhatsApp chat" not "email thread"). Shows blue gradient card at top of messages. Toggle to dismiss.
+- **AI Generate Reply**: ✨ stars icon in message input bar toggles tone selector panel. Platform-aware prompts (chat-style for messaging, email-style for email).
+
 ### Card Grid Layout (Equal Height)
 When using a 2-column card grid (`col-lg-6`), do NOT use `h-100` on cards to force equal height — it absorbs `margin-bottom` and removes spacing between rows. Instead:
 - Clamp variable-length text to single lines with `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` and add `title` attribute for hover tooltip
