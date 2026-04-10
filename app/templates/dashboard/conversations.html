@@ -2025,81 +2025,205 @@
         border-radius: 2px;
     }
 
-    /* Email message rendering */
-    .message-panel.email-mode {
-        background-color: var(--wa-panel-bg) !important;
+    /* Gmail-style Email Thread */
+    .message-panel.email-mode .message-container {
+        background: #f6f8fc !important;
         background-image: none !important;
+        padding: 0 !important;
     }
-    .email-thread { padding: 16px; }
-    .email-message-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        margin-bottom: 12px;
-        overflow: hidden;
+    .message-panel.email-mode .message-input-container {
+        display: none !important;
     }
-    .email-message-card.outgoing {
-        border-left: 4px solid #22c55e;
+    .email-thread-view {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
     }
-    .email-message-card.incoming {
-        border-left: 4px solid #3b82f6;
-    }
-    .email-message-header {
-        padding: 12px 16px;
-        background: var(--hover-bg);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .email-thread-header {
+        padding: 16px 0;
         border-bottom: 1px solid var(--border-color);
+        margin-bottom: 16px;
     }
-    .email-message-sender {
-        font-weight: 600;
-        font-size: 0.9rem;
+    .email-thread-subject {
+        font-size: 1.4rem;
+        font-weight: 400;
+        color: var(--text-primary);
+        margin-bottom: 4px;
     }
-    .email-message-sender .badge {
-        font-size: 0.7rem;
-        margin-left: 6px;
-    }
-    .email-message-time {
+    .email-thread-meta {
         font-size: 0.8rem;
         color: var(--text-muted);
     }
-    .email-message-body {
-        padding: 16px;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        white-space: pre-wrap;
+
+    /* Email card - collapsed */
+    .email-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 2px;
         overflow: hidden;
+        transition: box-shadow 0.15s;
     }
-    .email-message-body iframe {
-        white-space: normal;
+    .email-card:hover {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .email-card-collapsed {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
+        gap: 12px;
+    }
+    .email-card-collapsed .email-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    .email-card-collapsed .email-sender-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        min-width: 120px;
+        flex-shrink: 0;
+    }
+    .email-card-collapsed .email-snippet {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .email-card-collapsed .email-date {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        margin-left: 12px;
+    }
+    .email-card-collapsed .email-bot-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: #dcfce7;
+        color: #166534;
+        flex-shrink: 0;
+    }
+
+    /* Email card - expanded */
+    .email-card-expanded {
+        display: none;
+    }
+    .email-card.expanded .email-card-collapsed {
+        display: none;
+    }
+    .email-card.expanded .email-card-expanded {
         display: block;
     }
-    .message-panel.email-mode .message-container {
-        background: var(--card-bg) !important;
-        background-image: none !important;
+    .email-card.expanded {
+        border: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 8px;
+        border-radius: 8px;
     }
-    .email-message-actions {
-        padding: 8px 16px 12px;
-        border-top: 1px solid var(--border-color);
+    .email-expanded-header {
+        padding: 16px 20px 12px;
         display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .email-expanded-header .email-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    .email-expanded-header .email-header-info {
+        flex: 1;
+    }
+    .email-expanded-header .email-sender-line {
+        display: flex;
+        align-items: center;
         gap: 8px;
     }
-    .email-reply-form {
-        padding: 12px 16px;
-        border-top: 1px solid var(--border-color);
-        background: var(--hover-bg);
+    .email-expanded-header .email-sender-name {
+        font-weight: 600;
+        font-size: 0.95rem;
     }
-    .email-reply-form textarea {
-        border-radius: 12px;
+    .email-expanded-header .email-to-line {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+    .email-expanded-header .email-date {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+    .email-expanded-body {
+        padding: 0 20px 16px;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    .email-expanded-body iframe {
+        display: block;
+        width: 100%;
+        border: none;
+        min-height: 100px;
+        max-height: 800px;
+    }
+    .email-expanded-body .plain-text {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .email-card-actions {
+        padding: 8px 20px 12px;
+        display: flex;
+        gap: 8px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    /* Reply box at bottom */
+    .email-reply-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-top: 16px;
+        overflow: hidden;
+    }
+    .email-reply-box textarea {
+        width: 100%;
+        border: none;
+        padding: 16px 20px;
+        font-size: 0.9rem;
         resize: vertical;
         min-height: 80px;
-        font-size: 0.9rem;
+        outline: none;
+        font-family: inherit;
+        background: var(--card-bg);
+        color: var(--text-primary);
     }
-    .email-reply-form textarea:focus {
-        border-color: #3b82f6;
+    .email-reply-box textarea:focus {
         box-shadow: none;
-        word-wrap: break-word;
+    }
+    .email-reply-box-footer {
+        padding: 8px 16px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        background: var(--hover-bg);
     }
 </style>
 {% endblock %}
@@ -2832,8 +2956,6 @@
                 </div>`;
             }
 
-            if (emailMode) html += '<div class="email-thread">';
-
             data.messages.forEach((msg, idx) => {
                 // Add message ID to deduplication set and store for reply feature
                 if (msg.id) {
@@ -2841,9 +2963,7 @@
                     storeMessageData(msg);
                 }
 
-                if (emailMode) {
-                    html += renderEmailMessage(msg);
-                } else {
+                if (!emailMode) {
                     const msgDate = new Date(msg.timestamp).toDateString();
 
                     // Add date separator if date changed
@@ -2866,7 +2986,9 @@
                 }
             });
 
-            if (emailMode) html += '</div>';
+            if (emailMode) {
+                html = renderEmailThread(data.messages);
+            }
 
             container.innerHTML = html;
 
@@ -2940,9 +3062,7 @@
                     storeMessageData(msg);
                 }
 
-                if (emailMode) {
-                    html += renderEmailMessage(msg);
-                } else {
+                if (!emailMode) {
                     const msgDate = new Date(msg.timestamp).toDateString();
                     if (msgDate !== lastDate) {
                         html += `<div class="date-separator"><span>${formatDateFull(msg.timestamp)}</span></div>`;
@@ -2969,6 +3089,19 @@
             // Remove old button
             if (loadMoreBtn) loadMoreBtn.remove();
 
+            if (emailMode) {
+                // In email mode, re-render the full thread with all collected messages
+                const allMessages = Object.values(messagesData).sort((a, b) =>
+                    new Date(a.timestamp) - new Date(b.timestamp));
+                container.innerHTML = renderEmailThread(allMessages);
+                // Restore scroll position
+                requestAnimationFrame(() => {
+                    const scrollHeightAfter = container.scrollHeight;
+                    container.scrollTop = scrollTopBefore + (scrollHeightAfter - scrollHeightBefore);
+                });
+                return; // skip normal prepend logic
+            }
+
             // Create new button if more messages exist
             let newButtonHtml = '';
             if (messagesPagination.hasMore) {
@@ -2981,18 +3114,7 @@
             }
 
             // Prepend older messages at top
-            if (emailMode) {
-                // In email mode, prepend inside the email-thread wrapper
-                const emailThread = container.querySelector('.email-thread');
-                if (emailThread) {
-                    emailThread.insertAdjacentHTML('afterbegin', html);
-                    container.insertAdjacentHTML('afterbegin', newButtonHtml);
-                } else {
-                    container.insertAdjacentHTML('afterbegin', newButtonHtml + html);
-                }
-            } else {
-                container.insertAdjacentHTML('afterbegin', newButtonHtml + html);
-            }
+            container.insertAdjacentHTML('afterbegin', newButtonHtml + html);
 
             // Remove duplicate date separators (when older and newer messages are from same day)
             const dateSeparators = container.querySelectorAll('.date-separator');
@@ -3034,104 +3156,201 @@
         return bot && bot.platform_type === 'email';
     }
 
-    function renderEmailMessage(msg) {
+    function getEmailSubject(messages) {
+        for (const msg of messages) {
+            const content = msg.content || '';
+            const match = content.match(/^Subject:\s*(.+?)(?:\n|$)/);
+            if (match) return match[1].trim();
+        }
+        return currentConversation?.chat_name || 'No Subject';
+    }
+
+    function getEmailPlainText(content) {
+        const htmlMarker = '<!--EMAIL_HTML-->';
+        const htmlIdx = content.indexOf(htmlMarker);
+        let text = htmlIdx !== -1 ? content.substring(0, htmlIdx).trim() : content;
+        // Strip Subject: prefix
+        text = text.replace(/^Subject:.*?\n\n/s, '');
+        return text.trim();
+    }
+
+    function getEmailHtml(content) {
+        const htmlMarker = '<!--EMAIL_HTML-->';
+        const htmlIdx = content.indexOf(htmlMarker);
+        if (htmlIdx === -1) return null;
+
+        const base64Html = content.substring(htmlIdx + htmlMarker.length).trim();
+        try {
+            const binaryStr = atob(base64Html);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+            let decodedHtml = new TextDecoder('utf-8').decode(bytes);
+
+            const headInject = `<meta charset="utf-8"><base target="_blank"><style>img{max-width:100%;height:auto;}body{margin:0;padding:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;}::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:3px;}::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.3);}body{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.2) transparent;}</style>`;
+            if (decodedHtml.includes('<head>')) {
+                decodedHtml = decodedHtml.replace('<head>', '<head>' + headInject);
+            } else if (decodedHtml.includes('<html>')) {
+                decodedHtml = decodedHtml.replace('<html>', '<html><head>' + headInject + '</head>');
+            } else {
+                decodedHtml = headInject + decodedHtml;
+            }
+            return decodedHtml;
+        } catch(e) {
+            return null;
+        }
+    }
+
+    function getEmailAvatarColor(name) {
+        if (!name) return '#25D366';
+        const colors = ['#1a73e8', '#5c6bc0', '#ec407a', '#ab47bc', '#7e57c2', '#42a5f5', '#ef5350', '#26a69a'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    function getEmailSnippet(content) {
+        const plain = getEmailPlainText(content);
+        if (plain) return plain.substring(0, 120);
+        // If only HTML, return a generic snippet
+        return '(HTML email)';
+    }
+
+    function formatEmailDate(timestamp) {
+        const d = new Date(timestamp);
+        const now = new Date();
+        const isToday = d.toDateString() === now.toDateString();
+        if (isToday) {
+            return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        }
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (d.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday, ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        }
+        return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function renderEmailThread(messages) {
+        const subject = getEmailSubject(messages);
+        const count = messages.length;
+
+        let html = `<div class="email-thread-view">`;
+
+        // Thread header
+        html += `<div class="email-thread-header">
+            <div class="email-thread-subject">${escapeHtml(subject)}</div>
+            <div class="email-thread-meta">${count} message${count !== 1 ? 's' : ''} in thread</div>
+        </div>`;
+
+        // Render each message card; last message expanded by default
+        messages.forEach((msg, idx) => {
+            const isExpanded = (idx === messages.length - 1);
+            html += renderEmailCard(msg, isExpanded);
+        });
+
+        // Reply box at bottom
+        html += `<div class="email-reply-box">
+            <textarea id="emailReplyText" placeholder="Reply..."></textarea>
+            <div class="email-reply-box-footer">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('emailReplyText').value=''">
+                    <i class="bi bi-trash me-1"></i>Discard
+                </button>
+                <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply()">
+                    <i class="bi bi-send me-1"></i>Send
+                </button>
+            </div>
+        </div>`;
+
+        html += `</div>`;
+        return html;
+    }
+
+    function renderEmailCard(msg, isExpanded) {
         const isOutgoing = msg.role === 'assistant';
         const senderName = isOutgoing ? 'AI Bot' : (msg.sender_name || msg.sender || 'Unknown');
-        const badgeClass = isOutgoing ? 'bg-success' : 'bg-primary';
-        const badgeText = isOutgoing ? 'Bot Reply' : 'Received';
-        const cardClass = isOutgoing ? 'outgoing' : 'incoming';
-        const time = new Date(msg.timestamp).toLocaleString();
+        const firstLetter = senderName.charAt(0).toUpperCase();
+        const avatarColor = isOutgoing ? '#22c55e' : getEmailAvatarColor(senderName);
+        const rawContent = msg.content || '';
+        const snippet = getEmailSnippet(rawContent);
+        const dateStr = formatEmailDate(msg.timestamp);
+        const fullDate = new Date(msg.timestamp).toLocaleString();
+        const botBadge = isOutgoing ? `<span class="email-bot-badge">Bot Reply</span>` : '';
 
-        let rawContent = msg.content || '';
-        let bodyHtml = '';
-        const htmlMarker = '<!--EMAIL_HTML-->';
-        const htmlIdx = rawContent.indexOf(htmlMarker);
-
-        if (htmlIdx !== -1) {
-            // Has embedded HTML email — render in sandboxed iframe
-            const base64Html = rawContent.substring(htmlIdx + htmlMarker.length).trim();
-            try {
-                // Proper UTF-8 base64 decode (atob only handles ASCII)
-                const binaryStr = atob(base64Html);
-                const bytes = new Uint8Array(binaryStr.length);
-                for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                let decodedHtml = new TextDecoder('utf-8').decode(bytes);
-
-                // Inject charset + base target + responsive styles
-                const headInject = `<meta charset="utf-8"><base target="_blank"><style>img{max-width:100%;height:auto;}body{margin:0;padding:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;}::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:3px;}::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.3);}body{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.2) transparent;}</style>`;
-                if (decodedHtml.includes('<head>')) {
-                    decodedHtml = decodedHtml.replace('<head>', '<head>' + headInject);
-                } else if (decodedHtml.includes('<html>')) {
-                    decodedHtml = decodedHtml.replace('<html>', '<html><head>' + headInject + '</head>');
-                } else {
-                    decodedHtml = headInject + decodedHtml;
-                }
-                // Escape for srcdoc attribute
-                const srcdocHtml = decodedHtml
-                    .replace(/&/g, '&amp;')
-                    .replace(/"/g, '&quot;');
-                bodyHtml = `<iframe srcdoc="${srcdocHtml}" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" style="width:100%;border:none;min-height:200px;max-height:800px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+20,800)+'px'"></iframe>`;
-            } catch(e) {
-                let plainText = rawContent.substring(0, htmlIdx).trim().replace(/^Subject:.*?\n\n/s, '');
-                bodyHtml = escapeHtml(plainText);
-            }
+        // Build expanded body
+        const emailHtml = getEmailHtml(rawContent);
+        let bodyContent = '';
+        if (emailHtml) {
+            const srcdocHtml = emailHtml.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            bodyContent = `<iframe srcdoc="${srcdocHtml}" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" style="width:100%;border:none;min-height:200px;max-height:800px;" onload="this.style.height=Math.min(this.contentDocument.body.scrollHeight+20,800)+'px'"></iframe>`;
         } else {
-            // Plain text only
-            let body = rawContent.replace(/^Subject:.*?\n\n/s, '');
-            bodyHtml = escapeHtml(body);
+            const plainText = getEmailPlainText(rawContent);
+            bodyContent = `<div class="plain-text">${escapeHtml(plainText)}</div>`;
         }
 
-        // Reply button (only for incoming emails)
-        const replyBtn = !isOutgoing ? `
-            <div class="email-message-actions">
-                <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="showEmailReply(this)">
-                    <i class="bi bi-reply me-1"></i>Reply
-                </button>
-            </div>` : '';
+        const toLine = isOutgoing
+            ? `to ${currentConversation?.chat_name || 'recipient'}`
+            : `to me`;
+
+        const expandedClass = isExpanded ? ' expanded' : '';
 
         return `
-        <div class="email-message-card ${cardClass}">
-            <div class="email-message-header">
-                <div class="email-message-sender">
-                    <i class="bi ${isOutgoing ? 'bi-robot' : 'bi-envelope'} me-1"></i>
-                    ${escapeHtml(senderName)}
-                    <span class="badge ${badgeClass}">${badgeText}</span>
-                </div>
-                <div class="email-message-time">${time}</div>
+        <div class="email-card${expandedClass}" data-msg-id="${msg.id || ''}">
+            <div class="email-card-collapsed" onclick="toggleEmailCard(this.parentElement)">
+                <div class="email-avatar" style="background: ${avatarColor};">${firstLetter}</div>
+                <span class="email-sender-name">${escapeHtml(senderName)}</span>
+                ${botBadge}
+                <span class="email-snippet">${escapeHtml(snippet)}</span>
+                <span class="email-date" title="${fullDate}">${dateStr}</span>
             </div>
-            <div class="email-message-body">${bodyHtml}</div>
-            ${replyBtn}
+            <div class="email-card-expanded">
+                <div class="email-expanded-header">
+                    <div class="email-avatar" style="background: ${avatarColor};">${firstLetter}</div>
+                    <div class="email-header-info">
+                        <div class="email-sender-line">
+                            <span class="email-sender-name">${escapeHtml(senderName)}</span>
+                            ${botBadge}
+                        </div>
+                        <div class="email-to-line">${escapeHtml(toLine)}</div>
+                    </div>
+                    <span class="email-date" title="${fullDate}">${dateStr}</span>
+                </div>
+                <div class="email-expanded-body">${bodyContent}</div>
+                <div class="email-card-actions">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="emailReplyTo(${msg.id || 0})">
+                        <i class="bi bi-reply me-1"></i>Reply
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="toggleEmailCard(this.closest('.email-card'))">
+                        <i class="bi bi-chevron-up me-1"></i>Collapse
+                    </button>
+                </div>
+            </div>
         </div>`;
     }
 
-    function showEmailReply(btn) {
-        const card = btn.closest('.email-message-card');
-        // Remove any existing reply forms
-        document.querySelectorAll('.email-reply-form').forEach(f => f.remove());
-        // Add reply form below the actions
-        const form = document.createElement('div');
-        form.className = 'email-reply-form';
-        form.innerHTML = `
-            <textarea class="form-control mb-2" placeholder="Type your reply..." id="emailReplyText"></textarea>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-primary rounded-pill" onclick="sendEmailReply(this)">
-                    <i class="bi bi-send me-1"></i>Send Reply
-                </button>
-                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-reply-form').remove()">
-                    Cancel
-                </button>
-            </div>`;
-        card.appendChild(form);
-        form.querySelector('textarea').focus();
+    function toggleEmailCard(cardEl) {
+        if (!cardEl) return;
+        cardEl.classList.toggle('expanded');
     }
 
-    async function sendEmailReply(btn) {
-        const form = btn.closest('.email-reply-form');
-        const text = form.querySelector('textarea').value.trim();
+    function emailReplyTo(msgId) {
+        const textarea = document.getElementById('emailReplyText');
+        if (textarea) {
+            textarea.focus();
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    async function sendEmailReply() {
+        const textarea = document.getElementById('emailReplyText');
+        if (!textarea) return;
+        const text = textarea.value.trim();
         if (!text) return;
 
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+        const sendBtn = textarea.closest('.email-reply-box').querySelector('button:last-child');
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
 
         try {
             const convId = currentConversation?.id;
@@ -3144,20 +3363,19 @@
             });
 
             if (res.ok) {
-                form.remove();
+                textarea.value = '';
                 showToast('Reply sent', 'success');
-                // Reload messages to show the sent reply
                 loadMessages(convId);
             } else {
                 const err = await res.json().catch(() => ({}));
                 showToast(err.detail || 'Failed to send reply', 'danger');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-send me-1"></i>Send Reply';
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
             }
         } catch(e) {
             showToast('Failed to send reply', 'danger');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send me-1"></i>Send Reply';
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
         }
     }
 
@@ -3384,14 +3602,10 @@
 
             let msgHTML;
             if (isEmailConversation()) {
-                msgHTML = renderEmailMessage(msg);
-                const emailThread = container.querySelector('.email-thread');
-                if (emailThread) {
-                    emailThread.insertAdjacentHTML('beforeend', msgHTML);
-                } else {
-                    // Create email thread wrapper if it doesn't exist yet
-                    container.insertAdjacentHTML('beforeend', `<div class="email-thread">${msgHTML}</div>`);
-                }
+                // Re-render the full thread with the new message included
+                const allMessages = Object.values(messagesData).sort((a, b) =>
+                    new Date(a.timestamp) - new Date(b.timestamp));
+                container.innerHTML = renderEmailThread(allMessages);
             } else {
                 msgHTML = createMessageHTML(msg, isFirstInSeries, currIsGroup);
                 if (msgHTML) {
