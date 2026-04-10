@@ -675,8 +675,6 @@ async def send_manual_message(
     bot_instance = bot_manager.get_instance(bot_profile.id)
     if not bot_instance or not bot_instance.is_running:
         raise HTTPException(status_code=400, detail="Bot is not running. Please start the bot first.")
-    if not bot_instance.whatsapp_connected:
-        raise HTTPException(status_code=400, detail="Bot is not connected. Please connect the bot first.")
 
     # Send the message via the correct platform adapter
     try:

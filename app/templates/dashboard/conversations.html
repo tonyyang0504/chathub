@@ -2742,6 +2742,7 @@
 
         conversationWs.onmessage = (event) => {
             try {
+                if (event.data === 'pong' || event.data === 'ping') return;
                 const data = JSON.parse(event.data);
                 if (data.type === 'new_message' && currentConversation && currentConversation.id === convId) {
                     // Add message to queue and process

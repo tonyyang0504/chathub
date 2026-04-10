@@ -514,8 +514,12 @@ class EmailAdapter(PlatformAdapter):
         state = _get_state(bot_profile_id)
         if not state.get("email_address"):
             return False
+        # Extract email address from thread key (format: "email@addr:subject" or plain email)
+        to_addr = chat_id.split(":")[0] if ":" in chat_id and "@" in chat_id.split(":")[0] else chat_id
+        # Extract subject from thread key for reply subject line
+        subject = chat_id.split(":", 1)[1] if ":" in chat_id and "@" in chat_id.split(":")[0] else ""
         return await asyncio.to_thread(
-            self._send_email_sync, state, chat_id, "", message
+            self._send_email_sync, state, to_addr, subject, message
         )
 
     async def send_file(self, bot_profile_id: int, chat_id: str, chat_name: str, file_path: str, caption: str = "") -> bool:
