@@ -3349,36 +3349,83 @@
         }
         if (!targetCard) return;
 
+        // Get context from conversation
+        const subject = currentConversation?.chat_name || '';
+        const replySubject = subject.startsWith('Re:') ? subject : (subject ? 'Re: ' + subject : '');
+        // Get sender email from chat_id (format: email@addr:subject)
+        const chatId = currentConversation?.chat_id || '';
+        const toAddr = chatId.includes(':') && chatId.split(':')[0].includes('@') ? chatId.split(':')[0] : chatId;
+
+        // Get quoted text from the clicked message
+        let quotedText = '';
+        const expandedBody = targetCard.querySelector('.email-expanded-body');
+        if (expandedBody) {
+            const plainEl = expandedBody.querySelector('.plain-text');
+            if (plainEl) quotedText = plainEl.textContent.trim();
+        }
+
         const form = document.createElement('div');
         form.className = 'email-inline-reply';
-        form.style.cssText = 'padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--hover-bg);';
+        form.style.cssText = 'padding: 16px 20px; border-top: 1px solid var(--border-color); background: var(--card-bg); border-radius: 0 0 8px 8px;';
         form.innerHTML = `
-            <div class="d-flex gap-2 mb-2 align-items-center">
-                <select class="form-select form-select-sm" style="width: 140px; border-radius: 20px;" id="emailReplyTone">
-                    <option value="professional">Professional</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="formal">Formal</option>
-                    <option value="casual">Casual</option>
-                    <option value="concise">Concise</option>
-                </select>
-                <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="generateAIReply(this)" style="display: inline-flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-stars me-1"></i>AI Generate
-                </button>
+            <div style="margin-bottom: 10px; font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                <i class="bi bi-reply me-1"></i>Reply
             </div>
-            <textarea class="form-control mb-2" placeholder="Type your reply or use AI Generate..." style="border-radius: 12px; resize: vertical; min-height: 80px; font-size: 0.9rem;"></textarea>
-            <div class="d-flex gap-2 justify-content-end">
-                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-inline-reply').remove()">Cancel</button>
-                <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply(this)">
+            <div class="mb-2">
+                <div class="d-flex align-items-center gap-2 mb-1" style="font-size: 0.85rem;">
+                    <span class="text-muted" style="min-width: 50px;">To:</span>
+                    <input type="text" class="form-control form-control-sm" value="${escapeHtml(toAddr)}" id="emailReplyTo" style="border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-1" style="font-size: 0.85rem;">
+                    <span class="text-muted" style="min-width: 50px;">Cc:</span>
+                    <input type="text" class="form-control form-control-sm" placeholder="Add CC recipients..." id="emailReplyCc" style="border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+                <div class="d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                    <span class="text-muted" style="min-width: 50px;">Subject:</span>
+                    <input type="text" class="form-control form-control-sm" value="${escapeHtml(replySubject)}" id="emailReplySubject" style="border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+            </div>
+            <div class="d-flex gap-2 mb-2 align-items-center" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" onclick="formatEmailText('bold')" title="Bold"><i class="bi bi-type-bold"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="formatEmailText('italic')" title="Italic"><i class="bi bi-type-italic"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="formatEmailText('underline')" title="Underline"><i class="bi bi-type-underline"></i></button>
+                </div>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm" style="width: 130px; border-radius: 20px; font-size: 0.8rem;" id="emailReplyTone">
+                        <option value="professional">Professional</option>
+                        <option value="friendly">Friendly</option>
+                        <option value="formal">Formal</option>
+                        <option value="casual">Casual</option>
+                        <option value="concise">Concise</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="generateAIReply(this)" style="display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">
+                        <i class="bi bi-stars me-1"></i>AI Generate
+                    </button>
+                </div>
+            </div>
+            <textarea class="form-control mb-2" id="emailReplyBody" placeholder="Type your reply..." style="border-radius: 8px; resize: vertical; min-height: 120px; font-size: 0.9rem; border: 1px solid var(--border-color);"></textarea>
+            ${quotedText ? `<details class="mb-2" style="font-size: 0.8rem; color: var(--text-muted);">
+                <summary style="cursor: pointer;">Quoted text</summary>
+                <div style="padding: 8px; margin-top: 4px; border-left: 3px solid var(--border-color); background: var(--hover-bg); border-radius: 4px; white-space: pre-wrap; max-height: 150px; overflow-y: auto;">${escapeHtml(quotedText.substring(0, 500))}${quotedText.length > 500 ? '...' : ''}</div>
+            </details>` : ''}
+            <div class="d-flex gap-2 justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-inline-reply').remove()">
+                        <i class="bi bi-x me-1"></i>Discard
+                    </button>
+                </div>
+                <button class="btn btn-sm rounded-pill px-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply(this)">
                     <i class="bi bi-send me-1"></i>Send
                 </button>
             </div>`;
         targetCard.appendChild(form);
-        form.querySelector('textarea').focus();
+        form.querySelector('#emailReplyBody').focus();
     }
 
     async function generateAIReply(btn) {
         const form = btn.closest('.email-inline-reply');
-        const textarea = form.querySelector('textarea');
+        const textarea = form.querySelector('#emailReplyBody') || form.querySelector('textarea');
         const toneSelect = form.querySelector('#emailReplyTone');
         const tone = toneSelect ? toneSelect.value : 'professional';
         const convId = currentConversation?.id;
@@ -3411,11 +3458,25 @@
         btn.innerHTML = '<i class="bi bi-stars me-1"></i>AI Generate';
     }
 
+    function formatEmailText(format) {
+        const textarea = document.getElementById('emailReplyBody');
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = textarea.value.substring(start, end);
+        const markers = {bold: '**', italic: '_', underline: '__'};
+        const marker = markers[format] || '';
+        if (selected) {
+            textarea.value = textarea.value.substring(0, start) + marker + selected + marker + textarea.value.substring(end);
+        }
+        textarea.focus();
+    }
+
     async function sendEmailReply(btn) {
         const form = btn.closest('.email-inline-reply');
-        const textarea = form.querySelector('textarea');
+        const textarea = form.querySelector('#emailReplyBody') || form.querySelector('textarea');
         const text = textarea.value.trim();
-        if (!text) return;
+        if (!text) { showToast('Please enter a reply', 'warning'); return; }
 
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
