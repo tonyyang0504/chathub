@@ -2885,6 +2885,23 @@
                 </div>
             </div>
             <div class="message-input-container">
+                <div id="aiGenerateBar" style="display: none; padding: 6px 12px; border-bottom: 1px solid var(--border-color); background: var(--hover-bg); border-radius: 12px 12px 0 0;">
+                    <div class="d-flex gap-2 align-items-center">
+                        <select class="form-select form-select-sm" style="width: 120px; border-radius: 16px; font-size: 0.75rem;" id="chatReplyTone">
+                            <option value="professional">Professional</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="formal">Formal</option>
+                            <option value="casual">Casual</option>
+                            <option value="concise">Concise</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="generateChatReply()" id="chatAiGenBtn" style="font-size: 0.75rem;">
+                            <i class="bi bi-stars me-1"></i>AI Generate
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('aiGenerateBar').style.display='none'" style="font-size: 0.75rem;">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
                 <div class="message-input-wrapper">
                     <button class="input-icon-btn" title="Emoji" onclick="toggleEmojiPicker()">
                         <i class="bi bi-emoji-smile"></i>
@@ -2895,6 +2912,9 @@
                     <div class="emoji-picker" id="emojiPicker" style="display: none;"></div>
                     <textarea id="messageInput" class="message-input" placeholder="Type a message" rows="1"
                            onkeydown="handleMessageKeydown(event)" oninput="handleMessageInput(event)"></textarea>
+                    <button class="input-icon-btn" title="AI Generate Reply" onclick="toggleAiGenerateBar()">
+                        <i class="bi bi-stars"></i>
+                    </button>
                     <button class="send-btn" onclick="sendManualMessage()" title="Send">
                         <i class="bi bi-mic-fill" id="sendIcon"></i>
                     </button>
@@ -5227,6 +5247,10 @@
                 <i class="bi bi-${menuIsGroup ? 'people' : 'person'}"></i>
                 <span>${menuIsGroup ? 'Group info' : 'Contact info'}</span>
             </div>
+            <div class="header-dropdown-item" onclick="summarizeConversation(); closeAllMenus();">
+                <i class="bi bi-stars"></i>
+                <span>AI Summary</span>
+            </div>
             <div class="header-dropdown-item" onclick="exportConversation(); closeAllMenus();">
                 <i class="bi bi-download"></i>
                 <span>Export chat</span>
@@ -5956,6 +5980,102 @@
             resetSearchState();
         } else {
             closeMessageSearch();
+        }
+    }
+
+    // AI Generate Reply for chat conversations
+    function toggleAiGenerateBar() {
+        const bar = document.getElementById('aiGenerateBar');
+        if (bar) bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function generateChatReply() {
+        const convId = currentConversation?.id;
+        if (!convId) return;
+
+        const btn = document.getElementById('chatAiGenBtn');
+        const toneSelect = document.getElementById('chatReplyTone');
+        const tone = toneSelect ? toneSelect.value : 'professional';
+        const input = document.getElementById('messageInput');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+
+        try {
+            const res = await fetch(`/api/conversations/${convId}/generate-reply`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({tone})
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (input) {
+                    input.value = data.reply || '';
+                    input.style.height = 'auto';
+                    input.style.height = input.scrollHeight + 'px';
+                    input.focus();
+                }
+                showToast('AI reply generated', 'success');
+                document.getElementById('aiGenerateBar').style.display = 'none';
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to generate reply', 'danger');
+            }
+        } catch(e) {
+            showToast('Failed to generate reply', 'danger');
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stars me-1"></i>AI Generate';
+    }
+
+    // AI Summary for any conversation (not just email)
+    async function summarizeConversation() {
+        const convId = currentConversation?.id;
+        if (!convId) return;
+
+        // For email, use the existing thread summary
+        if (isEmailConversation()) {
+            summarizeEmailThread();
+            return;
+        }
+
+        // Show summary in a modal-like overlay at the top of messages
+        const container = document.getElementById('messageContainer');
+        if (!container) return;
+
+        // Remove existing summary
+        const existing = document.getElementById('chatSummaryCard');
+        if (existing) { existing.remove(); return; }
+
+        const card = document.createElement('div');
+        card.id = 'chatSummaryCard';
+        card.style.cssText = 'padding: 16px; margin: 12px; background: linear-gradient(135deg, #f0f4ff, #e8f0fe); border-radius: 12px; border-left: 4px solid #1a73e8;';
+        card.innerHTML = '<div style="font-weight: 600; font-size: 0.85rem; color: #1a73e8; margin-bottom: 6px;"><i class="bi bi-stars me-1"></i>AI Summary</div><div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Analyzing conversation...</div>';
+        container.insertBefore(card, container.firstChild);
+        card.scrollIntoView({ behavior: 'smooth' });
+
+        try {
+            const res = await fetch(`/api/conversations/${convId}/summarize-thread`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div style="font-weight: 600; font-size: 0.85rem; color: #1a73e8;"><i class="bi bi-stars me-1"></i>AI Summary</div>
+                        <button class="btn btn-sm" style="font-size: 0.7rem; padding: 2px 8px; opacity: 0.5;" onclick="this.closest('#chatSummaryCard').remove()"><i class="bi bi-x"></i></button>
+                    </div>
+                    <div style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary);">${renderSimpleMarkdown(data.summary)}</div>`;
+            } else {
+                const err = await res.json().catch(() => ({}));
+                card.innerHTML = `<div class="text-danger small">${err.detail || 'Failed to generate summary'}</div>`;
+            }
+        } catch(e) {
+            card.innerHTML = '<div class="text-danger small">Failed to generate summary</div>';
         }
     }
 
