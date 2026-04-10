@@ -528,13 +528,24 @@ class EmailAdapter(PlatformAdapter):
             msg.attach(text_part)
 
             # Attachments
+            import mimetypes
             for file_path, filename in (attachments or []):
                 try:
+                    # Detect MIME type from filename
+                    mime_type, _ = mimetypes.guess_type(filename)
+                    if mime_type:
+                        main_type, sub_type = mime_type.split("/", 1)
+                    else:
+                        main_type, sub_type = "application", "octet-stream"
+
                     with open(file_path, "rb") as f:
-                        part = MIMEBase("application", "octet-stream")
+                        part = MIMEBase(main_type, sub_type)
                         part.set_payload(f.read())
                         encoders.encode_base64(part)
                         part.add_header("Content-Disposition", f"attachment; filename=\"{filename}\"")
+                        # For images, also add Content-ID for inline display
+                        if main_type == "image":
+                            part.add_header("Content-ID", f"<{filename}>")
                         msg.attach(part)
                 except Exception as e:
                     logger.warning(f"Failed to attach {filename}: {e}")
