@@ -743,8 +743,11 @@ Rules:
         return {"reply": body, "subject": subject_line}
 
     except Exception as e:
+        error_msg = str(e)
+        if 'api_key' in error_msg.lower() or 'auth' in error_msg.lower() or '401' in error_msg:
+            raise HTTPException(status_code=400, detail="Invalid AI API key. Update the bot's API key in Settings.")
         logger.error(f"AI reply generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate reply: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate reply: {error_msg[:100]}")
 
 
 @router.post("/{conversation_id}/summarize-thread")
@@ -809,7 +812,10 @@ Keep the summary brief (3-5 bullet points). Use clear, direct language."""
 
     except Exception as e:
         logger.error(f"Thread summary error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(e)}")
+        error_msg = str(e)
+        if 'api_key' in error_msg.lower() or 'auth' in error_msg.lower() or '401' in error_msg:
+            raise HTTPException(status_code=400, detail="Invalid AI API key. Update the bot's API key in Settings.")
+        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {error_msg[:100]}")
 
 
 @router.post("/{conversation_id}/send-email")
