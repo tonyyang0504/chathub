@@ -5412,12 +5412,19 @@
 
         container.innerHTML = displayMembers.map((member, index) => `
             <div class="group-member-item" style="display: flex; align-items: center; padding: 8px 0; ${index < displayMembers.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''}">
-                <div class="member-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: #dfe5e7; display: flex; align-items: center; justify-content: center; margin-right: 12px; overflow: hidden; flex-shrink: 0;">
-                    ${member.sender_profile_pic
-                        ? `<img src="${member.sender_profile_pic}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                           <i class="bi bi-person-fill" style="display: none; color: #8696a0;"></i>`
-                        : '<i class="bi bi-person-fill" style="color: #8696a0;"></i>'
-                    }
+                <div class="member-avatar" style="margin-right: 12px;">
+                    ${(() => {
+                        const mName = member.sender_name || 'Unknown';
+                        const mColor = getEmailAvatarColor(mName);
+                        const mInitial = mName.charAt(0).toUpperCase();
+                        if (member.sender_profile_pic) {
+                            return `<div style="width:40px;height:40px;border-radius:50%;background:${mColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${40*0.45}px;position:relative;overflow:hidden;">
+                                <span>${mInitial}</span>
+                                <img src="${member.sender_profile_pic}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
+                            </div>`;
+                        }
+                        return getEmailAvatarHtml(mName, '', 40);
+                    })()}
                 </div>
                 <div class="member-info" style="flex: 1; min-width: 0;">
                     <div class="member-name" style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${member.sender_name || 'Unknown'}</div>
