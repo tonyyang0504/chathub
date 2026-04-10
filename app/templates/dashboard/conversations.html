@@ -6011,33 +6011,55 @@
         });
 
         // Search in email cards (email platform)
+        // Use messagesData for content search since HTML emails are in iframes
         const emailCards = container.querySelectorAll('.email-card');
         emailCards.forEach((card, index) => {
-            // Search in collapsed snippet
-            const snippet = card.querySelector('.email-snippet');
-            // Search in expanded body plain text
-            const plainText = card.querySelector('.plain-text');
-            // Search in sender name
-            const sender = card.querySelector('.email-sender-name');
+            const msgId = card.dataset.msgId;
 
-            const elements = [snippet, plainText, sender].filter(Boolean);
-            for (const el of elements) {
-                const text = el.textContent || '';
-                if (text.toLowerCase().includes(queryLower)) {
-                    // Expand the card if collapsed
-                    if (!card.classList.contains('expanded')) {
-                        card.classList.add('expanded');
+            // Get the raw message content from messagesData
+            let searchText = '';
+            if (messagesData && messagesData.length) {
+                const msgData = messagesData.find(m => String(m.id) === String(msgId));
+                if (msgData) {
+                    let content = msgData.content || '';
+                    // Strip HTML marker — search only plain text part
+                    if (content.includes('<!--EMAIL_HTML-->')) {
+                        content = content.split('<!--EMAIL_HTML-->')[0];
                     }
-                    const targetEl = plainText || snippet || el;
-                    searchResults.push({
-                        element: card,
-                        textElement: targetEl,
-                        originalText: targetEl.textContent,
-                        index: messageBubbles.length + index
-                    });
-                    highlightText(targetEl, query);
-                    break; // One match per card
+                    // Strip Subject: prefix
+                    content = content.replace(/^Subject:.*?\n\n/s, '');
+                    searchText = content + ' ' + (msgData.sender_name || '') + ' ' + (msgData.sender || '');
                 }
+            }
+
+            // Fallback: search visible DOM text
+            if (!searchText) {
+                const snippet = card.querySelector('.email-snippet');
+                const plainText = card.querySelector('.plain-text');
+                const sender = card.querySelector('.email-sender-name');
+                searchText = [snippet, plainText, sender].filter(Boolean).map(el => el.textContent).join(' ');
+            }
+
+            if (searchText.toLowerCase().includes(queryLower)) {
+                // Expand the card to show the match
+                if (!card.classList.contains('expanded')) {
+                    card.classList.add('expanded');
+                }
+
+                // Try to highlight in visible text elements
+                const plainTextEl = card.querySelector('.plain-text');
+                const snippetEl = card.querySelector('.email-snippet');
+                const targetEl = plainTextEl || snippetEl;
+                if (targetEl && targetEl.textContent.toLowerCase().includes(queryLower)) {
+                    highlightText(targetEl, query);
+                }
+
+                searchResults.push({
+                    element: card,
+                    textElement: targetEl || card,
+                    originalText: searchText.substring(0, 200),
+                    index: messageBubbles.length + index
+                });
             }
         });
 
