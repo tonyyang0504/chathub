@@ -1408,8 +1408,8 @@
     }
 
     .contact-info-avatar {
-        width: 140px;
-        height: 140px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
         margin: 0 auto 14px;
         background: #dfe5e7;
@@ -1427,7 +1427,7 @@
     }
 
     .contact-info-avatar i {
-        font-size: 70px;
+        font-size: 36px;
         color: white;
     }
 
@@ -5189,21 +5189,21 @@
             const name = currentConversation.display_name || currentConversation.chat_name || '?';
             const initial = name.charAt(0).toUpperCase();
             const color = getEmailAvatarColor(name);
-            avatarContent = getEmailAvatarHtml(name, emailAddr, 140);
+            avatarContent = getEmailAvatarHtml(name, emailAddr, 80);
         } else if (currentConversation.profile_pic) {
             const cifName = currentConversation.display_name || currentConversation.chat_name || '?';
             const cifColor = getEmailAvatarColor(cifName);
             const cifInitial = cifName.charAt(0).toUpperCase();
-            avatarContent = `<div style="width:140px;height:140px;border-radius:50%;background:${cifColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:3.5rem;position:relative;overflow:hidden;">
+            avatarContent = `<div style="width:80px;height:80px;border-radius:50%;background:${cifColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:2rem;position:relative;overflow:hidden;">
                 <span>${cifInitial}</span>
                 <img src="${currentConversation.profile_pic}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
             </div>`;
         } else {
             const ciName = currentConversation.display_name || currentConversation.chat_name || '?';
             if (contactIsGroup) {
-                avatarContent = `<div style="width:140px;height:140px;border-radius:50%;background:${getEmailAvatarColor(ciName)};display:flex;align-items:center;justify-content:center;color:white;font-size:3.5rem;"><i class="bi bi-people-fill"></i></div>`;
+                avatarContent = `<div style="width:80px;height:80px;border-radius:50%;background:${getEmailAvatarColor(ciName)};display:flex;align-items:center;justify-content:center;color:white;font-size:2rem;"><i class="bi bi-people-fill"></i></div>`;
             } else {
-                avatarContent = getEmailAvatarHtml(ciName, '', 140);
+                avatarContent = getEmailAvatarHtml(ciName, '', 80);
             }
         }
 
