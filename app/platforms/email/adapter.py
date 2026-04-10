@@ -513,7 +513,31 @@ class EmailAdapter(PlatformAdapter):
         """Send an email message."""
         state = _get_state(bot_profile_id)
         if not state.get("email_address"):
-            return False
+            # Try loading credentials from DB (in case instance was recreated)
+            try:
+                from app.database import SessionLocal, BotProfile as BPModel
+                from app.auth.utils import decrypt_string
+                import json as json_mod
+                _db = SessionLocal()
+                try:
+                    bot = _db.query(BPModel).filter(BPModel.id == bot_profile_id).first()
+                    if bot:
+                        pc = json_mod.loads(bot.platform_config or "{}")
+                        state["email_address"] = pc.get("email_address", "")
+                        if pc.get("platform_token_encrypted"):
+                            state["password"] = decrypt_string(pc["platform_token_encrypted"])
+                        domain = state["email_address"].split("@")[-1].lower() if state["email_address"] else ""
+                        preset = SERVER_PRESETS.get(domain, {})
+                        state["imap_server"] = pc.get("imap_server") or preset.get("imap", "")
+                        state["imap_port"] = int(pc.get("imap_port", preset.get("imap_port", 993)))
+                        state["smtp_server"] = pc.get("smtp_server") or preset.get("smtp", "")
+                        state["smtp_port"] = int(pc.get("smtp_port", preset.get("smtp_port", 587)))
+                finally:
+                    _db.close()
+            except Exception as e:
+                logger.error(f"Bot {bot_profile_id}: Failed to load email credentials: {e}")
+            if not state.get("email_address"):
+                return False
         # Extract email address from thread key (format: "email@addr:subject" or plain email)
         to_addr = chat_id.split(":")[0] if ":" in chat_id and "@" in chat_id.split(":")[0] else chat_id
         # Extract subject from thread key for reply subject line
