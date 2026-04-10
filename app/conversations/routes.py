@@ -710,10 +710,11 @@ async def generate_email_reply(
 Tone: {tone_instructions.get(tone, tone_instructions['professional'])}
 
 Rules:
-- Write ONLY the reply body text — no subject line, no "Dear..." greeting format unless appropriate for the tone
-- Do not include email headers or signatures
+- Output format: first line is the subject (prefixed with "Subject: "), then a blank line, then the reply body
+- For replies, the subject should be "Re: <original subject>" unless a new subject is more appropriate
 - Be contextually relevant to the conversation thread
-- Keep the reply focused and natural"""
+- Keep the reply focused and natural
+- Do not include email headers or signatures beyond the subject line"""
 
     ai_messages = [
         {"role": "system", "content": system_prompt},
@@ -731,7 +732,15 @@ Rules:
         response = await asyncio.to_thread(provider.chat_completion, ai_messages)
         reply_text = response.content if hasattr(response, 'content') else str(response)
 
-        return {"reply": reply_text}
+        # Parse subject and body from AI output
+        subject_line = ""
+        body = reply_text
+        if reply_text.startswith("Subject:"):
+            lines = reply_text.split("\n", 1)
+            subject_line = lines[0].replace("Subject:", "").strip()
+            body = lines[1].strip() if len(lines) > 1 else ""
+
+        return {"reply": body, "subject": subject_line}
 
     except Exception as e:
         logger.error(f"AI reply generation error: {e}")

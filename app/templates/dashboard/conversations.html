@@ -3444,6 +3444,11 @@
             if (res.ok) {
                 const data = await res.json();
                 textarea.value = data.reply || '';
+                // Also fill subject if AI generated one
+                if (data.subject) {
+                    const subjectInput = form.querySelector('#emailReplySubject');
+                    if (subjectInput) subjectInput.value = data.subject;
+                }
                 textarea.focus();
                 showToast('AI reply generated', 'success');
             } else {
