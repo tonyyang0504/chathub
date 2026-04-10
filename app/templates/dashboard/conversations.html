@@ -3334,22 +3334,44 @@
     }
 
     function emailReplyTo(msgId) {
-        const textarea = document.getElementById('emailReplyText');
-        if (textarea) {
-            textarea.focus();
-            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Remove any existing reply forms
+        document.querySelectorAll('.email-inline-reply').forEach(f => f.remove());
+
+        // Find the card and add reply form after the actions
+        const cards = document.querySelectorAll('.email-card');
+        let targetCard = null;
+        cards.forEach(card => {
+            if (card.dataset.msgId == msgId) targetCard = card;
+        });
+        if (!targetCard) {
+            // Fallback: use the last card
+            targetCard = cards[cards.length - 1];
         }
+        if (!targetCard) return;
+
+        const form = document.createElement('div');
+        form.className = 'email-inline-reply';
+        form.style.cssText = 'padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--hover-bg);';
+        form.innerHTML = `
+            <textarea class="form-control mb-2" placeholder="Type your reply..." style="border-radius: 12px; resize: vertical; min-height: 80px; font-size: 0.9rem;"></textarea>
+            <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-inline-reply').remove()">Cancel</button>
+                <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply(this)">
+                    <i class="bi bi-send me-1"></i>Send
+                </button>
+            </div>`;
+        targetCard.appendChild(form);
+        form.querySelector('textarea').focus();
     }
 
-    async function sendEmailReply() {
-        const textarea = document.getElementById('emailReplyText');
-        if (!textarea) return;
+    async function sendEmailReply(btn) {
+        const form = btn.closest('.email-inline-reply');
+        const textarea = form.querySelector('textarea');
         const text = textarea.value.trim();
         if (!text) return;
 
-        const sendBtn = textarea.closest('.email-reply-box').querySelector('button:last-child');
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
 
         try {
             const convId = currentConversation?.id;
@@ -3362,19 +3384,19 @@
             });
 
             if (res.ok) {
-                textarea.value = '';
+                form.remove();
                 showToast('Reply sent', 'success');
                 loadMessages(convId);
             } else {
                 const err = await res.json().catch(() => ({}));
                 showToast(err.detail || 'Failed to send reply', 'danger');
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
             }
         } catch(e) {
             showToast('Failed to send reply', 'danger');
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send me-1"></i>Send';
         }
     }
 
