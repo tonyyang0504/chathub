@@ -381,13 +381,22 @@ class EmailAdapter(PlatformAdapter):
             if not bot:
                 return
 
-            # Find or create conversation (use email address as chat_id)
+            # Thread-based conversation grouping
+            # Normalize subject (strip Re:/Fwd: prefixes) to group replies together
+            norm_subject = re.sub(r'^(Re|Fwd|FW|RE):\s*', '', subject or '', flags=re.IGNORECASE).strip()
+            # Use (sender, normalized_subject) as thread key for conversation
+            # This groups all emails in the same thread into one conversation
+            thread_key = f"{from_addr}:{norm_subject}" if norm_subject else from_addr
+            # Conversation name shows subject (or sender if no subject)
+            conv_name = norm_subject if norm_subject else f"Email from {from_name}"
+
             conversation = find_or_create_conversation(
                 db=db,
                 bot_profile_id=bot_id,
-                chat_id=from_addr,
-                chat_name=from_name,
+                chat_id=thread_key,
+                chat_name=conv_name,
                 phone=from_addr,
+                display_name=from_name,
                 is_group=False,
             )
 

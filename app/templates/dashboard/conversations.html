@@ -2025,6 +2025,52 @@
         border-radius: 2px;
     }
 
+    /* Email message rendering */
+    .message-panel.email-mode {
+        background-color: var(--wa-panel-bg) !important;
+        background-image: none !important;
+    }
+    .email-thread { padding: 16px; }
+    .email-message-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .email-message-card.outgoing {
+        border-left: 4px solid #22c55e;
+    }
+    .email-message-card.incoming {
+        border-left: 4px solid #3b82f6;
+    }
+    .email-message-header {
+        padding: 12px 16px;
+        background: var(--hover-bg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .email-message-sender {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .email-message-sender .badge {
+        font-size: 0.7rem;
+        margin-left: 6px;
+    }
+    .email-message-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    .email-message-body {
+        padding: 16px;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
 </style>
 {% endblock %}
 
@@ -2314,7 +2360,8 @@
                                 ...c,
                                 bot_id: bot.id,
                                 bot_name: bot.name,
-                                bot_profile_pic: bot.whatsapp_profile_pic
+                                bot_profile_pic: bot.whatsapp_profile_pic,
+                                bot_platform_type: bot.platform_type || 'whatsapp'
                             })));
                         }
                     } catch (e) {
@@ -2723,8 +2770,15 @@
             let lastSender = null;
 
             const msgIsGroup = isGroupChat(currentConversation);
+            const emailMode = isEmailConversation();
             // Clear messages data for new conversation
             messagesData = {};
+
+            // Toggle email mode class on the message panel
+            const messagePanel = document.getElementById('messagePanel');
+            if (messagePanel) {
+                messagePanel.classList.toggle('email-mode', emailMode);
+            }
 
             // Add "Load more" button at top if there are older messages
             if (messagesPagination.hasMore) {
@@ -2736,6 +2790,8 @@
                 </div>`;
             }
 
+            if (emailMode) html += '<div class="email-thread">';
+
             data.messages.forEach((msg, idx) => {
                 // Add message ID to deduplication set and store for reply feature
                 if (msg.id) {
@@ -2743,26 +2799,32 @@
                     storeMessageData(msg);
                 }
 
-                const msgDate = new Date(msg.timestamp).toDateString();
-
-                // Add date separator if date changed
-                if (msgDate !== lastDate) {
-                    html += `<div class="date-separator"><span>${formatDateFull(msg.timestamp)}</span></div>`;
-                    lastDate = msgDate;
-                    lastSender = null;
-                }
-
-                // Determine if this is the first message in a series from this sender
-                let isFirstInSeries = false;
-                if (msg.role === 'user') {
-                    isFirstInSeries = msgIsGroup ? (msg.sender_name !== lastSender) : (lastSender !== 'user');
+                if (emailMode) {
+                    html += renderEmailMessage(msg);
                 } else {
-                    isFirstInSeries = lastSender !== 'bot';
-                }
+                    const msgDate = new Date(msg.timestamp).toDateString();
 
-                html += createMessageHTML(msg, isFirstInSeries, msgIsGroup);
-                lastSender = msg.role === 'user' ? (msgIsGroup ? msg.sender_name : 'user') : 'bot';
+                    // Add date separator if date changed
+                    if (msgDate !== lastDate) {
+                        html += `<div class="date-separator"><span>${formatDateFull(msg.timestamp)}</span></div>`;
+                        lastDate = msgDate;
+                        lastSender = null;
+                    }
+
+                    // Determine if this is the first message in a series from this sender
+                    let isFirstInSeries = false;
+                    if (msg.role === 'user') {
+                        isFirstInSeries = msgIsGroup ? (msg.sender_name !== lastSender) : (lastSender !== 'user');
+                    } else {
+                        isFirstInSeries = lastSender !== 'bot';
+                    }
+
+                    html += createMessageHTML(msg, isFirstInSeries, msgIsGroup);
+                    lastSender = msg.role === 'user' ? (msgIsGroup ? msg.sender_name : 'user') : 'bot';
+                }
             });
+
+            if (emailMode) html += '</div>';
 
             container.innerHTML = html;
 
@@ -2828,28 +2890,34 @@
             let lastSender = null;
             const msgIsGroup = isGroupChat(currentConversation);
 
+            const emailMode = isEmailConversation();
+
             data.messages.forEach((msg) => {
                 if (msg.id) {
                     displayedMessageIds.add(msg.id);
                     storeMessageData(msg);
                 }
 
-                const msgDate = new Date(msg.timestamp).toDateString();
-                if (msgDate !== lastDate) {
-                    html += `<div class="date-separator"><span>${formatDateFull(msg.timestamp)}</span></div>`;
-                    lastDate = msgDate;
-                    lastSender = null;
-                }
-
-                let isFirstInSeries = false;
-                if (msg.role === 'user') {
-                    isFirstInSeries = msgIsGroup ? (msg.sender_name !== lastSender) : (lastSender !== 'user');
+                if (emailMode) {
+                    html += renderEmailMessage(msg);
                 } else {
-                    isFirstInSeries = lastSender !== 'bot';
-                }
+                    const msgDate = new Date(msg.timestamp).toDateString();
+                    if (msgDate !== lastDate) {
+                        html += `<div class="date-separator"><span>${formatDateFull(msg.timestamp)}</span></div>`;
+                        lastDate = msgDate;
+                        lastSender = null;
+                    }
 
-                html += createMessageHTML(msg, isFirstInSeries, msgIsGroup);
-                lastSender = msg.role === 'user' ? (msgIsGroup ? msg.sender_name : 'user') : 'bot';
+                    let isFirstInSeries = false;
+                    if (msg.role === 'user') {
+                        isFirstInSeries = msgIsGroup ? (msg.sender_name !== lastSender) : (lastSender !== 'user');
+                    } else {
+                        isFirstInSeries = lastSender !== 'bot';
+                    }
+
+                    html += createMessageHTML(msg, isFirstInSeries, msgIsGroup);
+                    lastSender = msg.role === 'user' ? (msgIsGroup ? msg.sender_name : 'user') : 'bot';
+                }
             });
 
             // Update pagination
@@ -2871,7 +2939,18 @@
             }
 
             // Prepend older messages at top
-            container.insertAdjacentHTML('afterbegin', newButtonHtml + html);
+            if (emailMode) {
+                // In email mode, prepend inside the email-thread wrapper
+                const emailThread = container.querySelector('.email-thread');
+                if (emailThread) {
+                    emailThread.insertAdjacentHTML('afterbegin', html);
+                    container.insertAdjacentHTML('afterbegin', newButtonHtml);
+                } else {
+                    container.insertAdjacentHTML('afterbegin', newButtonHtml + html);
+                }
+            } else {
+                container.insertAdjacentHTML('afterbegin', newButtonHtml + html);
+            }
 
             // Remove duplicate date separators (when older and newer messages are from same day)
             const dateSeparators = container.querySelectorAll('.date-separator');
@@ -2902,6 +2981,42 @@
         } finally {
             messagesPagination.isLoading = false;
         }
+    }
+
+    function isEmailConversation() {
+        if (!currentConversation) return false;
+        // Check conversation's stored platform type first
+        if (currentConversation.bot_platform_type === 'email') return true;
+        // Fall back to looking up the bot
+        const bot = bots.find(b => b.id === currentConversation.bot_id);
+        return bot && bot.platform_type === 'email';
+    }
+
+    function renderEmailMessage(msg) {
+        const isOutgoing = msg.role === 'assistant';
+        const senderName = isOutgoing ? 'AI Bot' : (msg.sender_name || msg.sender || 'Unknown');
+        const badgeClass = isOutgoing ? 'bg-success' : 'bg-primary';
+        const badgeText = isOutgoing ? 'Bot Reply' : 'Received';
+        const cardClass = isOutgoing ? 'outgoing' : 'incoming';
+        const time = new Date(msg.timestamp).toLocaleString();
+
+        // Strip "Subject: ..." prefix from content for display
+        let body = msg.content || '';
+        body = body.replace(/^Subject:.*?\n\n/s, '');
+        body = escapeHtml(body);
+
+        return `
+        <div class="email-message-card ${cardClass}">
+            <div class="email-message-header">
+                <div class="email-message-sender">
+                    <i class="bi ${isOutgoing ? 'bi-robot' : 'bi-envelope'} me-1"></i>
+                    ${escapeHtml(senderName)}
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="email-message-time">${time}</div>
+            </div>
+            <div class="email-message-body">${body}</div>
+        </div>`;
     }
 
     function createMessageHTML(msg, isFirstInSeries = false, isGroup = false) {
@@ -3125,11 +3240,23 @@
                 }
             }
 
-            const msgHTML = createMessageHTML(msg, isFirstInSeries, currIsGroup);
-            if (msgHTML) {
-                container.insertAdjacentHTML('beforeend', msgHTML);
-                if (container.lastElementChild) {
-                    container.lastElementChild.classList.add('new-message');
+            let msgHTML;
+            if (isEmailConversation()) {
+                msgHTML = renderEmailMessage(msg);
+                const emailThread = container.querySelector('.email-thread');
+                if (emailThread) {
+                    emailThread.insertAdjacentHTML('beforeend', msgHTML);
+                } else {
+                    // Create email thread wrapper if it doesn't exist yet
+                    container.insertAdjacentHTML('beforeend', `<div class="email-thread">${msgHTML}</div>`);
+                }
+            } else {
+                msgHTML = createMessageHTML(msg, isFirstInSeries, currIsGroup);
+                if (msgHTML) {
+                    container.insertAdjacentHTML('beforeend', msgHTML);
+                    if (container.lastElementChild) {
+                        container.lastElementChild.classList.add('new-message');
+                    }
                 }
             }
 
