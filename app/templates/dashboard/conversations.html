@@ -3353,7 +3353,19 @@
         form.className = 'email-inline-reply';
         form.style.cssText = 'padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--hover-bg);';
         form.innerHTML = `
-            <textarea class="form-control mb-2" placeholder="Type your reply..." style="border-radius: 12px; resize: vertical; min-height: 80px; font-size: 0.9rem;"></textarea>
+            <div class="d-flex gap-2 mb-2 align-items-center">
+                <select class="form-select form-select-sm" style="width: 140px; border-radius: 20px;" id="emailReplyTone">
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="formal">Formal</option>
+                    <option value="casual">Casual</option>
+                    <option value="concise">Concise</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="generateAIReply(this)" style="display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-stars me-1"></i>AI Generate
+                </button>
+            </div>
+            <textarea class="form-control mb-2" placeholder="Type your reply or use AI Generate..." style="border-radius: 12px; resize: vertical; min-height: 80px; font-size: 0.9rem;"></textarea>
             <div class="d-flex gap-2 justify-content-end">
                 <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-inline-reply').remove()">Cancel</button>
                 <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply(this)">
@@ -3362,6 +3374,41 @@
             </div>`;
         targetCard.appendChild(form);
         form.querySelector('textarea').focus();
+    }
+
+    async function generateAIReply(btn) {
+        const form = btn.closest('.email-inline-reply');
+        const textarea = form.querySelector('textarea');
+        const toneSelect = form.querySelector('#emailReplyTone');
+        const tone = toneSelect ? toneSelect.value : 'professional';
+        const convId = currentConversation?.id;
+        if (!convId) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+
+        try {
+            const res = await fetch(`/api/conversations/${convId}/generate-reply`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({tone})
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                textarea.value = data.reply || '';
+                textarea.focus();
+                showToast('AI reply generated', 'success');
+            } else {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || 'Failed to generate reply', 'danger');
+            }
+        } catch(e) {
+            showToast('Failed to generate reply', 'danger');
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stars me-1"></i>AI Generate';
     }
 
     async function sendEmailReply(btn) {

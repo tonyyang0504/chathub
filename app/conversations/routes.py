@@ -651,6 +651,93 @@ async def websocket_bot_chats(websocket: WebSocket, bot_id: int):
         db.close()
 
 
+# ============== AI Email Reply Generation ==============
+
+@router.post("/{conversation_id}/generate-reply")
+async def generate_email_reply(
+    conversation_id: int,
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Generate an AI email reply based on thread history and selected tone."""
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
+
+    bot_profile = db.query(BotProfile).filter(BotProfile.id == conversation.bot_profile_id).first()
+    if not bot_profile:
+        raise HTTPException(status_code=404, detail="Bot profile not found")
+
+    if not bot_profile.api_key_encrypted:
+        raise HTTPException(status_code=400, detail="No AI API key configured on this bot")
+
+    tone = body.get("tone", "professional")
+    valid_tones = ["professional", "friendly", "formal", "casual", "concise"]
+    if tone not in valid_tones:
+        tone = "professional"
+
+    # Get conversation history
+    messages = db.query(Message).filter(
+        Message.conversation_id == conversation_id
+    ).order_by(Message.timestamp.asc()).all()
+
+    if not messages:
+        raise HTTPException(status_code=400, detail="No messages in this conversation")
+
+    # Build email thread context (strip HTML markers)
+    thread_context = []
+    for msg in messages:
+        content = msg.content or ""
+        if "<!--EMAIL_HTML-->" in content:
+            content = content.split("<!--EMAIL_HTML-->")[0].strip()
+        # Strip Subject: prefix
+        content = content.replace("Subject:", "").strip() if content.startswith("Subject:") else content
+        role_label = "Sender" if msg.role == "user" else "Our Reply"
+        sender = msg.sender_name or ("Sender" if msg.role == "user" else "Bot")
+        thread_context.append(f"[{role_label} - {sender}]:\n{content}")
+
+    thread_text = "\n\n---\n\n".join(thread_context)
+
+    tone_instructions = {
+        "professional": "Write in a professional, business-appropriate tone. Be clear, polite, and direct.",
+        "friendly": "Write in a warm, friendly tone. Be approachable and personable while staying helpful.",
+        "formal": "Write in a formal, respectful tone. Use proper language and maintain a serious, courteous demeanor.",
+        "casual": "Write in a casual, relaxed tone. Be conversational and natural, like chatting with a friend.",
+        "concise": "Write a very brief, to-the-point reply. Keep it short — maximum 2-3 sentences.",
+    }
+
+    system_prompt = f"""You are an email reply assistant. Generate a reply to the latest email in the thread below.
+
+Tone: {tone_instructions.get(tone, tone_instructions['professional'])}
+
+Rules:
+- Write ONLY the reply body text — no subject line, no "Dear..." greeting format unless appropriate for the tone
+- Do not include email headers or signatures
+- Be contextually relevant to the conversation thread
+- Keep the reply focused and natural"""
+
+    ai_messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Email thread:\n\n{thread_text}\n\nGenerate a reply to the latest email:"}
+    ]
+
+    try:
+        from app.ai.factory import get_ai_provider
+        from app.auth.utils import decrypt_string
+
+        api_key = decrypt_string(bot_profile.api_key_encrypted)
+        provider = get_ai_provider(bot_profile.ai_provider, api_key, bot_profile.model)
+
+        import asyncio
+        response = await asyncio.to_thread(provider.chat_completion, ai_messages)
+        reply_text = response.content if hasattr(response, 'content') else str(response)
+
+        return {"reply": reply_text}
+
+    except Exception as e:
+        logger.error(f"AI reply generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate reply: {str(e)}")
+
+
 # ============== Manual Message Sending ==============
 
 @router.post("/{conversation_id}/send")
