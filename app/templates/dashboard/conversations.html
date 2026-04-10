@@ -5990,9 +5990,10 @@
         const container = document.getElementById('messageContainer');
         if (!container) return;
 
-        const messageBubbles = container.querySelectorAll('.message-bubble');
         const queryLower = query.toLowerCase();
 
+        // Search in chat bubbles (messaging platforms)
+        const messageBubbles = container.querySelectorAll('.message-bubble');
         messageBubbles.forEach((bubble, index) => {
             const textEl = bubble.querySelector('.message-text .selectable-text');
             if (!textEl) return;
@@ -6005,9 +6006,38 @@
                     originalText: text,
                     index: index
                 });
-
-                // Highlight the matching text
                 highlightText(textEl, query);
+            }
+        });
+
+        // Search in email cards (email platform)
+        const emailCards = container.querySelectorAll('.email-card');
+        emailCards.forEach((card, index) => {
+            // Search in collapsed snippet
+            const snippet = card.querySelector('.email-snippet');
+            // Search in expanded body plain text
+            const plainText = card.querySelector('.plain-text');
+            // Search in sender name
+            const sender = card.querySelector('.email-sender-name');
+
+            const elements = [snippet, plainText, sender].filter(Boolean);
+            for (const el of elements) {
+                const text = el.textContent || '';
+                if (text.toLowerCase().includes(queryLower)) {
+                    // Expand the card if collapsed
+                    if (!card.classList.contains('expanded')) {
+                        card.classList.add('expanded');
+                    }
+                    const targetEl = plainText || snippet || el;
+                    searchResults.push({
+                        element: card,
+                        textElement: targetEl,
+                        originalText: targetEl.textContent,
+                        index: messageBubbles.length + index
+                    });
+                    highlightText(targetEl, query);
+                    break; // One match per card
+                }
             }
         });
 
