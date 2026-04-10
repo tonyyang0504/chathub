@@ -2731,6 +2731,7 @@
                 conversations = conversations.filter(c => c.id !== convId);
                 if (currentConversation?.id === convId) {
                     currentConversation = null;
+                    closeContactInfo();
                     document.getElementById('messagePanel').innerHTML = '<div class="empty-state"><i class="bi bi-chat-dots"></i><h3>ChatHub</h3><p>Select a conversation from the list to view messages and track your bot\'s interactions.</p></div>';
                     document.getElementById('messagePanel').classList.remove('email-mode');
                 }
