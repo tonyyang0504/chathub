@@ -350,12 +350,11 @@
     }
 
     .message-header {
-        background: var(--wa-card-bg);
+        background: var(--card-bg);
         padding: 10px 16px;
         display: flex;
         align-items: center;
-        border-bottom: 1px solid #e9edef;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border-bottom: 1px solid var(--border-color);
         position: relative;
         z-index: 10;
         flex-shrink: 0;
@@ -1345,14 +1344,15 @@
     }
 
     .contact-info-header {
-        background: var(--wa-dark-green);
-        color: white;
+        background: var(--card-bg);
+        color: var(--text-primary);
         padding: 10px 16px;
         display: flex;
         align-items: center;
         gap: 6px;
         flex-shrink: 0;
         border-radius: 12px 12px 0 0;
+        border-bottom: 1px solid var(--border-color);
     }
 
     .contact-info-header .close-btn {
@@ -1360,7 +1360,7 @@
         height: 36px;
         min-width: 36px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--hover-bg);
         border: none;
         display: flex;
         align-items: center;
@@ -1372,7 +1372,7 @@
     }
 
     .contact-info-header .close-btn:hover {
-        background: rgba(255, 255, 255, 0.25);
+        background: var(--border-color);
         transform: scale(1.05);
     }
 
@@ -1386,7 +1386,7 @@
         position: absolute;
         width: 16px;
         height: 2px;
-        background-color: white;
+        background-color: var(--text-primary);
         border-radius: 1px;
         transition: background-color 0.2s ease;
     }
@@ -1403,7 +1403,7 @@
         margin: 0;
         font-weight: 500;
         font-size: 16px;
-        color: white;
+        color: var(--text-primary);
     }
 
     .contact-info-body {
