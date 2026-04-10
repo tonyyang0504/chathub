@@ -2567,9 +2567,12 @@
                 avatarContent = `<img src="${conv.profile_pic}" alt="${conv.display_name || conv.chat_name || 'Chat'}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <span class="avatar-fallback" style="display:none;">${convIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
             } else {
+                // Colored letter avatar for all platforms without profile pic
+                const fallbackName = conv.display_name || conv.chat_name || '?';
+                avatarStyle = 'background: transparent; overflow: hidden;';
                 avatarContent = convIsGroup
-                    ? '<i class="bi bi-people-fill"></i>'
-                    : '<i class="bi bi-person-fill"></i>';
+                    ? `<div style="width:44px;height:44px;border-radius:50%;background:${getEmailAvatarColor(fallbackName)};display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;"><i class="bi bi-people-fill"></i></div>`
+                    : getEmailAvatarHtml(fallbackName, '', 44);
             }
 
             // Show last message preview if available
@@ -2718,10 +2721,13 @@
                 <span class="avatar-fallback" style="display:none;">${currentIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
             headerAvatarStyle = 'background: #dfe5e7;';
         } else {
-            headerAvatarContent = currentIsGroup
-                ? '<i class="bi bi-people-fill"></i>'
-                : '<i class="bi bi-person-fill"></i>';
-            headerAvatarStyle = 'background: #dfe5e7;';
+            const hName = currentConversation.display_name || currentConversation.chat_name || '?';
+            if (currentIsGroup) {
+                headerAvatarContent = `<div style="width:40px;height:40px;border-radius:50%;background:${getEmailAvatarColor(hName)};display:flex;align-items:center;justify-content:center;color:white;font-size:1rem;"><i class="bi bi-people-fill"></i></div>`;
+            } else {
+                headerAvatarContent = getEmailAvatarHtml(hName, '', 40);
+            }
+            headerAvatarStyle = 'background: transparent; overflow: hidden;';
         }
 
         // Bot profile picture display
@@ -5174,9 +5180,12 @@
             avatarContent = `<img src="${currentConversation.profile_pic}" alt="${currentConversation.display_name || currentConversation.chat_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <span class="avatar-fallback" style="display:none;">${contactIsGroup ? '<i class="bi bi-people-fill"></i>' : '<i class="bi bi-person-fill"></i>'}</span>`;
         } else {
-            avatarContent = contactIsGroup
-                ? '<i class="bi bi-people-fill"></i>'
-                : '<i class="bi bi-person-fill"></i>';
+            const ciName = currentConversation.display_name || currentConversation.chat_name || '?';
+            if (contactIsGroup) {
+                avatarContent = `<div style="width:140px;height:140px;border-radius:50%;background:${getEmailAvatarColor(ciName)};display:flex;align-items:center;justify-content:center;color:white;font-size:3.5rem;"><i class="bi bi-people-fill"></i></div>`;
+            } else {
+                avatarContent = getEmailAvatarHtml(ciName, '', 140);
+            }
         }
 
         const displayName = currentConversation.display_name || currentConversation.chat_name || 'Unknown';
