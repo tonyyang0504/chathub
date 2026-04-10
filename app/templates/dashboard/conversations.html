@@ -3257,23 +3257,8 @@
     function getEmailAvatarHtml(name, email, size = 32) {
         const initial = (name || '?').charAt(0).toUpperCase();
         const color = getEmailAvatarColor(name || email);
-        const domain = email ? email.split('@')[1] : '';
 
-        // Try Gravatar first (with colored letter fallback via d=blank)
-        // Then try domain favicon
-        // Final fallback: colored letter
-        if (email) {
-            const emailHash = md5(email.trim().toLowerCase());
-            const gravatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=${size * 2}&d=blank`;
-            const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=${size * 2}` : '';
-
-            return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${size * 0.45}px;position:relative;overflow:hidden;flex-shrink:0;">
-                <span class="email-avatar-initial">${initial}</span>
-                ${faviconUrl ? `<img src="${faviconUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">` : ''}
-                <img src="${gravatarUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
-            </div>`;
-        }
-
+        // Clean colored letter avatar
         return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:${size * 0.45}px;flex-shrink:0;">${initial}</div>`;
     }
 
