@@ -2411,12 +2411,14 @@
             const CONV_PLATFORM_ICONS = {
                 whatsapp: 'bi-whatsapp', telegram: 'bi-telegram', instagram: 'bi-instagram',
                 messenger: 'bi-facebook', discord: 'bi-discord', slack: 'bi-slack', signal: 'bi-shield-lock-fill', line: 'bi-chat-dots-fill',
-                linkedin: 'bi-linkedin', tinder: 'bi-fire', bumble: 'bi-heart-fill', wechat: 'bi-wechat'
+                linkedin: 'bi-linkedin', tinder: 'bi-fire', bumble: 'bi-heart-fill', wechat: 'bi-wechat',
+                whatsapp_business: 'bi-whatsapp', email: 'bi-envelope', imessage: 'bi-chat-square-text'
             };
             const CONV_PLATFORM_COLORS = {
                 whatsapp: '#25D366', telegram: '#26A5E4', instagram: '#E4405F',
                 messenger: '#1877F2', discord: '#5865F2', slack: '#4A154B', signal: '#3A76F0', line: '#00B900',
-                linkedin: '#0A66C2', tinder: '#FE3C72', bumble: '#FFC629', wechat: '#07C160'
+                linkedin: '#0A66C2', tinder: '#FE3C72', bumble: '#FFC629', wechat: '#07C160',
+                whatsapp_business: '#128C7E', email: '#EA4335', imessage: '#34C759'
             };
             bots.forEach(bot => {
                 const item = document.createElement('a');
@@ -6190,7 +6192,7 @@
                 const value = this.getAttribute('data-value');
                 const text = this.textContent;
 
-                btn.textContent = text;
+                btn.innerHTML = this.innerHTML;
                 hiddenInput.value = value;
 
                 dropdown.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
