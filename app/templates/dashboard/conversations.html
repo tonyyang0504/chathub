@@ -2591,7 +2591,7 @@
                 ? `<span class="text-truncate">${escapeHtml(previewMsg)}</span>`
                 : `<span>${conv.message_count || 0} messages</span>`;
 
-            if (!isEmail && !conv.profile_pic) avatarStyle = 'background: #dfe5e7;';
+            if (conv.profile_pic && !isEmail) avatarStyle = 'background: #dfe5e7;';
 
             return `
                 <div class="chat-item ${currentConversation?.id === conv.id ? 'active' : ''}"
