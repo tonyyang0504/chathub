@@ -293,8 +293,9 @@
         color: white;
         font-size: 10px;
         padding: 1px 5px;
-        border-radius: 3px;
+        border-radius: 4px;
         margin-right: 5px;
+        font-weight: 500;
     }
 
     .chat-meta {
@@ -2636,7 +2637,7 @@
                     <div class="chat-info">
                         <div class="chat-name">${conv.display_name || conv.chat_name || conv.chat_id}</div>
                         <div class="chat-preview">
-                            <span class="bot-label">${conv.bot_name || 'Bot'}</span>
+                            <span class="bot-label" style="background: ${getPlatformColor(conv.bot_platform_type)};">${conv.bot_name || 'Bot'}</span>
                             ${preview}
                         </div>
                     </div>
@@ -3300,6 +3301,27 @@
         } catch(e) {
             return null;
         }
+    }
+
+    function getPlatformColor(platformType) {
+        const colors = {
+            whatsapp: '#25D366',
+            telegram: '#26A5E4',
+            discord: '#5865F2',
+            messenger: '#1877F2',
+            instagram: '#E4405F',
+            slack: '#4A154B',
+            signal: '#3A76F0',
+            line: '#00B900',
+            linkedin: '#0A66C2',
+            tinder: '#FE3C72',
+            bumble: '#FFC629',
+            imessage: '#34C759',
+            wechat: '#07C160',
+            whatsapp_business: '#128C7E',
+            email: '#EA4335',
+        };
+        return colors[platformType] || '#25D366';
     }
 
     function getEmailAvatarColor(name) {
