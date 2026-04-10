@@ -3250,18 +3250,7 @@
             html += renderEmailCard(msg, isExpanded);
         });
 
-        // Reply box at bottom
-        html += `<div class="email-reply-box">
-            <textarea id="emailReplyText" placeholder="Reply..."></textarea>
-            <div class="email-reply-box-footer">
-                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('emailReplyText').value=''">
-                    <i class="bi bi-trash me-1"></i>Discard
-                </button>
-                <button class="btn btn-sm rounded-pill" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply()">
-                    <i class="bi bi-send me-1"></i>Send
-                </button>
-            </div>
-        </div>`;
+        // No bottom reply box — each card has its own Reply button
 
         html += `</div>`;
         return html;
