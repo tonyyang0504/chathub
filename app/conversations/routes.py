@@ -747,6 +747,98 @@ Rules:
         raise HTTPException(status_code=500, detail=f"Failed to generate reply: {str(e)}")
 
 
+@router.post("/{conversation_id}/send-email")
+async def send_email_with_attachments(
+    conversation_id: int,
+    message: str = Form(""),
+    subject: str = Form(""),
+    cc: str = Form(""),
+    files: List[UploadFile] = File(default=[]),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Send an email reply with optional attachments."""
+    conversation = verify_conversation_ownership(conversation_id, current_user, db)
+
+    bot_profile = db.query(BotProfile).filter(BotProfile.id == conversation.bot_profile_id).first()
+    if not bot_profile:
+        raise HTTPException(status_code=404, detail="Bot profile not found")
+    if not bot_profile.is_running:
+        raise HTTPException(status_code=400, detail="Bot is not running")
+
+    # Extract email address from chat_id thread key
+    chat_id = conversation.chat_id or ""
+    to_addr = chat_id.split(":")[0] if ":" in chat_id and "@" in chat_id.split(":")[0] else chat_id
+
+    if not to_addr or "@" not in to_addr:
+        raise HTTPException(status_code=400, detail="Invalid recipient email address")
+
+    # Get email credentials
+    import json as json_mod
+    from app.auth.utils import decrypt_string
+    from app.platforms.email.adapter import EmailAdapter, _get_state, SERVER_PRESETS
+
+    state = _get_state(bot_profile.id)
+    if not state.get("email_address"):
+        pc = json_mod.loads(bot_profile.platform_config or "{}")
+        state["email_address"] = pc.get("email_address", "")
+        if pc.get("platform_token_encrypted"):
+            state["password"] = decrypt_string(pc["platform_token_encrypted"])
+        domain = state["email_address"].split("@")[-1].lower() if state["email_address"] else ""
+        preset = SERVER_PRESETS.get(domain, {})
+        state["smtp_server"] = pc.get("smtp_server") or preset.get("smtp", "")
+        state["smtp_port"] = int(pc.get("smtp_port", preset.get("smtp_port", 587)))
+
+    if not state.get("email_address") or not state.get("password"):
+        raise HTTPException(status_code=400, detail="Email credentials not configured")
+
+    # Save uploaded files to temp
+    import tempfile, os
+    attachment_paths = []
+    try:
+        for f in files:
+            if f.filename:
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(f.filename)[1])
+                content = await f.read()
+                tmp.write(content)
+                tmp.close()
+                attachment_paths.append((tmp.name, f.filename))
+
+        # Send email with attachments
+        import asyncio
+        from app.platforms.email.adapter import EmailAdapter
+        adapter = EmailAdapter()
+        sent = await asyncio.to_thread(
+            adapter._send_email_with_attachments_sync,
+            state, to_addr, subject or "", message, cc, attachment_paths
+        )
+
+        if not sent:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+
+        # Save message to DB
+        new_msg = Message(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=message + (f"\n\n[Attachments: {', '.join(f[1] for f in attachment_paths)}]" if attachment_paths else ""),
+            sender_name="Human Agent",
+            timestamp=datetime.utcnow()
+        )
+        db.add(new_msg)
+        conversation.human_takeover = True
+        conversation.human_takeover_at = datetime.utcnow()
+        db.commit()
+
+        return {"success": True, "message_id": new_msg.id}
+
+    finally:
+        for path, _ in attachment_paths:
+            try:
+                os.unlink(path)
+            except Exception:
+                pass
+
+
 # ============== Manual Message Sending ==============
 
 @router.post("/{conversation_id}/send")

@@ -509,6 +509,55 @@ class EmailAdapter(PlatformAdapter):
             logger.error(f"SMTP send error to {to_addr}: {e}")
             return False
 
+    def _send_email_with_attachments_sync(self, state: dict, to_addr: str, subject: str, body: str,
+                                              cc: str = "", attachments: list = None) -> bool:
+        """Send an email with attachments via SMTP (runs in thread)."""
+        try:
+            msg = MIMEMultipart("mixed")
+            msg["From"] = state["email_address"]
+            msg["To"] = to_addr
+            if cc:
+                msg["Cc"] = cc
+            msg["Subject"] = subject if subject else "Re:"
+
+            # Text body
+            text_part = MIMEMultipart("alternative")
+            text_part.attach(MIMEText(body, "plain", "utf-8"))
+            html_body = body.replace("\n", "<br>")
+            text_part.attach(MIMEText(f"<html><body><p>{html_body}</p></body></html>", "html", "utf-8"))
+            msg.attach(text_part)
+
+            # Attachments
+            for file_path, filename in (attachments or []):
+                try:
+                    with open(file_path, "rb") as f:
+                        part = MIMEBase("application", "octet-stream")
+                        part.set_payload(f.read())
+                        encoders.encode_base64(part)
+                        part.add_header("Content-Disposition", f"attachment; filename=\"{filename}\"")
+                        msg.attach(part)
+                except Exception as e:
+                    logger.warning(f"Failed to attach {filename}: {e}")
+
+            # Build recipient list
+            recipients = [to_addr]
+            if cc:
+                recipients.extend([addr.strip() for addr in cc.split(",") if addr.strip()])
+
+            smtp = smtplib.SMTP(state["smtp_server"], state["smtp_port"])
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(state["email_address"], state["password"])
+            smtp.sendmail(state["email_address"], recipients, msg.as_string())
+            smtp.quit()
+
+            logger.info(f"Email sent to {to_addr} (cc: {cc or 'none'}, attachments: {len(attachments or [])})")
+            return True
+
+        except Exception as e:
+            logger.error(f"SMTP send with attachments error: {e}")
+            return False
+
     async def send_message(self, bot_profile_id: int, chat_id: str, chat_name: str, message: str) -> bool:
         """Send an email message."""
         state = _get_state(bot_profile_id)

@@ -3409,10 +3409,15 @@
                 <summary style="cursor: pointer;">Quoted text</summary>
                 <div style="padding: 8px; margin-top: 4px; border-left: 3px solid var(--border-color); background: var(--hover-bg); border-radius: 4px; white-space: pre-wrap; max-height: 150px; overflow-y: auto;">${escapeHtml(quotedText.substring(0, 500))}${quotedText.length > 500 ? '...' : ''}</div>
             </details>` : ''}
+            <div id="emailAttachmentList" style="display: none;" class="mb-2 d-flex flex-wrap gap-1"></div>
+            <input type="file" id="emailAttachmentInput" multiple style="display: none;" onchange="handleEmailAttachments(this)">
             <div class="d-flex gap-2 justify-content-between align-items-center">
-                <div>
+                <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="this.closest('.email-inline-reply').remove()">
                         <i class="bi bi-x me-1"></i>Discard
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('emailAttachmentInput').click()">
+                        <i class="bi bi-paperclip me-1"></i>Attach
                     </button>
                 </div>
                 <button class="btn btn-sm rounded-pill px-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: white;" onclick="sendEmailReply(this)">
@@ -3463,6 +3468,39 @@
         btn.innerHTML = '<i class="bi bi-stars me-1"></i>AI Generate';
     }
 
+    let emailAttachmentFiles = [];
+
+    function handleEmailAttachments(input) {
+        const list = document.getElementById('emailAttachmentList');
+        for (const file of input.files) {
+            emailAttachmentFiles.push(file);
+        }
+        renderAttachmentPills();
+        input.value = '';
+    }
+
+    function removeEmailAttachment(idx) {
+        emailAttachmentFiles.splice(idx, 1);
+        renderAttachmentPills();
+    }
+
+    function renderAttachmentPills() {
+        const list = document.getElementById('emailAttachmentList');
+        if (!list) return;
+        if (emailAttachmentFiles.length === 0) {
+            list.style.display = 'none';
+            list.innerHTML = '';
+            return;
+        }
+        list.style.display = 'flex';
+        list.innerHTML = emailAttachmentFiles.map((f, i) => `
+            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--hover-bg); border-radius: 12px; font-size: 0.75rem;">
+                <i class="bi bi-paperclip"></i>${f.name}
+                <span style="cursor: pointer; color: #ef4444; margin-left: 2px;" onclick="removeEmailAttachment(${i})"><i class="bi bi-x"></i></span>
+            </span>
+        `).join('');
+    }
+
     function formatEmailText(format) {
         const textarea = document.getElementById('emailReplyBody');
         if (!textarea) return;
@@ -3483,6 +3521,11 @@
         const text = textarea.value.trim();
         if (!text) { showToast('Please enter a reply', 'warning'); return; }
 
+        const subjectInput = form.querySelector('#emailReplySubject');
+        const ccInput = form.querySelector('#emailReplyCc');
+        const subject = subjectInput ? subjectInput.value.trim() : '';
+        const cc = ccInput ? ccInput.value.trim() : '';
+
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
 
@@ -3490,13 +3533,22 @@
             const convId = currentConversation?.id;
             if (!convId) throw new Error('No conversation selected');
 
-            const res = await fetch(`/api/conversations/${convId}/send`, {
+            // Use FormData for attachment support
+            const formData = new FormData();
+            formData.append('message', text);
+            formData.append('subject', subject);
+            formData.append('cc', cc);
+            for (const file of emailAttachmentFiles) {
+                formData.append('files', file);
+            }
+
+            const res = await fetch(`/api/conversations/${convId}/send-email`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: text})
+                body: formData
             });
 
             if (res.ok) {
+                emailAttachmentFiles = [];
                 form.remove();
                 showToast('Reply sent', 'success');
                 loadMessages(convId);
