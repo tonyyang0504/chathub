@@ -918,10 +918,10 @@ async def toggle_ai_response(
         )
 
     instance = bot_manager.get_instance(bot_id)
-    if not instance or not instance.whatsapp_connected:
+    if not instance:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bot is not connected to WhatsApp"
+            detail="Bot instance not found"
         )
 
     enabled = body.get("enabled", False)

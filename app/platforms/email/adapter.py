@@ -412,7 +412,8 @@ class EmailAdapter(PlatformAdapter):
                 return
             if not is_sender_approved(db, conversation.id):
                 return
-            if not bot.is_active:
+            # Check AI response toggle (instance flag set by toggle-ai endpoint)
+            if instance and hasattr(instance, 'ai_response_enabled') and not instance.ai_response_enabled:
                 return
 
             # Generate AI response
