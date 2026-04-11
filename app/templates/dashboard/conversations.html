@@ -5868,7 +5868,8 @@
         const wrapper = document.getElementById('modelSelectorWrapper');
         if (!wrapper || !currentConversation) return;
 
-        // Show for all platforms including email
+        // Always reset wrapper first
+        wrapper.innerHTML = '';
 
         // Get the current bot
         const bot = bots.find(b => b.id === currentConversation.bot_id);
@@ -5891,23 +5892,31 @@
         const botModel = bot.model || '';
         const providerInfo = CONV_PROVIDER_INFO[botProvider];
 
-        if (!hasFallbacks && !hasOverride) {
-            // Simple label — no dropdowns
-            const color = providerInfo ? providerInfo.color : '#666';
-            const label = providerInfo ? providerInfo.label : botProvider;
-            const displayModel = botModel || 'default';
-            wrapper.style.cssText = 'display: flex !important; align-items: center; margin-right: 8px;';
-            wrapper.innerHTML = `
-                <span class="provider-model-label" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;"
-                      title="Click to change model" onclick="expandModelSelector()">
-                    <i class="bi bi-cpu" style="color: ${color};"></i>
-                    <span>${label} / ${displayModel}</span>
-                </span>`;
-            return;
+        // Always show static label first — click to expand to dropdowns
+        const color = providerInfo ? providerInfo.color : '#666';
+        const label = providerInfo ? providerInfo.label : botProvider;
+
+        // If override exists, show the overridden provider/model
+        let displayProvider = label;
+        let displayModel = botModel || 'default';
+        if (hasOverride) {
+            const parts = currentConversation.model_override.split(':');
+            if (parts.length === 2) {
+                const overrideProvider = CONV_PROVIDER_INFO[parts[0]];
+                displayProvider = overrideProvider ? overrideProvider.label : parts[0];
+                displayModel = parts[1] || 'default';
+            } else {
+                displayModel = currentConversation.model_override;
+            }
         }
 
-        // Show two dropdowns (provider + model)
-        showModelDropdowns(botProvider, fallbacks, currentConversation.model_override);
+        wrapper.style.cssText = 'display: flex !important; align-items: center; margin-right: 8px;';
+        wrapper.innerHTML = `
+            <span class="provider-model-label" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;"
+                  title="Click to change model" onclick="expandModelSelector()">
+                <i class="bi bi-cpu" style="color: ${color};"></i>
+                <span>${displayProvider} / ${displayModel}</span>
+            </span>`;
     }
 
     function expandModelSelector() {
