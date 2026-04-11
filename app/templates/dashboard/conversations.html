@@ -5862,8 +5862,6 @@
         modelSelect.innerHTML = `<option value="">Default</option>` + info.models.map(m =>
             `<option value="${m}">${m}</option>`
         ).join('');
-
-        setConversationModel();
     }
 
     function updateModelSelector() {
