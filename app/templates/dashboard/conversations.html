@@ -5870,11 +5870,7 @@
         const wrapper = document.getElementById('modelSelectorWrapper');
         if (!wrapper || !currentConversation) return;
 
-        // Hide for email conversations
-        if (currentConversation.bot_platform_type === 'email') {
-            wrapper.style.cssText = 'display: none !important;';
-            return;
-        }
+        // Show for all platforms including email
 
         // Get the current bot
         const bot = bots.find(b => b.id === currentConversation.bot_id);
@@ -6020,7 +6016,7 @@
                 return;
             }
             const data = await res.json();
-            if (data.is_running && (data.whatsapp_connected || data.platform_connected)) {
+            if (data.is_running) {
                 wrapper.style.cssText = showStyle;
                 toggle.checked = data.ai_response_enabled || false;
             } else {
