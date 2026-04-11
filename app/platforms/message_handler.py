@@ -1014,12 +1014,36 @@ def is_human_takeover_active(db, conversation_id: int) -> bool:
 
 
 def get_conversation_model(db, conversation_id: int) -> Optional[str]:
-    """Get model override for a conversation, or None to use bot default."""
+    """Get model override for a conversation, or None to use bot default.
+
+    Supports 'provider:model' format — returns just the model part.
+    Use get_conversation_provider_model() to get both provider and model.
+    """
     from app.database import Conversation
     conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
     if conv and hasattr(conv, 'model_override') and conv.model_override:
-        return conv.model_override
+        override = conv.model_override
+        if ':' in override:
+            return override.split(':', 1)[1]
+        return override
     return None
+
+
+def get_conversation_provider_model(db, conversation_id: int):
+    """Get provider and model override for a conversation.
+
+    Returns (provider, model) tuple. Either or both may be None.
+    Supports 'provider:model' format stored in model_override.
+    """
+    from app.database import Conversation
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if conv and hasattr(conv, 'model_override') and conv.model_override:
+        override = conv.model_override
+        if ':' in override:
+            parts = override.split(':', 1)
+            return (parts[0], parts[1])
+        return (None, override)
+    return (None, None)
 
 
 def is_sender_approved(db, conversation_id: int) -> bool:

@@ -179,6 +179,17 @@
         content: "✓ ";
     }
 
+    #convProviderSelect:focus,
+    #convModelSelect:focus {
+        border-color: var(--wa-teal);
+        box-shadow: none;
+        outline: none;
+    }
+
+    .provider-model-label:hover {
+        color: var(--text-primary) !important;
+    }
+
     .chat-search {
         padding: 8px 12px;
         background: white;
@@ -2366,6 +2377,23 @@
     let conversationWs = null;
     let botWebSockets = {};  // Map of bot_id -> WebSocket for chat list updates
 
+    const CONV_PROVIDER_INFO = {
+        openai: { label: 'OpenAI', icon: 'bi-cpu', color: '#10a37f',
+            models: ['gpt-5.2', 'gpt-5.1', 'gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'] },
+        anthropic: { label: 'Anthropic', icon: 'bi-cpu', color: '#da6a46',
+            models: ['claude-opus-4-6-20260205', 'claude-sonnet-4-5-20241022', 'claude-haiku-4-5-20241022'] },
+        google: { label: 'Google', icon: 'bi-cpu', color: '#4285f4',
+            models: ['gemini-3-pro', 'gemini-3-flash', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'] },
+        deepseek: { label: 'DeepSeek', icon: 'bi-cpu', color: '#0066ff',
+            models: ['deepseek-chat', 'deepseek-reasoner'] },
+        qwen: { label: 'Qwen', icon: 'bi-cpu', color: '#6c5ce7',
+            models: ['qwen3-max', 'qwen3-plus', 'qwen3-turbo'] },
+        grok: { label: 'xAI', icon: 'bi-cpu', color: '#1da1f2',
+            models: ['grok-4', 'grok-3', 'grok-3-fast'] },
+        ollama: { label: 'Ollama', icon: 'bi-cpu', color: '#333',
+            models: ['llama3', 'mistral', 'codellama'] },
+    };
+
     // Pagination state for infinite scroll
     let messagesPagination = {
         total: 0,
@@ -2842,10 +2870,6 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center me-2" id="modelSelectorWrapper" style="display: none !important;">
-                        <select class="form-select form-select-sm" id="convModelSelect" onchange="setConversationModel(this.value)"
-                                style="border-radius: 20px; font-size: 0.75rem; padding: 2px 8px; max-width: 140px; height: 28px;">
-                            <option value="">Bot Default</option>
-                        </select>
                     </div>
                     <button class="header-action-btn" title="Search" onclick="toggleMessageSearch()">
                         <i class="bi bi-search"></i>
@@ -5793,43 +5817,167 @@
         } catch (e) { showToast('Error rejecting sender', 'danger'); }
     }
 
-    async function setConversationModel(model) {
+    async function setConversationModel() {
         if (!currentConversation) return;
+        const providerSelect = document.getElementById('convProviderSelect');
+        const modelSelect = document.getElementById('convModelSelect');
+        if (!providerSelect || !modelSelect) return;
+
+        const provider = providerSelect.value;
+        const model = modelSelect.value;
+        let override = null;
+        if (provider && model) {
+            override = `${provider}:${model}`;
+        } else if (model) {
+            override = model;
+        }
+
         try {
             const res = await fetch(`/api/conversations/${currentConversation.id}/set-model`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({model: model || null})
+                body: JSON.stringify({model: override})
             });
             if (res.ok) {
-                currentConversation.model_override = model || null;
-                showToast(model ? `Model set to ${model}` : 'Using bot default model', 'success');
+                currentConversation.model_override = override;
+                if (override) {
+                    const pInfo = CONV_PROVIDER_INFO[provider];
+                    showToast(`Model set to ${pInfo ? pInfo.label : provider} / ${model}`, 'success');
+                } else {
+                    showToast('Using bot default model', 'success');
+                }
             }
         } catch (e) { showToast('Error setting model', 'danger'); }
     }
 
+    function onProviderChange() {
+        const providerSelect = document.getElementById('convProviderSelect');
+        const modelSelect = document.getElementById('convModelSelect');
+        if (!providerSelect || !modelSelect) return;
+
+        const provider = providerSelect.value;
+        const info = CONV_PROVIDER_INFO[provider];
+        if (!info) return;
+
+        modelSelect.innerHTML = `<option value="">Default</option>` + info.models.map(m =>
+            `<option value="${m}">${m}</option>`
+        ).join('');
+
+        setConversationModel();
+    }
+
     function updateModelSelector() {
         const wrapper = document.getElementById('modelSelectorWrapper');
-        const select = document.getElementById('convModelSelect');
-        if (!wrapper || !select || !currentConversation) return;
+        if (!wrapper || !currentConversation) return;
 
-        // Show the selector
-        wrapper.style.cssText = 'display: flex !important; align-items: center; margin-right: 8px;';
+        // Hide for email conversations
+        if (currentConversation.bot_platform_type === 'email') {
+            wrapper.style.cssText = 'display: none !important;';
+            return;
+        }
 
-        // Populate with common models
-        const models = [
-            {value: '', label: 'Bot Default'},
-            {value: 'gpt-4o-mini', label: 'GPT-4o Mini'},
-            {value: 'gpt-4o', label: 'GPT-4o'},
-            {value: 'gpt-5', label: 'GPT-5'},
-            {value: 'claude-sonnet-4-5-20241022', label: 'Claude Sonnet'},
-            {value: 'claude-haiku-4-5-20241022', label: 'Claude Haiku'},
-            {value: 'gemini-2.0-flash', label: 'Gemini Flash'},
-            {value: 'deepseek-chat', label: 'DeepSeek'},
-        ];
-        select.innerHTML = models.map(m =>
-            `<option value="${m.value}" ${currentConversation.model_override === m.value ? 'selected' : ''}>${m.label}</option>`
+        // Get the current bot
+        const bot = bots.find(b => b.id === currentConversation.bot_id);
+        if (!bot) {
+            wrapper.style.cssText = 'display: none !important;';
+            return;
+        }
+
+        // Check if bot has fallback providers
+        let fallbacks = [];
+        try {
+            const fp = typeof bot.fallback_providers === 'string' ? JSON.parse(bot.fallback_providers) : (bot.fallback_providers || []);
+            if (Array.isArray(fp)) fallbacks = fp;
+        } catch (e) { /* ignore */ }
+
+        const hasFallbacks = fallbacks.length > 0;
+        const hasOverride = !!currentConversation.model_override;
+
+        const botProvider = bot.ai_provider || 'openai';
+        const botModel = bot.model || '';
+        const providerInfo = CONV_PROVIDER_INFO[botProvider];
+
+        if (!hasFallbacks && !hasOverride) {
+            // Simple label — no dropdowns
+            const color = providerInfo ? providerInfo.color : '#666';
+            const label = providerInfo ? providerInfo.label : botProvider;
+            const displayModel = botModel || 'default';
+            wrapper.style.cssText = 'display: flex !important; align-items: center; margin-right: 8px;';
+            wrapper.innerHTML = `
+                <span class="provider-model-label" style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;"
+                      title="Click to change model" onclick="expandModelSelector()">
+                    <i class="bi bi-cpu" style="color: ${color};"></i>
+                    <span>${label} / ${displayModel}</span>
+                </span>`;
+            return;
+        }
+
+        // Show two dropdowns (provider + model)
+        showModelDropdowns(botProvider, fallbacks, currentConversation.model_override);
+    }
+
+    function expandModelSelector() {
+        const bot = bots.find(b => b.id === currentConversation?.bot_id);
+        if (!bot) return;
+
+        let fallbacks = [];
+        try {
+            const fp = typeof bot.fallback_providers === 'string' ? JSON.parse(bot.fallback_providers) : (bot.fallback_providers || []);
+            if (Array.isArray(fp)) fallbacks = fp;
+        } catch (e) { /* ignore */ }
+
+        showModelDropdowns(bot.ai_provider || 'openai', fallbacks, currentConversation.model_override);
+    }
+
+    function showModelDropdowns(botProvider, fallbacks, modelOverride) {
+        const wrapper = document.getElementById('modelSelectorWrapper');
+        if (!wrapper) return;
+
+        // Build list of available providers: bot's primary + fallbacks
+        const availableProviders = [botProvider];
+        fallbacks.forEach(fb => {
+            if (fb.provider && !availableProviders.includes(fb.provider)) {
+                availableProviders.push(fb.provider);
+            }
+        });
+
+        // Parse current override
+        let selectedProvider = botProvider;
+        let selectedModel = '';
+        if (modelOverride && modelOverride.includes(':')) {
+            const parts = modelOverride.split(':');
+            selectedProvider = parts[0];
+            selectedModel = parts.slice(1).join(':');
+        } else if (modelOverride) {
+            selectedModel = modelOverride;
+        }
+
+        // Build provider options
+        const providerOptions = availableProviders.map(p => {
+            const info = CONV_PROVIDER_INFO[p];
+            const label = info ? info.label : p;
+            return `<option value="${p}" ${p === selectedProvider ? 'selected' : ''}>${label}</option>`;
+        }).join('');
+
+        // Build model options for selected provider
+        const providerModels = CONV_PROVIDER_INFO[selectedProvider]?.models || [];
+        const modelOptions = `<option value="">Default</option>` + providerModels.map(m =>
+            `<option value="${m}" ${m === selectedModel ? 'selected' : ''}>${m}</option>`
         ).join('');
+
+        const selectStyle = 'width: auto; max-width: 120px; border-radius: 16px; font-size: 0.7rem; padding: 2px 24px 2px 8px; height: 26px; border-color: var(--border-color);';
+        const modelSelectStyle = 'width: auto; max-width: 170px; border-radius: 16px; font-size: 0.7rem; padding: 2px 24px 2px 8px; height: 26px; border-color: var(--border-color);';
+
+        wrapper.style.cssText = 'display: flex !important; align-items: center; margin-right: 8px; gap: 4px;';
+        wrapper.innerHTML = `
+            <select class="form-select form-select-sm" style="${selectStyle}"
+                    id="convProviderSelect" onchange="onProviderChange()">
+                ${providerOptions}
+            </select>
+            <select class="form-select form-select-sm" style="${modelSelectStyle}"
+                    id="convModelSelect" onchange="setConversationModel()">
+                ${modelOptions}
+            </select>`;
     }
 
     async function toggleAIResponseFromConv(enabled) {
